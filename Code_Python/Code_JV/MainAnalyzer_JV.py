@@ -184,7 +184,7 @@ taka.computeGlobalTable_meca(task = MCA2task, fileName = 'Global_MecaData_MCA3',
 
 Test = '22-05-03' #' & 22-05-04 & 22-05-05'
 taka.computeGlobalTable_meca(task = Test, fileName = 'Global_MecaData_Demo', 
-                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+                            save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 

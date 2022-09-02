@@ -740,7 +740,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 
 
-def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
+def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
     print(f)
     
@@ -798,6 +798,14 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
     ctFieldDZ = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dz'].values)
     ctFieldThickness   = np.median(ctFieldH)
     ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
+    
+    #### Save stress-strain [1/3] 
+    # Export a file "Timeseries_stress-strain"
+    if saveAnalysedTs:
+        Nrows = tsDF.shape[0]
+        ts_H0 = np.full(Nrows, np.nan)
+        ts_stress = np.full(Nrows, np.nan)
+        ts_strain = np.full(Nrows, np.nan)
     
     #### PLOT [1/4]
     # First part of the plot [mainly ax1 and ax1bis]
@@ -1249,58 +1257,32 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
                     thisAx4.set_ylabel('f (pN)')
     
                     for k in range(len(fitsToPlot)):
-                        if not fitError_fitToPlot[k]:
-    
-                            fit = fitsToPlot[k]
-                            
-                            Npts_fit = Npts_fitToPlot[k]
-                            K_fit = K_fitToPlot[k]
-                            R2_fit = R2_fitToPlot[k]
-                            fitError_fit = fitError_fitToPlot[k]
-                            validatedFit_fit = validatedFit_fitToPlot[k]
-                            stressMask_fit = plot_stressMasks_region[k]
+                        fit = fitsToPlot[k]
+                        stressMask_fit = plot_stressMasks_region[k]
+                        fCompr_fit = fCompr[stressMask_fit]
+                        hCompr_fit = hCompr[stressMask_fit]
                         
-                            
-                            R = DIAMETER/2
-                            fCompr_fit = fCompr[stressMask_fit]
-                            hCompr_fit = hCompr[stressMask_fit]
-                            f1, h1 = np.mean(fCompr_fit), np.mean(hCompr_fit)
-                            
-                            # extrapolate a good H0 for the plot in force-thickness
-                            # if f1 = np.pi*R*K*(h1-H0)**2/(3*H0)
-                            # and we set : ALPHA = (np.pi*R*K)/(3*f1)
-                            # then H0**2 - ((2*h1 + 1)/ALPHA) * H0 + h1**2 = 0
-                            # We just have to solve this second order equation the suitable H0
-                            # DELTA = b**2 - 4*a*c = ((2*h1 + 1)/ALPHA)**2 - 4*h1**2
-                            # H0_plot = (-b + DELTA**0.5)/(2*a) = (-((2*h1 + 1)/ALPHA) + DELTA**0.5)/2
-                            ALPHA = (np.pi*R*K_fit)/(3*f1)
-                            DELTA = ((2*h1 + 1)/ALPHA)**2 - 4*h1**2
-                            H0_plot = (-((2*h1 + 1)/ALPHA) + DELTA**0.5)/2
-                            
-                            hPredict_fit = H0_plot - ((3*H0_plot*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
-                            
-                            color = gs.colorList30[k]
-                            legendText4 = ''
-                            
-                            # hPredict_fit0 = H0_Chadwick15 - ((3*H0_Chadwick15*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
-                            # strainPredict_fit = list_strainPredict_fitToPlot[k]
-                            # hPredict_fit = H0_Chadwick15 * (1 - 3*strainPredict_fit)
-                            # legendText4 += 'Range ' + fit + '\n'
-                            # legendText4 += 'K = {:.2e}Pa'.format(K_fit)
-                            # thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '--', linewidth = 1.8, label = legendText4)
-                            
+                        Npts_plot = len(fCompr_fit)
+                        
+                        if Npts_plot < 5:
+                            fitError_plot = True
+                        else:
+                            # (E, H0, hPredict, R2, Chi2, confIntE, confIntH0, fitError)
+                            resTuplePlot = compressionFitChadwick(hCompr_fit, fCompr_fit, DIAMETER)
+                            hPredict_plot, fitError_plot = resTuplePlot[2], resTuplePlot[-1]
+                        
+                        color = gs.colorList30[k]
+                        legendText4 = ''
+                        if not fitError_plot:
                             if fit not in alreadyLabeled4:
                                 alreadyLabeled4.append(fit)
                                 legendText4 += '' + fit + ''
-                                thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '-', linewidth = 1.8, 
+                                thisAx4.plot(hPredict_plot, fCompr_fit, color = color, ls = '-', linewidth = 1.8, 
                                              label = legendText4)
                             elif fit in alreadyLabeled4:
-                                thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '-', linewidth = 1.8)
-                        else:
-                            pass
-                    
-                    
-                    
+                                thisAx4.plot(hPredict_plot, fCompr_fit, color = color, ls = '-', linewidth = 1.8)
+                        
+
                     
                     thisAx5.set_xlabel('Strain')
                     thisAx5.set_ylabel('Stress (Pa)')
@@ -1479,17 +1461,15 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
         #### (6) Deal with the non analysed compressions
         else: # The compression curve was detected as not suitable for analysis
             generalBug = True
-
             results['comments'][i] = 'Unspecified bug in the code'
-
-
-        if not doThisCompAnalysis:
-            print('Curve not suitable for analysis !')
-            print(currentCellID)
-            print('Compression no ' + str(i+1))
-
-    for k in results.keys():
-        results[k] = np.array(results[k])
+            print(currentCellID + ' - Compression no ' + str(i+1) + ' not suitable for analysis !')
+            
+        #### Save stress-strain [2/3] 
+        # Export a file "Timeseries_stress-strain"
+        if saveAnalysedTs:
+            ts_H0[iStart+jStart+offsetStart2:iStart+jMax+1].fill(bestH0)
+            ts_stress[iStart+jStart+offsetStart2:iStart+jMax+1] = stressCompr
+            ts_strain[iStart+jStart+offsetStart2:iStart+jMax+1] = strainCompr
     
     #### PLOT [3/4]
     
@@ -1650,8 +1630,26 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
         ufun.archiveFig(fig6, name = currentCellID + '_06_K(s)', figSubDir = figSubDir, dpi = dpi)
         ufun.archiveFig(fig7, name = currentCellID + '_07_smallElements', figSubDir = figSubDir, dpi = dpi)
         plt.close('all')
-
-    return(results)
+    
+    #### Save stress-strain [3/3] 
+    # Export a file "Timeseries_stress-strain"
+    if saveAnalysedTs:
+        tsDF['H0'] = ts_H0
+        tsDF['Stress'] = ts_stress
+        tsDF['Strain'] = ts_strain
+        saveName = f[:-4] + '_stress-strain.csv'
+        savePath = os.path.join(cp.DirDataTimeseriesStressStrain, saveName)
+        tsDF.to_csv(savePath, sep=';', index = False)
+        if cp.CloudSaving != '':
+            cloudSavePath = os.path.join(cp.DirCloudTimeseriesStressStrain, saveName)
+            tsDF.to_csv(savePath, sep=';', index = False)
+    
+        
+    #### (8) Convert to dataFrame before returning
+    for k in results.keys():
+        results[k] = np.array(results[k])
+    result_df = pd.DataFrame(results)
+    return(result_df)
 
 
 
@@ -1667,9 +1665,8 @@ def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT):
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
         current_tsDF = pd.read_csv(tS_DataFilePath, sep = ';')
          # MAIN SUBFUNCTION
-        current_resultDict = analyseTimeSeries_meca(f, current_tsDF, expDf, 
-                                                    dictColumnsMeca, task, PLOT)
-        current_resultDf = pd.DataFrame(current_resultDict)
+        current_resultDf = analyseTimeSeries_meca(f, current_tsDF, expDf, dictColumnsMeca, 
+                                                  task, PLOT, saveAnalysedTs = True)
         list_resultDf.append(current_resultDf)
     mecaDf = pd.concat(list_resultDf)
 
