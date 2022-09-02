@@ -138,13 +138,13 @@ drugTask = '22-03-30'
 
 nonLinTask = '21-12-08 & 22-01-12 & 22-02-09'
 taka.computeGlobalTable_meca(task = nonLinTask, fileName = 'Global_MecaData_NonLin_Py', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% MCA
 
 MCAtask = '21-01-18 & 21-01-21'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA', 
-#                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA', 
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
@@ -180,11 +180,11 @@ taka.computeGlobalTable_meca(task = MCA2task, fileName = 'Global_MecaData_MCA3',
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-# %%%% Demo for Duya
+# %%%% Tests
 
-Demo = '22-06-16' #' & 22-05-04 & 22-05-05'
-# taka.computeGlobalTable_meca(task = Demo, fileName = 'Global_MecaData_Demo', 
-#                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
+Test = '22-05-03' #' & 22-05-04 & 22-05-05'
+taka.computeGlobalTable_meca(task = Test, fileName = 'Global_MecaData_Demo', 
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 

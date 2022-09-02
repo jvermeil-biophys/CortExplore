@@ -418,7 +418,7 @@ dictColumnsMeca = {'date':'',
                    'ctFieldDX':np.nan,
                    'ctFieldDZ':np.nan,
                    'bestH0':np.nan,
-                   'validatedFit_bestH0':False,
+                   'error_bestH0':False,
                    'H0_Chadwick15':np.nan, 
                    'H0_Dimitriadis15':np.nan, 
                    'H0Chadwick':np.nan,
@@ -441,7 +441,8 @@ dictSelectionCurve = {'R2' : 0.6, 'Chi2' : 10, 'Error' : 0.02}
 
 # Regions definitions - OPTION 5 : Many range width
 fitC =  np.array([S for S in range(100, 1150, 50)])
-fitW = [100, 150, 200, 250, 300]
+fitW = [100, 150, 200]
+# fitW = [100, 150, 200, 250, 300]
 
 
 #### Compute the regions
@@ -740,6 +741,8 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
+    
+    print(f)
     
     #### (0) Import experimental infos
     tsDF.dx, tsDF.dy, tsDF.dz, tsDF.D2, tsDF.D3 = tsDF.dx*1000, tsDF.dy*1000, tsDF.dz*1000, tsDF.D2*1000, tsDF.D3*1000
@@ -1061,13 +1064,13 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
                 # dictColumnsRegionFit = {'regionFitNames' : '', 'K' : np.nan, 'K_CIW' : np.nan, 'R2' : np.nan,  
                 #                         'Npts' : np.nan, 'fitError' : True, 'validatedFit' : False} 
                 
-                all_stressMasks_region = []
+                all_stressMasks_region = np.zeros((N_Fits, len(stressCompr)), dtype = bool)
                 list_strainPredict_fitToPlot = [[] for kk in range(len(fitsToPlot))]                
                 
                 for kk in range(N_Fits):
                     ftP = regionFitsNames[kk]
                     lowS, highS = int(fitMin[kk]), int(fitMax[kk])
-                    all_stressMasks_region[kk] = ((stressCompr > lowS) & (stressCompr < highS))
+                    all_stressMasks_region[kk,:] = ((stressCompr > lowS) & (stressCompr < highS))
                 
                 for ii in range(N_Fits):
                     regionFitName = regionFitsNames[ii]
@@ -1112,7 +1115,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT):
                         rFN = regionFitName
                         results['K_'+rFN][i] = K_region
                         results['K_CIW_'+rFN][i] = confIntWidthK_region                        
-                        results['R2Chadwick_'+rFN][i] = R2_region
+                        results['R2_'+rFN][i] = R2_region
                         results['Npts_'+rFN][i] = Npts_region
                         results['fitError_'+rFN][i] = fitError_region
                         results['validatedFit_'+rFN][i] = validatedFit_region
@@ -1660,14 +1663,12 @@ def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT):
     expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
     list_resultDf = []
     Nfiles = len(list_mecaFiles)
-    PLOT_SHOW = 0
     for f in list_mecaFiles: #[:10]:
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
         current_tsDF = pd.read_csv(tS_DataFilePath, sep = ';')
          # MAIN SUBFUNCTION
         current_resultDict = analyseTimeSeries_meca(f, current_tsDF, expDf, 
-                                                    dictColumnsMeca, task,
-                                                    PLOT, PLOT_SHOW)
+                                                    dictColumnsMeca, task, PLOT)
         current_resultDf = pd.DataFrame(current_resultDict)
         list_resultDf.append(current_resultDf)
     mecaDf = pd.concat(list_resultDf)
