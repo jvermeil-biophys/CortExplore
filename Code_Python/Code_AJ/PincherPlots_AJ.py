@@ -313,7 +313,7 @@ tka.computeGlobalTable_meca(task = 'updateExisting', fileName = 'Global_MecaData
 
 # %%%% Specific experiments
 
-Task = '22-08-26_M5_P1_C2' # For instance '22-03-30 & '22-03-31'
+Task = '22-08-26_M3_P2_C5' # For instance '22-03-30 & '22-03-31'
 tka.computeGlobalTable_meca(task = Task, fileName = 'Global_MecaData_AJ', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 

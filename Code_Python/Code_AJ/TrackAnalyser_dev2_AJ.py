@@ -518,7 +518,7 @@ dictColumnsMeca = {'date':'',
                    'ctFieldDX':np.nan,
                    'ctFieldDZ':np.nan,
                    'bestH0':np.nan,
-                   'validatedFit_bestH0':False,
+                   'error_bestH0':True,
                    'H0_Chadwick15':np.nan, 
                    'H0_Dimitriadis15':np.nan, 
                    'H0Chadwick':np.nan,
@@ -1152,25 +1152,23 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
             bestH0 = dictH0[H0_bestMethod]
             resTuple_bestH0 = dictH0[H0_bestMethod + '_resTuple']
             error_bestH0 = resTuple_bestH0[-1]
-            validatedFit_bestH0 = not error_bestH0
 
             maxH0 = max(H0, bestH0)
             if max(hCompr) > maxH0:
-                error_bestH0 = True
-                validatedFit_bestH0 = False
-                
-                
-            #### (4.1) Compute stress and strain based on the best H0
+                error_bestH0 = True   
             
-            if validatedFit_bestH0:
+            
+            #### (4.1) Compute stress and strain based on the best H0
+            if not error_bestH0:
+                
                 # results['bestH0'].append(bestH0)
                 # results['validatedFit_bestH0'].append(validatedFit_bestH0)
                 results['bestH0'][i] = bestH0
-                results['validatedFit_bestH0'][i] = validatedFit_bestH0
+                results['error_bestH0'][i] = error_bestH0
                 
-                #### Stress-strain computation
                 deltaCompr = (maxH0 - hCompr)/1000
                 stressCompr = fCompr / (np.pi * (DIAMETER/2000) * deltaCompr)
+
                 strainCompr = deltaCompr / (3*(maxH0/1000))
                 # trueStrainCompr = np.log((H0_Chadwick15)/(hCompr*(hCompr>0)))
                 validDelta = (deltaCompr > 0)
@@ -1208,10 +1206,10 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
             #### SETTING ! Setting of the region fits
             
             #### >>> OPTION TO LIGHTEN THE COMPUTATION
-            # fitConditions = []
+            # all_masks_region = []
             # for ii in range(len(fit_intervals)-1):
             #     for jj in range(ii+1, len(fit_intervals)):
-            #         fitConditions.append((stressCompr > fit_intervals[ii]) & (stressCompr < fit_intervals[jj]))
+            #         all_masks_region.append((stressCompr > fit_intervals[ii]) & (stressCompr < fit_intervals[jj]))
             
             
             # dictRegionFit = {'regionFitNames' : [], 
@@ -1224,25 +1222,23 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
             #                  'Npts' : [], 
             #                  'K_CIW' : []}
             
-            list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-
-            if validatedFit_bestH0:
+                list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
                 
-                fitConditions = []
-                for kk in range(len(regionFitsNames)):
-                    ftP = regionFitsNames[kk]
-                    lowS, highS = int(fitMin[kk]), int(fitMax[kk])
-                    fitConditions.append((stressCompr > lowS) & (stressCompr < highS))
-                
-                N_Fits = len(fitConditions)
-                
+                N_Fits = len(regionFitsNames)
                 dictRegionFit = {}
                 for k in dictColumnsRegionFit.keys():
                     dictRegionFit[k] = [dictColumnsRegionFit[k] for m in range(N_Fits)]
+
+
+                all_masks_region = np.zeros((N_Fits, len(stressCompr)), dtype = bool)
+                for kk in range(N_Fits):
+                    ftP = regionFitsNames[kk]
+                    lowS, highS = int(fitMin[kk]), int(fitMax[kk])
+                    all_masks_region[kk,:] = ((stressCompr > lowS) & (stressCompr < highS))                
             
                 for ii in range(N_Fits):
                     regionFitName = regionFitsNames[ii]
-                    mask_region = fitConditions[ii]
+                    mask_region = all_masks_region[ii]
                     Npts_region = np.sum(mask_region)
                     
                     if Npts_region > 5:
@@ -1250,8 +1246,8 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
                         hCompr_region = hCompr[mask_region]
                         
                         # Vérifier la concordance !
-                        K2_region, H0_region, hPredict_region, R2_region, Chi2_region, confIntE_region, confIntH0_region, fitError_region = \
-                                      compressionFitChadwick(hCompr_region, fCompr_region, DIAMETER)
+                        resTuple_FHregionFit = compressionFitChadwick(hCompr_region, fCompr_region, DIAMETER)
+                        K2_region, H0_region = resTuple_FHregionFit[0:2]
                         
                         K_region, strainPredict_region, R2_region, Chi2_region, confIntK_region, fitError_region = \
                             compressionFitChadwick_StressStrain(hCompr_region, fCompr_region, maxH0, DIAMETER)
@@ -1354,11 +1350,10 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
             #         # results['EChadwick_'+rFN].append(np.nan)
             #         results['validatedFit_'+rFN].append(False)    
             
-
                 for k in dictRegionFit.keys():
                     dictRegionFit[k] = np.array(dictRegionFit[k])
             
-            
+
             #### PLOT [2/4]
             # Complete fig 1, 2, 3 with the results of the fit
             if PLOT:
@@ -1409,7 +1404,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
                     # if not validatedFit:
                     #     titleText += '\nNON VALIDATED'
                         
-                    if validatedFit_bestH0:
+                    if not error_bestH0:
                         thisAx3.plot(stressCompr, strainCompr, 'go', ms = 3)
                         # thisAx3.plot(stressCompr, trueStrainCompr, 'bo', ms = 2)
                         thisAx3.plot([np.percentile(stressCompr,10), np.percentile(stressCompr,90)], 
@@ -1422,7 +1417,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
                 else:
                     titleText += '\nFIT ERROR'
                     
-                if validatedFit_bestH0:
+                if not error_bestH0:
                     # Computations to display the fit of the H0_Chadwick15
                     
                     bestH0_resTuple = dictH0[H0_bestMethod + '_resTuple']
@@ -1453,256 +1448,248 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, PLOT_SHO
                     for item in ([ax.title, ax.xaxis.label, \
                                   ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
                         item.set_fontsize(9)
-                        
-                        
-                #### fig4 & fig5
+            
                 
-                # if validatedFit_bestH0:
-                #     Npts_fitToPlot = dictRegionFit['Npts'][mask_fitToPlot]
-                #     K_fitToPlot = dictRegionFit['K'][mask_fitToPlot]
-                #     K_CIW_fitToPlot =dictRegionFit['K_CIW'][mask_fitToPlot]
-                #     K2_fitToPlot = dictRegionFit['K2'][mask_fitToPlot]
-                #     H0_fitToPlot = dictRegionFit['H0'][mask_fitToPlot]
-                #     R2_fitToPlot = dictRegionFit['R2'][mask_fitToPlot]
-                #     fitError_fitToPlot = dictRegionFit['fitError'][mask_fitToPlot]
-                #     validatedFit_fitToPlot = dictRegionFit['validatedFit'][mask_fitToPlot]
+                if not error_bestH0:
                     
-                #     fitConditions_fitToPlot = np.array(fitConditions)[mask_fitToPlot]
-                #     # print(currentCellID)
-                #     # print('Compression ' + str(i))
-                #     # print(len(fitConditions))
-                #     # print(len(mask_fitToPlot))
+                    #### fig4 & fig5
                     
-                # else:
-                #     fitError_fitToPlot = np.zeros_like(fit_toPlot, dtype = bool)
-                print(currentCellID)
-                Npts_fitToPlot = dictRegionFit['Npts'][mask_fitToPlot]
-                K_fitToPlot = dictRegionFit['K'][mask_fitToPlot]
-                K_CIW_fitToPlot =dictRegionFit['K_CIW'][mask_fitToPlot]
-                K2_fitToPlot = dictRegionFit['K2'][mask_fitToPlot]
-                H0_fitToPlot = dictRegionFit['H0'][mask_fitToPlot]
-                R2_fitToPlot = dictRegionFit['R2'][mask_fitToPlot]
-                fitError_fitToPlot = dictRegionFit['fitError'][mask_fitToPlot]
-                validatedFit_fitToPlot = dictRegionFit['validatedFit'][mask_fitToPlot]
-                
-                fitConditions_fitToPlot = np.array(fitConditions)[mask_fitToPlot]
-                
-                # ax2[i] with the 1 line plot
-                if nRowsSubplot == 1:
-                    # thisAx4 = ax4[colSp]
-                    thisAx5 = ax5[colSp]
-                elif nRowsSubplot >= 1:
-                    # thisAx4 = ax4[rowSp,colSp]
-                    thisAx5 = ax5[rowSp,colSp]
-                
-                main_color = 'k' # colorList10[0]
-                
-                # thisAx4.plot(hCompr,fCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8) # 'b-'
-                # # thisAx4.plot(hRelax,fRelax, color = main_color, ls = '-', linewidth = 0.8, alpha = 0.5) # 'r-'
-                # titleText = currentCellID + '__c' + str(i+1)
-                # thisAx4.set_xlabel('h (nm)')
-                # thisAx4.set_ylabel('f (pN)')
-
-                # for k in range(len(fit_toPlot)):
-                #     if not fitError_fitToPlot[k]:
-
-                #         fit = fit_toPlot[k]
-                        
-                #         Npts_fit = Npts_fitToPlot[k]
-                #         K_fit = K_fitToPlot[k]
-                #         K2_fit = K2_fitToPlot[k]
-                #         H0_fit = H0_fitToPlot[k]
-                #         R2_fit = R2_fitToPlot[k]
-                #         fitError_fit = fitError_fitToPlot[k]
-                #         validatedFit_fit = validatedFit_fitToPlot[k]
-                #         fitConditions_fit = fitConditions_fitToPlot[k]
-                        
-                #         R = DIAMETER/2
-                #         fCompr_fit = fCompr[fitConditions_fit]
-                        
-                #         hPredict_fit2 = H0_fit - ((3*H0_fit*fCompr_fit)/(np.pi*(K2_fit/1e6)*R))**0.5
-                        
-                #         color = gs.colorList30[k]
-                #         legendText4 = ''
-                        
-                #         # hPredict_fit0 = H0_Chadwick15 - ((3*H0_Chadwick15*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
-                #         # strainPredict_fit = list_strainPredict_fitToPlot[k]
-                #         # hPredict_fit = H0_Chadwick15 * (1 - 3*strainPredict_fit)
-                #         # legendText4 += 'Range ' + fit + '\n'
-                #         # legendText4 += 'K = {:.2e}Pa'.format(K_fit)
-                #         # thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '--', linewidth = 1.8, label = legendText4)
-                        
-                #         if fit not in alreadyLabeled4:
-                #             alreadyLabeled4.append(fit)
-                #             legendText4 += '' + fit + ''
-                #             thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8, label = legendText4)
-                #         elif fit in alreadyLabeled4:
-                #             thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8)
-                #     else:
-                #         pass
-                
-                
-                
-                
-                thisAx5.set_xlabel('Strain')
-                thisAx5.set_ylabel('Stress (Pa)')
-                if not fitError and validatedFit_bestH0:
-                    thisAx5.plot(strainCompr, stressCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8)
+                    Npts_fitToPlot = dictRegionFit['Npts'][mask_fitToPlot]
+                    K_fitToPlot = dictRegionFit['K'][mask_fitToPlot]
+                    K_CIW_fitToPlot =dictRegionFit['K_CIW'][mask_fitToPlot]
+                    K2_fitToPlot = dictRegionFit['K2'][mask_fitToPlot]
+                    H0_fitToPlot = dictRegionFit['H0'][mask_fitToPlot]
+                    R2_fitToPlot = dictRegionFit['R2'][mask_fitToPlot]
+                    fitError_fitToPlot = dictRegionFit['fitError'][mask_fitToPlot]
+                    validatedFit_fitToPlot = dictRegionFit['validatedFit'][mask_fitToPlot]
                     
+                    fitToPlot_masks_region = np.array(all_masks_region)[mask_fitToPlot]
+                    
+                    # else:
+                    #     fitError_fitToPlot = np.ones_like(fit_toPlot, dtype = bool)
+                        
+                    
+                    
+                    
+                    fitToPlot_masks_region = np.array(all_masks_region)[mask_fitToPlot]
+                    
+                    # ax2[i] with the 1 line plot
+                    if nRowsSubplot == 1:
+                        thisAx4 = ax4[colSp]
+                        thisAx5 = ax5[colSp]
+                    elif nRowsSubplot >= 1:
+                        thisAx4 = ax4[rowSp,colSp]
+                        thisAx5 = ax5[rowSp,colSp]
+                    
+                    main_color = 'k' # colorList10[0]
+                    
+                    thisAx4.plot(hCompr,fCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8) # 'b-'
+                    # thisAx4.plot(hRelax,fRelax, color = main_color, ls = '-', linewidth = 0.8, alpha = 0.5) # 'r-'
+                    titleText = currentCellID + '__c' + str(i+1)
+                    thisAx4.set_xlabel('h (nm)')
+                    thisAx4.set_ylabel('f (pN)')
+                    
+    
                     for k in range(len(fit_toPlot)):
-                        fit = fit_toPlot[k]
-                        
-                        Npts_fit = Npts_fitToPlot[k]
-                        K_fit = K_fitToPlot[k]
-                        R2_fit = R2_fitToPlot[k]
-                        fitError_fit = fitError_fitToPlot[k]
-                        validatedFit_fit = validatedFit_fitToPlot[k]
-                        fitConditions_fit = fitConditions_fitToPlot[k]
-                        
-                        stressCompr_fit = stressCompr[fitConditions_fit]
-                        strainPredict_fit = list_strainPredict_fitToPlot[k]
-                        
-                        color = gs.colorList30[k]
-                        legendText5 = ''
-                        
-                        if not fitError_fit:
-                            if fit not in alreadyLabeled5:
-                                alreadyLabeled5.append(fit)
-                                legendText5 += '' + fit + ''
-                                thisAx5.plot(strainPredict_fit, stressCompr_fit,  
-                                             color = color, ls = '-', linewidth = 1.8, label = legendText5)
-                            elif fit in alreadyLabeled5:
-                                thisAx5.plot(strainPredict_fit, stressCompr_fit,  
-                                             color = color, ls = '-', linewidth = 1.8)
+                        if not fitError_fitToPlot[k]:
+    
+                            fit = fit_toPlot[k]
+                            
+                            Npts_fit = Npts_fitToPlot[k]
+                            K_fit = K_fitToPlot[k]
+                            K2_fit = K2_fitToPlot[k]
+                            H0_fit = H0_fitToPlot[k]
+                            R2_fit = R2_fitToPlot[k]
+                            fitError_fit = fitError_fitToPlot[k]
+                            validatedFit_fit = validatedFit_fitToPlot[k]
+                            fitConditions_fit = fitToPlot_masks_region[k]
+                            
+                            R = DIAMETER/2
+                            fCompr_fit = fCompr[fitConditions_fit]
+                            
+                            hPredict_fit2 = H0_fit - ((3*H0_fit*fCompr_fit)/(np.pi*(K2_fit/1e6)*R))**0.5
+                            
+                            color = gs.colorList30[k]
+                            legendText4 = ''
+                            
+                            # hPredict_fit0 = H0_Chadwick15 - ((3*H0_Chadwick15*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
+                            # strainPredict_fit = list_strainPredict_fitToPlot[k]
+                            # hPredict_fit = H0_Chadwick15 * (1 - 3*strainPredict_fit)
+                            # legendText4 += 'Range ' + fit + '\n'
+                            # legendText4 += 'K = {:.2e}Pa'.format(K_fit)
+                            # thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '--', linewidth = 1.8, label = legendText4)
+                            
+                            if fit not in alreadyLabeled4:
+                                alreadyLabeled4.append(fit)
+                                legendText4 += '' + fit + ''
+                                thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8, label = legendText4)
+                            elif fit in alreadyLabeled4:
+                                thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8)
                         else:
                             pass
-
-                multiAxes = thisAx5 #[thisAx4, thisAx5]
-                
-                # for ax in multiAxes:
-                #     ax.title.set_text(titleText)
-                #     for item in ([ax.title, ax.xaxis.label, \
-                #                   ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                #         item.set_fontsize(9)
-                        
-                        
-                #### fig6
-                
-                fitCentersPlot = fitCenters[mask_fitToPlot]
-                
-                if nRowsSubplot == 1:
-                    thisAx6 = ax6[colSp]
-                elif nRowsSubplot >= 1:
-                    thisAx6 = ax6[rowSp,colSp]
-                
-                
-                thisAx6.set_xlabel('sigma (Pa)')
-                thisAx6.set_xlim([0, 1200])
-                thisAx6.set_ylabel('K (kPa)')
-                
-                relativeError = np.zeros(len(K_fitToPlot))
-                if not fitError and validatedFit_bestH0:
                     
-                    for k in range(len(fit_toPlot)):
-                        fit = fit_toPlot[k]
+                    
+                    
+                    
+                    thisAx5.set_xlabel('Strain')
+                    thisAx5.set_ylabel('Stress (Pa)')
+                    if not fitError:
+                        thisAx5.plot(strainCompr, stressCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8)
                         
-                        K_fit = K_fitToPlot[k]
-                        K_CIW_fit = K_CIW_fitToPlot[k]
-                        fitError_fit = fitError_fitToPlot[k]
-                        validatedFit_fit = validatedFit_fitToPlot[k]
-                        fitConditions_fit = fitConditions_fitToPlot[k]
-                        
-                        stressCompr_fit = stressCompr[fitConditions_fit]
-                        strainPredict_fit = list_strainPredict_fitToPlot[k]
+                        for k in range(len(fit_toPlot)):
+                            fit = fit_toPlot[k]
+                            
+                            Npts_fit = Npts_fitToPlot[k]
+                            K_fit = K_fitToPlot[k]
+                            R2_fit = R2_fitToPlot[k]
+                            fitError_fit = fitError_fitToPlot[k]
+                            validatedFit_fit = validatedFit_fitToPlot[k]
+                            fitConditions_fit = fitToPlot_masks_region[k]
+                            
+                            stressCompr_fit = stressCompr[fitConditions_fit]
+                            strainPredict_fit = list_strainPredict_fitToPlot[k]
+                            
+                            color = gs.colorList30[k]
+                            legendText5 = ''
+                            
+                            if not fitError_fit:
+                                if fit not in alreadyLabeled5:
+                                    alreadyLabeled5.append(fit)
+                                    legendText5 += '' + fit + ''
+                                    thisAx5.plot(strainPredict_fit, stressCompr_fit,  
+                                                 color = color, ls = '-', linewidth = 1.8, label = legendText5)
+                                elif fit in alreadyLabeled5:
+                                    thisAx5.plot(strainPredict_fit, stressCompr_fit,  
+                                                 color = color, ls = '-', linewidth = 1.8)
+                            else:
+                                pass
     
-                        color = gs.colorList30[k]
-                        
-                        if not fitError_fit:
-                            
-                            Err = K_CIW_fit
-                            relativeError[k] = (Err/K_fit)
-                            mec = None
-                            thisAx6.errorbar([fitCentersPlot[k]], [K_fit/1000], yerr = [(Err/2)/1000],
-                                          color = color, marker = 'o', ms = 5, mec = mec)                           
-                            
-                        
-                    multiAxes = [thisAx6]
+                    multiAxes = [thisAx4, thisAx5] # thisAx5 #
                     
                     for ax in multiAxes:
                         ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + \
-                                     ax.get_xticklabels() + ax.get_yticklabels()):
+                        for item in ([ax.title, ax.xaxis.label, \
+                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
                             item.set_fontsize(9)
                             
-                
-                        
-                #### fig7
-                if plotSmallElements:
-
+                            
+                    #### fig6
+                    
+                    fitCentersPlot = fitCenters[mask_fitToPlot]
+                    
                     if nRowsSubplot == 1:
-                        thisAx7 = ax7[colSp]
+                        thisAx6 = ax6[colSp]
                     elif nRowsSubplot >= 1:
-                        thisAx7 = ax7[rowSp,colSp]
-                        
-                    thisAx7.set_xlabel('epsilon')
-                    thisAx7.set_ylabel('ratios')
-                    legendText7 = ''
+                        thisAx6 = ax6[rowSp,colSp]
                     
-                    # def def2delta(e):
-                    #     d = 3*H0_Chadwick15*e
-                    #     return(d)
                     
-                    # def delta2def(d):
-                    #     e = d/(3*H0_Chadwick15)
-                    #     return(e)
+                    thisAx6.set_xlabel('sigma (Pa)')
+                    thisAx6.set_xlim([0, 1200])
+                    thisAx6.set_ylabel('K (kPa)')
                     
-                    # secax = thisAx7.secondary_xaxis('top', functions=(def2delta, delta2def))
-                    # secax.set_xlabel('delta (nm)')
-                    
-                    if not fitError and validatedFit_bestH0:
+                    relativeError = np.zeros(len(K_fitToPlot))
+                    if not fitError:
                         
-                        A = 2* ((deltaCompr*(DIAMETER/2000))**0.5)
-                        largeX = A/(maxH0/1000)
-                        smallX = deltaCompr/(DIAMETER/1000)
-                        # legendText7 = 'H0_Chadwick15 = {:.2f}nm'.format(H0_Chadwick15)
-                        
-                        thisAx7.plot(strainCompr, largeX, color = 'red',     ls = '', marker = '+', label = 'a/H0',     markersize = 3)#, mec = 'k', mew = 0.5)
-                        thisAx7.plot(strainCompr, smallX, color = 'skyblue', ls = '', marker = '+', label = 'delta/2R', markersize = 3)#, mec = 'k', mew = 0.5)
-                        thisAx7.legend(loc = 'upper left', prop={'size': 5})
-                        thisAx7.set_yscale('log')
-                        thisAx7.set_ylim([5e-3,10])
-                        minPlot, maxPlot = thisAx7.get_xlim()
-                        thisAx7.set_xlim([0,maxPlot])
-                        thisAx7.plot([0,maxPlot], [1, 1], color = 'k', ls = '--', lw = 0.5)
-                        
-                        # # thisAx7bis.tick_params(axis='y', labelcolor='b')
-                        # thisAx7bis = thisAx7.twinx()
-                        # color = 'firebrick'
-                        # thisAx7bis.set_ylabel('F (pN)', color=color)
-                        # thisAx7bis.plot(strainCompr, fCompr, color=color, lw = 0.5)
-                        # thisAx7bis.set_ylim([0,1400])
-                        # thisAx7bis.tick_params(axis='y', labelrotation = 50, labelsize = 10)
-                        # # thisAx7bis.tick_params(axis='y', labelcolor=color)
-                        # # thisAx7bis.set_yticks([0,500,1000,1500])
-                        # # minh = np.min(tsDF['D3'].values-DIAMETER)
-                        
-                        
-                        epsLim = (largeX < 1.0)
-                        if len(strainCompr[epsLim]) > 0:
-                            strainLimit = np.max(strainCompr[epsLim])
-                            minPlot, maxPlot = thisAx5.get_ylim()
-                            # thisAx5.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
-                            minPlot, maxPlot = thisAx7.get_ylim()
-                            thisAx7.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
-                        
+                        for k in range(len(fit_toPlot)):
+                            fit = fit_toPlot[k]
+                            
+                            K_fit = K_fitToPlot[k]
+                            K_CIW_fit = K_CIW_fitToPlot[k]
+                            fitError_fit = fitError_fitToPlot[k]
+                            validatedFit_fit = validatedFit_fitToPlot[k]
+                            fitConditions_fit = fitToPlot_masks_region[k]
+                            
+                            stressCompr_fit = stressCompr[fitConditions_fit]
+                            strainPredict_fit = list_strainPredict_fitToPlot[k]
+        
+                            color = gs.colorList30[k]
+                            
+                            if not fitError_fit:
                                 
-                        multiAxes = [thisAx7] #, thisAx7bis]
+                                Err = K_CIW_fit
+                                relativeError[k] = (Err/K_fit)
+                                mec = None
+                                thisAx6.errorbar([fitCentersPlot[k]], [K_fit/1000], yerr = [(Err/2)/1000],
+                                              color = color, marker = 'o', ms = 5, mec = mec)                           
+                                
+                            
+                        multiAxes = [thisAx6]
                         
                         for ax in multiAxes:
-                            ax.title.set_text(titleText + '\nbestH0 = {:.2f}nm'.format(maxH0))
-                            for item in ([ax.title, ax.xaxis.label, \
-                                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                            ax.title.set_text(titleText)
+                            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + \
+                                         ax.get_xticklabels() + ax.get_yticklabels()):
                                 item.set_fontsize(9)
+                                
+                    
+                            
+                    #### fig7
+                    if plotSmallElements:
+    
+                        if nRowsSubplot == 1:
+                            thisAx7 = ax7[colSp]
+                        elif nRowsSubplot >= 1:
+                            thisAx7 = ax7[rowSp,colSp]
+                            
+                        thisAx7.set_xlabel('epsilon')
+                        thisAx7.set_ylabel('ratios')
+                        legendText7 = ''
+                        
+                        # def def2delta(e):
+                        #     d = 3*H0_Chadwick15*e
+                        #     return(d)
+                        
+                        # def delta2def(d):
+                        #     e = d/(3*H0_Chadwick15)
+                        #     return(e)
+                        
+                        # secax = thisAx7.secondary_xaxis('top', functions=(def2delta, delta2def))
+                        # secax.set_xlabel('delta (nm)')
+                        
+                        if not fitError:
+                            
+                            A = 2* ((deltaCompr*(DIAMETER/2000))**0.5)
+                            largeX = A/(maxH0/1000)
+                            smallX = deltaCompr/(DIAMETER/1000)
+                            # legendText7 = 'H0_Chadwick15 = {:.2f}nm'.format(H0_Chadwick15)
+                            
+                            thisAx7.plot(strainCompr, largeX, color = 'red',     ls = '', marker = '+', label = 'a/H0',     markersize = 3)#, mec = 'k', mew = 0.5)
+                            thisAx7.plot(strainCompr, smallX, color = 'skyblue', ls = '', marker = '+', label = 'delta/2R', markersize = 3)#, mec = 'k', mew = 0.5)
+                            thisAx7.legend(loc = 'upper left', prop={'size': 5})
+                            thisAx7.set_yscale('log')
+                            thisAx7.set_ylim([5e-3,10])
+                            minPlot, maxPlot = thisAx7.get_xlim()
+                            thisAx7.set_xlim([0,maxPlot])
+                            thisAx7.plot([0,maxPlot], [1, 1], color = 'k', ls = '--', lw = 0.5)
+                            
+                            # # thisAx7bis.tick_params(axis='y', labelcolor='b')
+                            # thisAx7bis = thisAx7.twinx()
+                            # color = 'firebrick'
+                            # thisAx7bis.set_ylabel('F (pN)', color=color)
+                            # thisAx7bis.plot(strainCompr, fCompr, color=color, lw = 0.5)
+                            # thisAx7bis.set_ylim([0,1400])
+                            # thisAx7bis.tick_params(axis='y', labelrotation = 50, labelsize = 10)
+                            # # thisAx7bis.tick_params(axis='y', labelcolor=color)
+                            # # thisAx7bis.set_yticks([0,500,1000,1500])
+                            # # minh = np.min(tsDF['D3'].values-DIAMETER)
+                            
+                            
+                            epsLim = (largeX < 1.0)
+                            if len(strainCompr[epsLim]) > 0:
+                                strainLimit = np.max(strainCompr[epsLim])
+                                minPlot, maxPlot = thisAx5.get_ylim()
+                                # thisAx5.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
+                                minPlot, maxPlot = thisAx7.get_ylim()
+                                thisAx7.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
+                            
+                                    
+                            multiAxes = [thisAx7] #, thisAx7bis]
+                            
+                            for ax in multiAxes:
+                                ax.title.set_text(titleText + '\nbestH0 = {:.2f}nm'.format(maxH0))
+                                for item in ([ax.title, ax.xaxis.label, \
+                                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                                    item.set_fontsize(9)
 
 
             #### (5) hysteresis (its definition may change)
