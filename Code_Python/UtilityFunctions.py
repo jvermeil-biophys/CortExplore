@@ -786,6 +786,7 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
         figDir = cp.DirDataFigToday
         figCloudDir = cp.DirCloudFigToday
     else:
+        figDir = os.path.join(cp.DirDataFig, os.path.split(figDir)[1])
         figCloudDir = os.path.join(cp.DirCloudFig, os.path.split(figDir)[1])
     # Normal save
     savePath = os.path.join(figDir, figSubDir)
