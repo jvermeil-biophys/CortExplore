@@ -1,0 +1,41 @@
+C:/
+├─ Users/
+│  ├─ User/
+│  │  ├─ Desktop/
+│  │  │  ├─ CortExplore/
+│  │  │  │  ├─ .Data_BeadsCalibration/
+│  │  │  │  ├─ .Data_Experimental/
+│  │  │  │  ├─ .git/
+│  │  │  │  ├─ Code_IJ/
+│  │  │  │  ├─ Code_Matlab/
+│  │  │  │  ├─ Code_Python/
+│  │  │  │  ├─ LICENSE
+│  │  │  │  ├─ README.md
+│  │  ├─ ownCloud/
+│  │  │  ├─ MagneticPincherData_##/
+│  │  │  │  ├─ Data_Analysis/
+│  │  │  │  │  ├─ new_folder/
+│  │  │  │  │  ├─ new_folder/
+│  │  │  │  ├─ Data_Experiemental/
+│  │  │  │  ├─ Data_BeadsCalibration/
+│  │  │  │  ├─ Figures/
+D:/
+├─ MagneticPincherData/
+│  ├─ Data_Analysis/
+│  │  ├─ GlobalTable.csv
+│  ├─ Data_BeadsCalibration/
+│  ├─ Data_Experimental/
+│  ├─ Data_TimeSeries/
+│  │  ├─ Trajectories/
+│  │  ├─ Trajectories_raw/
+│  │  ├─ yy-mm-dd_M#_P#_C#.csv
+│  ├─ Figures/
+│  ├─ Raw/
+│  │  ├─ DepthoLibrary/
+│  │  ├─ yy.mm.dd/
+│  │  ├─ yy.mm.dd_Deptho/
+new_folder/
+new_folder/
+new_folder/
+new_folder/
+new_file

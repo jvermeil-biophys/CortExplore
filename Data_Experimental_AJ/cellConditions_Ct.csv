@@ -1,0 +1,33 @@
+cellID,blebCondition,phenotype,excluded,comments
+22-07-13_M1_P1_C1_disc20um,none,3mT,yes,
+22-07-13_M1_P1_C2_disc20um,none,3mT,yes,"blebby in the bgeinning, but calms down after; can be seen in curve"
+22-07-13_M1_P1_C3_disc20um,none,3mT,yes,Field too low and the bead stuck to the cell surface makes them move very far apart in Z and therefore makes it negative at the end.
+22-07-13_M1_P1_C5_disc20um,none,3mT,no,
+22-07-13_M1_P2_C3_disc20um,none,3mT,no,
+22-07-26_M1_P1_C1_disc20um,none,3mT,yes,beads look a bit far
+22-07-26_M1_P1_C5_disc20um,none,3mT,no,beads splits a bit in the middle because of lamellipodia
+22-07-26_M1_P2_C1_disc20um,none,3mT,yes,oscillating
+22-07-26_M1_P2_C2_disc20um,none,3mT,yes,oscillating
+22-07-26_M1_P2_C3_disc20um,none,3mT,no,
+22-07-26_M1_P3_C1_disc20um,none,3mT,yes,beads split a bit towards the end; check again
+22-07-13_M2_P1_C5_disc20um,none,7mT,yes,Bit of oscillation and curve increasing; maybe can be fixed; TRY!
+22-07-13_M2_P1_C1_disc20um,none,7mT,yes,Very active; check if Z is detected well
+22-07-13_M2_P2_C1_disc20um,none,7mT,yes,testing 3
+22-07-13_M2_P2_C3_disc20um,none,7mT,no,
+22-07-26_M2_P1_C3_disc20um,none,7mT,yes,oscillating
+22-07-26_M2_P1_C4_disc20um,none,7mT,no,
+22-07-26_M2_P1_C2_disc20um,none,7mT,no,
+22-07-26_M2_P1_C5_disc20um,none,7mT,no,
+22-07-26_M2_P2_C1_disc20um,none,7mT,yes,oscillating
+22-07-26_M2_P2_C2_disc20um,none,7mT,yes,oscillating
+22-07-26_M2_P2_C3_disc20um,none,7mT,no,
+22-07-13_M3_P1_C2_disc20um,none,15mT,yes,Curve is flat; beads are not pinching cortex
+22-07-13_M3_P2_C1_disc20um,none,15mT,no,
+22-07-13_M3_P2_C3_disc20um,none,15mT,no,
+22-07-26_M2_P3_C1_disc20um,none,15mT,yes,beads split in the beginning and movie is too short
+22-07-26_M3_P1_C2_disc20um,none,15mT,yes,oscillating a bit
+22-07-26_M3_P1_C3_disc20um,none,15mT,yes,testing 2
+22-07-26_M3_P1_C4_disc20um,none,15mT,no,
+22-07-26_M3_P2_C1_disc20um,none,15mT,yes,oscillating
+22-07-26_M3_P2_C2_disc20um,none,15mT,no,
+22-07-26_M3_P2_C3_disc20um,none,15mT,no,
