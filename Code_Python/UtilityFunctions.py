@@ -62,14 +62,15 @@ dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
 # %%% Data management
 
-def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, sep = ',', suffix = cp.suffix):
+def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix):
     """
     Import the table with all the conditions in a clean way.
     It is a tedious function to read because it's doing a boring job:
-    Converting strings into numbers when possible
-    Converting commas into dots to correct for the French decimal notation
-    Converting semicolon separated values into lists when needed
-    Etc
+    Converting strings into numbers when possible; 
+    Converting commas into dots to correct for the French decimal notation; 
+    Converting semicolon separated values into lists when needed; 
+    \n
+    NEW FEATURE: Thanks to "engine='python'" in pd.read_csv() the separator can now be detected automatically !
     """
     
     #### 0. Import the table
@@ -79,7 +80,7 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, sep = ',', s
         experimentalDataFile = 'ExperimentalConditions' + suffix + '.csv'
         
     experimentalDataFilePath = os.path.join(DirExp, experimentalDataFile)
-    expDf = pd.read_csv(experimentalDataFilePath, sep=sep, header=0)
+    expDf = pd.read_csv(experimentalDataFilePath, sep=None, header=0, engine='python')
     # print(gs.BLUE + 'Importing Experimental Conditions' + gs.NORMAL)
     print(gs.BLUE + 'Experimental Conditions Table has ' + str(expDf.shape[0]) + ' lines and ' + str(expDf.shape[1]) + ' columns' + gs.NORMAL)
     #### 1. Clean the table
@@ -148,11 +149,11 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, sep = ',', s
     if save:
         saveName = 'ExperimentalConditions' + suffix + '.csv'
         savePath = os.path.join(DirExp, saveName)
-        expDf.to_csv(savePath, sep=sep, index = False)
+        expDf.to_csv(savePath, sep=';', index = False)
         
         if not cp.CloudSaving == '':
             savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
-            expDf.to_csv(savePath_cloud, sep=sep, index = False)
+            expDf.to_csv(savePath_cloud, sep=';', index = False)
 
     #### 3. Generate additionnal field that won't be saved
     
@@ -777,6 +778,19 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
 
 def archiveFig(fig, name = '', ext = '.png', dpi = 100,
                figDir = '', figSubDir = '', cloudSave = 'flexible'):
+    """
+    This is supposed to be a "smart" figure saver. \n
+    (1) \n
+    - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100). \n
+    - If you give a name, it will be used to save your file; if not, a name will be generated based on the date. \n
+    - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday. \n
+    - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir. \n
+    (2) \n
+    cloudSave can have 3 values : 'strict', 'flexible', or 'none'. \n
+    - If 'strict', this function will attempt to do a cloud save not matter what. \n
+    - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save. \n
+    - If 'none', this function will not do a cloud save. \n
+    """
     # Generate unique name if needed
     if name == '':
         dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
@@ -786,8 +800,8 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
         figDir = cp.DirDataFigToday
         figCloudDir = cp.DirCloudFigToday
     else:
-        figDir = os.path.join(cp.DirDataFig, os.path.split(figDir)[1])
-        figCloudDir = os.path.join(cp.DirCloudFig, os.path.split(figDir)[1])
+        figDir = os.path.join(cp.DirDataFig, figDir)
+        figCloudDir = os.path.join(cp.DirCloudFig, figDir)
     # Normal save
     savePath = os.path.join(figDir, figSubDir)
     simpleSaveFig(fig, name, savePath, ext, dpi)
