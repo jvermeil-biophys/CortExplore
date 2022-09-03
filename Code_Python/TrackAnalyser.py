@@ -742,7 +742,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
-    print(f)
+    print(gs.GREEN + f + gs.NORMAL)
     
     #### (0) Import experimental infos
     tsDF.dx, tsDF.dy, tsDF.dz, tsDF.D2, tsDF.D3 = tsDF.dx*1000, tsDF.dy*1000, tsDF.dz*1000, tsDF.D2*1000, tsDF.D3*1000
@@ -892,7 +892,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
         thresholdB = (maxB-minB)/50
         thresholdDeltaB = (maxB-minB)/400
 
-        # Is the curve ok to analyse ?
+        #### Is the curve ok to analyse ?
         doThisCompAnalysis = testHighVal and testRangeB # Some criteria can be added here
 
         if doThisCompAnalysis:
@@ -1457,19 +1457,24 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
                 print(offsetStart2)
                 print(thisCompDf.B.values)
                 # results['hysteresis'].append(np.nan)
+                
+                
+            #### Save stress-strain [2/3] 
+            # Export a file "Timeseries_stress-strain"
+            if not error_bestH0:
+                if saveAnalysedTs:
+                    ts_H0[iStart+jStart+offsetStart2:iStart+jMax+1].fill(bestH0)
+                    ts_stress[iStart+jStart+offsetStart2:iStart+jMax+1] = stressCompr
+                    ts_strain[iStart+jStart+offsetStart2:iStart+jMax+1] = strainCompr
+                    
         
         #### (6) Deal with the non analysed compressions
         else: # The compression curve was detected as not suitable for analysis
             generalBug = True
             results['comments'][i] = 'Unspecified bug in the code'
-            print(currentCellID + ' - Compression no ' + str(i+1) + ' not suitable for analysis !')
+            print(gs.ORANGE + currentCellID + ' - Compression no ' + str(i+1) + ' not suitable for analysis !' + gs.NORMAL)
             
-        #### Save stress-strain [2/3] 
-        # Export a file "Timeseries_stress-strain"
-        if saveAnalysedTs:
-            ts_H0[iStart+jStart+offsetStart2:iStart+jMax+1].fill(bestH0)
-            ts_stress[iStart+jStart+offsetStart2:iStart+jMax+1] = stressCompr
-            ts_strain[iStart+jStart+offsetStart2:iStart+jMax+1] = strainCompr
+
     
     #### PLOT [3/4]
     
@@ -1642,7 +1647,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
         tsDF.to_csv(savePath, sep=';', index = False)
         if cp.CloudSaving != '':
             cloudSavePath = os.path.join(cp.DirCloudTimeseriesStressStrain, saveName)
-            tsDF.to_csv(savePath, sep=';', index = False)
+            tsDF.to_csv(cloudSavePath, sep=';', index = False)
     
         
     #### (8) Convert to dataFrame before returning
@@ -1653,13 +1658,17 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
 
 
 
-def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT):
+def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, expDf, PLOT=False):
     """
     Subfunction of computeGlobalTable_meca
     Create the dictionnary that will be converted in a pandas table in the end.
     """
-    expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
-    list_resultDf = []
+    # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+    # Initialize the list of results dataFrames with an empty one, but with the right columns
+    initDict = {k:[] for k in dictColumnsMeca.keys()}
+    initDf = pd.DataFrame(initDict)
+    list_resultDf = [initDf]
+    
     Nfiles = len(list_mecaFiles)
     for f in list_mecaFiles: #[:10]:
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
@@ -1716,23 +1725,38 @@ def updateUiDf_meca(ui_fileSuffix, mecaDf):
 
 
 
-def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData', 
+
+
+
+
+def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
+                            fileName = 'Global_MecaData', 
                             save = False, PLOT = False, \
-                            source = 'Matlab', dictColumnsMeca=dictColumnsMeca,
-                            ui_fileSuffix = 'UserManualSelection_MecaData'):
+                            source = 'Matlab', dictColumnsMeca=dictColumnsMeca):
     """
-    Compute the GlobalTable_meca from the time series data files.
-    Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
-    Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
-    DEPRECATED : listColumnsMeca have to contain all the fields of the table that will be constructed.
-    dictColumnsMeca have to contain all the fields of the table that will be constructed AND their default values !
+    Compute the GlobalTable_meca from the time series data files. \n
+    > mode = 'fromScratch' or 'updateExisting':\n
+    - 'fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.\n
+    - 'updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new files.\n
+    > task = 'all' or a string containing a file prefix, or several prefixes separated by ' & '.\n
+    
+    - 'all' will include in the analysis all the files that correspond to the chosen 'mode'.\n
+    - giving file prefixes will include in the analysis all the files that start with this prefix and correspond to the chosen 'mode'. Examples: task = '22-05-03' or task = '22-05-03_M1 & 22-05-04_M2 & 22-05-05'.\n
+    > fileName: the name of the table that will be created. If mode='updateExisting', it is this table that will be updated.\n
+    > save: save the final table or not.\n
+    > PLOT: save the plots or not.\n
+    > source: 'Matlab' or 'Python', default is 'Python'.\n
+    > dictColumnsMeca: dict that has to contain all the fields of the table that will be constructed AND their default values: dictColumnsMeca = {col1: defaultVal1, col2: defaultVal2, etc}.
     """
     top = time.time()
     
-#     list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and ('R40' in f))] # Change to allow different formats in the future
+    ui_fileSuffix = 'UserManualSelection_MecaData'
     
+    # 1. Initialization
+    # 1.1 Get the experimental dataframe
+    expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+    
+    # 1.2 Get the list of all meca files    
     suffixPython = '_PY'
     if source == 'Matlab':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
@@ -1743,71 +1767,97 @@ def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData',
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
-        # print(list_mecaFiles)
     
-#     print(list_mecaFiles)
-    
-    if task == 'fromScratch':
+    # 1.3 Exclude the ones that are not in expDf
+    listExcluded = []
+    listManips = expDf['manipID'].values
+    for i in range(len(list_mecaFiles)): 
+        # j = len(list_mecaFiles)-1 - i # going backward from len(list_mecaFiles)-1 to 0
+        f = list_mecaFiles[i]
+        manipID = ufun.findInfosInFileName(f, 'manipID')
+        if not manipID in listManips:
+            listExcluded.append(f)
+            
+    for f in listExcluded:
+        list_mecaFiles.remove(f)
+            
+    if len(listExcluded) > 0:
+        textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
+        print(gs.ORANGE + textExcluded)
+        for f in listExcluded:
+            print(f)
+        print(gs.NORMAL)
 
-        # create the dataFrame with new data
-        mecaDf = buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-        
-        # last step: now that the dataFrame is complete, one can use "compStartTimeThisDay" col to compute the start time of each compression relative to the first one done this day.
-        allDates = list(mecaDf['date'].unique())
-        for d in allDates:
-            subDf = mecaDf.loc[mecaDf['date'] == d]
-            experimentStartTime = np.min(subDf['compStartTimeThisDay'])
-            mecaDf['compStartTimeThisDay'].loc[mecaDf['date'] == d] = mecaDf['compStartTimeThisDay'] - experimentStartTime
-        
-    elif task == 'updateExisting':
-        # get existing table
+
+    # 2. Get the existing table if necessary
+    # 2.1
+    if mode == 'fromScratch':
+        existing_mecaDf = buildDf_meca([], dictColumnsMeca, 'fromScratch', expDf, PLOT=False)
+    # 2.2
+    elif mode == 'updateExisting':
         try:
             savePath = os.path.join(cp.DirDataAnalysis, (fileName + '.csv'))
             existing_mecaDf = pd.read_csv(savePath, sep=';')
         except:
             print('No existing table found')
-            
-        # find which of the time series files are new
-        new_list_mecaFiles = []
-        for f in list_mecaFiles:
-            currentCellID = ufun.findInfosInFileName(f, 'cellID')
-            if currentCellID not in existing_mecaDf.cellID.values:
-                new_list_mecaFiles.append(f)
-                
-        # create the dataFrame with new data
-        new_mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        # fuse the existing table with the new one
-        mecaDf = pd.concat([existing_mecaDf, new_mecaDf])
-        
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-        
-    else: # If task is neither 'fromScratch' nor 'updateExisting'
-    # Then task can be a substring that can be in some timeSeries file !
-    # It will create a table with only these files !
-
+    # 2.3
+    else:
+        existing_mecaDf = buildDf_meca([], dictColumnsMeca, 'fromScratch', expDf, PLOT=False)
+    
+    
+    # 3. Select the files to analyse from the list according to the task
+    list_taskMecaFiles = []
+    # 3.1
+    if task == 'all':
+        list_taskMecaFiles = list_mecaFiles
+    # 3.2
+    else:
         task_list = task.split(' & ')
-        new_list_mecaFiles = []
         for f in list_mecaFiles:
             currentCellID = ufun.findInfosInFileName(f, 'cellID')
             for t in task_list:
                 if t in currentCellID:
-                    new_list_mecaFiles.append(f)
+                    list_taskMecaFiles.append(f)
                     break
                 
-        # create the dataFrame with new data
-        mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-    
-    for c in mecaDf.columns:
-        if 'Unnamed' in c:
-            mecaDf = mecaDf.drop([c], axis=1)
-    
+    list_selectedMecaFiles = []
+    # 3.3
+    if mode == 'fromScratch':
+        list_selectedMecaFiles = list_taskMecaFiles
+        
+    # 3.4
+    elif mode == 'updateExisting':
+        for f in list_taskMecaFiles:
+            currentCellID = ufun.findInfosInFileName(f, 'cellID')
+            if currentCellID not in existing_mecaDf.cellID.values:
+                list_selectedMecaFiles.append(f)
+                
+                
+    # 4. Run the analysis on the files, by blocks of 10
+    Nfiles = len(list_selectedMecaFiles)
+    mecaDf = existing_mecaDf
+    for i in range(0, Nfiles, 10):
+        i_start, i_stop = i, min(i+10, Nfiles)
+        bloc_selectedMecaFiles = list_selectedMecaFiles[i_start:i_stop]
+        # MAIN SUBFUNCTION
+        new_mecaDf = buildDf_meca(bloc_selectedMecaFiles, dictColumnsMeca, task, expDf, PLOT)
+        mecaDf = pd.concat([mecaDf, new_mecaDf])
+        if save:
+            saveName = fileName + '.csv'
+            savePath = os.path.join(cp.DirDataAnalysis, saveName)
+            mecaDf.to_csv(savePath, sep=';', index = False)
+            textSave = 'Intermediate save {:.0f}/{:.0f} successful !'.format((i+10)//10, ((Nfiles-1)//10)+1)
+            print(gs.CYAN + textSave + gs.NORMAL)
+         
+            
+    # 5. Final save
     if save:
         saveName = fileName + '.csv'
         savePath = os.path.join(cp.DirDataAnalysis, saveName)
         mecaDf.to_csv(savePath, sep=';', index = False)
+        print(gs.BLUE + 'Final save successful !' + gs.NORMAL)
+    
+    updateUiDf_meca(ui_fileSuffix, mecaDf)
     
     duration = time.time() - top
     print(gs.DARKGREEN + 'Total time: {:.0f}s'.format(duration) + gs.NORMAL)
@@ -2136,7 +2186,115 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
 
 
 
-# def getGlobalTable(kind, DirDataExp = cp.DirRepoExp):
+# %% OLD CODE
+
+
+
+#### Old version of computeGlobalTable_meca ; archived on the 22-09-03
+
+# def computeGlobalTable_meca_v0(task = 'fromScratch', fileName = 'Global_MecaData', 
+#                             save = False, PLOT = False, \
+#                             source = 'Matlab', dictColumnsMeca=dictColumnsMeca,
+#                             ui_fileSuffix = 'UserManualSelection_MecaData'):
+#     """
+#     Compute the GlobalTable_meca from the time series data files.
+#     Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
+#     Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
+#     DEPRECATED : listColumnsMeca have to contain all the fields of the table that will be constructed.
+#     dictColumnsMeca have to contain all the fields of the table that will be constructed AND their default values !
+#     """
+#     top = time.time()
+    
+# #     list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
+# #                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
+# #                       and ('R40' in f))] # Change to allow different formats in the future
+    
+#     suffixPython = '_PY'
+#     if source == 'Matlab':
+#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
+#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
+#                       and (('R40' in f) or ('L40' in f)) and not (suffixPython in f))]
+        
+#     elif source == 'Python':
+#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
+#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
+#                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
+
+    
+#     if task == 'fromScratch':
+#         # create the dataFrame with new data
+#         mecaDf = buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+        
+#         updateUiDf_meca(ui_fileSuffix, mecaDf)
+        
+#         # last step: now that the dataFrame is complete, one can use "compStartTimeThisDay" col to compute the start time of each compression relative to the first one done this day.
+#         allDates = list(mecaDf['date'].unique())
+#         for d in allDates:
+#             subDf = mecaDf.loc[mecaDf['date'] == d]
+#             experimentStartTime = np.min(subDf['compStartTimeThisDay'])
+#             mecaDf['compStartTimeThisDay'].loc[mecaDf['date'] == d] = mecaDf['compStartTimeThisDay'] - experimentStartTime
+        
+#     elif task == 'updateExisting':
+#         # get existing table
+#         try:
+#             savePath = os.path.join(cp.DirDataAnalysis, (fileName + '.csv'))
+#             existing_mecaDf = pd.read_csv(savePath, sep=';')
+#         except:
+#             print('No existing table found')
+            
+#         # find which of the time series files are new
+#         new_list_mecaFiles = []
+#         for f in list_mecaFiles:
+#             currentCellID = ufun.findInfosInFileName(f, 'cellID')
+#             if currentCellID not in existing_mecaDf.cellID.values:
+#                 new_list_mecaFiles.append(f)
+                
+#         # create the dataFrame with new data
+#         new_mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+#         # fuse the existing table with the new one
+#         mecaDf = pd.concat([existing_mecaDf, new_mecaDf])
+        
+#         updateUiDf_meca(ui_fileSuffix, mecaDf)
+        
+#     else: # If task is neither 'fromScratch' nor 'updateExisting'
+#     # Then task can be a substring that can be in some timeSeries file !
+#     # It will create a table with only these files !
+
+#         task_list = task.split(' & ')
+#         new_list_mecaFiles = []
+#         for f in list_mecaFiles:
+#             currentCellID = ufun.findInfosInFileName(f, 'cellID')
+#             for t in task_list:
+#                 if t in currentCellID:
+#                     new_list_mecaFiles.append(f)
+#                     break
+                
+#         # create the dataFrame with new data
+#         mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+#         updateUiDf_meca(ui_fileSuffix, mecaDf)
+    
+#     for c in mecaDf.columns:
+#         if 'Unnamed' in c:
+#             mecaDf = mecaDf.drop([c], axis=1)
+    
+#     if save:
+#         saveName = fileName + '.csv'
+#         savePath = os.path.join(cp.DirDataAnalysis, saveName)
+#         mecaDf.to_csv(savePath, sep=';', index = False)
+    
+#     duration = time.time() - top
+#     print(gs.DARKGREEN + 'Total time: {:.0f}s'.format(duration) + gs.NORMAL)
+    
+#     return(mecaDf)
+
+
+
+
+
+
+#### Old version of getGlobalTable ; archived on the 22-08-26
+
+# def getGlobalTable_v0(kind, DirDataExp = cp.DirRepoExp):
 #     if kind == 'ctField':
 #         GlobalTable = getGlobalTable_ctField()
 #         expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
