@@ -72,7 +72,7 @@ DirDataAnalysisUMS = os.path.join(DirDataAnalysis, "UserManualSelection")
 DirDataTimeseries = os.path.join(DirData, "Data_Timeseries")
 DirDataTimeseriesRawtraj = os.path.join(DirDataTimeseries, "Trajectories_raw")
 DirDataTimeseriesTraj = os.path.join(DirDataTimeseries, "Trajectories")
-DirDataTimeseriesStressStrain = os.path.join(DirDataTimeseries, "Trajectories_stress-strain")
+DirDataTimeseriesStressStrain = os.path.join(DirDataTimeseries, "Timeseries_stress-strain")
 
 DirDataFig = os.path.join(DirData, "Figures")
 DirDataFigToday = os.path.join(DirDataFig, "Historique", str(date.today()))
@@ -82,7 +82,7 @@ if not CloudSaving == '':
     DirCloudAnalysis = os.path.join(DirCloud, "Data_Analysis")
     DirCloudAnalysisUMS = os.path.join(DirCloudAnalysis, "UserManualSelection")
     DirCloudTimeseries = os.path.join(DirCloud, "Data_Timeseries")
-    DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Trajectories_stress-strain")
+    DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Timeseries_stress-strain")
     DirCloudFig = os.path.join(DirCloud, "Figures")
     DirCloudFigToday = os.path.join(DirCloudFig, "Historique", str(date.today()))
 else:

@@ -118,33 +118,33 @@ df = taka.getGlobalTable_ctField().head()
 
 # %%%% Update the table
 
-# taka.computeGlobalTable_meca(task = 'updateExisting', fileName = 'Global_MecaData_Py', 
-#                             save = False, PLOT = False, source = 'Matlab') # task = 'updateExisting'
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'Global_MecaData_Py2', 
+                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% Refresh the whole table
 
-# taka.computeGlobalTable_meca(task = 'updateExisting', fileName = 'Global_MecaData_Py2', 
+# taka.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Global_MecaData_Py2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Drugs
 
 drugTask = '22-03-30'
-# taka.computeGlobalTable_meca(task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
+# taka.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
 #                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% Non-Lin
 
 nonLinTask = '21-12-08 & 22-01-12 & 22-02-09'
-taka.computeGlobalTable_meca(task = nonLinTask, fileName = 'Global_MecaData_NonLin_Py', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = nonLinTask, fileName = 'Global_MecaData_NonLin_Py', 
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% MCA
 
 MCAtask = '21-01-18 & 21-01-21'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA', 
-#                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCAtask, fileName = 'Global_MecaData_MCA', 
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
@@ -160,14 +160,14 @@ HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
 # %%%% MCA & HoxB8
 
 MCA_and_HoxB8_task = MCAtask + ' & ' + HoxB8task
-taka.computeGlobalTable_meca(task = MCA_and_HoxB8_task, fileName = 'Global_MecaData_MCA-HoxB8', 
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA_and_HoxB8_task, fileName = 'Global_MecaData_MCA-HoxB8', 
                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% HoxB8
 
 HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8', 
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = HoxB8task, fileName = 'Global_MecaData_HoxB8', 
                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
@@ -175,16 +175,16 @@ taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8
 # %%%% New MCA 2022
 
 MCA2task = '22-07-15' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(task = MCA2task, fileName = 'Global_MecaData_MCA3', 
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA2task, fileName = 'Global_MecaData_MCA3', 
                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-# %%%% Demo for Duya
+# %%%% Tests
 
-Demo = '22-06-16' #' & 22-05-04 & 22-05-05'
-# taka.computeGlobalTable_meca(task = Demo, fileName = 'Global_MecaData_Demo', 
-#                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
+Test = '22-05-03_M3'#' & 22-05-04_M2' #' & 22-05-04 & 22-05-05'
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = Test, fileName = 'Global_MecaData_Demo', 
+                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
@@ -198,8 +198,8 @@ Demo = '22-06-16' #' & 22-05-04 & 22-05-05'
 #                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = '21-01-18_M2_P1_C3', fileName = 'Global_MecaData_NonLin2_Py', 
 #                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-taka.computeGlobalTable_meca(task = '22-02-09_M1_P1_C3', fileName = 'aaa', 
-                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+# taka.computeGlobalTable_meca(task = '22-02-09_M1_P1_C3', fileName = 'aaa', 
+#                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% Display
