@@ -742,7 +742,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
-    print(gs.GREEN + f + gs.NORMAL)
+    print(gs.BLUE + f + gs.NORMAL)
     
     #### (0) Import experimental infos
     tsDF.dx, tsDF.dy, tsDF.dz, tsDF.D2, tsDF.D3 = tsDF.dx*1000, tsDF.dy*1000, tsDF.dz*1000, tsDF.D2*1000, tsDF.D3*1000
@@ -1340,8 +1340,10 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
                 thisAx6.set_xlim([0, 1200])
                 thisAx6.set_ylabel('K (kPa)')
                 
-                relativeError = np.zeros(len(K_fitToPlot))
+                
                 if not fitError and not error_bestH0:
+                    
+                    relativeError = np.zeros(len(K_fitToPlot))
                     
                     for k in range(len(fitsToPlot)):
                         fit = fitsToPlot[k]
@@ -1768,25 +1770,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
     
-    # 1.3 Exclude the ones that are not in expDf
-    listExcluded = []
-    listManips = expDf['manipID'].values
-    for i in range(len(list_mecaFiles)): 
-        # j = len(list_mecaFiles)-1 - i # going backward from len(list_mecaFiles)-1 to 0
-        f = list_mecaFiles[i]
-        manipID = ufun.findInfosInFileName(f, 'manipID')
-        if not manipID in listManips:
-            listExcluded.append(f)
-            
-    for f in listExcluded:
-        list_mecaFiles.remove(f)
-            
-    if len(listExcluded) > 0:
-        textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
-        print(gs.ORANGE + textExcluded)
-        for f in listExcluded:
-            print(f)
-        print(gs.NORMAL)
+
 
 
     # 2. Get the existing table if necessary
@@ -1803,6 +1787,8 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
     # 2.3
     else:
         existing_mecaDf = buildDf_meca([], dictColumnsMeca, 'fromScratch', expDf, PLOT=False)
+    
+    
     
     
     # 3. Select the files to analyse from the list according to the task
@@ -1831,6 +1817,28 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
             currentCellID = ufun.findInfosInFileName(f, 'cellID')
             if currentCellID not in existing_mecaDf.cellID.values:
                 list_selectedMecaFiles.append(f)
+                
+                
+                
+        # 1.3 Exclude the ones that are not in expDf
+        listExcluded = []
+        listManips = expDf['manipID'].values
+        for i in range(len(list_selectedMecaFiles)): 
+            f = list_selectedMecaFiles[i]
+            manipID = ufun.findInfosInFileName(f, 'manipID')
+            if not manipID in listManips:
+                listExcluded.append(f)
+                
+        for f in listExcluded:
+            list_selectedMecaFiles.remove(f)
+                
+        if len(listExcluded) > 0:
+            textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
+            print(gs.ORANGE + textExcluded)
+            for f in listExcluded:
+                print(f)
+            print(gs.NORMAL)
+            
                 
                 
     # 4. Run the analysis on the files, by blocks of 10
