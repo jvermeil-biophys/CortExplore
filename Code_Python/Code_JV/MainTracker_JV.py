@@ -73,6 +73,53 @@ plt.close('all')
 # %%%% Next manipe
 # %%%% Next manipe
 
+# %% 3T3 aSFL long linkers - july 2022
+
+# %%% 22.07.27, compressionsLowStart of 3T3aSFL - M1 = F8 ctrl ; M2 = F8 doxy ; M3 = E4 ctrl ; M4 = E4 doxy
+# %%%% 22.07.27 one specific cell
+dates = '22.07.27'
+manips, wells, cells = 3, 1, [2, 5]
+depthoNames = '22.07.27_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.27_M1
+dates = '22.07.27'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '22.07.27_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.27_M2
+dates = '22.07.27'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '22.07.27_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.27_M3
+dates = '22.07.27'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '22.07.27_M3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.27_M4
+dates = '22.07.27'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '22.07.27_M4_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
 
 # %%% 22.07.20, compressionsLowStart of 3T3aSFL - M1 = A11 doxy ; M2 = A11 ctrl ; M3 = E4 doxy ; M4 = E4 ctrl
 # %%%% 22.07.20 one specific cell
