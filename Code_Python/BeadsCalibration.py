@@ -33,83 +33,21 @@ from scipy.optimize import linear_sum_assignment, curve_fit
 from matplotlib.gridspec import GridSpec
 
 
-# Add the folder to path
-COMPUTERNAME = os.environ['COMPUTERNAME']
-if COMPUTERNAME == 'ORDI-JOSEPH':
-    mainDir = "C://Users//JosephVermeil//Desktop//ActinCortexAnalysis"
-    ownCloudDir = "C://Users//JosephVermeil//ownCloud//ActinCortexAnalysis"
-    tempPlot = 'C://Users//JosephVermeil//Desktop//TempPlots'
-elif COMPUTERNAME == 'LARISA':
-    mainDir = "C://Users//Joseph//Desktop//ActinCortexAnalysis"
-    ownCloudDir = "C://Users//Joseph//ownCloud//ActinCortexAnalysis"
-    tempPlot = 'C://Users//Joseph//Desktop//TempPlots'
-elif COMPUTERNAME == '':
-    mainDir = "C://Users//josep//Desktop//ActinCortexAnalysis"
-    ownCloudDir = "C://Users//josep//ownCloud//ActinCortexAnalysis"
-    tempPlot = 'C://Users//josep//Desktop//TempPlots'
+#### Local Imports
 
 import sys
-sys.path.append(mainDir + "//Code_Python")
-from utilityFunctions_JV import *
+import CortexPaths as cp
+sys.path.append(cp.DirRepoPython)
+
+import GraphicStyles as gs
+import GlobalConstants as gc
+import UtilityFunctions as ufun
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment', None)
 
 # 3. Plot settings
-# Here we use this mode because displaying images 
-# in new windows is more convenient for this code.
-# %matplotlib qt 
-# matplotlib.use('Qt5Agg')
-# To switch back to inline display, use : 
-# %matplotlib widget or %matplotlib inline
-# matplotlib.rcParams.update({'figure.autolayout': True})
-
-SMALLER_SIZE = 8
-SMALL_SIZE = 12
-MEDIUM_SIZE = 16
-BIGGER_SIZE = 20
-plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
-colorList10 = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-
-bigPalette1 = sns.color_palette("tab20b")
-bigPalette1_hex = bigPalette1.as_hex()
-
-bigPalette2 = sns.color_palette("tab20c")
-bigPalette2_hex = bigPalette2.as_hex()
-
-colorList30 = []
-for ii in range(2, -1, -1):
-    colorList30.append(bigPalette2_hex[4*0 + ii]) # blue
-    colorList30.append(bigPalette2_hex[4*1 + ii]) # orange
-    colorList30.append(bigPalette2_hex[4*2 + ii]) # green
-    colorList30.append(bigPalette1_hex[4*3 + ii]) # red
-    colorList30.append(bigPalette2_hex[4*3 + ii]) # purple
-    colorList30.append(bigPalette1_hex[4*2 + ii]) # yellow-brown
-    colorList30.append(bigPalette1_hex[4*4 + ii]) # pink
-    colorList30.append(bigPalette1_hex[4*0 + ii]) # navy    
-    colorList30.append(bigPalette1_hex[4*1 + ii]) # yellow-green
-    colorList30.append(bigPalette2_hex[4*4 + ii]) # gray
-
-# 4. Other settings
-# These regex are used to correct the stupid date conversions done by Excel
-dateFormatExcel = re.compile('\d{2}/\d{2}/\d{4}')
-dateFormatExcel2 = re.compile('\d{2}-\d{2}-\d{4}')
-dateFormatOk = re.compile('\d{2}-\d{2}-\d{2}')
-
-# 5. Global constants
-SCALE_100X = 15.8 # pix/µm 
-NORMAL  = '\033[0m'
-RED  = '\033[31m' # red
-GREEN = '\033[32m' # green
-ORANGE  = '\033[33m' # orange
-BLUE  = '\033[36m' # blue
+gs.set_default_options_jv()
 
 # %% (1) Functions
 
@@ -171,8 +109,8 @@ def mainChainAnalysis(mainPath, depthoPath, approxDiameter):
         X, Y, Z, Z_quality = oneChainXYZ(I, resDf, depthoHD, depthoZFocusHD, 
                                          depthoStepHD, approxDiameter)
         
-        X = X / SCALE_100X
-        Y = Y / SCALE_100X
+        X = X / gc.SCALE_100X
+        Y = Y / gc.SCALE_100X
         Z = Z * depthoStepHD/1000
         
         # All 3 coordinates are now in microns
@@ -344,8 +282,8 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
             X, Y, Z, Z_quality = oneChainNupXYZ(I, resDf, nUplet, depthoHD, depthoZFocusHD, 
                                      depthoStepHD, approxDiameter, ImgZStep = 1000*dZ_nUplets)
             
-            X = X / SCALE_100X
-            Y = Y / SCALE_100X
+            X = X / gc.SCALE_100X
+            Y = Y / gc.SCALE_100X
             Z = Z * depthoStepHD/1000
             
             # All 3 coordinates are now in microns
@@ -462,7 +400,7 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
 
     listXY = np.array([X, Y]).T
 
-    cleanSize = getDepthoCleanSize(D, scale)
+    cleanSize = ufun.getDepthoCleanSize(D, scale)
     hdSize = deptho.shape[1]
     depthoDepth = deptho.shape[0]
     listProfiles = np.zeros((Nframes, hdSize))
@@ -514,13 +452,13 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
     listDistances = np.zeros((Nframes, depthoDepth))
     listZ = np.zeros(Nframes, dtype = int)
     for i in range(Nframes):
-        listDistances[i] = squareDistance(deptho, listProfiles[i], normalize = True) # Utility functions       
+        listDistances[i] = ufun.squareDistance(deptho, listProfiles[i], normalize = True) # Utility functions       
         listZ[i] = np.argmin(listDistances[i])
         
     # Translate the profiles that must be translated (status_frame 1 & 3 if Nup = 3)
     # and don't move the others (status_frame 2 if Nup = 3 or the 1 profile when Nup = 1)
     if Nup > 1:
-        finalDists = matchDists(listDistances, [i for i in range(1, Nup+1)], Nup, 
+        finalDists = ufun.matchDists(listDistances, [i for i in range(1, Nup+1)], Nup, 
                                 nVoxels, direction = matchingDirection)
     elif Nup == 1:
         finalDists = listDistances
@@ -664,7 +602,7 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
         if Nframes == 3:
             color = ['orange', 'gold', 'green']
         else:
-            color = colorList30
+            color = gs.colorList30
             
         for i in range(Nframes):
             axes[1,i].imshow(listROI[i])
@@ -781,7 +719,7 @@ def computeDepthoQuality(depthoPath):
     for z in range(Ddz):
         
         profile_z = depthoHD[z, :]
-        listDistances[z] = squareDistance(depthoHD, profile_z, normalize = True) # Utility functions
+        listDistances[z] = ufun.squareDistance(depthoHD, profile_z, normalize = True) # Utility functions
         z_start = max(0, z - dz_fitPoly)
         z_stop = min(Ddz - 1, z + dz_fitPoly)
         # print(z, z_start, z_stop)
@@ -804,7 +742,7 @@ def computeDepthoQuality(depthoPath):
 # %%% (3.1) SCRIPT for simple chains
 
 mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationNewM450//Chains'
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.03.21_CALIBRATION_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
 
 
 xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.5)
@@ -813,14 +751,14 @@ xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.
 # %%% (3.2) SCRIPT for deptho chains 2nd try
 
 mainPath = 'D://MagneticPincherData//Raw//22.04.29_CalibrationM450-2023_SecondTry//DepthoChains'
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.04.29_CALIBRATION_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.04.29_CALIBRATION_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
 
 # %%% (3.2) SCRIPT for deptho chains 1st try
 
 mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationM450-2023_FirstTry//DepthoChains'
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.03.21_CALIBRATION_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
 
@@ -829,20 +767,20 @@ xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath,
 # %%%% New obj 2
 
 # mainPath = 'D://MagneticPincherData//Raw//22.04.29_CalibrationNewM450//DepthoChains'
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.04.29_CALIBRATION_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.04.29_CALIBRATION_M450_step20_100X'
 
 listZQualityNewObj = computeDepthoQuality(depthoPath)
 
 # %%%% New obj
 
 # mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationNewM450//DepthoChains'
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.03.21_CALIBRATION_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
 
 listZQualityNewObj = computeDepthoQuality(depthoPath)
 
 # %%%% Old obj
 
-depthoPath = 'D://MagneticPincherData//Raw//EtalonnageZ//22.02.09_M1_M450_step20_100X'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.02.09_M1_M450_step20_100X'
 
 listZQualityOldObj = computeDepthoQuality(depthoPath)
 

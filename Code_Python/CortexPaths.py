@@ -72,7 +72,7 @@ DirDataAnalysisUMS = os.path.join(DirDataAnalysis, "UserManualSelection")
 DirDataTimeseries = os.path.join(DirData, "Data_Timeseries")
 DirDataTimeseriesRawtraj = os.path.join(DirDataTimeseries, "Trajectories_raw")
 DirDataTimeseriesTraj = os.path.join(DirDataTimeseries, "Trajectories")
-DirDataTimeseriesStressStrain = os.path.join(DirDataTimeseries, "Trajectories_stress-strain")
+DirDataTimeseriesStressStrain = os.path.join(DirDataTimeseries, "Timeseries_stress-strain")
 
 DirDataFig = os.path.join(DirData, "Figures")
 DirDataFigToday = os.path.join(DirDataFig, "Historique", str(date.today()))
@@ -82,7 +82,7 @@ if not CloudSaving == '':
     DirCloudAnalysis = os.path.join(DirCloud, "Data_Analysis")
     DirCloudAnalysisUMS = os.path.join(DirCloudAnalysis, "UserManualSelection")
     DirCloudTimeseries = os.path.join(DirCloud, "Data_Timeseries")
-    DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Trajectories_stress-strain")
+    DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Timeseries_stress-strain")
     DirCloudFig = os.path.join(DirCloud, "Figures")
     DirCloudFigToday = os.path.join(DirCloudFig, "Historique", str(date.today()))
 else:
@@ -184,47 +184,101 @@ def makeDirArchi():
                 
 # %% Final Architecture (Ongoing)
 
+# Notes:
+# > ## is the user's suffix (AJ: Anumita Jawahar, JV: Joseph Vermeil, DB: Dulamkhuu Bujaa).
+
 # C:/
 # ├─ Users/
 # │  ├─ User/
 # │  │  ├─ Desktop/
 # │  │  │  ├─ CortExplore/
-# │  │  │  │  ├─ .Data_BeadsCalibration/
-# │  │  │  │  ├─ .Data_Experimental/
-# │  │  │  │  ├─ .git/
+# │  │  │  │  ├─ Data_BeadsCalibration/
+# │  │  │  │  │  ├─ Contains files regarding the calibration of beads lots.
+# │  │  │  │  │ 
+# │  │  │  │  ├─ Data_Experimental/
+# │  │  │  │  │  ├─ The VERY IMPORTANT experimental data table (.csv).
+# │  │  │  │  │ 
 # │  │  │  │  ├─ Code_IJ/
+# │  │  │  │  │  ├─ Any homemade ImageJ macro or plugIn.
+# │  │  │  │  │ 
 # │  │  │  │  ├─ Code_Matlab/
+# │  │  │  │  │  ├─ Any matlab coded program. For now mainly the Photomask drawing.
+# │  │  │  │  │ 
 # │  │  │  │  ├─ Code_Python/
+# │  │  │  │  │  ├─ Code_##/ 		 -> Personnal code! Code to analyse, or to plot the data. Mainly scripts.
+# │  │  │  │  │  ├─ Code_NewUser/ 	 -> Similar to Code_## but contains ~empty scripts, ready to be copied and used in case there is a new user for this code.
+# │  │  │  │  │  ├─ UtilityScript/  	 -> Ponctually useful scripts: CleaningTXTFile_AJ, ComputeHalbachField, FileModifs, FluoProfileAnalysis.
+# │  │  │  │  │  ├─ OldCode/ 		 -> Archive of previously used programs.
+# │  │  │  │  │  ├─ TestScript/ 		 -> Archive of programs used as test or prototypes.
+# │  │  │  │  │  ├─ ImagesPreprocessing.py -> Raw images on external drives TO croped images on local drive.
+# │  │  │  │  │  ├─ BeadTracker.py	 -> Croped images on local drive TO timeseries (.csv) files (see below).
+# │  │  │  │  │  ├─ TrackAnalyser.py	 -> Timeseries (.csv) files TO complex mechanical analysis, results saved in large tables (.csv).
+# │  │  │  │  │  ├─ UtilityFunctions.py	 -> Many subfunctions called by diverse programms.
+# │  │  │  │  │  ├─ CortexPaths.py	 -> Sets all the paths depending of the computer being used to run the code.
+# │  │  │  │  │  ├─ GlobalConstants.py	 -> Contains all the important constants common to all programms.
+# │  │  │  │  │  ├─ GraphicStyles.py	 -> Contains useful variables and functions for plotting data in other programms.
+# │  │  │  │  │  ├─ BeadsCalibration.py	 -> Contains the function used to calibrate a new lot of beads.
+# │  │  │  │  │ 
 # │  │  │  │  ├─ LICENSE
 # │  │  │  │  ├─ README.md
+# │  │  │  │  ├─ .git/
+# │  │  │  │ 
+# │  │  │  │ 
 # │  │  ├─ ownCloud/
-# │  │  │  ├─ MagneticPincherData_##/
+# │  │  │  ├─MagneticPincherData_##/
 # │  │  │  │  ├─ Data_Analysis/
-# │  │  │  │  │  ├─ new_folder/
-# │  │  │  │  │  ├─ new_folder/
-# │  │  │  │  ├─ Data_Experiemental/
-# │  │  │  │  ├─ Data_BeadsCalibration/
+# │  │  │  │  │  ├─ All the large analysed data tables (.csv).
+# │  │  │  │  │
+# │  │  │  │  ├─ Data_Experimental/
+# │  │  │  │  │  ├─ The VERY IMPORTANT experimental data table(.csv).
+# │  │  │  │  │
+# │  │  │  │  ├─ Data_Timeseries/
+# │  │  │  │  │  ├─ All timeseries files (.csv) -> For each cell: F, B, dx, dy, dz, D3 as function of T.
+# │  │  │  │  │  ├─ Trajectories_raw/
+# │  │  │  │  │  │  ├─ All trajectories_raw files (.csv) -> For each bead: x, y, z as function of T, in an intermediate step of the tracking.
+# │  │  │  │  │  ├─ Trajectories/
+# │  │  │  │  │  │  ├─ All trajectories files (.csv) -> For each bead: x, y, z as function of T, in the end of the tracking.
+# │  │  │  │  │  ├─ Data_Timeseries_stress-strain/
+# │  │  │  │  │  │  ├─ All timeseries_stress-strain files (.csv) -> Same as timeseries BUT also with H0, stress & strain!
+# │  │  │  │  │  │
 # │  │  │  │  ├─ Figures/
+# │  │  │  │  │  ├─ Historique/
+# │  │  │  │  │  │  ├─ Folders for each dates with the figures of this days
+# │  │  │  │  │  ├─ Folders for various themes/projects...
+# │  │  │  │  │  │  ├─ Figures related to this theme/project...
+# │
+# │
 # D:/
 # ├─ MagneticPincherData/
 # │  ├─ Data_Analysis/
-# │  │  ├─ GlobalTable.csv
-# │  ├─ Data_BeadsCalibration/
+# │  │  ├─ All the large analysed data tables (.csv).
+# │  │ 
 # │  ├─ Data_Experimental/
-# │  ├─ Data_TimeSeries/
-# │  │  ├─ Trajectories/
+# │  │  ├─ The VERY IMPORTANT experimental data table (.csv).
+# │  │ 
+# │  ├─ Data_Timeseries/
+# │  │  ├─ All timeseries files (.csv) -> For each cell: F, B, dx, dy, dz, D3 as function of T.
 # │  │  ├─ Trajectories_raw/
-# │  │  ├─ yy-mm-dd_M#_P#_C#.csv
+# │  │  │  ├─ All trajectories_raw files (.csv) -> For each bead: x, y, z as function of T, in an intermediate step of the tracking.
+# │  │  ├─ Trajectories/
+# │  │  │  ├─ All trajectories files (.csv) -> For each bead: x, y, z as function of T, in the end of the tracking.
+# │  │  ├─ Data_Timeseries_stress-strain/
+# │  │  │  ├─ All timeseries_stress-strain files (.csv) -> Same as timeseries BUT also with H0, stress & strain!
+# │  │ 
 # │  ├─ Figures/
+# │  │  ├─ Historique/
+# │  │  │  ├─ Folders for each dates with the figures of this days
+# │  │  ├─ Folders for various themes/projects...
+# │  │  │  ├─ Figures related to this theme/project...
+# │  │ 
 # │  ├─ Raw/
 # │  │  ├─ DepthoLibrary/
-# │  │  ├─ yy.mm.dd/
-# │  │  ├─ yy.mm.dd_Deptho/
-# new_folder/
-# new_folder/
-# new_folder/
-# new_folder/
-# new_file
+# │  │  │  ├─ Intermediate_Py/
+# │  │  │  ├─ All the final depthographs images (.tif).
+# │  │  ├─ yy.mm.dd/	  -> Raw timelapse images (.tif), Fields.txt and .Results.txt files for this experiment day.
+# │  │  ├─ yy.mm.dd_Deptho/ -> Raw deptho stacks (.tif) and .Results.txt files for this experiment day.
+# │  │  ├─ yy.mm.dd_Fluo/   -> Potentially, fluo images (.tif) as extracted from the timelapse.
+
 
                 
                 

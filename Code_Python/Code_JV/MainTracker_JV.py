@@ -50,7 +50,7 @@ gs.set_default_options_jv()
 
 # 4. Import of the experimental conditions
 
-expDf = ufun.getExperimentalConditions(DirExp = cp.DirRepoExp, save = True, sep = ';', suffix = cp.suffix)
+expDf = ufun.getExperimentalConditions(DirExp = cp.DirRepoExp, save = True, suffix = cp.suffix)
 
 # %% Small things
 
@@ -74,8 +74,54 @@ plt.close('all')
 # %%%% Next manipe
 
 
+# %%% 22.07.20, compressionsLowStart of 3T3aSFL - M1 = A11 doxy ; M2 = A11 ctrl ; M3 = E4 doxy ; M4 = E4 ctrl
+# %%%% 22.07.20 one specific cell
+dates = '22.07.20'
+manips, wells, cells = 1, 1, 1
+depthoNames = '22.07.20_M1_M450_step20_100X'
 
-# %%% 22.07.15, compressionsLowStart of HoxB8 macrophages, M450, M1 = ctrl & 20um discs, M2 = tko & 20um discs, M3 = tko & glass, M4 = ctrl & glass
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.20_M1
+dates = '22.07.20'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '22.07.20_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.20_M2
+dates = '22.07.20'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '22.07.20_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.20_M3
+dates = '22.07.20'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '22.07.20_M3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 22.07.20_M4
+dates = '22.07.20'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '22.07.20_M4_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 22.07.15, compressionsLowStart of 3T3aSFL - M1 = F8 doxy ; M2 = F8 ctrl ; M3 = A11 doxy ; M4 = A11 ctrl
 # %%%% 22.07.15 one specific cell
 dates = '22.07.15'
 manips, wells, cells = 1, 1, 1
