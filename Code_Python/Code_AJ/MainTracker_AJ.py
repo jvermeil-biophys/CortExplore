@@ -293,7 +293,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : Global activation
 
 dates = '22.03.01'
-manips, wells, cells = 1, 1, 5
+manips, wells, cells = 1, 2, 'all'
 depthoNames = '22.03.01_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -329,11 +329,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : Global activation, 60s frequency
 
 dates = '22.03.22'
-manips, wells, cells = 1, 1, 1
+manips, wells, cells = 1, 'all', 'all'
 depthoNames = '22.03.22_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -375,8 +375,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M5 : Global activation, 30s frequency, fixed duration
 
 dates = '22.03.22'
-manips, wells, cells = 5, 2, 4
-depthoNames = '22.03.22_P1_M450_step20_100X'
+manips, wells, cells = 5, 'all', 'all'
+depthoNames = '22.03.22_P2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
@@ -389,8 +389,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : At beads - might have stopped activation after 3mins (wrong version of Metamorph state loaded by accident)
 
 dates = '22.05.09'
-manips, wells, cells = 1, 1, 1
-depthoNames = '22.05.09_P1_M450_step20_100X'
+manips, wells, cells = 1, 2, 'all'
+depthoNames = '22.05.09_P2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
@@ -413,8 +413,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : Global activation, 60s frequency
 
 dates = '22.05.09'
-manips, wells, cells = 3, 2, 'all'
-depthoNames = '22.05.09_P2_M450_step20_100X'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '22.05.09_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
@@ -437,8 +437,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M5 : Global activation, 60s frequency
 
 dates = '22.05.09'
-manips, wells, cells = 5, 1, 'all'
-depthoNames = '22.05.09_P1_M450_step20_100X'
+manips, wells, cells = 5, 2, 'all'
+depthoNames = '22.05.09_P2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
@@ -456,6 +456,112 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
+# %% 09/06/2022 :
+
+# %%%% M1 : At beads - might have stopped activation after 3mins (wrong version of Metamorph state loaded by accident)
+
+dates = '22.06.09'
+manips, wells, cells = 1, 1, 5
+depthoNames = '22.06.09_P1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M2 : Global activation, 60s frequency
+
+dates = '22.06.09'
+manips, wells, cells = 2, 3, 6
+depthoNames = '22.06.09_P3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M3 : Global activation, 60s frequency
+
+dates = '22.06.09'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '22.06.09_P3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M4 : Global activation, 60s frequency
+
+dates = '22.06.09'
+manips, wells, cells = 4,2, 'all'
+depthoNames = '22.06.09_P2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M5 : Global activation, 60s frequency
+
+dates = '22.06.09'
+manips, wells, cells = 5, 2, 'all'
+depthoNames = '22.06.09_P2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M6 : Global activation, 60s frequency
+
+dates = '22.06.09'
+manips, wells, cells = 6, 2, 'all'
+depthoNames = '22.06.09_P2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %% 21/06/2022 :
+
+# %%%% M1 : At beads - might have stopped activation after 3mins (wrong version of Metamorph state loaded by accident)
+
+dates = '22.06.21'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '22.06.21_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M2 : Global activation, 60s frequency
+
+dates = '22.06.21'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '22.06.21_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% M3 : Global activation, 60s frequency
+
+dates = '22.06.21'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '22.06.09_P3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
 
 
 # %% 26/07/2022 :
@@ -632,22 +738,32 @@ manips, wells, cells = 1, 'all', 'all'
 depthoNames = '22.04.28_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
+# %%%% M1 : Half activation, away from beads, 500ms first followed by 10ms
 
-# %% 31/05/2022 : Experiment in PMMH Mechanics
+dates = '22.04.28'
+manips, wells, cells = 2, 1, 2
+depthoNames = '22.04.28_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %% 31/05/2022 : Experiment in PMMH Mechanics. 1mg/ml PLL-PEG, Epoxy beads 4.5um
 
 # %%%% M1 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
 # with 50ms activation at the end of every loop
 
 dates = '22.05.31'
-manips, wells, cells = 6, 'all', 'all'
-depthoNames = '22.05.31_P1_M450_step20_100X'
+
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '22.05.31_P3_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -656,11 +772,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.05.31'
-manips, wells, cells = 4, 1, 'all'
+manips, wells, cells = 7, 2, 'all'
 depthoNames = '22.05.31_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -669,8 +785,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.05.31'
-manips, wells, cells = 5, 1, 4
-depthoNames = '22.05.31_P2_M450_step20_100X'
+manips, wells, cells = 5, 1, 'all'
+depthoNames = '22.05.31_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
@@ -682,11 +798,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.05.31'
-manips, wells, cells = 7, 2, 'all'
+manips, wells, cells = 7, 1, 8
 depthoNames = '22.05.31_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 # %% 31/08/26 : Experiment in PMMH Mechanics
@@ -695,8 +811,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.08.26'
-manips, wells, cells = 1, 3, 3
-depthoNames = '22.08.26_P3_M450_step20_100X'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '22.08.26_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, MatlabStyle = True, trackAll = False, 
@@ -745,8 +861,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.08.26'
-manips, wells, cells = 5, 1, 4
-
+manips, wells, cells = 5, 2, 2
 depthoNames = '22.08.26_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -768,8 +883,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.08.26'
-manips, wells, cells = 7, 2, 5
-depthoNames = '22.08.26_P3_M450_step20_100X'
+manips, wells, cells = 7, 2, 'all'
+depthoNames = '22.08.26_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, MatlabStyle = True, trackAll = False, 
@@ -780,9 +895,9 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # with 50ms activation at the end of every loop
 
 dates = '22.08.26'
-manips, wells, cells = 8, 3, 'all'
-depthoNames = '22.08.26_P3_M450_step20_100X'
+manips, wells, cells = 10, 1, 2
+depthoNames = '22.08.26_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')

@@ -68,4 +68,4 @@ date,manip,experimentType,drug,substrate,objective magnification,scale pixel per
 22-08-26,M7,compressionsLowStart,none,20um fibronectin discs,100X,15.8,oil,0.875,1.0,3T3,optoRhoA,M450,4503,0,5,1_50,1s,1.0,,1.0,300,away from beads,3.3,False,3,500,302_133,labview
 22-08-26,M8,compressionsLowStart,none,20um fibronectin discs,100X,15.8,oil,0.875,1.0,3T3,optoRhoA,M450,4503,0,5,0.5_0.5,1s,1.0,,1.0,300,at beads,3.3,False,3,500,436_200,labview
 22-08-26,M9,compressionsLowStart,none,20um fibronectin discs,100X,15.8,oil,0.875,1.0,3T3,optoRhoA,M450,4503,0,15,15_15,1s,1.0,,1.0,300,at beads,3.3,False,3,500,217_90,labview
-22-08-26,M10,compressionsLowStart,none,20um fibronectin discs,100X,15.8,oil,0.875,1.0,3T3,optoRhoA,M450,4503,0,5,1_50,1s,1.0,14,1.0,300,at beads,3.3,False,3,500,302_133,labview
+22-08-26,M10,compressionsLowStart,none,20um fibronectin discs,100X,15.8,oil,0.875,1.0,3T3,optoRhoA,M450,4503,0,5,1_50,1s,1.0,15,1.0,300,at beads,3.3,False,3,500,302_133,labview
