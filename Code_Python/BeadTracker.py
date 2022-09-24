@@ -221,7 +221,7 @@ class PincherTimeLapse:
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast, self.activationFreq)])
+                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
             else:
                 self.LoopActivations = np.array([self.activationFirst-1])
                             
@@ -1140,7 +1140,9 @@ class PincherTimeLapse:
                 # i_lim is the first index after the end of the ramp
                 addOffset = (iF >= i_lim) # Is this ramp going further than it should, considering the black images ?
                 
-                if 'optoGen' in self.expType:
+                
+                # 'optoGen' or 'compressions' but b=probably necessary in all cases actually
+                if 'optoGen' in self.expType or 'compressions' in self.expType:
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)
