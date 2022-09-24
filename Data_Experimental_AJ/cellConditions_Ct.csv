@@ -1,33 +1,42 @@
 cellID,blebCondition,phenotype,excluded,comments
-22-07-13_M1_P1_C1_disc20um,none,3mT,yes,
-22-07-13_M1_P1_C2_disc20um,none,3mT,yes,"blebby in the bgeinning, but calms down after; can be seen in curve"
-22-07-13_M1_P1_C3_disc20um,none,3mT,yes,Field too low and the bead stuck to the cell surface makes them move very far apart in Z and therefore makes it negative at the end.
-22-07-13_M1_P1_C5_disc20um,none,3mT,no,
-22-07-13_M1_P2_C3_disc20um,none,3mT,no,
-22-07-26_M1_P1_C1_disc20um,none,3mT,yes,beads look a bit far
-22-07-26_M1_P1_C5_disc20um,none,3mT,no,beads splits a bit in the middle because of lamellipodia
-22-07-26_M1_P2_C1_disc20um,none,3mT,yes,oscillating
-22-07-26_M1_P2_C2_disc20um,none,3mT,yes,oscillating
-22-07-26_M1_P2_C3_disc20um,none,3mT,no,
-22-07-26_M1_P3_C1_disc20um,none,3mT,yes,beads split a bit towards the end; check again
-22-07-13_M2_P1_C5_disc20um,none,7mT,yes,Bit of oscillation and curve increasing; maybe can be fixed; TRY!
-22-07-13_M2_P1_C1_disc20um,none,7mT,yes,Very active; check if Z is detected well
-22-07-13_M2_P2_C1_disc20um,none,7mT,yes,testing 3
-22-07-13_M2_P2_C3_disc20um,none,7mT,no,
-22-07-26_M2_P1_C3_disc20um,none,7mT,yes,oscillating
-22-07-26_M2_P1_C4_disc20um,none,7mT,no,
-22-07-26_M2_P1_C2_disc20um,none,7mT,no,
-22-07-26_M2_P1_C5_disc20um,none,7mT,no,
-22-07-26_M2_P2_C1_disc20um,none,7mT,yes,oscillating
-22-07-26_M2_P2_C2_disc20um,none,7mT,yes,oscillating
-22-07-26_M2_P2_C3_disc20um,none,7mT,no,
-22-07-13_M3_P1_C2_disc20um,none,15mT,yes,Curve is flat; beads are not pinching cortex
-22-07-13_M3_P2_C1_disc20um,none,15mT,no,
-22-07-13_M3_P2_C3_disc20um,none,15mT,no,
-22-07-26_M2_P3_C1_disc20um,none,15mT,yes,beads split in the beginning and movie is too short
-22-07-26_M3_P1_C2_disc20um,none,15mT,yes,oscillating a bit
-22-07-26_M3_P1_C3_disc20um,none,15mT,yes,testing 2
-22-07-26_M3_P1_C4_disc20um,none,15mT,no,
-22-07-26_M3_P2_C1_disc20um,none,15mT,yes,oscillating
-22-07-26_M3_P2_C2_disc20um,none,15mT,no,
-22-07-26_M3_P2_C3_disc20um,none,15mT,no,
+22-03-01_M1_P1_C1,none,,yes,bead pulled away because of repulsive forces and excessive lamellipodia formation
+22-03-01_M1_P1_C2,dynamic,blebby,yes,
+22-03-01_M1_P1_C3,none,global contraction,no,
+22-03-01_M1_P1_C4,nan,,yes,cell ate bead
+22-03-01_M1_P1_C5,none,global contraction,no,
+22-03-01_M1_P1_C6,none,global contraction,no,
+22-03-01_M1_P1_C7,none,global contraction,no,
+22-03-22_M1_P1_C1,none,none,no,Cell looks a bit unhealthy
+22-03-22_M2_P1_C2,dynamic,blebby,yes,Many many many beads!!
+22-03-22_M2_P1_C3,nan,,yes,cell ate bead
+22-03-22_M2_P1_C4,nan,,yes,cell ate bead
+22-03-22_M2_P1_C5,none,none,no,Z not well detected; check again
+22-05-09_M5_P1_C6,dynamic,blebby,yes,
+22-05-09_M6_P1_C4,none,polarised rear,no,
+22-05-09_M6_P2_C6,dynamic,blebby,yes,
+22-03-01_M3_P1_C6,dynamic,polarised rear,yes,
+22-06-09_M3_P3_C7,dynamic,none,yes,Two beads inside
+22-03-22_M3_P1_C5,none,none,no,
+22-05-09_M3_P2_C5,none,polarised rear,no,its beautiful
+22-05-09_M3_P2_C3,none,polarised rear,no,
+22-05-09_M3_P1_C3,dynamic,polarised rear,no,Breaks into blebs and then forms beautiful lamellipodia
+22-06-09_M1_P1_C1,dynamic,polarised rear,yes,"Seems like it was blebbing from before, probably because it was globally activated previously"
+22-06-09_M1_P1_C2,none,polarised rear,no,funny looking with a stable protrusion on one side (maybe lamellipodia)
+22-06-09_M1_P1_C4,none,oscillating,yes,
+22-06-09_M1_P1_C5,dynamic,none,yes,"many beads, a bit messy - exclude!"
+22-06-09_M1_P1_C6,none,polarised rear,no,
+22-06-09_M1_P1_C7,none,polarised rear,no,Other neighbouring bead affecting some bead movement maybe
+22-03-22_M4_P1_C5,none,none,no,
+22-05-09_M2_P1_C2,none,oscillating,yes,
+22-05-09_M2_P1_C7,none,none,no,
+22-05-09_M4_P1_C3,dynamic,blebby,yes,a bit unhealthy looking
+22-05-09_M4_P1_C4,dynamic,blebby,yes,
+22-05-09_M4_P1_C5,dynamic,blebby,yes,
+22-05-09_M4_P2_C2,dynamic,blebby,yes,
+22-06-09_M2_P1_C7,none,polarised front,no,
+22-06-09_M2_P1_C8,none,none,no,Cell is super good but the lamellipodia seem to affect the bead movements
+22-06-09_M2_P2_C2,none,polarised front,no,
+22-06-09_M2_P2_C6,dynamic,blebby,yes,
+22-06-09_M2_P3_C4,dynamic,blebby,yes,
+22-06-09_M2_P3_C6,none,none,no,
+22-03-01_M2_P1_C7,dynamic,polarised front,yes	,

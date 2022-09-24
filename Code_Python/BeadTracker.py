@@ -222,6 +222,7 @@ class PincherTimeLapse:
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
+            
             else:
                 self.LoopActivations = np.array([self.activationFirst-1])
                             
@@ -242,14 +243,14 @@ class PincherTimeLapse:
         if self.microscope == 'labview':
             self.totalActivationImages = np.array([np.sum(self.LoopActivations < kk) 
                                                for kk in range(self.nLoop)])
+            
+            
             # print(self.excludedFrames_outward)
             self.excludedFrames_outward += self.totalActivationImages
         else:
             pass
-        
-        
-        
-        
+
+
         # 3. Field that are just initialized for now and will be filled by calling different methods.
         self.threshold = 0
         self.listFrames = []
@@ -313,13 +314,16 @@ class PincherTimeLapse:
             # print(self.excludedFrames_black)
             try:
                 if self.activationFirst > 0:
+                        
                     for iLoop in self.LoopActivations:
-                        totalExcludedOutward = self.excludedFrames_outward[iLoop]
+                        
+                        totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
+                        
                         j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
+                        # print(j)
                         self.dictLog['status_frame'][j] = -1
                         self.dictLog['status_nUp'][j] = -1
-            
-                        
+
             except:
                 if self.wFluoEveryLoop:
                     for iLoop in self.LoopActivations:
@@ -336,6 +340,7 @@ class PincherTimeLapse:
                 totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
                 j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
                 Ifluo = self.I[j]
+
                 path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j+1) + '.tif')
                 io.imsave(path, Ifluo, check_contrast=False)
             
@@ -1146,6 +1151,10 @@ class PincherTimeLapse:
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)
+                    # if i < 350:
+                    #     print(iF)
+                    #     # print(SField)
+                
                 
                 iField.append(SField)
                 
