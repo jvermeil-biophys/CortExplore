@@ -414,7 +414,7 @@ GlobalTable_meca_Py = taka.getMergedTable('Global_MecaData_Py')
 #### GlobalTable_meca_Py2
 
 # GlobalTable_meca_Py2 = taka.getGlobalTable(kind = 'meca_py2')
-GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2')
+GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2', mergeUMS = True)
 
 
 #### Global_MecaData_NonLin_Py
@@ -428,10 +428,17 @@ GlobalTable_meca_nonLin = taka.getMergedTable('Global_MecaData_NonLin2_Py')
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
 GlobalTable_meca_MCA = taka.getMergedTable('Global_MecaData_MCA2')
 
-#### Global_MecaData_MCA
+#### Global_MecaData_MCA3
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA = taka.getMergedTable('Global_MecaData_MCA2')
+GlobalTable_meca_MCA3 = taka.getMergedTable('Global_MecaData_MCA3', mergeUMS = True)
+
+#### Global_MecaData_MCA123
+
+# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
+GlobalTable_meca_MCA123 = taka.getMergedTable('Global_MecaData_MCA123', mergeUMS = True, mergeFluo = True)
+GlobalTable_meca_MCA123['round'] = GlobalTable_meca_MCA123['tags'].apply(lambda x : x.split('. ')[0])
+# print(GlobalTable_meca_MCA123['round'])
 
 #### Global_MecaData_HoxB8
 
@@ -515,6 +522,14 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
                'aSFL-6FP & doxycyclin':{'color':'#2ca02c','marker':'o'},               
                'aSFL-A8 & none':{'color':'#ffbb78','marker':'o'},              
                'aSFL-A8 & doxycyclin':{'color':'#ff7f0e','marker':'o'},
+               
+               'aSFL-A11 & none':{'color':gs.colorList40[20],'marker':'o'},              
+               'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
+               'aSFL-F8 & none':{'color':gs.colorList40[21],'marker':'o'},              
+               'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
+               'aSFL-E4 & none':{'color':gs.colorList40[22],'marker':'o'},              
+               'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
+               
                'DictyDB_M270':{'color':'lightskyblue','marker':'o'}, 
                'DictyDB_M450':{'color': 'maroon','marker':'o'},
                'M270':{'color':'lightskyblue','marker':'o'}, 
@@ -526,6 +541,63 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
                }
 
 
+renameDict_MCA3 = {'SurroundingThickness':'Thickness (nm) [b&a]',
+               'surroundingThickness':'Thickness (nm) [b&a]',
+               'ctFieldThickness':'Thickness at low force (nm)',
+               'ctFieldThickness_normalized':'Thickness at low force (nm) [Ratio]',
+               'bestH0':'Thickness from fit (nm)',
+               'bestH0_normalized':'Thickness from fit (nm) [Ratio]',
+               'EChadwick': 'E Chadwick (Pa)',
+               'medianThickness': 'Median Thickness (nm)',               
+               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
+               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)',               
+               'none':'control',               
+               'doxycyclin':'expressing iMC linker',
+               
+                'aSFL-A11 & none':'clone A11 - ctrl',              
+                'aSFL-A11 & doxycyclin':'clone A11 - iMC',
+                'aSFL-F8 & none':'clone F8 - ctrl',              
+                'aSFL-F8 & doxycyclin':'clone F8 - long iMC',
+                'aSFL-E4 & none':'clone E4 - ctrl',              
+                'aSFL-E4 & doxycyclin':'clone E4 - long iMC',
+                'aSFL-A11 & MCA1 & none':'Round1: clone A11 - ctrl',              
+                'aSFL-A11 & MCA1 & doxycyclin':'Round1: clone A11 - iMC',
+                'aSFL-F8 & MCA2 & none':'Round2: clone F8 - ctrl',                 
+                'aSFL-F8 & MCA2 & doxycyclin':'Round2: clone F8 - long iMC',
+                'aSFL-E4 & MCA1 & none':'Round1: clone E4 - ctrl',                  
+                'aSFL-E4 & MCA1 & doxycyclin':'Round1: clone E4 - long iMC',
+                'aSFL-A11 & MCA3 & none':'Round3: clone A11 - ctrl',                  
+                'aSFL-A11 & MCA3 & doxycyclin':'Round3: clone A11 - iMC',
+                'aSFL-F8 & MCA3 & none':'Round3: clone F8 - ctrl',                  
+                'aSFL-F8 & MCA3 & doxycyclin':'Round3: clone F8 - long iMC',
+                'aSFL-E4 & MCA3 & none':'Round3: clone E4 - ctrl',               
+                'aSFL-E4 & MCA3 & doxycyclin':'Round3: clone E4 - long iMC'
+               }
+
+
+styleDict_MCA3 = {'aSFL-A11':{'color':gs.colorList40[10],'marker':'o'},
+                  'aSFL-F8':{'color':gs.colorList40[11],'marker':'o'},   
+                  'aSFL-E4':{'color':gs.colorList40[12],'marker':'o'}, 
+                  'aSFL-A11 & none':{'color':gs.colorList40[10],'marker':'o'},              
+                  'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
+                  'aSFL-F8 & none':{'color':gs.colorList40[11],'marker':'o'},              
+                  'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
+                  'aSFL-E4 & none':{'color':gs.colorList40[12],'marker':'o'},              
+                  'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
+                  'aSFL-A11 & MCA1 & none':{'color':gs.colorList40[10],'marker':'o'},              
+                  'aSFL-A11 & MCA1 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
+                  'aSFL-F8 & MCA2 & none':{'color':gs.colorList40[11],'marker':'o'},              
+                  'aSFL-F8 & MCA2 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
+                  'aSFL-E4 & MCA1 & none':{'color':gs.colorList40[12],'marker':'o'},              
+                  'aSFL-E4 & MCA1 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
+                  'aSFL-A11 & MCA3 & none':{'color':gs.colorList40[10],'marker':'o'},              
+                  'aSFL-A11 & MCA3 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
+                  'aSFL-F8 & MCA3 & none':{'color':gs.colorList40[11],'marker':'o'},              
+                  'aSFL-F8 & MCA3 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
+                  'aSFL-E4 & MCA3 & none':{'color':gs.colorList40[12],'marker':'o'},              
+                  'aSFL-E4 & MCA3 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'}
+                  }
+
 
 # These functions use matplotlib.pyplot and seaborn libraries to display 1D categorical or 2D plots
 
@@ -536,15 +608,15 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
            Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
            stats=True, statMethod='Mann-Whitney', box_pairs=[], 
            figSizeFactor = 1, markersizeFactor=1, orientation = 'h', useHue = False, 
-           stressBoxPlot = False, bypassLog = False, autoscale = True, returnCount = 0):
+           stressBoxPlot = False, bypassLog = False, returnCount = 0):
     
     data_filtered = data
     # for fltr in Filters:
-    #     data_filtered = data_filtered.loc[fltr]    
-    
+    #     data_filtered = data_filtered.loc[fltr]
+
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-    for kk in range(len(filterList)):
-        globalFilter = globalFilter & filterList[kk]
+    for kk in range(len(Filters)):
+        globalFilter = globalFilter & Filters[kk]
     data_filtered = data_filtered[globalFilter]
     
     NCond = len(CondCol)
@@ -585,7 +657,7 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
             for co in delCo:
                 co_order.remove(co)
                 
-        p = getStyleLists_Sns(co_order, styleDict1)
+        p = getStyleLists_Sns(co_order, styleDict_MCA3)
         
     else: # len(co_order) == 0
         p = sns.color_palette()
@@ -598,9 +670,7 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
             fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
     else:
         pass
-    
-    scaley = autoscale
-    
+        
     markersize = 5*markersizeFactor
     
     if NPlots == 1:
@@ -653,6 +723,194 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
         ax[k].set_ylabel(Parameters[k])
         ax[k].tick_params(axis='x', labelrotation = 10)
         ax[k].yaxis.grid(True)
+        if ax[k].get_yscale() == 'linear':
+            ax[k].set_ylim([0, ax[k].get_ylim()[1]])
+        
+    plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
+        
+    
+    if returnCount > 0:
+        groupByCell = small_df.groupby(cellID)
+        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
+        d_agg = {cellID: 'count', 'compCount': 'sum', 
+                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+        d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+        if returnCount == 1:
+            return(fig, ax, df_CountByCond)
+        elif returnCount == 2:
+            return(fig, ax, df_CountByCond, df_CountByCell)
+    
+    else:
+        return(fig, ax)
+    
+    
+def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[], 
+                      Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
+                      stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                      normalizeCol = [], normalizeGroups=[],
+                      figSizeFactor = 1, markersizeFactor=1, orientation = 'h', useHue = False, 
+                      stressBoxPlot = False, bypassLog = False, returnCount = 0):
+    
+    data_filtered = data
+    # for fltr in Filters:
+    #     data_filtered = data_filtered.loc[fltr]
+    
+    
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for kk in range(len(Filters)):
+        globalFilter = globalFilter & Filters[kk]
+    data_filtered = data_filtered[globalFilter]
+
+    
+    NCond = len(CondCol)
+    
+    if NCond == 1:
+        CondCol = CondCol[0]
+        
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += CondCol[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_filtered[newColName] = ''
+        for i in range(NCond):
+            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
+        data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
+        CondCol = newColName
+        
+    # print(data_filtered.shape)
+    small_df = data_filtered[[CondCol, 'cellID', 'compNum', 'date', 'manipID']]
+    
+    if AvgPerCell:
+        group = data_filtered.groupby(cellID)
+        dictAggMean = getDictAggMean(data_filtered)
+#         dictAggMean['EChadwick'] = 'median'
+        data_filtered = group.agg(dictAggMean)
+        
+    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+    
+    NPlots = len(Parameters)
+    Conditions = list(data_filtered[CondCol].unique())     
+    
+    if len(co_order) > 0:
+        if len(co_order) != len(Conditions):
+            delCo = [co for co in co_order if co not in Conditions]
+            for co in delCo:
+                co_order.remove(co)
+                
+        p = getStyleLists_Sns(co_order, styleDict_MCA3)
+        
+    else: # len(co_order) == 0
+        p = sns.color_palette()
+        co_order = Conditions
+
+    if fig == None:
+        if orientation == 'h':
+            fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
+        elif orientation == 'v':
+            fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
+    else:
+        pass
+        
+    markersize = 5*markersizeFactor
+    
+    if NPlots == 1:
+        ax = np.array([ax])
+    
+    for k in range(NPlots):
+        Parm = Parameters[k]
+        
+        #### Normalisation
+        
+        if normalizeCol == []:
+            normalizeCol = CondCol
+            
+        else:
+            N_normalizeCols = len(normalizeCol)
+            newColName = ''
+            for i in range(N_normalizeCols):
+                newColName += normalizeCol[i]
+                newColName += ' & '
+            newColName = newColName[:-3]
+            data_filtered[newColName] = ''
+            for i in range(N_normalizeCols):
+                data_filtered[newColName] += data_filtered[normalizeCol[i]].astype(str)
+                data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
+            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
+            normalizeCol = newColName
+        
+        if normalizeGroups == []:
+            normalizeGroups = co_order
+        
+        data_filtered[Parm + '_normalized'] = data_filtered[Parm]
+        for nG in normalizeGroups:
+            ref = nG[0]
+            ref_median = np.median(data_filtered[data_filtered[normalizeCol] == ref][Parm])
+            
+            Rows = data_filtered[normalizeCol].apply(lambda x : x in nG)
+            Cols = Parm + '_normalized'
+            
+            newValues = data_filtered.loc[Rows, Cols].apply(lambda x : x/ref_median)
+            data_filtered.loc[Rows, Cols] = newValues
+        
+        #### Take the normalized parameter
+        
+        Parm = Parm + '_normalized'
+
+        if not bypassLog and (('EChadwick' in Parm) or ('K_Chadwick' in Parm) or ('K_S=' in Parm)):
+            ax[k].set_yscale('log')
+
+        if Boxplot:
+            if stressBoxPlot:
+                sns.boxplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], 
+                            width = 0.5, showfliers = False, order= co_order, 
+                            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
+                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+        #                   boxprops={"color": color, "linewidth": 0.5},
+                            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+                            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
+                            # scaley = scaley)
+            else:
+                sns.boxplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], 
+                            width = 0.5, showfliers = False, order= co_order, 
+                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
+                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
+        #                   boxprops={"color": color, "linewidth": 0.5},
+                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
+                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1})
+                            # scaley = scaley)
+            
+            # data_filtered.boxplot(column=Parm, by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
+
+        if stats:
+            if len(box_pairs) == 0:
+                box_pairs = makeBoxPairs(co_order)
+            addStat_df(ax[k], data_filtered, box_pairs, Parm, CondCol, test = statMethod)
+            # add_stat_annotation(ax[k], x=CondCol, y=Parm, data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
+        
+        if not useHue:
+            sns.swarmplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
+                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
+        else:
+            sns.swarmplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
+                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
+                          hue = 'manipID')
+            legend = ax[k].legend()
+            legend.remove()
+
+        ax[k].set_xlabel('')
+        ax[k].set_ylabel(Parm)
+        ax[k].tick_params(axis='x', labelrotation = 10)
+        ax[k].yaxis.grid(True)
+        if ax[k].get_yscale() == 'linear':
+            ax[k].set_ylim([0, ax[k].get_ylim()[1]])
         
     plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
         
@@ -1591,7 +1849,7 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
             currentHeight = currentHeight*(refHeight**0.05)
         else:
             currentHeight =  currentHeight + 0.1*refHeight
-    ax.set_ylim([ax.get_ylim()[0], currentHeight])
+    # ax.set_ylim([ax.get_ylim()[0], currentHeight])
     
 
 def addStat_arrays(ax, X, Y, box_pairs, test = 'Mann-Whitney', percentHeight = 98):
@@ -4069,9 +4327,9 @@ Filters = [(data['validatedThickness'] == True), (data['bestH0'] <= 900)]
 fig, ax = plt.subplots(1, 1, figsize = (6,5))
 
 co_order = makeOrder(['none','doxycyclin'])
-fig, ax = D1Plot(fig=fig, ax=ax, data=data, CondCol=['drug'],Parameters=['bestH0'], AvgPerCell = False,
+fig, ax, dfcount = D1Plot(fig=fig, ax=ax, data=data, CondCol=['drug'],Parameters=['bestH0'], AvgPerCell = False,
                  Filters=Filters,stats=True, co_order=co_order, figSizeFactor=1.0, 
-                 markersizeFactor = 0.7, stressBoxPlot = True)
+                 markersizeFactor = 0.7, stressBoxPlot = True, returnCount=1)
 
 
 ax[0].set_ylim([0, 1000])
@@ -4079,7 +4337,7 @@ rD = {'none':'Control', 'doxycyclin':'Increased MCA', 'bestH0' : 'Thickness (nm)
 renameAxes(ax,rD)
 # ax[0].set_ylim([0,600])
 # ax[1].set_ylim([0,600])
-fig.suptitle('3T3aSFL on patterns\nBest H0 from fits\nB~5mT', fontsize = 12)
+fig.suptitle('3T3aSFL on patterns\nBest H0 from fits\n', fontsize = 12)
 fig.tight_layout()
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_medianThickness', figSubDir = figSubDir)
 
@@ -4918,6 +5176,1480 @@ plt.show()
 
 Kavg_ref, Kste_ref, N_ref, fitCenters_ref = Kavg, Kste, N, fitCenters2
 
+# %%% MCA project round 3 : long linker july 2022
+
+# %%%% All conditions first plot
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+StressRegion = '_S=300+/-100'
+srs = StressRegion.split('+/-')[0]+'-'+StressRegion.split('+/-')[1]
+
+Filters = [(data['validatedFit'+StressRegion] == True), 
+           (data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['bestH0'] <= 900),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+# print(data['cell subtype'].unique())
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0', 'K'+StressRegion],Filters=Filters,
+                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'v', stressBoxPlot= True,
+                          returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 summary plot\nK = ' + StressRegion[1:] + ' Pa')
+
+ufun.archiveFig(fig, name=('MCA3_H0 & K' + srs + '_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0', 'K'+StressRegion],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'v', stressBoxPlot= False, 
+                          returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 summary plot\nK = ' + StressRegion[1:] + ' Pa')
+
+ufun.archiveFig(fig, name=('MCA3_H0 & K' + srs + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+plt.show()
+
+# %%%% Six conditions only H0
+
+data = GlobalTable_meca_MCA123
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['bestH0'] <= 900),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - H0 from fits - allComps')
+
+ufun.archiveFig(fig, name=('MCA3_H0 only' + '_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - H0 from fits - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA3_H0 only' + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+plt.show()
+
+# %%%% Six conditions only H0 - ratio
+
+data = GlobalTable_meca_MCA123
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['bestH0'] <= 900),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+normalizeGroups = [['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin']]
+
+fig, ax, dfcount, dfcountcells = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 normalizeCol = ['cell subtype','drug'], normalizeGroups=normalizeGroups,
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - H0 from fits (r) - allComps')
+
+ufun.archiveFig(fig, name=('MCA3_H0 only_ratio' + '_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 normalizeCol = ['cell subtype','drug'], normalizeGroups=normalizeGroups,
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - H0 from fits (r) - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA3_H0 only_ratio' + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+plt.show()
+
+# %%%% Six conditions only surroundingThickness
+
+# data = GlobalTable_meca_MCA3
+# dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+# Filters = [(data['validatedThickness'] == True), 
+#            (data['UI_Valid'] == True),
+#            (data['cell type'] == '3T3'), 
+#            (data['bead type'] == 'M450'),
+#            (data['bestH0'] <= 900),
+#            (data['date'].apply(lambda x : x in dates))]
+
+
+
+# co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+# box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+#            ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+#            ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+#            ['aSFL-A11 & none','aSFL-F8 & none'],
+#            ['aSFL-A11 & none','aSFL-E4 & none']]
+
+# fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['surroundingThickness'],Filters=Filters,
+#                  AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                  box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+#                  returnCount = 2)
+
+# renameAxes(ax,renameDict_MCA3)
+# fig.suptitle('MCA3 surroundingThickness')
+
+# ufun.archiveFig(fig, name=('MCA3_SurH only' + '_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+
+# fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['surroundingThickness'],Filters=Filters,
+#                  AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                  box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+#                  returnCount = 2)
+
+# renameAxes(ax,renameDict_MCA3)
+# fig.suptitle('MCA3 surroundingThickness')
+
+# ufun.archiveFig(fig, name=('MCA3_SurH only' + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+# plt.show()
+
+# %%%% Six conditions only ctFieldThickness
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['bestH0'] <= 800),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['ctFieldThickness'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - median thickness')
+
+ufun.archiveFig(fig, name=('MCA3_ctFieldH only' + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+plt.show()
+
+
+# %%%% Six conditions only ctFieldThickness - Ratio
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['ctFieldThickness'] <= 800),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+normalizeGroups = [['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin']]
+
+# fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['ctFieldThickness'],Filters=Filters,
+#                  AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                  box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+#                  returnCount = 2)
+
+fig, ax, dfcount, dfcountcells = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=['ctFieldThickness'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 normalizeCol = ['cell subtype','drug'], normalizeGroups=normalizeGroups,
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('MCA3 - median thickness (r)')
+
+ufun.archiveFig(fig, name=('MCA3_ctFieldH only_ratio' + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+plt.show()
+
+# %%%% Six conditions only H0 INTRA-ExpDay
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+pairs = [['aSFL-A11','aSFL-F8'],['aSFL-A11','aSFL-E4'],['aSFL-F8','aSFL-E4']]
+
+
+for i in range(len(dates)):
+    D = dates[i]
+    P = pairs[i]
+
+    Filters = [(data['validatedThickness'] == True), 
+               (data['UI_Valid'] == True),
+               (data['cell type'] == '3T3'), 
+               (data['bead type'] == 'M450'),
+               (data['bestH0'] <= 800),
+               (data['bestH0'] >= 100),
+               (data['date'] == D)]
+    
+    
+    
+    co_order = makeOrder(P,['none','doxycyclin'])
+
+    
+    fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                     AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                     box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+                     returnCount = 2)
+    
+    renameAxes(ax,renameDict_MCA3)
+    fig.suptitle('MCA3 - ' + D)
+    
+    ufun.archiveFig(fig, name=('MCA3_' + D + '_allComps'), figDir = 'MCA3_project', dpi = 100)
+    
+    
+    fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0'],Filters=Filters,
+                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                     box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                     returnCount = 2)
+    
+    renameAxes(ax,renameDict_MCA3)
+    fig.suptitle('MCA3 - ' + D)
+    
+    ufun.archiveFig(fig, name=('MCA3_' + D + '_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+
+plt.show()
+
+
+# %%%% Six conditions only H0 INTER-ExpDay
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+# 1
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['drug'] == 'none'),
+           (data['bestH0'] <= 800),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'], ['22-07-15', '22-07-20', '22-07-27'])
+# co_order.remove('22-07-15 & aSFL-E4')
+# co_order.remove('22-07-20 & aSFL-F8')
+# co_order.remove('22-07-27 & aSFL-A11')
+
+box_pairs = [['aSFL-A11 & 22-07-15', 'aSFL-A11 & 22-07-20'], 
+             ['aSFL-F8 & 22-07-15', 'aSFL-F8 & 22-07-27'], 
+             ['aSFL-E4 & 22-07-20', 'aSFL-E4 & 22-07-27']]
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','date'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('3T3aSFL non activated, by dates')
+
+ufun.archiveFig(fig, name=('MCA3_H0_noDrug_dates_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','date'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('3T3aSFL non activated, by dates')
+
+ufun.archiveFig(fig, name=('MCA3_H0_noDrug_dates_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+# 2
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['drug'] == 'doxycyclin'),
+           (data['bestH0'] <= 800),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'], ['22-07-15', '22-07-20', '22-07-27'])
+
+box_pairs = [['aSFL-A11 & 22-07-15', 'aSFL-A11 & 22-07-20'], 
+             ['aSFL-F8 & 22-07-15', 'aSFL-F8 & 22-07-27'], 
+             ['aSFL-E4 & 22-07-20', 'aSFL-E4 & 22-07-27']]
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','date'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('3T3aSFL activated, by dates')
+
+ufun.archiveFig(fig, name=('MCA3_H0_doxy_dates_allComps'), figDir = 'MCA3_project', dpi = 100)
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','date'], Parameters=['bestH0'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('3T3aSFL activated, by dates')
+
+ufun.archiveFig(fig, name=('MCA3_H0_doxy_dates_cellAvg'), figDir = 'MCA3_project', dpi = 100)
+
+plt.show()
+
+
+
+
+
+# %%%% TO ADAPT Multiple boxplot K(s)
+
+data = GlobalTable_meca_MCA3
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+
+
+# fig, ax, dfcount = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['bestH0', 'KChadwick'+StressRegion],Filters=Filters,
+#                           AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                           box_pairs=[], figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'v', returnCount = 1)
+
+CondCol=['cell subtype', 'drug']
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+NCondCol = len(CondCol)
+NCond = len(co_order)
+
+
+listS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+# listS = [100, 150, 200, 250, 300, 350, 400, 450, 500, 550]
+width = 150
+
+fig, axes = plt.subplots(NCond, len(listS), figsize = (18,12))
+
+for ii in range(NCond):
+    co = co_order[ii]
+    co_split = co.split(' & ')
+        
+    
+    for kk in range(len(listS)):
+        S = listS[kk]
+        interval = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+        fileNameInterval = 'S={:.0f}-{:.0f}'.format(S, width//2)
+    
+        Filters = [(data['validatedFit_'+interval] == True),
+                   (data['validatedThickness'] == True),
+                   (data['UI_Valid'] == True),
+                   (data['bestH0'] <= 800),
+                   (data['date'].apply(lambda x : x in dates))]
+        
+        for ll in range(NCondCol):
+            Filters += [(data[CondCol[ll]] == co_split[ll])]
+        
+        # co_order = makeOrder(['bare glass','20um fibronectin discs'], ['ctrl','tko'])
+    
+        fig, ax = D1Plot(data, fig=fig, ax=axes[ii,kk], CondCol=CondCol, Parameters=['K_' + interval], 
+                         Filters=Filters, Boxplot=True, cellID='cellID', co_order=copy(co_order), stats=False, statMethod='Mann-Whitney', 
+                         AvgPerCell = False, box_pairs=[], figSizeFactor = 1, markersizeFactor=1, orientation = 'h', stressBoxPlot=True)
+    
+    #     axes[kk].legend(loc = 'upper right', fontsize = 8)
+        label = axes[ii,kk].get_ylabel()
+        # axes[ii,kk].set_title(label.split('_')[-1] + 'Pa', fontsize = 10)
+        axes[ii,kk].set_yscale('log')
+        axes[ii,kk].set_ylim([4e2, 2e4])
+        axes[ii,kk].tick_params(axis='x', labelrotation = 50, labelsize = 10)
+        axes[ii,kk].set_xticklabels([])
+        if ii == 0:
+            axes[ii,kk].set_title(interval + ' Pa', fontsize = 10)
+        if ii == len(co_order)-1:
+            axes[ii,kk].tick_params(axis='x', labelsize = 10)
+        else:
+            axes[ii,kk].set_xlabel(None)
+            axes[ii,kk].set_xticklabels([])
+            
+        if kk == 0:
+            # axes[ii,kk].set_ylabel(label.split('_')[0] + ' (Pa)')
+            # axes[ii,kk].set_ylabel(co, fontsize = 10)
+            axes[ii,kk].set_ylabel(co + '\n' + label.split('_')[0] + ' (Pa)', 
+                                   fontsize = 11, color = styleDict1[co]['color'])
+        else:
+            axes[ii,kk].set_ylabel(None)
+            axes[ii,kk].set_yticklabels([])
+
+
+fig.tight_layout()
+fig.suptitle('')
+plt.show()
+
+ufun.archiveFig(fig, name='MCA3_K(s)_MultiBoxPlots_to1000'.format(Sinf, Ssup), 
+                figDir = 'MCA3_project', dpi = 100)
+
+
+
+# %%%% K(s) for MCA3
+
+#### Making the Dataframe 
+
+data = GlobalTable_meca_MCA3
+
+data['MCA3_Co'] = data['cell subtype'].values + \
+                   np.array([' & ' for i in range(data.shape[0])]) + \
+                   data['drug'].values
+
+dates = ['22-07-15', '22-07-20', '22-07-27']
+
+filterList = [(data['validatedThickness'] == True),
+              (data['cell type'] == '3T3'), 
+              (data['bead type'] == 'M450'),
+              (data['UI_Valid'] == True),
+              (data['bestH0'] <= 800),
+              (data['date'].apply(lambda x : x in dates))]  # (data['validatedFit'] == True),
+
+globalFilter = filterList[0]
+for k in range(1, len(filterList)):
+    globalFilter = globalFilter & filterList[k]
+
+data_f = data[globalFilter]
+
+# data_f['HoxB8_Co'] = data_f['substrate'].values + \
+#                      np.array([' & ' for i in range(data_f.shape[0])]) + \
+#                      data_f['cell subtype'].values
+
+width = 150 # 200
+fitCenters =  np.array([S for S in range(100, 1100, 50)])
+# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
+# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
+
+# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
+
+listColumnsMeca = []
+
+KChadwick_Cols = []
+KWeight_Cols = []
+
+for rFN in regionFitsNames:
+    listColumnsMeca += ['K_'+rFN, 'K_CIW_'+rFN, 'R2_'+rFN, 
+                        'Npts_'+rFN, 'validatedFit_'+rFN]
+    KChadwick_Cols += [('K_'+rFN)]
+
+    K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
+    KWeight = (data_f['K_'+rFN]/K_CIWidth)**2
+    data_f['K_Weight_'+rFN] = KWeight
+    data_f['K_Weight_'+rFN] *= data_f['K_'+rFN].apply(lambda x : (x<1e6))
+    data_f['K_Weight_'+rFN] *= data_f['R2_'+rFN].apply(lambda x : (x>1e-2))
+    data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+    KWeight_Cols += [('K_Weight_'+rFN)]
+    
+
+#### Useful functions
+
+def w_std(x, w):
+    m = np.average(x, weights=w)
+    v = np.average((x-m)**2, weights=w)
+    std = v**0.5
+    return(std)
+
+def nan2zero(x):
+    if np.isnan(x):
+        return(0)
+    else:
+        return(x)
+
+
+#### Whole curve
+
+
+valStr = 'K_'
+weightStr = 'K_Weight_'
+
+
+
+# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
+
+fig, axes = plt.subplots(2,1, figsize = (9,12))
+ListDfWhole = []
+
+conditions = np.array(data_f['MCA3_Co'].unique())
+
+
+cD = {co: [styleDict_MCA3[co]['color'], styleDict_MCA3[co]['color']] for co in conditions}
+
+# oD = {'none': [-15, 1.02] , 'doxycyclin': [5, 0.97] }
+# lD = {'naked glass & ctrl':', 
+#       'naked glass & tko':'',
+#       '20um fibronectin discs & tko':'',
+#       '20um fibronectin discs & ctrl':''}
+
+for co in conditions:
+    
+    Kavg = []
+    Kstd = []
+    D10 = []
+    D90 = []
+    N = []
+    
+    data_ff = data_f[data_f['MCA3_Co'] == co]
+    
+    
+    for ii in range(len(fitCenters)):
+        S = fitCenters[ii]
+        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+        variable = valStr+rFN
+        weight = weightStr+rFN
+        
+        x = data_ff[variable].apply(nan2zero).values
+        w = data_ff[weight].apply(nan2zero).values
+        
+        if S == 250:
+            d = {'x' : x, 'w' : w}
+        
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        
+        d10, d90 = np.percentile(x[x != 0], (10, 90))
+        n = len(x[x != 0])
+        
+        Kavg.append(m)
+        Kstd.append(std)
+        D10.append(d10)
+        D90.append(d90)
+        N.append(n)
+    
+    Kavg = np.array(Kavg)
+    Kstd = np.array(Kstd)
+    D10 = np.array(D10)
+    D90 = np.array(D90)
+    N = np.array(N)
+    Kste = Kstd / (N**0.5)
+    
+    alpha = 0.975
+    dof = N
+    q = st.t.ppf(alpha, dof) # Student coefficient
+    
+    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+    
+    for ax in axes:
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
+                       ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
+        ax.set_ylim([500,2e4])
+        ax.set_xlim([0,1100])
+        ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left')
+        
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (Pa)')
+        
+        for kk in range(len(N)):
+            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), 
+                    fontsize = 8, color = cD[co][1])
+        # for kk in range(len(N)):
+        #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
+        #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
+        
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    
+    axes[1].set_ylim([0,1.4e4])
+    
+    fig.suptitle('K(s)'+'\n(fits width: {:.0f}Pa)'.format(width))    
+    
+    df_val = pd.DataFrame(d_val)
+    ListDfWhole.append(df_val)
+    dftest = pd.DataFrame(d)
+
+plt.show()
+
+ufun.archiveFig(fig, name='MCA3_K(s)', figDir = 'MCA3_project', dpi = 100)
+
+
+
+#### Local zoom
+
+Sinf, Ssup = 100, 600
+extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
+# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
+# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
+
+data2_f = data_f
+globalExtraFilter = extraFilters[0]
+for k in range(1, len(extraFilters)):
+    globalExtraFilter = globalExtraFilter & extraFilters[k]
+data2_f = data2_f[globalExtraFilter]  
+
+
+fig, axes = plt.subplots(2,1, figsize = (9,12))
+
+conditions = np.array(data_f['MCA3_Co'].unique())
+print(conditions)
+
+
+cD = {co: [styleDict_MCA3[co]['color'], styleDict_MCA3[co]['color']] for co in conditions}
+
+listDfZoom = []
+
+for co in conditions:
+    
+    Kavg = []
+    Kstd = []
+    D10 = []
+    D90 = []
+    N = []
+    
+    data_ff = data2_f[data_f['MCA3_Co'] == co]
+    
+    for ii in range(len(fitCenters)):
+        S = fitCenters[ii]
+        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+        S = fitCenters[ii]
+        variable = valStr+rFN
+        weight = weightStr+rFN
+        
+        x = data_ff[variable].apply(nan2zero).values
+        w = data_ff[weight].apply(nan2zero).values
+        
+        print(S)
+        print(np.sum(w))
+        
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        
+        d10, d90 = np.percentile(x[x != 0], (10, 90))
+        n = len(x[x != 0])
+        
+        Kavg.append(m)
+        Kstd.append(std)
+        D10.append(d10)
+        D90.append(d90)
+        N.append(n)
+    
+    Kavg = np.array(Kavg)
+    Kstd = np.array(Kstd)
+    D10 = np.array(D10)
+    D90 = np.array(D90)
+    N = np.array(N)
+    Kste = Kstd / (N**0.5)
+    
+    alpha = 0.975
+    dof = N
+    q = st.t.ppf(alpha, dof) # Student coefficient
+    
+    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+    
+    for ax in axes:
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
+                        ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
+        
+        ax.set_xlim([Sinf-50, Ssup+50])
+        ax.set_title('K(s)\nOnly compressions including the [{:.0f},{:.0f}]Pa range'.format(Sinf, Ssup))
+        
+        # Weighted means -- D9-D1 as error
+        # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = cD[co][1], 
+        #                 ecolor = 'k', elinewidth = 0.8, capsize = 3, label = lD[co]) 
+        # ax[1].set_ylim([500,2e4])
+        # ax[1].set_xlim([200,900])
+        
+        # for k in range(2):
+        ax.legend(loc = 'upper left')
+        
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (Pa)')
+        for kk in range(len(N)):
+            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+    
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    
+    axes[1].set_ylim([0,15000])
+    
+    fig.suptitle('K(s)'+' - (fits width: {:.0f}Pa)'.format(width))
+    
+    df_val = pd.DataFrame(d_val)
+    listDfZoom.append(df_val)
+
+plt.show()
+
+ufun.archiveFig(fig, name='MCA3_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
+                figDir = 'MCA3_project', dpi = 100)
+
+
+
+
+
+
+
+
+
+
+# %%% MCA project comparison of all experiments
+
+# %%%% All conditions first plot
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+StressRegion = '_S=300+/-100'
+srs = StressRegion.split('+/-')[0]+'-'+StressRegion.split('+/-')[1]
+
+
+Filters = [(data['validatedFit'+StressRegion] == True), 
+           (data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['bestH0'] <= 900),
+           (data['date'].apply(lambda x : x in all_dates)),
+           (data['tags'].apply(lambda x : '' in x))]
+
+
+# print(data['cell subtype'].unique())
+
+co_order, box_pairs = [], []
+
+# co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+# box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+#            ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+#            ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+#            ['aSFL-A11 & none','aSFL-F8 & none'],
+#            ['aSFL-A11 & none','aSFL-E4 & none']]
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0', 'K'+StressRegion],Filters=Filters,
+                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=False, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1.8, markersizeFactor=0.6, orientation = 'v', stressBoxPlot= True,
+                          returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA summary plot\n' + StressRegion[1:] + ' Pa')
+
+# ufun.archiveFig(fig, name=('MCA123_H0 & K' + srs + '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=['bestH0', 'K'+StressRegion],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=False, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1.8, markersizeFactor=0.6, orientation = 'v', stressBoxPlot= False, 
+                          returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA summary plot\n ' + StressRegion[1:] + ' Pa')
+
+# ufun.archiveFig(fig, name=('MCA123_H0 & K' + srs + '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+plt.show()
+
+
+# %%%% Test Fluo
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['bead type'] == 'M450'),
+           (data['drug'] == 'doxycyclin'),
+           (data['bestH0'] <= 900),
+           (data['date'].apply(lambda x : x in (dates_r1 + dates_r2))),
+           (data['meanFluoPeakAmplitude'] >= 0),
+           (data['meanFluoPeakAmplitude'] <= 1500),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-F8', 'aSFL-E4']))]
+
+
+# print(data['cell subtype'].unique())
+
+co_order, box_pairs = ['aSFL-A11', 'aSFL-F8', 'aSFL-E4'], [['aSFL-F8', 'aSFL-E4']]
+co_order, box_pairs = ['aSFL-A11', 'aSFL-F8', 'aSFL-E4'], []
+
+# co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+# box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+#            ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+#            ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+#            ['aSFL-A11 & none','aSFL-F8 & none'],
+#            ['aSFL-A11 & none','aSFL-E4 & none']]
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype'], Parameters=['meanFluoPeakAmplitude'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=False, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor=1.5, orientation = 'v', stressBoxPlot= False,
+                          returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA fluo plot (2021)')
+
+ufun.archiveFig(fig, name=('MCA123_fluoPlot_oldExpts'), figDir = 'MCA_project_123', dpi = 100)
+
+
+plt.show()
+
+
+
+# %%%% Only A11 only H0
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+# co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-A11'],['MCA1','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & MCA1 & none','aSFL-A11 & MCA1 & doxycyclin'],
+            ['aSFL-A11 & MCA1 & none','aSFL-A11 & MCA3 & none'],
+            ['aSFL-A11 & MCA3 & none','aSFL-A11 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-1vs3' + '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-1vs3' + '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+co_order = makeOrder(['aSFL-A11'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-all' +  '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-all' +  '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+plt.show()
+
+
+# %%%% Only A11 only H0 _ normalization
+
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+# co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-A11'],['MCA1','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & MCA1 & none','aSFL-A11 & MCA1 & doxycyclin'],
+            ['aSFL-A11 & MCA3 & none','aSFL-A11 & MCA3 & doxycyclin']]
+
+normalizeGroups = [['aSFL-A11 & MCA1 & none','aSFL-A11 & MCA1 & doxycyclin'],
+                   ['aSFL-A11 & MCA3 & none','aSFL-A11 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' (r) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-1vs3' + '_ratio_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+
+co_order = makeOrder(['aSFL-A11'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - A11 - '+ thicknessType +' (r) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_A11-all' +  '_ratio_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+plt.show()
+
+
+
+# %%%% Only F8 only H0
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'bestH0' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-F8'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+# co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-F8'],['MCA2','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-F8 & MCA2 & none','aSFL-F8 & MCA2 & doxycyclin'],
+            ['aSFL-F8 & MCA2 & none','aSFL-F8 & MCA3 & none'],
+            ['aSFL-F8 & MCA3 & none','aSFL-F8 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-1vs3' + '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-1vs3' + '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+co_order = makeOrder(['aSFL-F8'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-all' +  '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+co_order = makeOrder(['aSFL-F8'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-all' +  '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+plt.show()
+
+
+# %%%% Only F8 only H0 _ normalization
+
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-F8'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+# co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-F8'],['MCA2','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-F8 & MCA2 & none','aSFL-F8 & MCA2 & doxycyclin'],
+            ['aSFL-F8 & MCA3 & none','aSFL-F8 & MCA3 & doxycyclin']]
+
+normalizeGroups = [['aSFL-F8 & MCA2 & none','aSFL-F8 & MCA2 & doxycyclin'],
+                   ['aSFL-F8 & MCA3 & none','aSFL-F8 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' (ratio) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-1vs3_ratio' + '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+
+co_order = makeOrder(['aSFL-F8'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=True,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - F8 - '+ thicknessType +' (ratio) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_F8-all_ratio' +  '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+plt.show()
+
+
+# %%%% Only E4 only H0
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'bestH0' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-E4'],['MCA1','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-E4 & MCA1 & none','aSFL-E4 & MCA1 & doxycyclin'],
+            ['aSFL-E4 & MCA1 & none','aSFL-E4 & MCA3 & none'],
+            ['aSFL-E4 & MCA3 & none','aSFL-E4 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-1vs3' + '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-1vs3' + '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+co_order = makeOrder(['aSFL-E4'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 0.7, orientation = 'v', stressBoxPlot=True,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' - allComps')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-all' +  '_allComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+co_order = makeOrder(['aSFL-E4'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                 returnCount = 2)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' - cellAvg')
+
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-all' +  '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+plt.show()
+
+
+# %%%% Only E4 only H0 _ normalization
+
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+# co_order, box_pairs = [], []
+
+co_order = makeOrder(['aSFL-E4'],['MCA1','MCA3'],['none','doxycyclin'])
+box_pairs=[['aSFL-E4 & MCA1 & none','aSFL-E4 & MCA1 & doxycyclin'],
+            ['aSFL-E4 & MCA3 & none','aSFL-E4 & MCA3 & doxycyclin']]
+
+normalizeGroups = [['aSFL-E4 & MCA1 & none','aSFL-E4 & MCA1 & doxycyclin'],
+                   ['aSFL-E4 & MCA3 & none','aSFL-E4 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','round','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.5, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' (r) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-1vs3' + '_ratio_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+
+co_order = makeOrder(['aSFL-E4'],['none','doxycyclin'])
+box_pairs=[]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 0.5, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - E4 - '+ thicknessType +' (r) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_E4-all' +  '_ratio_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+plt.show()
+
+
+
+# %%%% All 3 clones only H0 _ normalization
+
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11','aSFL-F8','aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 500),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+
+
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+            ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+            ['aSFL-E4 & none','aSFL-E4 & doxycyclin']]
+
+normalizeGroups = [['aSFL-A11 & MCA1 & none','aSFL-A11 & MCA1 & doxycyclin'],
+                   ['aSFL-A11 & MCA3 & none','aSFL-A11 & MCA3 & doxycyclin'],
+                   ['aSFL-F8 & MCA2 & none','aSFL-F8 & MCA2 & doxycyclin'],
+                   ['aSFL-F8 & MCA3 & none','aSFL-F8 & MCA3 & doxycyclin'],
+                   ['aSFL-E4 & MCA1 & none','aSFL-E4 & MCA1 & doxycyclin'],
+                   ['aSFL-E4 & MCA3 & none','aSFL-E4 & MCA3 & doxycyclin']]
+
+fig, ax, dfcount = D1Plot_wNormalize(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, normalizeCol=['cell subtype','round','drug'], normalizeGroups=normalizeGroups,
+                                     figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - All lines - '+ thicknessType +' (r) - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_ALLclones-all' +  '_ratio_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11','aSFL-F8','aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 500),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, 
+                                     figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', stressBoxPlot=False,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - All lines - '+ thicknessType +' - cellAvg')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_ALLclones-all' +  '_cellAvg'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+thicknessType = 'bestH0' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11','aSFL-F8','aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data[thicknessType] >= 50),
+           (data[thicknessType] <= 800),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['cell subtype','drug'], Parameters=[thicknessType],Filters=Filters,
+                                     AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                     box_pairs=box_pairs, 
+                                     figSizeFactor = 1.0, markersizeFactor = 0.5, orientation = 'v', stressBoxPlot=True,
+                                     returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+fig.suptitle('allMCA - All lines - '+ thicknessType +' - allComps')
+ufun.archiveFig(fig, name=('MCA123_' + thicknessType + '_ALLclones-all' +  '_callComps'), figDir = 'MCA_project_123', dpi = 100)
+
+
+
+
+
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4931,7 +6663,7 @@ Kavg_ref, Kste_ref, N_ref, fitCenters_ref = Kavg, Kste, N, fitCenters2
 
 data = GlobalTable_meca_HoxB8
 dates = ['22-05-03', '22-05-04', '22-05-05']
-StressRegion = '_S=600+/-100'
+StressRegion = '_S=300+/-100'
 srs = StressRegion.split('+/-')[0]+'-'+StressRegion.split('+/-')[1]
 
 Filters = [(data['validatedFit'+StressRegion] == True), 
@@ -4949,7 +6681,8 @@ co_order = makeOrder(['bare glass','20um fibronectin discs'],['ctrl','tko'])
 
 fig, ax, dfcount = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['bestH0', 'KChadwick'+StressRegion],Filters=Filters,
                           AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
-                          box_pairs=[], figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'v', returnCount = 1)
+                          box_pairs=[], figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'v', returnCount = 1,
+                          stressBoxPlot=True)
 
 renameAxes(ax,renameDict1)
 fig.suptitle('HoxB8 summary plot')
@@ -4987,12 +6720,13 @@ co_order = makeOrder(['bare glass','20um fibronectin discs'],['ctrl','tko'])
 
 fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['bestH0'],Filters=Filters,
                  AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
-                 box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2)
+                 box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2,
+                 stressBoxPlot=True)
 
 renameAxes(ax,renameDict1)
-fig.suptitle('HoxB8 summary plot')
+fig.suptitle('HoxB8 H0 plot' + '\nall compressions')
 
-ufun.archiveFig(fig, name=('HoxB8_H0 only' + '_allComps'), figDir = 'HoxB8project', dpi = 100)
+ufun.archiveFig(fig, name=('HoxB8_bestH0 only' + '_allComps'), figDir = 'HoxB8project', dpi = 100)
 
 
 fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['bestH0'],Filters=Filters,
@@ -5000,9 +6734,80 @@ fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype
                  box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2)
 
 renameAxes(ax,renameDict1)
-fig.suptitle('HoxB8 summary plot')
+fig.suptitle('HoxB8 H0 plot' + '\naverage per cell')
 
-ufun.archiveFig(fig, name=('HoxB8_H0 only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+ufun.archiveFig(fig, name=('HoxB8_bestH0 only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+
+
+plt.show()
+
+
+# %%%% Four conditions only surroundingThickness
+
+data = GlobalTable_meca_HoxB8
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['UI_Valid'] == True),
+            (data['cell type'] == 'HoxB8-Macro'), 
+            (data['bead type'] == 'M450'),
+            (data['bestH0'] <= 800),
+            (data['date'].apply(lambda x : x in dates))]
+
+
+
+# co_order = makeOrder(['ctrl','tko'],['naked glass','20um fibronectin discs'])
+co_order = makeOrder(['bare glass','20um fibronectin discs'],['ctrl','tko'])
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['surroundingThickness'],Filters=Filters,
+                 AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2,
+                 stressBoxPlot=True)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('HoxB8 surroundingThickness plot' + '\nall compressions')
+
+ufun.archiveFig(fig, name=('HoxB8_surH only' + '_allComps'), figDir = 'HoxB8project', dpi = 100)
+
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['surroundingThickness'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('HoxB8 surroundingThickness plot' + '\naverage per cell')
+
+ufun.archiveFig(fig, name=('HoxB8_surH only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+
+
+plt.show()
+
+
+# %%%% Four conditions only ctFieldThickness
+
+data = GlobalTable_meca_HoxB8
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['UI_Valid'] == True),
+            (data['cell type'] == 'HoxB8-Macro'), 
+            (data['bead type'] == 'M450'),
+            (data['bestH0'] <= 800),
+            (data['date'].apply(lambda x : x in dates))]
+
+
+
+# co_order = makeOrder(['ctrl','tko'],['naked glass','20um fibronectin discs'])
+co_order = makeOrder(['bare glass','20um fibronectin discs'],['ctrl','tko'])
+
+fig, ax, dfcount, dfcountcells = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=['ctFieldThickness'],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=[], figSizeFactor = 1.0, markersizeFactor = 1.0, orientation = 'v', returnCount = 2)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('HoxB8 ctFieldThickness plot' + '\naverage per cell')
+
+ufun.archiveFig(fig, name=('HoxB8_ctFieldH only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
 
 
 plt.show()
@@ -5481,6 +7286,17 @@ for co in conditions:
     
     d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
     
+    if co == conditions[0]:
+        texty_1 = Kavg**0.95
+        texty_2 = Kavg + 2500
+    else:
+        texty_1 = texty_1**0.98
+        texty_2 = texty_2 + 750
+        
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    axes[1].set_ylim([0,1.4e4])
+    
     for ax in axes:
         # Weighted means -- Weighted ste 95% as error
         ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
@@ -5495,15 +7311,13 @@ for co in conditions:
         ax.set_ylabel('K (Pa)')
         
         for kk in range(len(N)):
-            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
-        # for kk in range(len(N)):
-        #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
-        #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
-        
-    axes[0].set_yscale('log')
-    axes[0].set_ylim([500,2e4])
+            if ax.get_yscale() == 'log':
+                ax.text(x=fitCenters[kk], y=texty_1[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+            elif ax.get_yscale() == 'linear':
+                ax.text(x=fitCenters[kk], y=texty_2[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
     
-    axes[1].set_ylim([0,1.4e4])
+        
+
     
     fig.suptitle('K(s)'+'\n(fits width: {:.0f}Pa)'.format(width))    
     
@@ -5519,7 +7333,7 @@ ufun.archiveFig(fig, name='HoxB8_K(s)', figDir = 'HoxB8project', dpi = 100)
 
 #### Local zoom
 
-Sinf, Ssup = 300, 700
+Sinf, Ssup = 500, 900
 extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
 fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
 # fitMin = np.array([int(S-(width/2)) for S in fitCenters])
@@ -5565,9 +7379,6 @@ for co in conditions:
         x = data_ff[variable].apply(nan2zero).values
         w = data_ff[weight].apply(nan2zero).values
         
-        print(S)
-        print(np.sum(w))
-        
         m = np.average(x, weights=w)
         v = np.average((x-m)**2, weights=w)
         std = v**0.5
@@ -5594,12 +7405,25 @@ for co in conditions:
     
     d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
     
+    if co == conditions[0]:
+        texty_1 = Kavg**0.95
+        texty_2 = Kavg - 1000
+    else:
+        texty_1 = texty_1**0.98
+        texty_2 = texty_2 - 400
+        
+    
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,1.1e4])
+    
+    axes[1].set_ylim([0,10000])
+    
     for ax in axes:
         # Weighted means -- Weighted ste 95% as error
         ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
                         ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
         
-        ax.set_xlim([Sinf-50, Ssup+50])
+        # ax.set_xlim([Sinf-50, Ssup+50])
         ax.set_title('K(s)\nOnly compressions including the [{:.0f},{:.0f}]Pa range'.format(Sinf, Ssup))
         
         # Weighted means -- D9-D1 as error
@@ -5613,13 +7437,13 @@ for co in conditions:
         
         ax.set_xlabel('Stress (Pa)')
         ax.set_ylabel('K (Pa)')
+        ax.set_xlim([0, 1100])
+        
         for kk in range(len(N)):
-            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
-    
-    axes[0].set_yscale('log')
-    axes[0].set_ylim([500,2e4])
-    
-    axes[1].set_ylim([0,15000])
+            if ax.get_yscale() == 'log':
+                ax.text(x=fitCenters[kk], y=texty_1[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+            elif ax.get_yscale() == 'linear':
+                ax.text(x=fitCenters[kk], y=texty_2[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
     
     fig.suptitle('K(s)'+' - (fits width: {:.0f}Pa)'.format(width))
     

@@ -91,7 +91,7 @@ taka.plotCellTimeSeriesData('22-03-21_M3_P1_C1_sin5-3_1Hz')
 
 # %%% Experimental conditions
 
-expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True , sep = ';')
+expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True)
 
 
 
@@ -174,9 +174,27 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = HoxB8task, fileName
 
 # %%%% New MCA 2022
 
-MCA2task = '22-07-15 & 22-07-20' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA2task, fileName = 'Global_MecaData_MCA3', 
+MCA2task = '22-07-15 & 22-07-20 & 22-07-27' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
+taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA2task, fileName = 'Global_MecaData_MCA3', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
+# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
+#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+# %%%% All MCA 2021 - 2022
+
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+MCA123task = ''
+for d in all_dates[:-1]:
+    MCA123task += d
+    MCA123task += ' & '
+MCA123task += all_dates[-1]
+
+taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName = 'Global_MecaData_MCA123', 
+                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
@@ -191,15 +209,10 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = Test, fileName = 'G
 
 # %%%% Precise dates (to plot)
 
-# taka.computeGlobalTable_meca(task = '22-02-09', fileName = 'Global_MecaData_Py2', save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = '21-01-18', fileName = 'Global_MecaData_Py2', save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = '21-01-21', fileName = 'Global_MecaData_Py2', save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = '22-02-09_M1', fileName = 'Global_MecaData_NonLin2_Py', 
-#                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = '21-01-18_M2_P1_C3', fileName = 'Global_MecaData_NonLin2_Py', 
-#                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = '22-02-09_M1_P1_C3', fileName = 'aaa', 
-#                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+PlotTask = '21-01-18_M2_P1_C3' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
+gdf = taka.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'aaa', 
+                                   save = False, PLOT = True, source = 'Python')
 
 
 # %%%% Display

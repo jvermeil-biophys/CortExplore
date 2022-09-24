@@ -243,50 +243,54 @@ def findInfosInFileName(f, infoType):
              * 'cellID'     -> will return the full cell ID.
              ex : if f = '21-01-18_M2_P1_C8.tif' and infoType = 'cellID', the function will return '21-01-18_M2_P1_C8'.
     """
-    if infoType in ['M', 'P', 'C']:
-        acceptedChar = [str(i) for i in range(10)] + ['.', '-']
-        string = '_' + infoType
-        iStart = re.search(string, f).end()
-        i = iStart
-        infoString = '' + f[i]
-        while f[i+1] in acceptedChar and i < len(f)-1:
-            i += 1
-            infoString += f[i]
+    infoString = ''
+    try:
+        if infoType in ['M', 'P', 'C']:
+            acceptedChar = [str(i) for i in range(10)] + ['-']
+            string = '_' + infoType
+            iStart = re.search(string, f).end()
+            i = iStart
+            infoString = '' + f[i]
+            while f[i+1] in acceptedChar and i < len(f)-1:
+                i += 1
+                infoString += f[i]
+                
+        elif infoType == 'date':
+            datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
+            date = f[datePos.start():datePos.end()]
+            infoString = date
+        
+        elif infoType == 'manipID':
+            datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
+            date = f[datePos.start():datePos.end()]
+            manip = 'M' + findInfosInFileName(f, 'M')
+            infoString = date + '_' + manip
             
-    elif infoType == 'date':
-        datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
-        date = f[datePos.start():datePos.end()]
-        infoString = date
-    
-    elif infoType == 'manipID':
-        datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
-        date = f[datePos.start():datePos.end()]
-        manip = 'M' + findInfosInFileName(f, 'M')
-        infoString = date + '_' + manip
-        
-    elif infoType == 'cellName':
-        infoString = 'M' + findInfosInFileName(f, 'M') + \
-                     '_' + 'P' + findInfosInFileName(f, 'P') + \
-                     '_' + 'C' + findInfosInFileName(f, 'C')
-        
-    elif infoType == 'cellID':
-        datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
-        date = f[datePos.start():datePos.end()]
-        infoString = date + '_' + 'M' + findInfosInFileName(f, 'M') + \
-                            '_' + 'P' + findInfosInFileName(f, 'P') + \
-                            '_' + 'C' + findInfosInFileName(f, 'C')
-                            
-    elif infoType == 'substrate':
-        try:
-            pos = re.search(r"disc[\d]*um", f)
-            infoString = f[pos.start():pos.end()]
-        except:
-            infoString = ''
+        elif infoType == 'cellName':
+            infoString = 'M' + findInfosInFileName(f, 'M') + \
+                         '_' + 'P' + findInfosInFileName(f, 'P') + \
+                         '_' + 'C' + findInfosInFileName(f, 'C')
+            
+        elif infoType == 'cellID':
+            datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
+            date = f[datePos.start():datePos.end()]
+            infoString = date + '_' + 'M' + findInfosInFileName(f, 'M') + \
+                                '_' + 'P' + findInfosInFileName(f, 'P') + \
+                                '_' + 'C' + findInfosInFileName(f, 'C')
+                                
+        elif infoType == 'substrate':
+            try:
+                pos = re.search(r"disc[\d]*um", f)
+                infoString = f[pos.start():pos.end()]
+            except:
+                infoString = ''
+    except:
+        pass
                              
     return(infoString)
 
 
-def isFileOfInterest(f, manips, wells, cells):
+def isFileOfInterest_V0(f, manips, wells, cells):
     """
     Determine if a file f correspond to the given criteria.
     More precisely, return a boolean saying if the manip, well and cell number are in the given range.
@@ -331,6 +335,47 @@ def isFileOfInterest(f, manips, wells, cells):
                             infoC = findInfosInFileName(f, 'C')
                             if infoC in cells_str:
                                 test = True
+    return(test)
+
+def isFileOfInterest(f, manips, wells, cells):
+    """
+    Determine if a file f correspond to the given criteria.
+    More precisely, return a boolean saying if the manip, well and cell number are in the given range.
+    f is a file name. Each of the fields 'manips', 'wells', 'cells' can be either a number, a list of numbers, or 'all'.
+    Example : if f = '21-01-18_M2_P1_C8.tif'
+    * manips = 'all', wells = 'all', cells = 'all' -> the function return True.
+    * manips = 1, wells = 'all', cells = 'all' -> the function return False.
+    * manips = [1, 2], wells = 'all', cells = 'all' -> the function return True.
+    * manips = [1, 2], wells = 2, cells = 'all' -> the function return False.
+    * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return True.
+    Note : if manips = 'all', the code will consider that wells = 'all', cells = 'all'.
+           if wells = 'all', the code will consider that cells = 'all'.
+           This means you can add filters only in this order : manips > wells > cells.
+    """
+    test = False
+    testM, testP, testC = False, False, False
+    
+    try:
+        fM = int(findInfosInFileName(f, 'M'))
+        fP = int(findInfosInFileName(f, 'P'))
+        fC = int(findInfosInFileName(f, 'C'))
+    except:
+        return(False)
+        
+    # print(fM, fP, fC)
+    # print(manips, wells, cells)
+    # print(toList(manips), toList(wells), toList(cells))
+    
+    if (manips == 'all') or (fM in toList(manips)):
+        testM = True
+    if (wells == 'all') or (fP in toList(wells)):
+        testP = True
+    if (cells == 'all') or (fC in toList(cells)):
+        testC = True
+        
+    if testM and testP and testC:
+        test = True
+    
     return(test)
 
 
@@ -766,6 +811,17 @@ def fitLine(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
+
+def toList(x):
+    """
+    if x is a list, return x
+    if x is a number, return [x]
+    """
+    try:
+        x = list(x)
+        return(x)
+    except:
+        return([x])
 
 # %%% Figure & graphic operations
 
