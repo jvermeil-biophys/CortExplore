@@ -743,6 +743,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
     print(gs.BLUE + f + gs.NORMAL)
+    plt.ioff()
     
     #### (0) Import experimental infos
     tsDF.dx, tsDF.dy, tsDF.dz, tsDF.D2, tsDF.D3 = tsDF.dx*1000, tsDF.dy*1000, tsDF.dz*1000, tsDF.D2*1000, tsDF.D3*1000
@@ -1503,6 +1504,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
 #             print(ratio)
             (axmbis, axMbis) = ax1bis.get_ylim()
             ax1bis.set_ylim([0, max(axMbis*ratio, 3*max(tsDF['F'].values))])
+
         
         
         #### fig3
@@ -1854,6 +1856,9 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
             saveName = fileName + '.csv'
             savePath = os.path.join(cp.DirDataAnalysis, saveName)
             mecaDf.to_csv(savePath, sep=';', index = False)
+            if cp.CloudSaving != '':
+                cloudSavePath = os.path.join(cp.DirCloudAnalysis, saveName)
+                mecaDf.to_csv(cloudSavePath, sep=';', index = False)
             textSave = 'Intermediate save {:.0f}/{:.0f} successful !'.format((i+10)//10, ((Nfiles-1)//10)+1)
             print(gs.CYAN + textSave + gs.NORMAL)
          
@@ -1863,6 +1868,9 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
         saveName = fileName + '.csv'
         savePath = os.path.join(cp.DirDataAnalysis, saveName)
         mecaDf.to_csv(savePath, sep=';', index = False)
+        if cp.CloudSaving != '':
+            cloudSavePath = os.path.join(cp.DirCloudAnalysis, saveName)
+            mecaDf.to_csv(cloudSavePath, sep=';', index = False)
         print(gs.BLUE + 'Final save successful !' + gs.NORMAL)
     
     updateUiDf_meca(ui_fileSuffix, mecaDf)
@@ -2135,7 +2143,7 @@ def getAnalysisTable(fileName):
 
 
 def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
-                   mergeExpDf = True, mergFluo = False, mergeUMS = False):
+                   mergeExpDf = True, mergeFluo = False, mergeUMS = False):
     
     df = getAnalysisTable(fileName)
     
@@ -2148,7 +2156,7 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         
     df = ufun.removeColumnsDuplicate(df)
         
-    if mergFluo:
+    if mergeFluo:
         fluoDf = getFluoData()
         df = pd.merge(df, fluoDf, how="left", on='cellID', suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
