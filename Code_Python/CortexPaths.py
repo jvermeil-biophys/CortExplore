@@ -182,7 +182,7 @@ def makeDirArchi():
 
                 
                 
-# %% Final Architecture
+# %% Final Architecture - august 2022
 
 # Notes:
 # > ## is the user's suffix (AJ: Anumita Jawahar, JV: Joseph Vermeil, DB: Dulamkhuu Bujaa).

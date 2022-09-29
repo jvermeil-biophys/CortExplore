@@ -2147,24 +2147,16 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
     
     df = getAnalysisTable(fileName)
     
-    if mergeExpDf:
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
-        df = pd.merge(expDf, df, how="inner", on='manipID', suffixes=("_x", "_y"),
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     copy=True,indicator=False,validate=None,
-        )
-        
-    df = ufun.removeColumnsDuplicate(df)
-        
+    
     if mergeFluo:
         fluoDf = getFluoData()
-        df = pd.merge(df, fluoDf, how="left", on='cellID', suffixes=("_x", "_y"),
+        df = pd.merge(fluoDf, df, how="right", on='cellID', suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,
         )
-        
     df = ufun.removeColumnsDuplicate(df)
         
+    
     if mergeUMS:
         if 'ExpDay' in df.columns:
             dateColumn = 'ExpDay'
@@ -2187,10 +2179,21 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         umsDf = pd.concat(listDF_UMS_matching)
         # f_filterCol = lambda x : x not in ['date', 'cellName', 'manipID']
         # umsCols = umsDf.columns[np.array([f_filterCol(c) for c in umsDf.columns])]   
-        
-        df = pd.merge(df, umsDf, how="left", on=['cellID', 'compNum'], suffixes=("_x", "_y"),
+    
+        df = pd.merge(umsDf, df, how="right", on=['cellID', 'compNum'], suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,[umsCols]
+        )
+        
+    df = ufun.removeColumnsDuplicate(df)
+    
+    
+    
+    if mergeExpDf:
+        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
+        df = pd.merge(expDf, df, how="inner", on='manipID', suffixes=("_x", "_y"),
+        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
+        #     copy=True,indicator=False,validate=None,
         )
         
     df = ufun.removeColumnsDuplicate(df)

@@ -409,6 +409,14 @@ def copyFile(DirSrc, DirDst, filename):
     PathDst = os.path.join(DirDst, filename)
     shutil.copyfile(PathSrc, PathDst)
     
+def copyFolder(DirSrc, DirDst, folderName):
+    """
+    Copy the folder 'folderName' from 'DirSrc' to 'DirDst' with all its contents
+    """
+    PathSrc = os.path.join(DirSrc, folderName)
+    PathDst = os.path.join(DirDst, folderName)
+    shutil.copytree(PathSrc, PathDst)
+    
 def copyFilesWithString(DirSrc, DirDst, stringInName):
     """
     Copy all the files from 'DirSrc' which names contains 'stringInName' to 'DirDst'
@@ -425,6 +433,10 @@ def containsFilesWithExt(Dir, ext):
         if File.endswith(ext):
             answer = True
     return(answer)
+
+def softMkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 # %%% Stats
 
