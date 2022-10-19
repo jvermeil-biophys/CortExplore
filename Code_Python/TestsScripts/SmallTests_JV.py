@@ -115,6 +115,19 @@ N = df.loc[df['bbb'] == 'p'].shape[0]
 # A = np.array(['youpi' for kk in range(N)])
 df.loc[df['bbb'] == 'p', 'ccc'] = 'youpo'
 
+
+# %%
+import  pandas as pd
+import numpy as np
+
+dicta={'aaa' : [1,2,3,4], 'bbb' : ['p','o','p','p'], 'ccc' : ['q','q','w','w']}
+df = pd.DataFrame(dicta)
+N = df.loc[df['bbb'] == 'p'].shape[0]
+# A = np.array(['youpi' for kk in range(N)])
+df.loc[df['bbb'] == 'p', 'ccc'] = 'youpo'
+
+df.loc[df['bbb'] == 'p', 'aaa'] = df.loc[df['bbb'] == 'p', 'aaa'].apply(lambda x : x*10)
+
 # %%
 import numpy as np
 

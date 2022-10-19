@@ -1145,6 +1145,8 @@ class PincherTimeLapse:
                 # i_lim is the first index after the end of the ramp
                 addOffset = (iF >= i_lim) # Is this ramp going further than it should, considering the black images ?
                 
+                
+                # 'optoGen' or 'compressions' but b=probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
