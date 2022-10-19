@@ -5406,11 +5406,8 @@ def nan2zero(x):
 
 #### Whole curve
 
-
 valStr = 'KChadwick_'
 weightStr = 'K_Weight_'
-
-
 
 # regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
 regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
