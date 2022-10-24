@@ -130,8 +130,8 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = '
 # %%%% Drugs
 
 drugTask = '22-03-30'
-# taka.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
-#                             save = False, PLOT = True, source = 'Python') # task = 'updateExisting'
+taka.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
+                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% Non-Lin
@@ -148,29 +148,6 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCAtask, fileName =
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-
-# %%%% HoxB8
-
-HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8_2', 
-                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-# %%%% MCA & HoxB8
-
-MCA_and_HoxB8_task = MCAtask + ' & ' + HoxB8task
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA_and_HoxB8_task, fileName = 'Global_MecaData_MCA-HoxB8', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-
-# %%%% HoxB8
-
-HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = HoxB8task, fileName = 'Global_MecaData_HoxB8', 
-                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% New MCA 2022
 
@@ -193,16 +170,35 @@ for d in all_dates[:-1]:
     MCA123task += ' & '
 MCA123task += all_dates[-1]
 
-taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName = 'Global_MecaData_MCA123', 
+taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName = 'Global_MecaData_MCA123-new', 
                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
+
+# %%%% HoxB8
+
+HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
+taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8_2', 
+                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
+#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+# %%%% MCA & HoxB8
+
+MCA_and_HoxB8_task = MCAtask + ' & ' + HoxB8task
+taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA_and_HoxB8_task, fileName = 'Global_MecaData_MCA-HoxB8', 
+                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+
+
+
 # %%%% Tests
 
-Test = '22-05-03_M3'#' & 22-05-04_M2' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = Test, fileName = 'Global_MecaData_Demo', 
+Test = '21-04-28' # '22-05-03_M3'#' & 22-05-04_M2' #' & 22-05-04 & 22-05-05'
+taka.computeGlobalTable_meca(mode = 'fromScratch', task = Test, fileName = 'Global_MecaData_TEST', 
                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
