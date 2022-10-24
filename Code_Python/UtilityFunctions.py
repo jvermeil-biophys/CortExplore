@@ -1,8 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar  1 11:21:02 2022
-
 @authors: Joseph Vermeil, Anumita Jawahar
+
+UtilityFunctions.py - contains all kind of small functions used by CortExplore programs, 
+to be imported with "import UtilityFunctions as ufun" and call with "cp.my_function".
+Joseph Vermeil, Anumita Jawahar, 2022
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # %% (0) Imports and settings
@@ -18,6 +34,7 @@ import os
 import re
 import time
 import shutil
+import numbers
 import pyautogui
 import matplotlib
 import traceback
@@ -290,52 +307,54 @@ def findInfosInFileName(f, infoType):
     return(infoString)
 
 
-def isFileOfInterest_V0(f, manips, wells, cells):
-    """
-    Determine if a file f correspond to the given criteria.
-    More precisely, return a boolean saying if the manip, well and cell number are in the given range.
-    f is a file name. Each of the fields 'manips', 'wells', 'cells' can be either a number, a list of numbers, or 'all'.
-    Example : if f = '21-01-18_M2_P1_C8.tif'
-    * manips = 'all', wells = 'all', cells = 'all' -> the function return True.
-    * manips = 1, wells = 'all', cells = 'all' -> the function return False.
-    * manips = [1, 2], wells = 'all', cells = 'all' -> the function return True.
-    * manips = [1, 2], wells = 2, cells = 'all' -> the function return False.
-    * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return True.
-    Note : if manips = 'all', the code will consider that wells = 'all', cells = 'all'.
-           if wells = 'all', the code will consider that cells = 'all'.
-           This means you can add filters only in this order : manips > wells > cells.
-    """
-    test = False
-    if f.endswith(".tif"):
-        if manips == 'all':
-            test = True
-        else:
-            try:
-                manips_str = [str(i) for i in manips]
-            except:
-                manips_str = [str(manips)]
-            infoM = findInfosInFileName(f, 'M')
-            if infoM in manips_str:
-                if wells == 'all':
-                    test = True
-                else:
-                    try:
-                        wells_str = [str(i) for i in wells]
-                    except:
-                        wells_str = [str(wells)]
-                    infoP = findInfosInFileName(f, 'P')
-                    if infoP in wells_str:
-                        if cells == 'all':
-                            test = True
-                        else:
-                            try:
-                                cells_str = [str(i) for i in cells]
-                            except:
-                                cells_str = [str(cells)]
-                            infoC = findInfosInFileName(f, 'C')
-                            if infoC in cells_str:
-                                test = True
-    return(test)
+# def isFileOfInterest_V0(f, manips, wells, cells):
+#     """
+#     Determine if a file f correspond to the given criteria.
+#     More precisely, return a boolean saying if the manip, well and cell number are in the given range.
+#     f is a file name. Each of the fields 'manips', 'wells', 'cells' can be either a number, a list of numbers, or 'all'.
+#     Example : if f = '21-01-18_M2_P1_C8.tif'
+#     * manips = 'all', wells = 'all', cells = 'all' -> the function return True.
+#     * manips = 1, wells = 'all', cells = 'all' -> the function return False.
+#     * manips = [1, 2], wells = 'all', cells = 'all' -> the function return True.
+#     * manips = [1, 2], wells = 2, cells = 'all' -> the function return False.
+#     * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return True.
+#     Note : if manips = 'all', the code will consider that wells = 'all', cells = 'all'.
+#            if wells = 'all', the code will consider that cells = 'all'.
+#            This means you can add filters only in this order : manips > wells > cells.
+#     """
+#     test = False
+#     if f.endswith(".tif"):
+#         if manips == 'all':
+#             test = True
+#         else:
+#             try:
+#                 manips_str = [str(i) for i in manips]
+#             except:
+#                 manips_str = [str(manips)]
+#             infoM = findInfosInFileName(f, 'M')
+#             if infoM in manips_str:
+#                 if wells == 'all':
+#                     test = True
+#                 else:
+#                     try:
+#                         wells_str = [str(i) for i in wells]
+#                     except:
+#                         wells_str = [str(wells)]
+#                     infoP = findInfosInFileName(f, 'P')
+#                     if infoP in wells_str:
+#                         if cells == 'all':
+#                             test = True
+#                         else:
+#                             try:
+#                                 cells_str = [str(i) for i in cells]
+#                             except:
+#                                 cells_str = [str(cells)]
+#                             infoC = findInfosInFileName(f, 'C')
+#                             if infoC in cells_str:
+#                                 test = True
+#     return(test)
+
+
 
 def isFileOfInterest(f, manips, wells, cells):
     """
@@ -378,26 +397,94 @@ def isFileOfInterest(f, manips, wells, cells):
     
     return(test)
 
-
-
 def getDictAggMean(df):
     dictAggMean = {}
     for c in df.columns:
-    #         t = df[c].dtype
-    #         print(c, t)
-            try :
-                if np.array_equal(df[c], df[c].astype(bool)):
-                    dictAggMean[c] = 'min'
+        # print(c)
+        S = df[c].dropna()
+        lenNotNan = S.size
+        if lenNotNan == 0:
+            dictAggMean[c] = 'first'
+        else:
+            S.infer_objects()
+            if S.dtype == bool:
+                dictAggMean[c] = np.nanmin
+            else:
+                # print(c)
+                # print(pd.Series.all(S.apply(lambda x : isinstance(x, numbers.Number))))
+                if pd.Series.all(S.apply(lambda x : isinstance(x, numbers.Number))):
+                    dictAggMean[c] = np.nanmean
                 else:
-                    try:
-                        if not c.isnull().all():
-                            np.mean(df[c])
-                            dictAggMean[c] = 'mean'
-                    except:
-                        dictAggMean[c] = 'first'
-            except:
                     dictAggMean[c] = 'first'
+                    
+    if 'compNum' in dictAggMean.keys():
+        dictAggMean['compNum'] = np.nanmax
+                    
     return(dictAggMean)
+
+# def getDictAggMean_V0(df):
+#     dictAggMean = {}
+#     for c in df.columns:
+#     #         t = df[c].dtype
+#     #         print(c, t)
+#             try :
+#                 if np.array_equal(df[c], df[c].astype(bool)):
+#                     dictAggMean[c] = 'min'
+#                 else:
+#                     try:
+#                         if not c.isnull().all():
+#                             np.mean(df[c])
+#                             dictAggMean[c] = 'mean'
+#                     except:
+#                         dictAggMean[c] = 'first'
+#             except:
+#                     dictAggMean[c] = 'first'
+#     return(dictAggMean)
+
+
+def archiveData(df, name = '', sep = ';', descText = '',
+                saveDir = '', subDir = '', cloudSave = 'none'):
+    # Generate unique name if needed
+    if name == '':
+        dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
+        name = 'df_' + dt
+        
+    saveDesc = (descText != '')
+        
+    # Generate default save path if needed
+    if saveDir == '':
+        saveDir = cp.DirDataFigToday
+        saveCloudDir = cp.DirCloudFigToday
+    else:
+        saveDir = os.path.join(cp.DirDataFig, saveDir)
+        saveCloudDir = os.path.join(cp.DirCloudFig, saveDir)
+        
+    # Normal save
+    savePath = os.path.join(saveDir, subDir, name+'.csv')
+    df.to_csv(savePath, sep = sep, index = False)
+    if saveDesc:
+        descPath = os.path.join(saveDir, subDir, name+'_infos.txt')
+        f = open(descPath, 'w')
+        f.write(descText)
+        f.close()
+    
+    # Cloud save if specified
+    doCloudSave = (not (cloudSave == 'none')) \
+                  or (cloudSave == 'strict') \
+                  or (cloudSave == 'flexible' and cp.CloudSaving != '')
+                  
+    if doCloudSave:
+        cloudSavePath = os.path.join(saveCloudDir, subDir, name+'.csv')
+        df.to_csv(cloudSavePath, sep = sep, index = False)
+        if saveDesc:
+            descPathCloud = os.path.join(saveCloudDir, subDir, name+'_infos.txt')
+            f = open(descPathCloud, 'w')
+            f.write(descText)
+            f.close()
+        
+    
+
+
 
 # %%% File manipulation
 
@@ -591,6 +678,7 @@ def matchDists(listD, listStatus, Nup, NVox, direction):
                 D2 = np.concatenate((fillVal*np.ones(shift),D[:-shift])).astype(np.float64)
                 listD2.append(D2)
     return(np.array(listD2))
+
 
 def uiThresholding(I, method = 'otsu', factorT = 0.8):
     """
@@ -834,6 +922,12 @@ def toList(x):
         return(x)
     except:
         return([x])
+    
+def drop_duplicates_in_array(A):
+    val, idx = np.unique(A, return_index = True)
+    idx.sort()
+    A_filtered = np.array([A[idx[j]] for j in range(len(idx))])
+    return(A_filtered)
 
 # %%% Figure & graphic operations
 
@@ -882,52 +976,52 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
    
     
 
-def archiveFig_V0(fig, ax, figDir, name='auto', dpi = 100):
+# def archiveFig_V0(fig, ax, figDir, name='auto', dpi = 100):
     
-    if not os.path.exists(figDir):
-        os.makedirs(figDir)
+#     if not os.path.exists(figDir):
+#         os.makedirs(figDir)
     
-    # saveDir = os.path.join(figDir, str(date.today()))
-    # if not os.path.exists(saveDir):
-    #     os.makedirs(saveDir)
-    saveDir = figDir
+#     # saveDir = os.path.join(figDir, str(date.today()))
+#     # if not os.path.exists(saveDir):
+#     #     os.makedirs(saveDir)
+#     saveDir = figDir
     
-    if name != 'auto':
-        fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+#     if name != 'auto':
+#         fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
     
-    else:
-        suptitle = fig._suptitle.get_text()
-        if len(suptitle) > 0:
-            name = suptitle
-            fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+#     else:
+#         suptitle = fig._suptitle.get_text()
+#         if len(suptitle) > 0:
+#             name = suptitle
+#             fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
         
-        else:
-            try:
-                N = len(ax)
-                ax = ax[0]
-            except:
-                N = 1
-                ax = ax
+#         else:
+#             try:
+#                 N = len(ax)
+#                 ax = ax[0]
+#             except:
+#                 N = 1
+#                 ax = ax
                 
-            xlabel = ax.get_xlabel()
-            ylabel = ax.get_ylabel()
-            if len(xlabel) > 0 and len(ylabel) > 0:
-                name = ylabel + ' Vs ' + xlabel
-                if N > 1:
-                    name = name + '___etc'
-                fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+#             xlabel = ax.get_xlabel()
+#             ylabel = ax.get_ylabel()
+#             if len(xlabel) > 0 and len(ylabel) > 0:
+#                 name = ylabel + ' Vs ' + xlabel
+#                 if N > 1:
+#                     name = name + '___etc'
+#                 fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
             
-            else:
-                title = ax.get_title()
-                if len(title) > 0:
-                    if N > 1:
-                        name = name + '___etc'
-                    fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+#             else:
+#                 title = ax.get_title()
+#                 if len(title) > 0:
+#                     if N > 1:
+#                         name = name + '___etc'
+#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
                 
-                else:
-                    figNum = plt.gcf().number
-                    name = 'figure ' + str(figNum) 
-                    fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+#                 else:
+#                     figNum = plt.gcf().number
+#                     name = 'figure ' + str(figNum) 
+#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
 
 def lighten_color(color, amount=0.5):
     """
