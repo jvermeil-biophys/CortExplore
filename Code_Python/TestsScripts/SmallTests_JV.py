@@ -109,6 +109,27 @@ fig.show()
 import  pandas as pd
 import numpy as np
 
+
+class Grandpa:
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+    
+    def m1(self):
+        return(self.a>0)
+
+class Dad(Grandpa):
+    def __init__(self, a, b):
+        super().__init__(a, b)
+        
+    
+    # def m1(self):
+    #     return(self.a<0)
+
+# %%
+import  pandas as pd
+import numpy as np
+
 dicta={'aaa' : [1,2,3,4], 'bbb' : ['p','o','p','p'], 'ccc' : ['q','q','w','w']}
 df = pd.DataFrame(dicta)
 N = df.loc[df['bbb'] == 'p'].shape[0]
