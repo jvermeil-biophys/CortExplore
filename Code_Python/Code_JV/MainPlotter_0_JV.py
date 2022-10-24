@@ -412,7 +412,7 @@ GlobalTable_meca = taka.getMergedTable('Global_MecaData')
 GlobalTable_meca_Py = taka.getMergedTable('Global_MecaData_Py')
 
 #### GlobalTable_meca_Py2
-
+print('big')
 # GlobalTable_meca_Py2 = taka.getGlobalTable(kind = 'meca_py2')
 GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2', mergeUMS = True)
 
@@ -422,6 +422,10 @@ GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2', mergeUMS = Tru
 # GlobalTable_meca_nonLin = taka.getGlobalTable(kind = 'meca_nonLin')
 GlobalTable_meca_nonLin = taka.getMergedTable('Global_MecaData_NonLin2_Py')
 
+#### Global_MecaData_Drugs_Py
+
+# GlobalTable_meca_nonLin = taka.getGlobalTable(kind = 'meca_nonLin')
+GlobalTable_meca_drugs = taka.getMergedTable('Global_MecaData_Drugs_Py')
 
 #### Global_MecaData_MCA
 
@@ -538,7 +542,13 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
                'bare glass & ctrl':{'color': gs.colorList40[10],'marker':'^'},
                'bare glass & tko':{'color': gs.colorList40[30],'marker':'^'},
                '20um fibronectin discs & ctrl':{'color': gs.colorList40[12],'marker':'o'},
-               '20um fibronectin discs & tko':{'color': gs.colorList40[32],'marker':'o'}
+               '20um fibronectin discs & tko':{'color': gs.colorList40[32],'marker':'o'},
+               
+               # Drugs
+               'none':{'color': gs.colorList40[10],'marker':'o'},
+               'dmso':{'color': gs.colorList40[11],'marker':'o'},
+               'blebbistatin':{'color': gs.colorList40[12],'marker':'o'},
+               'latrunculinA':{'color': gs.colorList40[13],'marker':'o'}
                }
 
 
@@ -2509,7 +2519,7 @@ Filters = [(rawMecaTable['Validated'] == 1), ((rawMecaTable['ExpType'] == 'Dicty
 fig, ax = D1Plot(rawMecaTable, CondCol=['ExpType'],Parameters=['SurroundingThickness','EChadwick'],                 Filters=Filters,AvgPerCell=True,cellID='CellName', useHue = False)
 fig.suptitle('M450 vs M270 pour compressions de 1s')
 renameAxes(ax,renameDict1)
-ufun.archiveFig(fig, ax, name='Dictys_beadTypes_SurroundingThickness&EChadwick', figSubDir = figSubDir)
+ufun.archiveFig(fig, ax, name='Dictys_beadTypes_SurroundingThickness&EChadwick')
 plt.show()
 # rawMecaTable[Filters[0] & Filters[1] & Filters[2]]
 
@@ -6314,31 +6324,326 @@ plt.show()
 # %%%%% 3T3 aSFL - March 22 - Compression experiments
 
 
-data = GlobalTable_meca_Py2
+data = GlobalTable_meca_drugs
 
 dates = ['22-03-30']
-fit = '175<s<325'
+fit = '_S=400+/-75'
 
-Filters = [(data['validatedFit'] == True), 
-           (data['validatedThickness'] == True), 
+thicknessType = 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
            (data['bestH0'] <= 800),
-           (data['validatedFit_' + fit] == True), 
+           (data['validatedFit' + fit] == True), 
            (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D1Plot(data, CondCol=['drug'], Parameters=['bestH0', 'KChadwick_' + fit], Filters=Filters, 
+fig, ax = D1Plot(data, CondCol=['drug'], Parameters=[thicknessType, 'K' + fit], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=['dmso', 'blebbistatin'], stats=True, statMethod='Mann-Whitney', 
-                box_pairs=[], figSizeFactor = 0.9, markersizeFactor=1, orientation = 'v', AvgPerCell = False)
+                box_pairs=[], figSizeFactor = 0.9, markersizeFactor=1, orientation = 'h', AvgPerCell = True)
 
 rD = {'dmso' : 'Control', 'blebbistatin' : 'Blebbistatin',
-              'bestH0' : 'Thickness (nm)', 'KChadwick_' + fit : 'Tangeantial Modulus (Pa)'}
+              'bestH0' : 'Thickness (nm)', 'K' + fit : 'Tangeantial Modulus (Pa)'}
 
 renameAxes(ax, rD)
+renameAxes(ax, renameDict1)
+
 ax[0].set_ylim([0, 1000])
 # ax[0].legend(loc = 'upper right', fontsize = 8)
 # ax[1].legend(loc = 'upper right', fontsize = 8)
 fig.suptitle('3T3aSFL & drugs\nPreliminary data')
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
+
+
+# %%%% K(s) for MCA3
+
+#### Making the Dataframe 
+
+data = GlobalTable_meca_drugs
+
+dates = ['22-03-30']
+
+thicknessType = 'ctFieldThickness'
+condCol = 'drug'
+
+filterList = [(data['validatedThickness'] == True), 
+           (data['bestH0'] <= 800),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+globalFilter = filterList[0]
+for k in range(1, len(filterList)):
+    globalFilter = globalFilter & filterList[k]
+
+data_f = data[globalFilter]
+
+# data_f['HoxB8_Co'] = data_f['substrate'].values + \
+#                      np.array([' & ' for i in range(data_f.shape[0])]) + \
+#                      data_f['cell subtype'].values
+
+width = 150 # 200
+fitCenters =  np.array([S for S in range(100, 700, 50)])
+# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
+# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
+
+# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
+
+listColumnsMeca = []
+
+KChadwick_Cols = []
+KWeight_Cols = []
+
+for rFN in regionFitsNames:
+    listColumnsMeca += ['K_'+rFN, 'K_CIW_'+rFN, 'R2_'+rFN, 
+                        'Npts_'+rFN, 'validatedFit_'+rFN]
+    KChadwick_Cols += [('K_'+rFN)]
+
+    K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
+    KWeight = (data_f['K_'+rFN]/K_CIWidth)**2
+    data_f['K_Weight_'+rFN] = KWeight
+    data_f['K_Weight_'+rFN] *= data_f['K_'+rFN].apply(lambda x : (x<1e6))
+    data_f['K_Weight_'+rFN] *= data_f['R2_'+rFN].apply(lambda x : (x>1e-2))
+    data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+    KWeight_Cols += [('K_Weight_'+rFN)]
+    
+
+#### Useful functions
+
+def w_std(x, w):
+    m = np.average(x, weights=w)
+    v = np.average((x-m)**2, weights=w)
+    std = v**0.5
+    return(std)
+
+def nan2zero(x):
+    if np.isnan(x):
+        return(0)
+    else:
+        return(x)
+
+
+#### Whole curve
+
+
+valStr = 'K_'
+weightStr = 'K_Weight_'
+
+
+
+# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
+
+fig, axes = plt.subplots(2,1, figsize = (9,12))
+ListDfWhole = []
+
+conditions = np.array(data_f[condCol].unique())
+
+
+cD = {co: [styleDict1[co]['color'], styleDict1[co]['color']] for co in conditions}
+
+# oD = {'none': [-15, 1.02] , 'doxycyclin': [5, 0.97] }
+# lD = {'naked glass & ctrl':', 
+#       'naked glass & tko':'',
+#       '20um fibronectin discs & tko':'',
+#       '20um fibronectin discs & ctrl':''}
+
+for co in conditions:
+    print(co)
+    Kavg = []
+    Kstd = []
+    D10 = []
+    D90 = []
+    N = []
+    
+    data_ff = data_f[data_f[condCol] == co]
+    
+    
+    for ii in range(len(fitCenters)):
+        S = fitCenters[ii]
+        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+        variable = valStr+rFN
+        weight = weightStr+rFN
+        
+        x = data_ff[variable].apply(nan2zero).values
+        w = data_ff[weight].apply(nan2zero).values
+        
+        print(S)
+        print(np.sum(w))
+        
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        
+        d10, d90 = np.percentile(x[x != 0], (10, 90))
+        n = len(x[x != 0])
+        
+        Kavg.append(m)
+        Kstd.append(std)
+        D10.append(d10)
+        D90.append(d90)
+        N.append(n)
+    
+    Kavg = np.array(Kavg)
+    Kstd = np.array(Kstd)
+    D10 = np.array(D10)
+    D90 = np.array(D90)
+    N = np.array(N)
+    Kste = Kstd / (N**0.5)
+    
+    alpha = 0.975
+    dof = N
+    q = st.t.ppf(alpha, dof) # Student coefficient
+    
+    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+    
+    for ax in axes:
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
+                       ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
+        ax.set_ylim([500,2e4])
+        ax.set_xlim([0,1100])
+        ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left')
+        
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (Pa)')
+        
+        for kk in range(len(N)):
+            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), 
+                    fontsize = 8, color = cD[co][1])
+        # for kk in range(len(N)):
+        #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
+        #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
+        
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    
+    axes[1].set_ylim([0,1.4e4])
+    
+    fig.suptitle('K(s)'+'\n(fits width: {:.0f}Pa)'.format(width))    
+    
+    df_val = pd.DataFrame(d_val)
+    ListDfWhole.append(df_val)
+    dftest = pd.DataFrame(d)
+
+plt.show()
+
+# ufun.archiveFig(fig, name='MCA3_K(s)', figDir = 'MCA3_project', dpi = 100)
+
+
+
+#### Local zoom
+
+Sinf, Ssup = 200, 300
+extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
+# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
+# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
+
+data2_f = data_f
+globalExtraFilter = extraFilters[0]
+for k in range(1, len(extraFilters)):
+    globalExtraFilter = globalExtraFilter & extraFilters[k]
+data2_f = data2_f[globalExtraFilter]  
+
+
+fig, axes = plt.subplots(2,1, figsize = (9,12))
+
+conditions = np.array(data_f[condCol].unique())
+print(conditions)
+
+
+cD = {co: [styleDict1[co]['color'], styleDict1[co]['color']] for co in conditions}
+
+listDfZoom = []
+
+for co in conditions:
+    
+    Kavg = []
+    Kstd = []
+    D10 = []
+    D90 = []
+    N = []
+    
+    data_ff = data2_f[data_f[condCol] == co]
+    
+    for ii in range(len(fitCenters)):
+        S = fitCenters[ii]
+        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+        S = fitCenters[ii]
+        variable = valStr+rFN
+        weight = weightStr+rFN
+        
+        x = data_ff[variable].apply(nan2zero).values
+        w = data_ff[weight].apply(nan2zero).values
+        
+
+        
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        
+        d10, d90 = np.percentile(x[x != 0], (10, 90))
+        n = len(x[x != 0])
+        
+        Kavg.append(m)
+        Kstd.append(std)
+        D10.append(d10)
+        D90.append(d90)
+        N.append(n)
+    
+    Kavg = np.array(Kavg)
+    Kstd = np.array(Kstd)
+    D10 = np.array(D10)
+    D90 = np.array(D90)
+    N = np.array(N)
+    Kste = Kstd / (N**0.5)
+    
+    alpha = 0.975
+    dof = N
+    q = st.t.ppf(alpha, dof) # Student coefficient
+    
+    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+    
+    for ax in axes:
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
+                        ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
+        
+        ax.set_xlim([Sinf-50, Ssup+50])
+        ax.set_title('K(s)\nOnly compressions including the [{:.0f},{:.0f}]Pa range'.format(Sinf, Ssup))
+        
+        # Weighted means -- D9-D1 as error
+        # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = cD[co][1], 
+        #                 ecolor = 'k', elinewidth = 0.8, capsize = 3, label = lD[co]) 
+        # ax[1].set_ylim([500,2e4])
+        # ax[1].set_xlim([200,900])
+        
+        # for k in range(2):
+        ax.legend(loc = 'upper left')
+        
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (Pa)')
+        for kk in range(len(N)):
+            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+    
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    
+    axes[1].set_ylim([0,15000])
+    
+    fig.suptitle('K(s)'+' - (fits width: {:.0f}Pa)'.format(width))
+    
+    df_val = pd.DataFrame(d_val)
+    listDfZoom.append(df_val)
+
+plt.show()
+
+# ufun.archiveFig(fig, name='MCA3_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
+#                 figDir = 'MCA3_project', dpi = 100)
+
+
 
 
