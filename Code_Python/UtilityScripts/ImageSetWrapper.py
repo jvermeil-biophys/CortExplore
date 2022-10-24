@@ -211,6 +211,7 @@ def mainWrapper(dates = [], dstDir = '',
     if not os.path.exists(ReadMe_path):
         ReadMe_file = open(ReadMe_path, 'w')
         ReadMe_file.write(ReadMeText)
+        ReadMe_file.close()
     
     
     

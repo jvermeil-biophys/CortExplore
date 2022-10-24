@@ -28,7 +28,7 @@ MCA1. StandardLinkerCellLine. ;21-04-23;M1;constant field;doxycyclin;20um fibron
 MCA1. StandardLinkerCellLine. ;21-04-23;M2;constant field;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
 MCA1. LongLinkerCellLine. ;21-04-27;M1;compressions;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;True;3;500;169_133;
 MCA1. LongLinkerCellLine. ;21-04-27;M2;compressions;doxycyclin;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;True;3;500;169_133;
-MCA1. LongLinkerCellLine. ;21-04-28;M1;compressions;doxycyclin;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;True;3;500;169_133;fluo images taken separetely
+MCA1. LongLinkerCellLine. ;21-04-28;M1;compressions;doxycyclin;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;False;3;500;169_133;fluo images taken separetely
 MCA1. LongLinkerCellLine. ;21-04-28;M2;compressions;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;False;3;500;169_133;no fluo images taken
 MCA1. HighExpressorCellLine. ;21-06-16;M1;compressions;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
 MCA1. HighExpressorCellLine. ;21-06-16;M2;compressions;doxycyclin;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
