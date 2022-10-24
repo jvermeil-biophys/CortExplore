@@ -1,8 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov 23 16:50:16 2021
-
 @authors: Joseph Vermeil, Anumita Jawahar
+
+BeadTracker.py - contains the classes to perform bead tracking in a movie
+(see the function mainTracker and the Tracker classes), and to make a Depthograph
+(see the function depthoMaker and the Depthograph classes).
+Joseph Vermeil, Anumita Jawahar, 2021
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # %% (0) Imports and settings

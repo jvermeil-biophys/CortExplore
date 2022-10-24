@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jun 13 17:21:10 2022
-
 @author: Anumita Jawahar & Joseph Vermeil
+
+UtilityFunctions.py - 
+Joseph Vermeil, Anumita Jawahar, 2022
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 source : https://docs.opencv.org/3.4/db/d5b/tutorial_py_mouse_handling.html
 """
@@ -31,27 +46,27 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '22.08.26'
-DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'G:/20220826_100xoil_3t3optorhoa_4.5beadsStrept_Mechanics/22.08.26'
-# prefix = 'cell'
-# channel = 'w1TIRF DIC'
-microscope = 'labview'
+# date = '22.08.26'
+# DirSave = os.path.join(cp.DirDataRaw, date)
+# DirExt = 'G:/20220826_100xoil_3t3optorhoa_4.5beadsStrept_Mechanics/22.08.26'
+# # prefix = 'cell'
+# # channel = 'w1TIRF DIC'
+# microscope = 'labview'
 
 #%% Define parameters # Jojo
 
-# date = '22.07.27'
-# DirExt = 'G:/22.07.27_longLinker' #'/M4_patterns_ctrl'
-# DirSave = os.path.join(cp.DirDataRaw, date)
+date = '22.03.28'
+DirExt = 'E:/22.03.28_Patterns3T3_drugs' #'/M4_patterns_ctrl'
+DirSave = os.path.join(cp.DirDataRaw, date)
 
-# prefix = ''
-# channel = ''
-# microscope = 'labview'
+prefix = ''
+channel = ''
+microscope = 'labview'
 
 
 # %% Functions
 
-def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded']):
+def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded', 'out', 'bad']):
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -506,7 +521,7 @@ cv2.destroyAllWindows()
 
 print(gs.BLUE + 'Saving all tiff stacks...' + gs.NORMAL)
 
-cropAndCopy(DirExt, DirSave, allRefPoints[19:30], allCellsToCrop[19:30], microscope)
+cropAndCopy(DirExt, DirSave, allRefPoints, allCellsToCrop, microscope)
 
 
 #%% Creating .tif stacks of 561n recruitment images
