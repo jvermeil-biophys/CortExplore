@@ -626,15 +626,57 @@ dictColumnsRegionFit = {'regionFitNames' : '',
 #%% Attempt at class
 
 #### TO DO
-# - Finish rewriting the fitting functions (maybe switch 100% to statmodel.api ?)
-# - Finish writing the fitting methods
-# - Write a tester script
 # - When this is done and runs ok, think of the results and the plots.
 # - Write the polynomial fit.
 
 
-def fitChadwick_hf(h, f, D, output = 'simple'):
-    # f in pN, h in nm.
+# class ResultsCompression:
+#     def __init__(self, dictColumns, cellComp):
+#         Ncomp = cellComp.Ncomp
+        
+#         main = {}
+#         for k in dictColumnsMeca.keys():
+#             main[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
+#         self.main = main
+#         self.dictColumns = dictColumns
+#         self.Ncomp = cellComp.Ncomp
+
+# %%% mechanical models
+
+def chadwickModel(h, E, H0, DIAMETER):
+    R = DIAMETER/2
+    f = (np.pi*E*R*((H0-h)**2))/(3*H0)
+    return(f)
+
+def inversedChadwickModel(f, E, H0, DIAMETER):
+    R = DIAMETER/2
+    h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
+    return(h)
+
+def dimitriadisModel(h, E, H0, DIAMETER, v = 0, order = 2):
+    R = DIAMETER/2
+    delta = H0-h
+    X = np.sqrt(R*delta)/h
+    ks = ufun.getDimitriadisCoefs(v, order)
+    poly = np.zeros_like(X)
+    for i in range(order+1):
+        poly = poly + ks[i] * X**i
+    f = ((4 * E * R**0.5 * delta**1.5)/(3 * (1 - v**2))) * poly
+    return(f)
+
+def constitutiveRelation(strain, K, stress0):
+    stress = (K * strain) + stress0
+    return(stress)
+
+def inversedConstitutiveRelation(stress, K, strain0):
+    strain = (stress / K) + strain0
+    return(strain)
+
+# %%% general fitting functions
+
+
+def fitChadwick_hf(h, f, D):
+    # f in pN, h & D in nm.
     
     R = D/2
     Npts = len(h)
@@ -659,68 +701,26 @@ def fitChadwick_hf(h, f, D, output = 'simple'):
     upperBounds = (np.Inf, np.Inf)
     parameterBounds = [lowerBounds, upperBounds]
 
-    # try:
-    params, covM = curve_fit(inversedChadwickModel, f, h, p0 = initialParameters, bounds = parameterBounds)
-
-    E, H0 = params
-    
-    # comprMat = np.array([h, f]).T 
-    # comprMatSorted = comprMat[comprMat[:, 0].argsort()]
-    # hSorted, fSorted = comprMatSorted[:, 0], comprMatSorted[:, 1]
-    
-    hPredict = inversedChadwickModel(f, E, H0)
-    # fPredict = chadwickModel(hSorted, E, H0)
-
-    alpha = 0.975
-    err_chi2 = 30
-    dof = len(f)-len(params)
-    q = st.t.ppf(alpha, dof) # Student coefficient
-    R2 = ufun.get_R2(h, hPredict)
-    Chi2 = ufun.get_Chi2(h, hPredict, dof, err_chi2)        
-
-    varE = covM[0,0]
-    seE = (varE)**0.5
-    E, seE = E*1e6, seE*1e6 # conversion to Pa
-    confIntE = [E-q*seE, E+q*seE]
-    # confIntEWidth = 2*q*seE
-
-    varH0 = covM[1,1]
-    seH0 = (varH0)**0.5
-    confIntH0 = [H0-q*seH0, H0+q*seH0]
-    # confIntH0Width = 2*q*seH0  
+    try:
+        # params = [E, H0] ; ses = [seE, seH0]
+        params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
+        ses = np.array([covM[0,0], covM[1,1]])
+        params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
-    # except:
-    #     error = True
-    #     E, seE, H0, seH0 = np.nan, np.nan, np.nan, np.nan
-    #     R2, Chi2 = np.nan, np.nan
-    #     confIntE, confIntH0 = [np.nan, np.nan], [np.nan, np.nan]
-    #     covM = np.empty((2,2))
-    #     covM.fill(np.nan)
-    #     hPredict = np.empty(Npts)
-    #     hPredict.fill(np.nan)
-    #     # fPredict = np.nan(Npts)
+    except:
+        error = True
+        params = np.ones(2) * np.nan
+        ses = np.ones(2) * np.nan
         
-    if output == 'simple':
-        res = (E, H0, error)
-
-    elif output == 'detailed':
-        res =  {'error':error,
-                'E':E, 'seE':seE,
-                'H0':H0, 'seH0':seH0,
-                'R2':R2, 'Chi2':Chi2,
-                'confIntE':confIntE, 
-                'confIntH0':confIntH0,
-                'hPredict':hPredict, 
-                # 'fPredict':fPredict,
-                'covM':covM
-                }
+    res = (params, ses, error)
         
     return(res)
         
 
 
-def fitDimitriadis_hf(h, f, D, order = 2, output = 'simple'):
-
+def fitDimitriadis_hf(h, f, D, order = 2):
+    # f in pN, h & D in nm.
+    
     R = D/2
     Npts = len(h)
     error = False
@@ -756,73 +756,143 @@ def fitDimitriadis_hf(h, f, D, order = 2, output = 'simple'):
     parameterBounds = [lowerBounds, upperBounds]
 
     try:
+        # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
-        
-        E, H0 = params
-        
-        fPredict = dimitriadisModel(h, E, H0)
-        
-        alpha = 0.975
-        err_chi2 = 100
-        dof = len(f)-len(params)
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        R2 = ufun.get_R2(f, fPredict)
-        Chi2 = ufun.get_Chi2(f, fPredict, dof, err_chi2)
-        
-        varE = covM[0,0]
-        seE = (varE)**0.5
-        E, seE = E*1e6, seE*1e6
-        confIntE = [E-q*seE, E+q*seE]
-        # confIntEWidth = 2*q*seE
-
-        varH0 = covM[1,1]
-        seH0 = (varH0)**0.5
-        confIntH0 = [H0-q*seH0, H0+q*seH0]
-        # confIntH0Width = 2*q*seH0
+        ses = np.array([covM[0,0], covM[1,1]])
+        params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
     except:
         error = True
+        params = np.ones(2) * np.nan
+        ses = np.ones(2) * np.nan
+        
+    res = (params, ses, error)
+        
+    return(res)
+
+
+def fitLinear_ss(stress, strain, weights = []):
+    
+    error = False
+    
+    if len(weights) == 0:
+        weights = np.ones_like(stress, dtype = bool)
+    
+    masked = (np.all(weights.astype(bool) == weights)) # Are all the weights equal to 0 or 1 ? If so it is a mask
+    weighted = not masked # The other case
+
+    def constitutiveRelation(strain, K, stress0):
+        stress = (K * strain) + stress0
+        return(stress)
+    
+    def inversedConstitutiveRelation(stress, K, strain0):
+        strain = (stress / K) + strain0
+        return(strain)
+    
+    try:
+        if masked:
+            ols_model = sm.OLS(strain[weights], sm.add_constant(stress[weights]))
+            results_ols = ols_model.fit()
+            S0, K = results_ols.params[0], 1/results_ols.params[1]
+            seS0, seK = results_ols.HC3_se[0], results_ols.HC3_se[1]*K**2 # See note below
+        
+        if weighted:
+            wls_model = sm.WLS(strain, sm.add_constant(stress), weights=weights)
+            results_wls = wls_model.fit()
+            S0, K = results_wls.params[0], 1/results_wls.params[1]
+            seS0, seK = results_wls.HC3_se[0], results_wls.HC3_se[1]*K**2 # See note below
+            
+            # NB : Here we fit strain = L * stress + S0 ; L = 1/K
+            # To find K, we just take 1/params[1] = 1/L
+            # To find seK, there is a trick : se(K) / K = relative error = se(L) / L ; so se(K) = se(L) * K**2
+            
+        params = np.array([K, S0])
+        ses = np.array([seK, seS0])
+        
+    except:
+        error = True
+        params = np.ones(2) * np.nan
+        ses = np.ones(2) * np.nan
+
+    res = (params, ses, error)
+        
+    return(res)
+
+
+def makeDictFit_hf(params, ses, error, y, yPredict, err_chi2):
+    if not error:
+        E, H0 = params
+        seE, seH0 = ses
+
+        alpha = 0.975
+        dof = len(y)-len(params)
+        q = st.t.ppf(alpha, dof) # Student coefficient
+        R2 = ufun.get_R2(y, yPredict)
+        Chi2 = ufun.get_Chi2(y, yPredict, dof, err_chi2)        
+
+        ciwE = q*seE
+        # confIntEWidth = 2*q*seE
+
+        ciwH0 = q*seH0
+        # confIntH0Width = 2*q*seH0  
+    
+    else:
         E, seE, H0, seH0 = np.nan, np.nan, np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
-        confIntE, confIntH0 = [np.nan, np.nan], [np.nan, np.nan]
-        covM = np.empty((2,2))
-        covM.fill(np.nan)
-        # hPredict = np.nan(Npts)
-        fPredict = np.empty(Npts)
-        fPredict.fill(np.nan)
-        
-    if output == 'simple':
-        res = (E, H0, error)
+        ciwE, ciwH0 = np.nan, np.nan
+        # fPredict = np.nan(Npts)
 
-    elif output == 'detailed':
-        res =  {'error':error,
-                'E':E, 'seE':seE,
-                'H0':H0, 'seH0':seH0,
-                'R2':R2, 'Chi2':Chi2,
-                'confIntE':confIntE, 
-                'confIntH0':confIntH0,
-                # 'hPredict':hPredict, 
-                'fPredict':fPredict,
-                'covM':covM
-                }
-        
+    res =  {'error':error,
+            'nbPts':len(y),
+            'E':E, 'seE':seE,
+            'H0':H0, 'seH0':seH0,
+            'R2':R2, 'Chi2':Chi2,
+            'ciwE':ciwE, 
+            'ciwH0':ciwH0,
+            'yPredict':yPredict, 
+            # 'fPredict':fPredict,
+            }
+    
+    return(res)
+
+
+def makeDictFit_ss(params, ses, error, y, yPredict, err_chi2):
+    if not error:
+        K, S0 = params
+        seK, seS0 = ses
+
+        alpha = 0.975
+        dof = len(y)-len(params)
+        q = st.t.ppf(alpha, dof) # Student coefficient
+        R2 = ufun.get_R2(y, yPredict)
+        Chi2 = ufun.get_Chi2(y, yPredict, dof, err_chi2)        
+
+        ciwK = q*seK
+        # confIntKWidth = 2*q*seK  
+    
+    else:
+        K, seK = np.nan, np.nan
+        R2, Chi2 = np.nan, np.nan
+        confIntK = [np.nan, np.nan]
+
+    res =  {'error':error,
+            'nbPts':len(y),
+            'K':K, 'seK':seK,
+            'R2':R2, 'Chi2':Chi2,
+            'ciwK':ciwK, 
+            'yPredict':yPredict, 
+            # 'fPredict':fPredict,
+            }
+    
     return(res)
 
 
 
 
-# class ResultsCompression:
-#     def __init__(self, dictColumns, cellComp):
-#         Ncomp = cellComp.Ncomp
+
         
-#         main = {}
-#         for k in dictColumnsMeca.keys():
-#             main[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
-#         self.main = main
-#         self.dictColumns = dictColumns
-#         self.Ncomp = cellComp.Ncomp
-        
-        
+
+# %%% classes
         
 
 class CellCompression:
@@ -948,12 +1018,17 @@ class IndentCompression:
         self.error_bestH0 = True
         
         self.dictFitsFH = {}
-        
+        self.dictFitsSS_stressRegions = {}
+        self.dictFitsSS_stressGaussian = {}
+        self.dictFitsSS_nPoints = {}
         
         self.deltaCompr = np.zeros_like(self.hCompr)*np.nan
         self.stressCompr = np.zeros_like(self.hCompr)*np.nan
         self.strainCompr = np.zeros_like(self.hCompr)*np.nan
         
+    
+
+    
         
     def validateForAnalysis(self):
         listB = self.rawDf.B.values
@@ -1051,12 +1126,14 @@ class IndentCompression:
         
         if method == 'Chadwick':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
-            E, H0, error = fitChadwick_hf(h, f, D, output = 'simple')
+            params, covM, error = fitChadwick_hf(h, f, D)
+            H0 = params[1]
             self.dictH0['H0_' + method] = H0
             self.dictH0['error_' + method] = error
         elif method == 'Dimitriadis':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
-            E, H0, error = fitDimitriadis_hf(h, f, D, output = 'simple')
+            params, covM, error = fitDimitriadis_hf(h, f, D)
+            H0 = params[1]
             self.dictH0['H0_' + method] = H0
             self.dictH0['error_' + method] = error
         elif method == 'NaiveMax':
@@ -1096,50 +1173,82 @@ class IndentCompression:
     
     def fitFH(self, method = 'Chadwick'):
         listAllMethods = ['Chadwick']
+        # makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
         
         if method == 'Chadwick':
             h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            fitDict = fitChadwick_hf(h, f, D, output = 'detailed')
-            self.dictFitsFH[method] = fitDict
+            params, covM, error = fitChadwick_hf(h, f, D)
+            E, H0 = params
+            hPredict = inversedChadwickModel(f, E, H0, self.DIAMETER)
+            y, yPredict = h, hPredict
+            err_chi2 = 30
+            fitDict = makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
 
         elif method == 'Dimitriadis':
             h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            fitDict = fitDimitriadis_hf(h, f, D, output = 'detailed')
+            params, covM, error = fitDimitriadis_hf(h, f, D)
+            E, H0 = params
+            fPredict = dimitriadisModel(h, E, H0, self.DIAMETER, v = 0)
+            y, yPredict = f, fPredict
+            err_chi2 = 100
+            fitDict = makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
+            
+            
+        if method != 'all':
             self.dictFitsFH[method] = fitDict
-
-        elif method == 'all':
+            
+        else:
             for m in listAllMethods:
                 self.fitFH(method = m)
                 
     
-    def fitSS_stressRegions(self, centers = [], widths = [], method = 'Chadwick'):
-        listAllMethods = ['Chadwick']
+    def fitSS_stressRegion(self, center, halfWidth):
+        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        stress, strain = self.stressCompr, self.strainCompr
+        lowS, highS = center - halfWidth, center + halfWidth
+        mask = ((stress > lowS) & (stress < highS))
         
-        if method == 'Chadwick':
-            h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            fitDict = fitChadwick_hf(h, f, D, output = 'detailed')
-
-        elif method == 'all':
-            for m in listAllMethods:
-                self.fitFH(method = m)
-                
-    
-    
-    def fitSS_strainRegions(self, centers = [], widths = [], method = 'Chadwick'):
-        listAllMethods = ['Chadwick']
+        params, covM, error = fitLinear_ss(stress, strain, weights = mask)
         
-        if method == 'Chadwick':
-            h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            fitDict = fitChadwick_hf(h, f, D, output = 'detailed')
-
-        elif method == 'all':
-            for m in listAllMethods:
-                self.fitFH(method = m)
-                
+        K, strain0 = params
+        strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        y, yPredict = strain[mask], strainPredict
+        err_chi2 = 0.0035
+        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        return(fitDict)                
                 
     
-    def fitSS_gaussianWeights():
-        pass
+    def fitSS_stressGaussian(self, center, halfWidth):
+        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        stress, strain = self.stressCompr, self.strainCompr
+        X = stress.flatten(order='C')
+        weights = np.exp( -((X - center) ** 2) / halfWidth ** 2)
+        
+        params, covM, error = fitLinear_ss(stress, strain, weights = weights)
+        
+        K, strain0 = params
+        lowS, highS = center - halfWidth, center + halfWidth
+        mask = ((stress > lowS) & (stress < highS))
+        strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        y, yPredict = strain[mask], strainPredict
+        err_chi2 = 0.0035
+        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        return(fitDict)
+    
+    
+    def fitSS_mask(self, mask):
+        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        stress, strain = self.stressCompr, self.strainCompr
+        
+        params, covM, error = fitLinear_ss(stress, strain, weights = mask)
+        
+        K, strain0 = params
+        strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        y, yPredict = strain[mask], strainPredict
+        err_chi2 = 0.0035
+        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+        return(fitDict)
+    
     
     def fitSS_polynomial():
         pass
@@ -1155,7 +1264,7 @@ class IndentCompression:
     
         #### TBC
         
-    
+# %% main function
         
 def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
     
@@ -1268,43 +1377,17 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             results['maxForce'][i] = np.max(IC.fCompr)
 
 
-            # #### (4) Fit with Chadwick model of the force-thickness curve
+            #### (4) Fit with Chadwick model of the force-thickness curve
             
-            # #### Classic, all curve, Chadwick fit
-            # E, H0, hPredict, R2, Chi2, confIntE, confIntH0, fitError = compressionFitChadwick(hCompr, fCompr, DIAMETER) # IMPORTANT SUBFUNCTION
-  
-            # R2CRITERION = dictSelectionCurve['R2']
-            # CHI2CRITERION = dictSelectionCurve['K2_Chi2']
-            # critFit = 'R2 > ' + str(R2CRITERION)
-            
-            # results['critFit'][i] = critFit
-            
-            # validatedFit = ((R2 > R2CRITERION) and (Chi2 < CHI2CRITERION))
-
-
-            # if not fitError:
-            #     results['validatedFit_Chadwick'][i] = validatedFit
-            #     if validatedFit:
-            #         results['comments'][i] = 'ok'
-            #     else:
-            #         results['comments'][i] = 'R2 < ' + str(R2CRITERION)
-
-            #     confIntEWidth = abs(confIntE[0] - confIntE[1])
-
-            #     results['H0Chadwick'][i] = H0
-            #     results['EChadwick'][i] = E
-            #     results['R2Chadwick'][i] = R2
-            #     results['EChadwick_CIWidth'][i] = confIntEWidth
-                
-            # elif fitError:
-            #     results['comments'][i] = 'fitFailure'
+            #### Classic, all curve, Chadwick fit            
+            IC.fitFH(method = 'Chadwick')
                 
                 
-            #### (4.0) Find the best H0
+            #### (4.) Find the best H0
             
             IC.computeH0(method = 'all', zone = 'pts_15')
             # IC.computeH0(method = 'all', zone = '%f_10')
-            print(IC.dictH0)
+            # print(IC.dictH0)
             
             IC.setBestH0(method = method_bestH0)
             
@@ -1317,159 +1400,73 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             results['maxStress'][i] = np.max(IC.stressCompr)
             results['minStrain'][i] = np.min(IC.strainCompr)
             results['maxStrain'][i] = np.max(IC.strainCompr)
-
-
-            # #### (4.2) Fits on specific regions of the curve
             
-            #     K2_list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-            #     K3_list_stressPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-                
-            #     N_Fits = len(regionFitsNames)
-            #     dictRegionFit = {}
-            #     for k in dictColumnsRegionFit.keys():
-            #         dictRegionFit[k] = [dictColumnsRegionFit[k] for m in range(N_Fits)]
-
-
-            #     all_masks_region = np.zeros((N_Fits, len(stressCompr)), dtype = bool)
-            #     for kk in range(N_Fits):
-            #         ftP = regionFitsNames[kk]
-            #         lowS, highS = int(fitMin[kk]), int(fitMax[kk])
-            #         all_masks_region[kk,:] = ((stressCompr > lowS) & (stressCompr < highS))                
-                    
-            #     for ii in range(N_Fits):
-            #         regionFitName = regionFitsNames[ii]
-            #         mask_region = all_masks_region[ii]
-            #         Npts_region = np.sum(mask_region)
-            #         fCompr_region = fCompr[mask_region]
-            #         hCompr_region = hCompr[mask_region]
-                    
-            #         if Npts_region > 5:
-            #             # fCompr_region = fCompr[mask_region]
-            #             # hCompr_region = hCompr[mask_region]
-                        
-            #             # Vérifier la concordance !
-            #             resTuple_FHregionFit = compressionFitChadwick(hCompr_region, fCompr_region, DIAMETER)
-            #             K2_region, H0_region = resTuple_FHregionFit[0:2]
-                        
-            #             K2_region, K2_strainPredict_region, K2_R2_region, K2_Chi2_region, K2_confIntK_region, \
-            #             K2_fitError_region = compressionFitChadwick_StressStrain(hCompr_region, fCompr_region, maxH0, DIAMETER)
-                            
-            #             K2_confIntWidthK_region = np.abs(K2_confIntK_region[0] - K2_confIntK_region[1])
+            centers = [ii for ii in range(100, 1550, 50)]
+            # halfWidths = [50, 75, 100]
+            halfWidths = [50]
             
-            #         else:
-                        
-            #             K2_fitError_region = True
-                        
-                        
-            #         if (regionFitName in fit_toPlot) and not K2_fitError_region:
-            #             kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-            #             K2_list_strainPredict_fitToPlot[kk] = K2_strainPredict_region
-
+            for jj in range(len(halfWidths)):
+                for ii in range(len(centers)):
+                    C, HW = centers[ii], halfWidths[jj]
+                    validRange = ((C-HW) > 0)
+                    id_range = str(C) + '_' + str(HW)
                     
-            #         if not K2_fitError_region:
-            #             R2CRITERION = dictSelectionCurve['R2']
-            #             CHI2CRITERION = dictSelectionCurve['K2_Chi2']
-            #             K2_validatedFit_region = ((K2_R2_region > R2CRITERION) and 
-            #                                     (K2_Chi2_region < CHI2CRITERION))
+                    if validRange:
+                        dictFit = IC.fitSS_stressRegion(C, HW)
+                        isValidated = (dictFit['nbPts'] >= 8 and
+                                       dictFit['R2'] >= 0.6 and 
+                                       dictFit['Chi2'] >= 1)
+                        dictFit['valid'] = isValidated
+                        dictFit['center'] = C
+                        dictFit['halfWidth'] = HW
+                        IC.dictFitsSS_stressRegions[id_range] = dictFit
                         
-            #             # Fill dictRegionFit (reinitialized for each cell)
-            #             dictRegionFit['regionFitNames'][ii] = regionFitName
-            #             dictRegionFit['Npts'][ii] = Npts_region
-            #             dictRegionFit['K'][ii] = K2_region
-            #             dictRegionFit['K2_CIW'][ii] = K2_confIntWidthK_region
-            #             dictRegionFit['R2'][ii] = K2_R2_region
-            #             dictRegionFit['K2'][ii] = K2_region
-            #             dictRegionFit['H0'][ii] = H0_region
-            #             # dictRegionFit['E'][ii] = E_region
-            #             dictRegionFit['K2_fitError'][ii] = K2_fitError_region
-            #             dictRegionFit['K2_validatedFit'][ii] = K2_validatedFit_region
                         
-            #             # Fill results (memorize everything)
-            #             rFN = regionFitName
-            #             results['Npts_'+rFN][i] = Npts_region
-            #             results['KChadwick_'+rFN][i] = K2_region
-            #             results['K2_CIW_'+rFN][i] = K2_confIntWidthK_region
-            #             results['R2Chadwick_'+rFN][i] = K2_R2_region
-            #             results['K2Chadwick_'+rFN][i] = K2_region
-            #             results['H0Chadwick_'+rFN][i] = H0_region
-            #             # results['EChadwick_'+rFN][i] = dictRegionFit['E'][ii]
-            #             results['K2_validatedFit_'+rFN][i] = K2_validatedFit_region
-                    
-                    
-            #         #### (4.1.2) Gaussian-weight fits on specific regions of the curve based on predefined stress-ranges
-                    
-            #         # try:
-            #         fitCentres_region = fitCenters[ii]
-            #         K3_region, K3_stressPredict_region, K3_Chi2_region, K3_confIntK_region, \
-            #         K3_fitError_region = compressionFitChadwick_weightedLinearFit(hCompr, fCompr, fitCentres_region, H0, DIAMETER)
-                    
-            #         K3_confIntWidthK_region = np.abs(K3_confIntK_region[0] - K3_confIntK_region[1])
-            #         # except:
-            #         #     K3_fitError_region = True
-                    
-                    
-            #         if (regionFitName in fit_toPlot) and not K3_fitError_region:
-            #             kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-                        
-            #             K3_list_stressPredict_fitToPlot[kk] = K3_stressPredict_region
-                    
-            #         if not K3_fitError_region:
-            #             CHI2CRITERION = dictSelectionCurve['K3_Chi2']
-            #             K3_validatedFit_region = ((K3_Chi2_region < CHI2CRITERION))
-                        
-            #             # Fill dictRegionFit (reinitialized for each cell)
-            #             dictRegionFit['K3_CIW'][ii] = K3_confIntWidthK_region
-            #             dictRegionFit['K3'][ii] = K3_region
-            #             dictRegionFit['K3_fitError'][ii] = K3_fitError_region
-            #             dictRegionFit['K3_validatedFit'][ii] = K3_validatedFit_region
-                        
-            #             # Fill results (memorize everything)
-            #             rFN = regionFitName
-            #             results['K3_CIW_'+rFN][i] = K3_confIntWidthK_region
-            #             results['K3Chadwick_'+rFN][i] = K3_region
-            #             results['K3_validatedFit_'+rFN][i] = K3_validatedFit_region
-                        
-            #     #### (4.1.3) Fits on specific regions of the curve based on the number of points
-                
-            #     K4_list_stressPredict_fitToPlot = [[] for kk in range(NbOfTargets)]
-            #     validTargets = [0 for kk in range(NbOfTargets)]
-            #     CHI2CRITERION = dictSelectionCurve['K4_Chi2']
-                
-            #     for count in range(1, NbOfTargets):
-            #         if count == 1:
-            #             overlap = 0
-                        
-            #         K4_region, K4_stressPredict_region, K4_Chi2_region, K4_confInt_region, K4_fitError_region \
-            #             = compressionFitChadwick_pointBased(hCompr, fCompr, NbOfTargets, overlap, count, H0, DIAMETER)
-                    
-            #         K4_confIntWidthK_region = np.abs(K4_confInt_region[0] - K4_confInt_region[1])
-            #         # print(K4_region)
-            #         if not K4_fitError_region:
-            #             kk = count - 1
-            #             K4_list_stressPredict_fitToPlot[kk] = K4_stressPredict_region
-            #             validTargets[kk] = count
-                    
-            #             K4_validatedFit_region = (K4_Chi2_region < CHI2CRITERION)
-                                                
-            #         else:
-            #             K4_validatedFit_region, K4_fitError_region = False, True
-            #             K4_region, K4_confInt_region = np.nan, [np.nan, np.nan]
-            #             K4_confIntWidthK_region = np.nan
-                        
-            #         if not K4_fitError_region: 
-            #             kk = count - 1
-            #             targetPoint = str(int(count*NbOfTargets))
-            #             dictRegionFit['K4'][kk] = (K4_region)
-            #             dictRegionFit['K4_CIW'][kk] = (K4_confIntWidthK_region)
-            #             dictRegionFit['K4_fitError'][kk] = (K4_fitError_region)
-            #             dictRegionFit['K4_validatedFit'][kk] = (K4_validatedFit_region)
-                        
-            #             results['K4Chadwick_'+targetPoint][i] = (K4_region)
-            #             results['K4_validatedFit_'+targetPoint][i] = (K4_validatedFit_region)
- 
+                        dictFit = IC.fitSS_stressGaussian(C, HW)
+                        isValidated = (dictFit['nbPts'] >= 8 and
+                                       dictFit['R2'] >= 0.6 and 
+                                       dictFit['Chi2'] >= 1)
+                        dictFit['valid'] = isValidated
+                        dictFit['center'] = C
+                        dictFit['halfWidth'] = HW
+                        IC.dictFitsSS_stressGaussian[id_range] = dictFit
             
-            #     for k in dictRegionFit.keys():
-            #         dictRegionFit[k] = np.array(dictRegionFit[k])
+            nbPtsFit = 11
+            overlapFit = 2
+            nbPtsTotal = len(IC.stressCompr)
+            iStart = 0
+            iStop = iStart + nbPtsFit
+            
+            while iStop < nbPtsTotal:
+                # iCenter = iStart + nbPtsFit//2
+                mask = np.array([((i >= iStart) and (i < iStop)) for i in range(nbPtsTotal)])
+                dictFit = IC.fitSS_mask(mask)
+                isValidated = (dictFit['nbPts'] >= 8 and
+                               dictFit['R2'] >= 0.6 and 
+                               dictFit['Chi2'] >= 1)
+                dictFit['valid'] = isValidated
+                dictFit['center'] = np.mean(IC.stressCompr[iStart:iStop])
+                dictFit['halfWidth'] = (np.max(IC.stressCompr[iStart:iStop]) - \
+                                        np.min(IC.stressCompr[iStop]))/2
+                    
+                IC.dictFitsSS_nPoints[id_range] = dictFit
+                
+                iStart = iStop - overlapFit
+                iStop = iStart + nbPtsFit
+            
+            # print(dictFit)
+            
+                        
+            
+            # center, hW = 600, 75
+            # dict1 = IC.fitSS_stressRegion(center, hW)
+            # dict2 = IC.fitSS_stressGaussian(center, hW)
+            
+            # print(dict1)
+            # print(dict2)
+
+
+
     
     
 
