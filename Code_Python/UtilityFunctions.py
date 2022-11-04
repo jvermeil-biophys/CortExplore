@@ -428,18 +428,24 @@ def containsFilesWithExt(Dir, ext):
 
 # %%% Stats
 
-def get_R2(Y1, Y2):
-    meanY = np.mean(Y1)
-    meanYarray = meanY*np.ones(len(Y1))
-    SST = np.sum((Y1-meanYarray)**2)
-    SSE = np.sum((Y2-meanYarray)**2)
-    R2 = SSE/SST
+def get_R2(Ymeas, Ymodel):
+    meanY = np.mean(Ymeas)
+    meanYarray = meanY*np.ones(len(Ymeas))
+    SST = np.sum((Ymeas-meanYarray)**2)
+    SSE = np.sum((Ymodel-meanYarray)**2)
+    if pd.isnull(SST) or pd.isnull(SSE) or SST == 0:
+        R2 = np.nan
+    else:
+        R2 = SSE/SST
     return(R2)
 
-def get_Chi2(Ymeas, Ymodel, dof, S):
-    residuals = Ymeas-Ymodel
-    Chi2 = np.sum((residuals/S)**2)
-    Chi2_dof = Chi2/dof
+def get_Chi2(Ymeas, Ymodel, dof, err):
+    if dof <= 0:
+        Chi2_dof = np.nan
+    else:
+        residuals = Ymeas-Ymodel
+        Chi2 = np.sum((residuals/err)**2)
+        Chi2_dof = Chi2/dof
     return(Chi2_dof)
 
 # %%% Image processing
