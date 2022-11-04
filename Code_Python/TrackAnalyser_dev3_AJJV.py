@@ -19,7 +19,7 @@ import pandas as pd
 import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
-
+import scipy.interpolate as si
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -29,12 +29,14 @@ import os
 import sys
 import time
 import random
+import numbers
 import itertools
 
 from copy import copy
 from cycler import cycler
 from datetime import date
 from scipy.optimize import curve_fit
+from scipy.signal import savgol_filter
 from sklearn.linear_model import LinearRegression
 
 
@@ -631,15 +633,15 @@ dictColumnsRegionFit = {'regionFitNames' : '',
 
 
 # class ResultsCompression:
-#     def __init__(self, dictColumns, cellComp):
-#         Ncomp = cellComp.Ncomp
+#     def __init__(self, dictColumns, CC):
+#         Ncomp = CC.Ncomp
         
 #         main = {}
 #         for k in dictColumnsMeca.keys():
 #             main[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
 #         self.main = main
 #         self.dictColumns = dictColumns
-#         self.Ncomp = cellComp.Ncomp
+#         self.Ncomp = CC.Ncomp
 
 # %%% mechanical models
 
@@ -672,6 +674,8 @@ def inversedConstitutiveRelation(stress, K, strain0):
     strain = (stress / K) + strain0
     return(strain)
 
+    
+
 # %%% general fitting functions
 
 
@@ -701,16 +705,16 @@ def fitChadwick_hf(h, f, D):
     upperBounds = (np.Inf, np.Inf)
     parameterBounds = [lowerBounds, upperBounds]
 
-    try:
-        # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
-        ses = np.array([covM[0,0], covM[1,1]])
-        params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
+    # try:
+    # params = [E, H0] ; ses = [seE, seH0]
+    params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+    ses = np.array([covM[0,0], covM[1,1]])
+    params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
-    except:
-        error = True
-        params = np.ones(2) * np.nan
-        ses = np.ones(2) * np.nan
+    # except:
+    #     error = True
+    #     params = np.ones(2) * np.nan
+    #     ses = np.ones(2) * np.nan
         
     res = (params, ses, error)
         
@@ -790,11 +794,16 @@ def fitLinear_ss(stress, strain, weights = []):
         return(strain)
     
     try:
+    # if np.sum(weights) > 0:
         if masked:
             ols_model = sm.OLS(strain[weights], sm.add_constant(stress[weights]))
             results_ols = ols_model.fit()
+            # try:
             S0, K = results_ols.params[0], 1/results_ols.params[1]
             seS0, seK = results_ols.HC3_se[0], results_ols.HC3_se[1]*K**2 # See note below
+            # except:
+            #     print(strain[weights])
+            #     print(results_ols.params)
         
         if weighted:
             wls_model = sm.WLS(strain, sm.add_constant(stress), weights=weights)
@@ -810,6 +819,7 @@ def fitLinear_ss(stress, strain, weights = []):
         ses = np.array([seK, seS0])
         
     except:
+    # else:
         error = True
         params = np.ones(2) * np.nan
         ses = np.ones(2) * np.nan
@@ -819,7 +829,11 @@ def fitLinear_ss(stress, strain, weights = []):
     return(res)
 
 
-def makeDictFit_hf(params, ses, error, y, yPredict, err_chi2):
+# %%% functions to store the results of fits
+
+def makeDictFit_hf(params, ses, error, 
+                   x, y, yPredict, 
+                   err_chi2, dictFitValidation):
     if not error:
         E, H0 = params
         seE, seH0 = ses
@@ -831,16 +845,19 @@ def makeDictFit_hf(params, ses, error, y, yPredict, err_chi2):
         Chi2 = ufun.get_Chi2(y, yPredict, dof, err_chi2)        
 
         ciwE = q*seE
-        # confIntEWidth = 2*q*seE
-
         ciwH0 = q*seH0
-        # confIntH0Width = 2*q*seH0  
+        
+        nbPts = len(y)
+        
+        isValidated = (E > 0 and
+                       nbPts >= dictFitValidation['crit_nbPts'] and
+                       R2 >= dictFitValidation['crit_R2'] and 
+                       Chi2 <= dictFitValidation['crit_Chi2'])
     
     else:
         E, seE, H0, seH0 = np.nan, np.nan, np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
         ciwE, ciwH0 = np.nan, np.nan
-        # fPredict = np.nan(Npts)
 
     res =  {'error':error,
             'nbPts':len(y),
@@ -849,14 +866,19 @@ def makeDictFit_hf(params, ses, error, y, yPredict, err_chi2):
             'R2':R2, 'Chi2':Chi2,
             'ciwE':ciwE, 
             'ciwH0':ciwH0,
-            'yPredict':yPredict, 
-            # 'fPredict':fPredict,
+            'x': x,
+            'y': y,
+            'yPredict': yPredict,
+            'valid': isValidated
             }
     
     return(res)
 
 
-def makeDictFit_ss(params, ses, error, y, yPredict, err_chi2):
+def makeDictFit_ss(params, ses, error, 
+                   center, halfWidth, x, y, yPredict, 
+                   err_chi2, dictFitValidation):
+
     if not error:
         K, S0 = params
         seK, seS0 = ses
@@ -868,25 +890,70 @@ def makeDictFit_ss(params, ses, error, y, yPredict, err_chi2):
         Chi2 = ufun.get_Chi2(y, yPredict, dof, err_chi2)        
 
         ciwK = q*seK
-        # confIntKWidth = 2*q*seK  
+        
+        nbPts = len(y)
+        center_y = np.median(y)
+        
+        isValidated = (K > 0 and
+                       nbPts >= dictFitValidation['crit_nbPts'] and
+                       R2 >= dictFitValidation['crit_R2'] and 
+                       Chi2 <= dictFitValidation['crit_Chi2'])
     
     else:
         K, seK = np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
-        confIntK = [np.nan, np.nan]
+        nbPts = np.nan
+        ciwK = np.nan
+        center_y = np.nan
+        isValidated = False
 
-    res =  {'error':error,
-            'nbPts':len(y),
-            'K':K, 'seK':seK,
-            'R2':R2, 'Chi2':Chi2,
-            'ciwK':ciwK, 
-            'yPredict':yPredict, 
-            # 'fPredict':fPredict,
+    res =  {'error': error,
+            'nbPts': nbPts,
+            'K': K, 'seK': seK,
+            'R2': R2, 'Chi2': Chi2,
+            'ciwK': ciwK,
+            'center_x': center,
+            'halfWidth_x': halfWidth,
+            'center_y': center_y,
+            'x': x,
+            'y': y,
+            'yPredict': yPredict,
+            'valid': isValidated
             }
     
     return(res)
 
-
+def nestedDict_to_DataFrame(D):
+    """
+    Convert D, a dict of dicts, into a pandas DataFrame, after removing non-numeric values.
+    
+    D = {'d1' : d1, 'd2' : d2, ..., 'dn' : dn} where each di = {'k1' : val1, 'k2' : val2, ..., 'kn' : valn},
+    and the keys k1 ... kn are the same for all dicts d1 ... dn.
+    
+    In the resulting DataFrame, k1 ... kn will be the columns, and d1 ... dn the rows.
+    
+    This function remove any couple 'ki':vali where vali is not a number (e.g. a numy array).
+    """
+    if len(D) > 0:
+        fits =  list(D.keys())
+        Nfits = len(fits)
+        f0 = fits[0]
+        d0 = D[f0]
+        cols = [k for k in d0.keys() if (isinstance(d0[k], numbers.Number) or k in ['valid'])]
+        D2 = {}
+        for c in cols:
+            D2[c] = np.zeros(Nfits)
+    
+        for jj in range(Nfits):
+            f = fits[jj]
+            d = D[f]
+            for c in cols:
+                D2[c][jj] = d[c]
+    else:
+        D2 = {}
+        
+    df = pd.DataFrame(D2)
+    return(df)
 
 
 
@@ -896,7 +963,11 @@ def makeDictFit_ss(params, ses, error, y, yPredict, err_chi2):
         
 
 class CellCompression:
-    def __init__(self, timeseriesDf, thisExpDf):
+    """
+    This class deals with all that requires the whole array of compressions.
+    """
+    
+    def __init__(self, cellID, timeseriesDf, thisExpDf):
         self.tsDf = timeseriesDf
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
@@ -924,6 +995,7 @@ class CellCompression:
         loop_rampSize = int(loopStruct[1])
         loop_ctSize = int((loop_totalSize - loop_rampSize)/nUplet)
         
+        self.cellID = cellID
         self.Ncomp = Ncomp
         self.DIAMETER = D
         self.EXPTYPE = EXPTYPE
@@ -936,7 +1008,12 @@ class CellCompression:
         self.loop_rampSize = loop_rampSize
         self.loop_ctSize = loop_ctSize
         
+        # These fields are to be filled by methods later on
+        self.listIndent = []
         self.ListJumpsD3 = np.zeros(Ncomp, dtype = float)
+        self.method_bestH0 = 'Dimitriadis' # default
+        
+        
         
     def getMaskForCompression(self, i, task = 'compression'):
         Npts = len(self.tsDf['idxAnalysis'].values)
@@ -978,30 +1055,206 @@ class CellCompression:
         self.ListJumpsD3[i] = jumpD3
     
         
+    def plot_Timeseries(self):
+        fig, ax = plt.subplots(1,1,figsize=(self.tsDf.shape[0]*(1/200),4))
+        fig.suptitle(self.cellID)
         
+        # Distance axis
+        color = 'blue'
+        ax.set_xlabel('t (s)')
+        ax.set_ylabel('h (nm)', color=color)
+        ax.tick_params(axis='y', labelcolor=color)
+        ax.plot(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
+                color = color, ls = '-', linewidth = 1, zorder = 1)
+        
+        for ii in range(self.Ncomp):
+            IC = self.listIndent[ii]
+            fitError = IC.dictFitFH_Chadwick['error']
+            if not fitError:
+                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                        color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+                
+            else:
+                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                        color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
+        
+        (axm, axM) = ax.get_ylim()
+        ax.set_ylim([min(0,axm), axM])
+        if (max(self.tsDf['D3'].values-self.DIAMETER) > 200):
+            ax.set_yticks(np.arange(0, max(self.tsDf['D3'].values-self.DIAMETER), 100))
+        
+        # Force axis
+        ax.tick_params(axis='y', labelcolor='b')
+        axbis = ax.twinx()
+        color = 'firebrick'
+        axbis.set_ylabel('F (pN)', color=color)
+        axbis.plot(self.tsDf['T'].values,self. tsDf['F'].values, color=color)
+        axbis.tick_params(axis='y', labelcolor=color)
+        axbis.set_yticks([0,500,1000,1500])
+        minh = np.min(self.tsDf['D3'].values-self.DIAMETER)
+        ratio = min(1/abs(minh/axM), 5)
+        (axmbis, axMbis) = axbis.get_ylim()
+        axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
+        
+        axes = [ax, axbis]
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    def plot_FH(self, plotH0 = True, plotFit = True):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                               figsize = (3*nColsSubplot, 3*nRowsSubplot))
+        figTitle = 'Thickness-Force of indentations\n'
+        if plotH0:
+            figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        if plotFit:
+            figTitle += 'with fit (Chadwick)'
+        
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_FH(fig, ax, plotH0 = plotH0, plotFit = plotFit)
+            
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    def plot_SS(self, plotFit = True, fitType = 'stressRegion'):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                               figsize = (3*nColsSubplot, 3*nRowsSubplot))
+        figTitle = 'Strain-Stress of compressions'
+        if plotFit:
+            figTitle += '\nfit type: ' + fitType
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_SS(fig, ax, plotFit = plotFit, fitType = fitType)
+            
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    def plot_KS(self, fitType = 'stress_region'):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                               figsize = (3*nColsSubplot, 3*nRowsSubplot))
+        figTitle = 'Tangeantial modulus'
+        figTitle += '\nfit type: ' + fitType
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_KS(fig, ax, fitType = fitType)
+            
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    
+    
+    
+    #### METHODS IN DEVELOPMENT
+    
+    
+    def plot_KS_smooth(self):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, ax = plt.subplots(1,1, figsize = (7,5))
+        figTitle = 'Tangeantial modulus'
+        fig.suptitle(figTitle)
+        
+        listArraysStrain = []
+        listArraysStress = []
+        listArraysK = []
+        for i in range(self.Ncomp):
+            IC = self.listIndent[i]
+            if IC.computed_SSK_filteredDer:
+                listArraysStress.append(IC.SSK_filteredDer[:, 0])
+                listArraysStrain.append(IC.SSK_filteredDer[:, 1])
+                listArraysK.append(IC.SSK_filteredDer[:, 2])
+        
+        stress = np.concatenate(listArraysStress)
+        strain = np.concatenate(listArraysStrain)
+        K = np.concatenate(listArraysK)
+        
+        mat_ssk = np.array([stress, strain, K]).T
+
+        mat_ssk_stressSorted = mat_ssk[mat_ssk[:, 0].argsort()]
+
+        stress_sorted = mat_ssk_stressSorted[:, 0]
+        strain_sorted = mat_ssk_stressSorted[:, 1]
+        K_sorted = mat_ssk_stressSorted[:, 2]
+        
+        it = 1
+        frac = 0.2
+        # delta = np.max(stress_sorted) * 0.0075
+        SK_smoothed = sm.nonparametric.lowess(exog=stress_sorted, endog=K_sorted, 
+                                           frac=frac, it=it)
+
+        ax.plot(stress_sorted, K_sorted, c = 'g', ls = '', marker = 'o', markersize = 2)
+        ax.plot(SK_smoothed[:, 0], SK_smoothed[:, 1], c = 'r', ls = '-')
+            
+        fig.tight_layout()
+        return(fig, ax)
     
     
 
 class IndentCompression:
+    """
+    This class deals with all that is done on a single compression.
+    """
     
-    def __init__(self, cellComp, indentDf, thisExpDf, i_indent):
+    def __init__(self, CC, indentDf, thisExpDf, i_indent):
         self.rawDf = indentDf
         self.thisExpDf = thisExpDf
         self.i_indent = i_indent
         
-        self.DIAMETER = cellComp.DIAMETER
-        self.EXPTYPE = cellComp.EXPTYPE
-        self.normalField = cellComp.normalField
-        self.minCompField = cellComp.minCompField
-        self.maxCompField = cellComp.maxCompField
-        self.loopStruct = cellComp.loopStruct
-        self.nUplet = cellComp.nUplet
-        self.loop_totalSize = cellComp.loop_totalSize
-        self.loop_rampSize = cellComp.loop_rampSize
-        self.loop_ctSize = cellComp.loop_ctSize
+        self.cellID = CC.cellID
+        self.DIAMETER = CC.DIAMETER
+        self.EXPTYPE = CC.EXPTYPE
+        self.normalField = CC.normalField
+        self.minCompField = CC.minCompField
+        self.maxCompField = CC.maxCompField
+        self.loopStruct = CC.loopStruct
+        self.nUplet = CC.nUplet
+        self.loop_totalSize = CC.loop_totalSize
+        self.loop_rampSize = CC.loop_rampSize
+        self.loop_ctSize = CC.loop_ctSize
         
+        # These fields are to be modified or filled by methods later on
+        
+        # validateForAnalysis()
         self.isValidForAnalysis = False
         
+        # refineStartStop()
         self.isRefined = False
         self.hCompr = (self.rawDf.D3.values[:] - self.DIAMETER)
         self.hRelax = (self.rawDf.D3.values[:] - self.DIAMETER)
@@ -1012,21 +1265,37 @@ class IndentCompression:
         self.jStop = len(self.rawDf.D3.values)
         self.Df = self.rawDf
         
+        # computeH0()
         self.dictH0 = {}
+        
+        # setBestH0()
         self.bestH0 = np.nan
         self.method_bestH0 = ''
         self.error_bestH0 = True
         
-        self.dictFitsFH = {}
-        self.dictFitsSS_stressRegions = {}
-        self.dictFitsSS_stressGaussian = {}
-        self.dictFitsSS_nPoints = {}
-        
+        # computeStressStrain()
         self.deltaCompr = np.zeros_like(self.hCompr)*np.nan
         self.stressCompr = np.zeros_like(self.hCompr)*np.nan
         self.strainCompr = np.zeros_like(self.hCompr)*np.nan
         
-    
+        # fitFH_Chadwick() & fitFH_Dimitriadis()
+        self.dictFitFH_Chadwick = {}
+        self.dictFitFH_Dimitriadis = {}
+        
+        # fitSS_stressRegion() & fitSS_stressGaussian() & fitSS_nPoints()
+        self.dictFitsSS_stressRegions = {}
+        self.dictFitsSS_stressGaussian = {}
+        self.dictFitsSS_nPoints = {}
+        
+        # dictFits_To_DataFrame()
+        self.df_stressRegions = pd.DataFrame({})
+        self.df_stressGaussian = pd.DataFrame({})
+        self.df_nPoints = pd.DataFrame({})
+        
+        
+        
+        # test
+        self.computed_SSK_filteredDer = False
 
     
         
@@ -1055,6 +1324,7 @@ class IndentCompression:
     
     def refineStartStop(self):
         listB = self.rawDf.B.values
+        NbPtsRaw = len(listB)
         
         # Correct for bugs in the B data
         for k in range(1,len(listB)):
@@ -1087,9 +1357,9 @@ class IndentCompression:
         # Remove the 1-2 points at the begining where there is just the viscous relaxation of the cortex
         # because of the initial decrease of B and the cortex thickness increases.
         
-        Npts = len(hCompr_raw)
+        NptsCompr = len(hCompr_raw)
         k = offsetStart
-        while (k<(Npts//2)) and (hCompr_raw[k] < np.max(hCompr_raw[k+1:min(k+10, Npts)])):
+        while (k<(NptsCompr//2)) and (hCompr_raw[k] < np.max(hCompr_raw[k+1:min(k+10, NptsCompr)])):
             k += 1
         offsetStart = k
         
@@ -1101,14 +1371,17 @@ class IndentCompression:
         self.hRelax = (self.rawDf.D3.values[jMax+1:jStop] - self.DIAMETER)
         self.fCompr = (self.rawDf.F.values[jStart:jMax+1])
         self.fRelax = (self.rawDf.F.values[jMax+1:jStop])
+        self.TCompr = (self.rawDf['T'].values[jStart:jMax+1])
+        self.TRelax = (self.rawDf['T'].values[jMax+1:jStop])
         
         self.jMax = jMax
         self.jStart = jStart
         self.jStop = jStop
+
+        mask = np.array([((j >= jStart) and (j < jStop)) for j in range(NbPtsRaw)])
         
-        self.Df = self.rawDf.loc[jStart:jStop, :]
+        self.Df = self.rawDf.loc[mask]
         self.isRefined = True
-        
         
         
         
@@ -1127,19 +1400,30 @@ class IndentCompression:
         if method == 'Chadwick':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
             params, covM, error = fitChadwick_hf(h, f, D)
-            H0 = params[1]
+            H0, E = params[1], params[0]
             self.dictH0['H0_' + method] = H0
+            self.dictH0['E_' + method] = E
             self.dictH0['error_' + method] = error
+            self.dictH0['fArray_' + method] = f
+            self.dictH0['hArray_' + method] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
+            
         elif method == 'Dimitriadis':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
             params, covM, error = fitDimitriadis_hf(h, f, D)
-            H0 = params[1]
+            H0, E = params[1], params[0]
             self.dictH0['H0_' + method] = H0
+            self.dictH0['E_' + method] = E
             self.dictH0['error_' + method] = error
+            self.dictH0['fArray_' + method] = dimitriadisModel(h/1000, E, H0/1000, D/1000)
+            self.dictH0['hArray_' + method] = h
+            
         elif method == 'NaiveMax':
             H0 = np.max(self.hCompr[:])
             self.dictH0['H0_' + method] = H0
+            self.dictH0['E_' + method] = np.nan
             self.dictH0['error_' + method] = False
+            self.dictH0['fArray_' + method] = np.array([])
+            self.dictH0['hArray_' + method] = np.array([])
         
         elif method == 'all':
             for m in listAllMethods:
@@ -1170,108 +1454,628 @@ class IndentCompression:
         
 
     
-    
-    def fitFH(self, method = 'Chadwick'):
-        listAllMethods = ['Chadwick']
-        # makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
-        
-        if method == 'Chadwick':
-            h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            params, covM, error = fitChadwick_hf(h, f, D)
-            E, H0 = params
-            hPredict = inversedChadwickModel(f, E, H0, self.DIAMETER)
-            y, yPredict = h, hPredict
-            err_chi2 = 30
-            fitDict = makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
+    def fitFH_Chadwick(self, dictFitValidation, mask = []):
+        if len(mask) == 0:
+            mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+        params, ses, error = fitChadwick_hf(h, f, D)
+        E, H0 = params
+        hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
+        x = f
+        y, yPredict = h, hPredict
+        err_chi2 = 30
+        dictFit = makeDictFit_hf(params, ses, error, 
+                                 x, y, yPredict, 
+                                 err_chi2, dictFitValidation)
+        self.dictFitFH_Chadwick = dictFit
+        # return(dictFit)
 
-        elif method == 'Dimitriadis':
-            h, f, D = self.hCompr, self.fCompr, self.DIAMETER
-            params, covM, error = fitDimitriadis_hf(h, f, D)
-            E, H0 = params
-            fPredict = dimitriadisModel(h, E, H0, self.DIAMETER, v = 0)
-            y, yPredict = f, fPredict
-            err_chi2 = 100
-            fitDict = makeDictFit_hf(params, covM, error, y, yPredict, err_chi2)
-            
-            
-        if method != 'all':
-            self.dictFitsFH[method] = fitDict
-            
-        else:
-            for m in listAllMethods:
-                self.fitFH(method = m)
+                
+    def fitFH_Dimitriadis(self, dictFitValidation, mask = []):
+        if len(mask) == 0:
+            mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+        params, ses, error = fitDimitriadis_hf(h, f, D)
+        E, H0 = params
+        fPredict = dimitriadisModel(h/1000, E, H0/1000, self.DIAMETER/1000, v = 0)
+        x = h
+        y, yPredict = f, fPredict
+        err_chi2 = 100
+        dictFit = makeDictFit_hf(params, ses, error, 
+                           x, y, yPredict, 
+                           err_chi2, dictFitValidation)
+        self.dictFitFH_Dimitriadis = dictFit
+        # return(dictFit)
                 
     
-    def fitSS_stressRegion(self, center, halfWidth):
-        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+    def fitSS_stressRegion(self, center, halfWidth, dictFitValidation):
+        id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
         lowS, highS = center - halfWidth, center + halfWidth
         mask = ((stress > lowS) & (stress < highS))
-        
-        params, covM, error = fitLinear_ss(stress, strain, weights = mask)
+        params, ses, error = fitLinear_ss(stress, strain, weights = mask)
         
         K, strain0 = params
         strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        
+        x = stress[mask]
         y, yPredict = strain[mask], strainPredict
-        err_chi2 = 0.0035
-        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
-        return(fitDict)                
+        err_chi2 = 0.01
+        
+        dictFit = makeDictFit_ss(params, ses, error, 
+                                 center, halfWidth, x, y, yPredict, 
+                                 err_chi2, dictFitValidation)
+        self.dictFitsSS_stressRegions[id_range] = dictFit
+        # return(dictFit)            
                 
     
-    def fitSS_stressGaussian(self, center, halfWidth):
-        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
+    def fitSS_stressGaussian(self, center, halfWidth, dictFitValidation):
+        id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
         X = stress.flatten(order='C')
         weights = np.exp( -((X - center) ** 2) / halfWidth ** 2)
-        
-        params, covM, error = fitLinear_ss(stress, strain, weights = weights)
+        params, ses, error = fitLinear_ss(stress, strain, weights = weights)
         
         K, strain0 = params
         lowS, highS = center - halfWidth, center + halfWidth
         mask = ((stress > lowS) & (stress < highS))
         strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
-        y, yPredict = strain[mask], strainPredict
-        err_chi2 = 0.0035
-        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
-        return(fitDict)
-    
-    
-    def fitSS_mask(self, mask):
-        # makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
-        stress, strain = self.stressCompr, self.strainCompr
         
-        params, covM, error = fitLinear_ss(stress, strain, weights = mask)
+        x = stress[mask]
+        y, yPredict = strain[mask], strainPredict
+        err_chi2 = 0.01
+        
+        dictFit = makeDictFit_ss(params, ses, error, 
+                                 center, halfWidth, x, y, yPredict, 
+                                 err_chi2, dictFitValidation)
+        
+        self.dictFitsSS_stressGaussian[id_range] = dictFit
+        # return(dictFit)
+    
+    
+    def fitSS_nPoints(self, mask, dictFitValidation):
+        iStart = ufun.findFirst(1, mask)
+        iStop = iStart + np.sum(mask)
+        id_range = str(iStart) + '_' +str(iStop)
+        stress, strain = self.stressCompr, self.strainCompr
+        params, ses, error = fitLinear_ss(stress, strain, weights = mask)
         
         K, strain0 = params
         strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        
+        x = stress[mask]
         y, yPredict = strain[mask], strainPredict
-        err_chi2 = 0.0035
-        fitDict = makeDictFit_ss(params, covM, error, y, yPredict, err_chi2)
-        return(fitDict)
-    
-    
-    def fitSS_polynomial():
-        pass
-    
-    def plot_FH():
-        pass
+        err_chi2 = 0.01
+        center = np.median(x)
+        halfWidth = (np.max(x) - np.min(x))/2
         
-    def plot_SS():
-        pass
+        dictFit = makeDictFit_ss(params, ses, error, 
+                                 center, halfWidth, x, y, yPredict, 
+                                 err_chi2, dictFitValidation)
         
-    def plot_KS():
-        pass
+        self.dictFitsSS_nPoints[id_range] = dictFit
+        # return(dictFit)
     
-        #### TBC
+    
+    
+            
+        
+        
+    
+
+    # def dictFitToDataFrame(self, D):
+    #     if len(D) > 0:
+    #         fits =  list(D.keys())
+    #         Nfits = len(fits)
+    #         f0 = fits[0]
+    #         d0 = D[f0]
+    #         cols = [k for k in d0.keys() if k not in ['x', 'yPredict']]
+    #         # print(cols)
+    #         D2 = {}
+    #         for c in cols:
+    #             D2[c] = np.zeros(Nfits)
+        
+    #         for jj in range(Nfits):
+    #             f = fits[jj]
+    #             d = D[f]
+    #             for c in cols:
+    #                 D2[c][jj] = d[c]
+    #     else:
+    #         D2 = {}
+    #     df = pd.DataFrame(D2)
+    #     return(df)
+    
+    
+    
+    def dictFits_To_DataFrame(self, localFitSettings):
+        if localFitSettings['doStressRegionFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_stressRegions)
+            self.df_stressRegions = df
+            
+        if localFitSettings['doStressGaussianFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_stressGaussian)
+            self.df_stressGaussian = df
+            
+        if localFitSettings['doNPointsFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_nPoints)
+            self.df_nPoints = df
+            
+        
+        
+        
+        
+
+    
+    def plot_FH(self, fig, ax, plotH0 = True, plotFit = True):
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('f (pN)')
+    
+            if plotFit:
+                dictFit = self.dictFitFH_Chadwick
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    hPredict = dictFit['yPredict']
+                    
+                    legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, self.fCompr,'k--', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                    ax.legend(loc = 'upper right', prop={'size': 6})
+                else:
+                    titleText += '\nFIT ERROR'
+                    
+            if plotH0:
+                bestH0 = self.bestH0
+                method = self.method_bestH0
+                E_bestH0 = self.dictH0['E_' + method]
+                
+                if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                    
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, bestH0, 20)
+                    low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    
+                    
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0)
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + method][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + method][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
+                            label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+                    ax.legend(loc = 'upper right', prop={'size': 6})
+            
+            ax.title.set_text(titleText)
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
+            
+            
+        
+    def plot_SS(self, fig, ax, plotFit = True, fitType = 'stressRegion'):
+        if self.isValidForAnalysis and not self.error_bestH0:
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            ax.set_xlabel('Strain')
+            ax.set_ylabel('Stress (Pa)')
+            main_color = 'k'
+            ls = '-'
+            lw = 1.8
+            if not self.error_bestH0:
+                ax.plot(self.strainCompr, self.stressCompr, 
+                        color = main_color, marker = 'o', 
+                        markersize = 2, ls = '', alpha = 0.8)
+                
+                if plotFit:
+                    if fitType == 'stressRegion':
+                        HW = 75
+                        centers = range(100, 1500, 100)
+                        dictFit = self.dictFitsSS_stressRegions
+                        id_ranges = [str(C) + '_' + str(HW) for C in centers]
+                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                        for k in range(len(id_ranges)):
+                            idr = id_ranges[k]
+                            d = dictFit[idr]
+                            if not d['error']:
+                                if not d['valid']:
+                                    ls = '--'
+                                x = d['x']
+                                y = d['yPredict']
+                                color = gs.colorList30[k]
+                                ax.plot(y, x, color = color, ls = ls, lw = lw)
+                                
+                    if fitType == 'stressGaussian':
+                        HW = 75
+                        centers = range(100, 1500, 100)
+                        dictFit = self.dictFitsSS_stressGaussian
+                        id_ranges = [str(C) + '_' + str(HW) for C in centers]
+                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                        for k in range(len(id_ranges)):
+                            idr = id_ranges[k]
+                            d = dictFit[idr]
+                            if not d['error']:
+                                if not d['valid']:
+                                    ls = '--'
+                                x = d['x']
+                                y = d['yPredict']
+                                color = gs.colorList30[k]
+                                ax.plot(y, x, color = color, ls = ls, lw = lw)
+                                
+                    if fitType == 'nPoints':
+                        dictFit = self.dictFitsSS_nPoints
+                        id_ranges = list(dictFit.keys())
+                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                        for k in range(len(id_ranges)):
+                            idr = id_ranges[k]
+                            d = dictFit[idr]
+                            if not d['error']:
+                                if not d['valid']:
+                                    ls = '--'
+                                x = d['x']
+                                y = d['yPredict']
+                                color = gs.colorList30[k]
+                                ax.plot(y, x, color = color, ls = ls, lw = lw)
+                    
+    
+            ax.title.set_text(titleText)
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
+    
+        
+    def plot_KS(self, fig, ax, fitType = 'stressRegion'):
+        if self.isValidForAnalysis and not self.error_bestH0:
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            ax.set_ylabel('K (kPa)')
+            ax.set_ylim([0, 16])
+            
+            if fitType == 'stressRegion':
+                df = self.df_stressRegions
+                ax.set_xlabel('Stress (Pa)')
+                ax.set_xlim([0, 1200])
+                
+                HW = 75
+                centers = range(100, 1500, 100)
+                N = len(centers)
+                colors = gs.colorList30[:N]
+                
+                fltr = (df['center_x'].apply(lambda x : x in centers)) & \
+                       (df['halfWidth_x'] == HW)
+                
+                df_fltr = df[fltr]
+
+                for k in range(N):
+                    X = df_fltr['center_x'].values[k]
+                    Y = df_fltr['K'].values[k]/1000
+                    Yerr = df_fltr['ciwK'].values[k]/1000
+                    if df_fltr['valid'].values[k]:
+                        color = colors[k]
+                        mec = 'none'
+                    else:
+                        color = 'w'
+                        mec = colors[k]
+                    if (not pd.isnull(Y)) and (Y > 0):
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
+            
+            if fitType == 'stressGaussian':
+                df = self.df_stressGaussian
+                ax.set_xlabel('Stress (Pa)')
+                ax.set_xlim([0, 1200])
+                
+                HW = 75
+                centers = range(100, 1500, 100)
+                N = len(centers)
+                colors = gs.colorList30[:N]
+                
+                fltr = (df['center_x'].apply(lambda x : x in centers)) & \
+                       (df['halfWidth_x'] == HW)
+                
+                df_fltr = df[fltr]
+                # relativeError[k] = (Err/K_fit)
+                # # mec = None
+                for k in range(N):
+                    X = df_fltr['center_x'].values[k]
+                    Y = df_fltr['K'].values[k]/1000
+                    Yerr = df_fltr['ciwK'].values[k]/1000
+                    if df_fltr['valid'].values[k]:
+                        color = colors[k]
+                        mec = 'none'
+                    else:
+                        color = 'w'
+                        mec = colors[k]
+                    if (not pd.isnull(Y)) and (Y > 0):
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
+                
+            if fitType == 'nPoints':
+                df = self.df_nPoints
+                ax.set_xlabel('Stress (Pa)')
+                ax.set_xlim([0, 1200])
+    
+                N = df.shape[0]
+                colors = gs.colorList30[:N]
+
+                for k in range(N):
+                    X = df['center_x'].values[k]
+                    Y = df['K'].values[k]/1000
+                    Yerr = df['ciwK'].values[k]/1000
+                    if df['valid'].values[k]:
+                        color = colors[k]
+                        mec = 'none'
+                    else:
+                        color = 'w'
+                        mec = colors[k]
+                    if (not pd.isnull(Y)) and (Y > 0):
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
+                
+            
+        ax.title.set_text(titleText)
+        for item in ([ax.title, ax.xaxis.label, \
+                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(9)
+            
+            
+            
+    
+    #### METHODS IN DEVELOPMENT
+            
+    
+    def fitSS_polynomial(self):
+        T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
+        fake_strain = np.linspace(np.min(strain), np.max(strain), 100)
+        fake_stress = np.linspace(np.min(stress), np.max(stress), 100)
+        if not self.error_bestH0:
+            fig, axes = plt.subplots(1,4, figsize = (15,5))
+            
+            # 1. 
+            params, covM = np.polyfit(strain, stress, 3, cov=True) # , rcond=None, full=False, w=None
+            X = np.linspace(np.min(strain), np.max(strain), 100)
+            YPredict = np.polyval(params, X)
+        
+            
+            
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            axes[0].set_xlabel('Strain')
+            axes[0].set_ylabel('Stress (Pa)')
+            main_color = 'k'
+            
+            axes[0].plot(strain, stress, 
+                    color = main_color, marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+                
+            axes[0].plot(X, YPredict, 
+                    color = 'r', ls = '-')
+            
+            poly5_SS = np.poly1d(params)
+            der_poly5_SS = np.polyder(poly5_SS)
+            der_YPredict = np.polyval(der_poly5_SS, fake_strain)
+            
+            axes[1].plot(fake_stress, der_YPredict,
+                         color = 'b', ls = '-')
+            
+            
+        
+            # 2.
+            # print(T)
+            # print(strain)
+            
+            params, covM = np.polyfit(T, strain, 5, cov=True) # , rcond=None, full=False, w=None
+            YPredict = np.polyval(params, T)
+            
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            axes[2].set_xlabel('T (s)')
+            axes[2].set_ylabel('Strain')
+            main_color = 'k'
+            
+            axes[2].plot(T, strain, 
+                    color = main_color, marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+                
+            axes[2].plot(T, YPredict, 
+                    color = 'r', ls = '-')
+            
+            poly5_TStrain = np.poly1d(params)
+            der_poly5_TStrain = np.polyder(poly5_TStrain)
+            der_YPredict = np.polyval(der_poly5_TStrain, T)
+            
+            axes[2].plot(T, der_YPredict, 
+                    color = 'b', ls = '-')
+        
+            # 3.
+            params, covM = np.polyfit(T, stress, 5, cov=True) # , rcond=None, full=False, w=None
+            YPredict = np.polyval(params, T)
+            
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            axes[3].set_xlabel('T (s)')
+            axes[3].set_ylabel('Stress (Pa)')
+            main_color = 'k'
+            
+            axes[3].plot(T, stress, 
+                    color = main_color, marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+                
+            axes[3].plot(T, YPredict, 
+                    color = 'r', ls = '-')
+            
+            poly5_TStress = np.poly1d(params)
+            der_poly5_TStress = np.polyder(poly5_TStress)
+            der_YPredict = np.polyval(der_poly5_TStress, T)
+            
+            axes[3].plot(T, der_YPredict, 
+                    color = 'b', ls = '-')
+            
+    def fitSS_smooth(self):
+        if not self.error_bestH0:
+            T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
+            # fig, axes = plt.subplots(3,3, figsize = (16,12))
+            # titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            # fig.suptitle(titleText)
+            # main_color = 'k'
+            
+            matSS = np.array([stress, strain]).T            
+            matSS_stressSorted = matSS[matSS[:, 0].argsort()]
+            stress_sorted = matSS_stressSorted[:, 0]
+            strain_sorted = matSS_stressSorted[:, 1]
+            
+            
+            it = 3
+            frac = 0.2
+            delta = np.max(stress) * 0.0075
+            smoothed = sm.nonparametric.lowess(exog=stress, endog=strain, 
+                                               frac=frac, it=it, delta=delta)
+            smoothed_c = np.copy(smoothed)
+            for ii in range(1, len(smoothed)):
+                if smoothed_c[ii, 1] < smoothed_c[ii-1, 1]:
+                    smoothed_c[ii, 1] = smoothed_c[ii-1, 1] + 1e-9
+                    
+            smoothed_c_der = np.zeros((smoothed_c.shape[0], 3), dtype = np.float64)
+            smoothed_c_der[:, :2] = smoothed_c
+            for ii in range(1, len(smoothed_c)):
+                smoothed_c_der[ii, 2] = (smoothed_c[ii, 0] - smoothed_c[ii-1, 0]) / (smoothed_c[ii, 1] - smoothed_c[ii-1, 1])
+            
+            mask = (smoothed_c_der[:,2] > 0) & (smoothed_c_der[:,2] < 20e3)
+            smoothed_c_der = smoothed_c_der[mask]
+            
+            # print(smoothed_c_der)
+            
+            self.computed_SSK_filteredDer = True
+            self.SSK_filteredDer = smoothed_c_der
+            
+            
+            
+            # 1.
+            
+            # matSS = np.array([stress, strain]).T            
+            # matSS_sorted = matSS[matSS[:, 0].argsort()]        
+            
+            # axes[0].set_xlabel('Strain')
+            # axes[0].set_ylabel('Stress (Pa)')
+            
+            
+            # axes[0].plot(matSS_sorted[:, 1], matSS_sorted[:, 0], 
+            #         color = main_color, marker = 'o', 
+            #         markersize = 2, ls = '', alpha = 0.8)
+        
+            # window_length, polyorder = 21, 3
+            # mode = 'interp'
+            # yPredict = savgol_filter(matSS_sorted[:, 1], window_length, polyorder, mode=mode)
+            
+            # axes[0].plot(yPredict, matSS_sorted[:, 0],
+            #         color = 'r', ls = '-')
+            
+            # axes[0].set_title('Savgol smoothing\nlen = {:.0f} - deg = {:.0f}'.format(window_length, polyorder))
+            
+            # 2.
+            # its = [0, 1, 3]
+            # fracs = [0.2, 0.2, 0.2]
+            
+            # for k in range(3):
+            #     it = its[k]
+            #     frac = fracs[k]
+            #     delta = np.max(stress) * 0.0075
+            #     smoothed = sm.nonparametric.lowess(exog=stress, endog=strain, 
+            #                                        frac=frac, it=it, delta=delta)
+            #     smoothed_c = np.copy(smoothed)
+            #     for ii in range(1, len(smoothed)):
+            #         if smoothed_c[ii, 1] < smoothed_c[ii-1, 1]:
+            #             smoothed_c[ii, 1] = smoothed_c[ii-1, 1] + 1e-9
+                        
+            #     smoothed_c_der = np.zeros((smoothed_c.shape[0], 3), dtype = np.float64)
+            #     smoothed_c_der[:, :2] = smoothed_c
+            #     for ii in range(1, len(smoothed_c)):
+            #         smoothed_c_der[ii, 2] = (smoothed_c[ii, 0] - smoothed_c[ii-1, 0]) / (smoothed_c[ii, 1] - smoothed_c[ii-1, 1])
+                    
+            #     # print(smoothed_c_der)
+
+            #     # print(smoothed)
+                
+            #     axes[0,k].set_xlabel('Strain')
+            #     axes[0,k].set_ylabel('Stress (Pa)')
+            #     axes[0,k].set_title('Lowess smoothing')
+                
+            #     axes[0,k].plot(strain, stress, 
+            #             color = main_color, marker = 'o', 
+            #             markersize = 2, ls = '', alpha = 0.8)
+                
+            #     axes[0,k].plot(smoothed_c[:, 1], smoothed_c[:, 0],
+            #                   color = 'b', ls = '-')
+            #     axes[0,k].plot(smoothed[:, 1], smoothed[:, 0],
+            #                   color = 'r', ls = '-')
+                
+            #     axes[1,k].set_xlabel('Stress (Pa)')
+            #     axes[1,k].set_ylabel('K (Pa)')
+            #     # axes[1,k].set_title('')
+            #     axes[1,k].plot(smoothed_c_der[1:, 0], smoothed_c_der[1:, 2],
+            #                   color = 'g', ls = '', marker = 'o', markersize = 2)
+                
+            #     mask = (smoothed_c_der[:,2] > 0) & (smoothed_c_der[:,2] < 20e3)
+            #     smoothed_c_der = smoothed_c_der[mask]
+            #     axes[1,k].set_ylim([0, 20000])
+                
+            #     self.SSK_filteredDer = smoothed_c_der
+
+                
+            #     axes[0,k].set_title('Lowess smoothing\nfrac = {:.2f} - it = {:.1f}'.format(frac, it))
+              
+                
+            # 3.
+            # sfacts = [0.0005,0.001,0.01]
+            # for k in range(3):
+            #     sfact = sfacts[k]
+            #     sp = si.splrep(stress_sorted, strain_sorted, s=sfact, k=5)
+            #     strain_smoothed = si.splev(stress_sorted, sp)
+
+            #     print(smoothed)
+                
+            #     axes[2,k].set_xlabel('Strain')
+            #     axes[2,k].set_ylabel('Stress (Pa)')
+            #     axes[2,k].set_title('Spline smoothing')
+                
+            #     axes[2,k].plot(strain_sorted, stress_sorted, 
+            #             color = main_color, marker = 'o', 
+            #             markersize = 2, ls = '', alpha = 0.8)
+                
+            #     axes[2,k].plot(strain_smoothed, stress_sorted,
+            #                   color = 'r', ls = '-')
+
+                
+            #     axes[2,k].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
+            
+            
+
         
 # %% main function
         
 def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
+    top = time.time()
     
-    #### Settings
+    #### 0. Settings
+    # BestH0
     method_bestH0 = 'Dimitriadis'
     
-    #### (1) Import experimental infos
+    # Local stress-strain fits
+    localFitSettings = {
+        'doStressRegionFits' : True,
+        'doStressGaussianFits' : True,
+        'doNPointsFits' : True
+        }
+    ## Options for StressRegionFits & StressGaussianFits
+    centers = [ii for ii in range(100, 1550, 50)]
+    halfWidths = [50, 75, 100]
+    ## Options for NPointsFits
+    nbPtsFit = 11
+    overlapFit = 6
+    ## Options for fits validation
+    crit_nbPts = 8 # sup or equal to
+    crit_R2 = 0.6 # sup or equal to
+    crit_Chi2 = 1 # inf or equal to
+    dictFitValidation = {'crit_nbPts': crit_nbPts, 'crit_R2': crit_R2, 'crit_Chi2': crit_Chi2}
+    
+    #### 1. Import experimental infos
     tsDf.dx, tsDf.dy, tsDf.dz, tsDf.D2, tsDf.D3 = tsDf.dx*1000, tsDf.dy*1000, tsDf.dz*1000, tsDf.D2*1000, tsDf.D3*1000
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
@@ -1284,14 +2088,9 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
     else:
         DIAMETER = int(diameters[0])
     
-    cellComp = CellCompression(tsDf, thisExpDf)
-    
-    # results = ResultsCompression(dictColumnsMeca, cellComp)
-    results = {}
-    for k in dictColumnsMeca.keys():
-        results[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
 
-    #### (2) Get global values
+    
+    currentCellID = ufun.findInfosInFileName(f, 'cellID')
     ctFieldH = (tsDf.loc[tsDf['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
     ctFieldThickness   = np.median(ctFieldH)
     ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
@@ -1299,27 +2098,34 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
     ctFieldDY = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dy'].values)
     ctFieldDZ = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dz'].values)
     
-    for i in range(Ncomp):
+    #### 2. Create CellCompression object
+    CC = CellCompression(currentCellID, tsDf, thisExpDf)
+    CC.method_bestH0 = method_bestH0
 
-        #### (3) Identifiers
-        currentCellID = ufun.findInfosInFileName(f, 'cellID')
+    results = {}
+    for k in dictColumnsMeca.keys():
+        results[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
+    
+    #### 3. Start looping over indents
+    for i in range(Ncomp):
+        
         
         results['date'][i] = ufun.findInfosInFileName(f, 'date')
         results['manipID'][i] = ufun.findInfosInFileName(f, 'manipID')
         results['cellName'][i] = ufun.findInfosInFileName(f, 'cellName')
         results['cellID'][i] = currentCellID
         
+        #### 3.1 Correct jumps
+        CC.correctJumpForCompression(i)
             
-        cellComp.correctJumpForCompression(i)
             
-            
-        #### (4) Segment the compression n°i
-        maskComp = cellComp.getMaskForCompression(i, task = 'compression')
+        #### 3.2 Segment the i-th compression
+        maskComp = CC.getMaskForCompression(i, task = 'compression')
         thisCompDf = tsDf.loc[maskComp,:]
-        # iStart = (ufun.findFirst(tsDf['idxAnalysis'], i+1))
-        # iStop = iStart+thisCompDf.shape[0]
         
-        IC = IndentCompression(cellComp, thisCompDf, thisExpDf, i)
+        #### 3.3 Create IndentCompression object
+        IC = IndentCompression(CC, thisCompDf, thisExpDf, i)
+        CC.listIndent.append(IC)
 
         # Easy-to-get parameters
         results['compNum'][i] = i+1
@@ -1327,23 +2133,21 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
         results['compStartTime'][i] = thisCompDf['T'].values[0]
         results['compAbsStartTime'][i] = thisCompDf['Tabs'].values[0]
 
+        #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
 
         if doThisCompAnalysis:
-            #### (3) Inside the compression n°i, delimit the compression and relaxation phases
-
-            # Delimit the start of the increase of B (typically the moment when the field decrease from 5 to 3)
-            # and the end of its decrease (typically when it goes back from 3 to 5)
             
+            #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
             IC.refineStartStop()
             
-            # Get the points of constant field preceding and surrounding the current compression
+            #### 3.6 Get the points of constant field preceding and surrounding the current compression
             # Ex : if the labview code was set so that there is 6 points of ct field before and after each compression,
             # previousPoints will contains D3[iStart-12:iStart]
             # surroundingPoints will contains D3[iStart-6:iStart] and D3[iStop:iStop+6]
             
-            previousMask = cellComp.getMaskForCompression(i, task = 'previous')
-            surroundingMask = cellComp.getMaskForCompression(i, task = 'surrounding')
+            previousMask = CC.getMaskForCompression(i, task = 'previous')
+            surroundingMask = CC.getMaskForCompression(i, task = 'surrounding')
             previousThickness = np.median(tsDf.D3.values[previousMask] - DIAMETER)
             surroundingThickness = np.median(tsDf.D3.values[surroundingMask] - DIAMETER)
             surroundingDx = np.median(tsDf.dx.values[surroundingMask])
@@ -1362,7 +2166,7 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             results['ctFieldDZ'][i] = ctFieldDZ
             results['ctFieldThickness'][i] = ctFieldThickness
             results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
-            results['jumpD3'][i] = cellComp.ListJumpsD3[i]
+            results['jumpD3'][i] = CC.ListJumpsD3[i]
             
             results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
             results['minThickness'][i] = np.min(IC.hCompr)
@@ -1375,25 +2179,21 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             # Parameters relative to the force
             results['minForce'][i] = np.min(IC.fCompr)
             results['maxForce'][i] = np.max(IC.fCompr)
-
-
-            #### (4) Fit with Chadwick model of the force-thickness curve
             
-            #### Classic, all curve, Chadwick fit            
-            IC.fitFH(method = 'Chadwick')
-                
-                
-            #### (4.) Find the best H0
             
+            #### 3.7 Fit with Chadwick model of the force-thickness curve     
+            IC.fitFH_Chadwick(dictFitValidation)
+            # dictFit = IC.fitFH_Chadwick()
+            # IC.dictFitFH_Chadwick = dictFit
+                
+            #### 3.8 Find the best H0
             IC.computeH0(method = 'all', zone = 'pts_15')
             # IC.computeH0(method = 'all', zone = '%f_10')
-            # print(IC.dictH0)
             
             IC.setBestH0(method = method_bestH0)
             
 
-            #### (4.1) Compute stress and strain based on the best H0
-            
+            #### 3.9 Compute stress and strain based on the best H0
             IC.computeStressStrain(method = 'Chadwick')
                 
             results['minStress'][i] = np.min(IC.stressCompr)
@@ -1401,72 +2201,94 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             results['minStrain'][i] = np.min(IC.strainCompr)
             results['maxStrain'][i] = np.max(IC.strainCompr)
             
-            centers = [ii for ii in range(100, 1550, 50)]
-            # halfWidths = [50, 75, 100]
-            halfWidths = [50]
             
-            for jj in range(len(halfWidths)):
-                for ii in range(len(centers)):
-                    C, HW = centers[ii], halfWidths[jj]
-                    validRange = ((C-HW) > 0)
-                    id_range = str(C) + '_' + str(HW)
-                    
-                    if validRange:
-                        dictFit = IC.fitSS_stressRegion(C, HW)
-                        isValidated = (dictFit['nbPts'] >= 8 and
-                                       dictFit['R2'] >= 0.6 and 
-                                       dictFit['Chi2'] >= 1)
-                        dictFit['valid'] = isValidated
-                        dictFit['center'] = C
-                        dictFit['halfWidth'] = HW
-                        IC.dictFitsSS_stressRegions[id_range] = dictFit
-                        
-                        
-                        dictFit = IC.fitSS_stressGaussian(C, HW)
-                        isValidated = (dictFit['nbPts'] >= 8 and
-                                       dictFit['R2'] >= 0.6 and 
-                                       dictFit['Chi2'] >= 1)
-                        dictFit['valid'] = isValidated
-                        dictFit['center'] = C
-                        dictFit['halfWidth'] = HW
-                        IC.dictFitsSS_stressGaussian[id_range] = dictFit
+            #### 3.10 Local fits of stress-strain curves
             
-            nbPtsFit = 11
-            overlapFit = 2
-            nbPtsTotal = len(IC.stressCompr)
-            iStart = 0
-            iStop = iStart + nbPtsFit
+            #### 3.10.1 Local fits based on stress regions
+            if localFitSettings['doStressRegionFits']:
+                for jj in range(len(halfWidths)):
+                    for ii in range(len(centers)):
+                        C, HW = centers[ii], halfWidths[jj]
+                        validRange = ((C-HW) > 0)
+                        if validRange:
+                            IC.fitSS_stressRegion(C, HW, dictFitValidation)
+                            # dictFit = IC.fitSS_stressRegion(C, HW, dictFitValidation)
+                            # isValidated = (dictFit['K'] > 0 and
+                            #                dictFit['nbPts'] >= crit_nbPts and
+                            #                dictFit['R2'] >= crit_R2 and 
+                            #                dictFit['Chi2'] <= crit_Chi2)
+                            # dictFit['valid'] = isValidated
+                            # IC.dictFitsSS_stressRegions[id_range] = dictFit
             
-            while iStop < nbPtsTotal:
-                # iCenter = iStart + nbPtsFit//2
-                mask = np.array([((i >= iStart) and (i < iStop)) for i in range(nbPtsTotal)])
-                dictFit = IC.fitSS_mask(mask)
-                isValidated = (dictFit['nbPts'] >= 8 and
-                               dictFit['R2'] >= 0.6 and 
-                               dictFit['Chi2'] >= 1)
-                dictFit['valid'] = isValidated
-                dictFit['center'] = np.mean(IC.stressCompr[iStart:iStop])
-                dictFit['halfWidth'] = (np.max(IC.stressCompr[iStart:iStop]) - \
-                                        np.min(IC.stressCompr[iStop]))/2
-                    
-                IC.dictFitsSS_nPoints[id_range] = dictFit
-                
-                iStart = iStop - overlapFit
+            #### 3.10.2 Local fits based on sliding gaussian weights based on stress values
+            if localFitSettings['doStressGaussianFits']:
+                for jj in range(len(halfWidths)):
+                    for ii in range(len(centers)):
+                        C, HW = centers[ii], halfWidths[jj]
+                        validRange = ((C-HW) > 0)
+                        if validRange:
+                            IC.fitSS_stressGaussian(C, HW, dictFitValidation)
+                            # dictFit = IC.fitSS_stressGaussian(C, HW, dictFitValidation)
+                            # isValidated = (dictFit['K'] > 0 and
+                            #                dictFit['nbPts'] >= crit_nbPts and
+                            #                dictFit['R2'] >= crit_R2 and 
+                            #                dictFit['Chi2'] <= crit_Chi2)
+                            # dictFit['valid'] = isValidated
+                            # IC.dictFitsSS_stressGaussian[id_range] = dictFit
+            
+            #### 3.10.3 Local fits based on fixed number of points
+            if localFitSettings['doNPointsFits']:
+                nbPtsTotal = len(IC.stressCompr)
+                iStart = 0
                 iStop = iStart + nbPtsFit
+                
+                while iStop < nbPtsTotal:
+                    # id_range = str(iStart) + '_' +str(iStop)
+                    mask = np.array([((i >= iStart) and (i < iStop)) for i in range(nbPtsTotal)])
+                    IC.fitSS_nPoints(mask, dictFitValidation)
+                    # dictFit = IC.fitSS_nPoints(mask, dictFitValidation)
+                    # isValidated = (dictFit['K'] > 0 and
+                    #                dictFit['nbPts'] >= crit_nbPts and
+                    #                dictFit['R2'] >= crit_R2 and 
+                    #                dictFit['Chi2'] <= crit_Chi2)
+                    # dictFit['valid'] = isValidated
+                    # IC.dictFitsSS_nPoints[id_range] = dictFit
+                    
+                    iStart = iStop - overlapFit
+                    iStop = iStart + nbPtsFit
+                    
+            #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            IC.dictFits_To_DataFrame(localFitSettings)
             
-            # print(dictFit)
             
-                        
+            #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain curves
+            # IC.fitSS_polynomial()
+            # IC.fitSS_smooth()
             
-            # center, hW = 600, 75
-            # dict1 = IC.fitSS_stressRegion(center, hW)
-            # dict2 = IC.fitSS_stressGaussian(center, hW)
             
-            # print(dict1)
-            # print(dict2)
+    
+    #### Plots
+    
+    # Settings
+    # plot_centers = [ii for ii in range(100, 1550, 50)]
+    # plot_halfWidth = 75
+    
+    # plotSettings = {'centers' : plot_centers,
+    #                 'halfWidth' : plot_halfWidth}
+    
+    fig1, axes1 = CC.plot_Timeseries()
+    fig2, axes2 = CC.plot_FH()
+    fig31, axes31 = CC.plot_SS(fitType='stressRegion')
+    fig41, axes41 = CC.plot_KS(fitType='stressRegion')
+    fig32, axes32 = CC.plot_SS(fitType='stressGaussian')
+    fig42, axes42 = CC.plot_KS(fitType='stressGaussian')
+    fig33, axes33 = CC.plot_SS(fitType='nPoints')
+    fig43, axes43 = CC.plot_KS(fitType='nPoints')
+    # fig5, axes5 = CC.plot_KS_smooth()
+    
+    plt.show()
 
-
-
+    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
     
     
 
