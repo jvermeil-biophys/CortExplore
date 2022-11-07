@@ -409,6 +409,7 @@ dictColumnsMeca = {'date':'',
                    'jumpD3':np.nan,
                    'minForce':np.nan, 
                    'maxForce':np.nan, 
+                   'ctFieldForce':np.nan,
                    'minStress':np.nan, 
                    'maxStress':np.nan, 
                    'minStrain':np.nan, 
@@ -795,9 +796,11 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     # These values are computed once for the whole cell D3 time series, but since the table has 1 line per compression, 
     # that same value will be put in the table for each line corresponding to that cell
     ctFieldH = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
+    ctFieldF = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'F'].values)
     ctFieldDX = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dx'].values - DIAMETER)
     ctFieldDZ = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dz'].values)
     ctFieldThickness   = np.median(ctFieldH)
+    ctFieldForce   = np.median(ctFieldF)
     ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
     
     #### Save stress-strain [1/3] 
@@ -985,6 +988,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
             results['validatedThickness'][i] = validatedThickness
             results['minForce'][i] = np.min(fCompr)
             results['maxForce'][i] = np.max(fCompr)
+            results['ctFieldForce'][i] = ctFieldForce
 
             
     
