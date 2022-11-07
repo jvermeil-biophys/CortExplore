@@ -401,233 +401,13 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 
 #### Workflow
 # * analyseTimeSeries_meca() analyse 1 file and return the dict (with the results of the analysis)
-# * createMecaDataDict() call the previous function on the given list of files and concatenate the results
+# * buildDf_meca() call the previous function on the given list of files and concatenate the results
 # * computeGlobalTable_meca() call the previous function and convert the dict to a DataFrame
 
-#### H0_bestMethod
-H0_bestMethod = 'H0_Chadwick15'
 
-#### listColumnsMeca
-listColumnsMeca = ['date','cellName','cellID','manipID',
-                   'compNum','compDuration','compStartTime','compAbsStartTime','compStartTimeThisDay',
-                   'initialThickness','minThickness','maxIndent','previousThickness',
-                   'surroundingThickness','surroundingDx','surroundingDz',
-                   'validatedThickness', 'jumpD3',
-                   'minForce', 'maxForce', 'minStress', 'maxStress', 'minStrain', 'maxStrain',
-                   'ctFieldThickness','ctFieldFluctuAmpli','ctFieldDX','ctFieldDZ',
-                   'H0_Chadwick15', 'H0_Dimitriadis15', 
-                   'H0Chadwick','EChadwick','R2Chadwick','EChadwick_CIWidth',
-                   'hysteresis',
-                   'critFit', 'validatedFit','comments'] # 'fitParams', 'H0_Dimitriadis15', 
+# %%%% TO DO LIST
 
-
-
-#### SETTING ! Fit Selection R2 & Chi2
-'''
-The different Chi2 criteria below corrospond to the fact the the fits on the stress-strain curve are
-done based on three different methods. The first linear fit on specific stress ranges fits on the strain
-and the other two (K3 and K4) are fit on the stress.
-
-'''
-#
-dictSelectionCurve = {'R2' : 0.6, 'K2_Chi2' : 0.1, 'K3_Chi2' :0.1, 'K4_Chi2' : 0.1, 'Error' : 0.02}
-
-
-
-#### SETTING ! Change the region fits NAMES here 
-
-#### >>> OPTION 1 - MANY FITS, FEW PLOTS
-
-# fit_intervals = [S for S in range(0,450,50)] + [S for S in range(500,1100,100)] + [S for S in range(1500,2500,500)]
-# regionFitsNames = []
-# for ii in range(len(fit_intervals)-1):
-#     for jj in range(ii+1, len(fit_intervals)):
-#         regionFitsNames.append(str(fit_intervals[ii]) + '<s<' + str(fit_intervals[jj]))
-        
-# fit_toPlot = ['50<s<200', '200<s<350', '350<s<500', '500<s<700', '700<s<1000', '1000<s<1500', '1500<s<2000']
-
-
-#### >>> OPTION 2 - TO LIGHTEN THE COMPUTATION
-# regionFitsNames = fit_toPlot
-
-
-#### >>> OPTION 3 - OLIVIA'S IDEA
-# fitMin = [S for S in range(25,1225,50)]
-# fitMax = [S+150 for S in fitMin]
-# fitCenters = np.array([S+75 for S in fitMin])
-# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
-# fit_toPlot = [regionFitsNames[ii] for ii in range(0, len(regionFitsNames), 2)]
-
-# mask_fitToPlot = np.array(list(map(lambda x : x in fit_toPlot, regionFitsNames)))
-
-# for rFN in regionFitsNames:
-#     listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
-#                         'H0Chadwick_'+rFN, 'Npts_'+rFN, 'validatedFit_'+rFN] 
-
-
-
-#### >>> OPTION 4 - Longe ranges
-# intervalSize = 250
-# fitMin = [S for S in range(25,975,50)] + [S for S in range(975,2125,100)]
-# fitMax = [S+intervalSize for S in fitMin]
-# fitCenters = np.array([S+0.5*intervalSize for S in fitMin])
-# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
-# fit_toPlot = [regionFitsNames[ii] for ii in range(0, len(regionFitsNames), 4)]
-
-# mask_fitToPlot = np.array(list(map(lambda x : x in fit_toPlot, regionFitsNames)))
-
-# for rFN in regionFitsNames:
-#     listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
-#                         'H0Chadwick_'+rFN, 'Npts_'+rFN, 'validatedFit_'+rFN] 
-    # 'H0Chadwick_'+rFN, 'EChadwick_'+rFN
-    
-#### >>> OPTION 5 - Effect of range width
-
-fitC =  np.array([S for S in range(100, 1150, 50)])
-fitW = [100, 150, 200, 250, 300]
-
-fitCenters = np.array([[int(S) for S in fitC] for w in fitW]).flatten()
-fitWidth = np.array([[int(w) for S in fitC] for w in fitW]).flatten()
-
-fitMin = np.array([[int(S-(w/2)) for S in fitC] for w in fitW]).flatten()
-fitMax = np.array([[int(S+(w/2)) for S in fitC] for w in fitW]).flatten()
-
-fitCenters, fitWidth = fitCenters[fitMin>0], fitWidth[fitMin>0]
-fitMin, fitMax = fitMin[fitMin>0], fitMax[fitMin>0]
-
-regionFitsNames = ['S='  + str(fitCenters[ii]) + '+/-' + str(int(fitWidth[ii]//2)) for ii in range(len(fitCenters))]
-
-fit_toPlot = [regionFitsNames[ii] for ii in range(len(fitC), 2*len(fitC), 2)]
-mask_fitToPlot = np.array(list(map(lambda x : x in fit_toPlot, regionFitsNames)))
-
-for rFN in regionFitsNames:
-    listColumnsMeca += ['KChadwick_'+rFN, 'H0Chadwick_'+rFN, 
-                        'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 'K2_CIW_'+rFN,  'Npts_'+rFN, 'K2_validatedFit_'+rFN,
-                        'K3Chadwick_'+rFN, 'K3_CIW_'+rFN,  'K3_Chi2_'+rFN, 'K3_validatedFit_'+rFN,
-                         ] 
-    # 'H0Chadwick_'+rFN, 'EChadwick_'+rFN
-
-
-#### >>> OPTION 6 - Effect of range width on stress values, with whole stress range / 100. 
-#Not specific pre-defined values as in option 5
-NbOfTargets = 10
-overlap = np.round((20/100)*NbOfTargets) #in percentage
-count = 0
-
-for count in range(1,NbOfTargets):
-    tP = str(int(count)*NbOfTargets)
-    listColumnsMeca += ['K4Chadwick_'+tP, 'K4_CIW_'+tP,  'K4_Chi2_'+tP, 'K4_validatedFit_'+tP]
-
-
-#### dictColumnsMeca
-dictColumnsMeca = {'date':'',
-                   'cellName':'',
-                   'cellID':'',
-                   'manipID':'',
-                   'compNum':np.nan,
-                   'compDuration':'',
-                   'compStartTime':np.nan,
-                   'compAbsStartTime':np.nan,
-                   'compStartTimeThisDay':np.nan,
-                   'initialThickness':np.nan,
-                   'minThickness':np.nan,
-                   'maxIndent':np.nan,
-                   'previousThickness':np.nan,
-                   'surroundingThickness':np.nan,
-                   'surroundingDx':np.nan,
-                   'surroundingDy':np.nan,
-                   'surroundingDz':np.nan,
-                   'validatedThickness':np.nan, 
-                   'jumpD3':np.nan,
-                   'minForce':np.nan, 
-                   'maxForce':np.nan, 
-                   'minStress':np.nan, 
-                   'maxStress':np.nan, 
-                   'minStrain':np.nan, 
-                   'maxStrain':np.nan,
-                   'ctFieldThickness':np.nan,
-                   'ctFieldFluctuAmpli':np.nan,
-                   'ctFieldDX':np.nan,
-                   'ctFieldDY':np.nan,
-                   'ctFieldDZ':np.nan,
-                   'bestH0':np.nan,
-                   'error_bestH0':True,
-                   'H0_Chadwick15':np.nan, 
-                   'H0_Dimitriadis15':np.nan, 
-                   'H0Chadwick':np.nan,
-                   'EChadwick':np.nan,
-                   'R2Chadwick':np.nan,
-                   'EChadwick_CIWidth':np.nan,
-                   'hysteresis':np.nan,
-                   'validatedFit_Chadwick':False,
-                   'critFit':'',
-                   'comments':''
-                   }
-
-
-for rfn in regionFitsNames:
-          
-     d = {'KChadwick_'+rfn:np.nan, 
-          'H0Chadwick_'+rfn:np.nan,
-          
-          #Parameters for linear fits on pre-defined stress ranges
-          'R2Chadwick_'+rfn:np.nan, 
-          'K2Chadwick_'+rfn:np.nan,
-          'K2_CIW_'+rfn:np.nan, 
-          'Npts_'+rfn:np.nan, 
-          'K2_validatedFit_'+rfn:False,
-          
-          #Parameters for Gaussian-weighted linear fits
-          'K3Chadwick_'+rfn:np.nan,
-          'K3_CIW_'+rfn:np.nan, 
-          'K3_Chi2'+rfn:np.nan, 
-          'K3_validatedFit_'+rfn:False,
-          
-          }
-     
-     dictColumnsMeca = {**dictColumnsMeca, **d}
-
-
-
-for count in range(1, NbOfTargets):
-    targetPoint = str(int(count*NbOfTargets))
-          #Parameters for Gaussian-weighted linear fits
-    d = {'K4Chadwick_'+targetPoint:np.nan,
-         'K4_CIW_'+targetPoint:np.nan, 
-         'K4_Chi2'+targetPoint:np.nan, 
-         'K4_validatedFit_'+targetPoint:False,
-         }
-     
-    dictColumnsMeca = {**dictColumnsMeca, **d}
-     
-dictColumnsRegionFit = {'regionFitNames' : '', 
-                        'K' : np.nan, 
-                        'H0' : np.nan,
-                        
-                        'R2' : np.nan,  
-                        'K2' : np.nan, 
-                        'K2_fitError' : True, 
-                        'K2_validatedFit' : False, 
-                        'Npts' : np.nan, 
-                        'K2_CIW' : np.nan,
-                        
-                        'K3' : np.nan, 
-                        'K3_fitError' : True, 
-                        'K3_validatedFit' : False, 
-                        'K3_Chi2' : np.nan, 
-                        'K3_CIW' : np.nan,
-                        
-                        'K4' : np.nan, 
-                        'K4_fitError' : True, 
-                        'K4_validatedFit' : False, 
-                        'K4_Chi2' : np.nan, 
-                        'K4_CIW' : np.nan,
-                        
-                        } 
-
-#%% Attempt at class
-
-#### TO DO
+#### 
 # - When this is done and runs ok, think of the results and the plots.
 # - Write the polynomial fit.
 
@@ -643,7 +423,7 @@ dictColumnsRegionFit = {'regionFitNames' : '',
 #         self.dictColumns = dictColumns
 #         self.Ncomp = CC.Ncomp
 
-# %%% mechanical models
+# %%%% mechanical models
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
@@ -676,7 +456,7 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
     
 
-# %%% general fitting functions
+# %%%% general fitting functions
 
 
 def fitChadwick_hf(h, f, D):
@@ -705,16 +485,16 @@ def fitChadwick_hf(h, f, D):
     upperBounds = (np.Inf, np.Inf)
     parameterBounds = [lowerBounds, upperBounds]
 
-    # try:
+    try:
     # params = [E, H0] ; ses = [seE, seH0]
-    params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
-    ses = np.array([covM[0,0], covM[1,1]])
-    params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
+        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
+        params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
-    # except:
-    #     error = True
-    #     params = np.ones(2) * np.nan
-    #     ses = np.ones(2) * np.nan
+    except:
+        error = True
+        params = np.ones(2) * np.nan
+        ses = np.ones(2) * np.nan
         
     res = (params, ses, error)
         
@@ -762,7 +542,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
     try:
         # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
-        ses = np.array([covM[0,0], covM[1,1]])
+        ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
     except:
@@ -773,6 +553,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
     res = (params, ses, error)
         
     return(res)
+
 
 
 def fitLinear_ss(stress, strain, weights = []):
@@ -829,7 +610,7 @@ def fitLinear_ss(stress, strain, weights = []):
     return(res)
 
 
-# %%% functions to store the results of fits
+# %%%% functions to store the results of fits
 
 def makeDictFit_hf(params, ses, error, 
                    x, y, yPredict, 
@@ -853,11 +634,24 @@ def makeDictFit_hf(params, ses, error,
                        nbPts >= dictFitValidation['crit_nbPts'] and
                        R2 >= dictFitValidation['crit_R2'] and 
                        Chi2 <= dictFitValidation['crit_Chi2'])
+        issue = ''
+        if isValidated:
+            issue += 'none'
+        else:
+            if not E > 0:
+                issue += 'E<0_'
+            if not nbPts >= dictFitValidation['crit_nbPts']:
+                issue += 'nbPts<{:.0f}_'.format(dictFitValidation['crit_nbPts'])
+            if not nbPts >= dictFitValidation['crit_R2']:
+                issue += 'R2<{:.2f}_'.format(dictFitValidation['crit_R2'])
+            if not nbPts >= dictFitValidation['crit_Chi2']:
+                issue += 'Chi2>{:.1f}_'.format(dictFitValidation['crit_Chi2'])
     
     else:
         E, seE, H0, seH0 = np.nan, np.nan, np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
         ciwE, ciwH0 = np.nan, np.nan
+        issue = 'error'
 
     res =  {'error':error,
             'nbPts':len(y),
@@ -869,7 +663,8 @@ def makeDictFit_hf(params, ses, error,
             'x': x,
             'y': y,
             'yPredict': yPredict,
-            'valid': isValidated
+            'valid': isValidated,
+            'issue': issue
             }
     
     return(res)
@@ -878,8 +673,10 @@ def makeDictFit_hf(params, ses, error,
 def makeDictFit_ss(params, ses, error, 
                    center, halfWidth, x, y, yPredict, 
                    err_chi2, dictFitValidation):
+    
+    nbPts = len(y)
 
-    if not error:
+    if (not error) and (nbPts > 0):
         K, S0 = params
         seK, seS0 = ses
 
@@ -891,21 +688,34 @@ def makeDictFit_ss(params, ses, error,
 
         ciwK = q*seK
         
-        nbPts = len(y)
         center_y = np.median(y)
         
         isValidated = (K > 0 and
                        nbPts >= dictFitValidation['crit_nbPts'] and
                        R2 >= dictFitValidation['crit_R2'] and 
                        Chi2 <= dictFitValidation['crit_Chi2'])
+        issue = ''
+        if isValidated:
+            issue += 'none'
+        else:
+            if not K > 0:
+                issue += 'K<0_'
+            if not nbPts >= dictFitValidation['crit_nbPts']:
+                issue += 'nbPts<{:.0f}_'.format(dictFitValidation['crit_nbPts'])
+            if not R2 >= dictFitValidation['crit_R2']:
+                issue += 'R2<{:.2f}_'.format(dictFitValidation['crit_R2'])
+            if not Chi2 <= dictFitValidation['crit_Chi2']:
+                issue += 'Chi2>{:.1f}_'.format(dictFitValidation['crit_Chi2'])
     
     else:
+        error = True
         K, seK = np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
         nbPts = np.nan
         ciwK = np.nan
         center_y = np.nan
         isValidated = False
+        issue = 'error'
 
     res =  {'error': error,
             'nbPts': nbPts,
@@ -918,7 +728,8 @@ def makeDictFit_ss(params, ses, error,
             'x': x,
             'y': y,
             'yPredict': yPredict,
-            'valid': isValidated
+            'valid': isValidated,
+            'issue': issue
             }
     
     return(res)
@@ -939,27 +750,41 @@ def nestedDict_to_DataFrame(D):
         Nfits = len(fits)
         f0 = fits[0]
         d0 = D[f0]
-        cols = [k for k in d0.keys() if (isinstance(d0[k], numbers.Number) or k in ['valid'])]
+        
+        cols_others = [k for k in d0.keys() if (k in ['valid', 'issue'])]
+        cols_num = [k for k in d0.keys() if (isinstance(d0[k], numbers.Number)) \
+                                            and (k not in cols_others)]
+        
+
         D2 = {}
-        for c in cols:
+        index = [] # will contains all the names of the small dicts 'd'
+        
+        for c in cols_num:
             D2[c] = np.zeros(Nfits)
+        for c in cols_others:
+            D2[c] = []
     
         for jj in range(Nfits):
             f = fits[jj]
             d = D[f]
-            for c in cols:
+            for c in cols_others:
+                D2[c].append(d[c])
+            for c in cols_num:
                 D2[c][jj] = d[c]
+            index.append(f)
+            
     else:
         D2 = {}
         
     df = pd.DataFrame(D2)
+    df.insert(0, 'id', index)
     return(df)
 
 
 
         
 
-# %%% classes
+# %%%% classes
         
 
 class CellCompression:
@@ -969,6 +794,7 @@ class CellCompression:
     
     def __init__(self, cellID, timeseriesDf, thisExpDf):
         self.tsDf = timeseriesDf
+        self.expDf = thisExpDf
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
         
@@ -1010,8 +836,14 @@ class CellCompression:
         
         # These fields are to be filled by methods later on
         self.listIndent = []
-        self.ListJumpsD3 = np.zeros(Ncomp, dtype = float)
+        self.listJumpsD3 = np.zeros(Ncomp, dtype = float)
         self.method_bestH0 = 'Dimitriadis' # default
+        
+        self.df_mainResults = pd.DataFrame({})
+        self.df_stressRegions = pd.DataFrame({})
+        self.df_stressGaussian = pd.DataFrame({})
+        self.df_nPoints = pd.DataFrame({})
+
         
         
         
@@ -1052,10 +884,10 @@ class CellCompression:
             if c == 'D3':
                 D3corrected = True
                 jumpD3 = jump
-        self.ListJumpsD3[i] = jumpD3
+        self.listJumpsD3[i] = jumpD3
     
         
-    def plot_Timeseries(self):
+    def plot_Timeseries(self, plotSettings):
         fig, ax = plt.subplots(1,1,figsize=(self.tsDf.shape[0]*(1/200),4))
         fig.suptitle(self.cellID)
         
@@ -1101,7 +933,7 @@ class CellCompression:
         return(fig, axes)
     
     
-    def plot_FH(self, plotH0 = True, plotFit = True):
+    def plot_FH(self, plotSettings, plotH0 = True, plotFit = True):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
@@ -1123,20 +955,27 @@ class CellCompression:
                 ax = axes[rowSp,colSp]
                 
             IC = self.listIndent[i]
-            IC.plot_FH(fig, ax, plotH0 = plotH0, plotFit = plotFit)
+            IC.plot_FH(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
             
         fig.tight_layout()
         return(fig, axes)
     
     
-    def plot_SS(self, plotFit = True, fitType = 'stressRegion'):
+    
+    def plot_SS(self, plotSettings, plotFit = True, fitType = 'stressRegion'):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
                                figsize = (3*nColsSubplot, 3*nRowsSubplot))
+        
         figTitle = 'Strain-Stress of compressions'
         if plotFit:
             figTitle += '\nfit type: ' + fitType
+            if fitType in ['stressRegion', 'stressGaussian']:
+                figTitle += ' - {:.0f}_{:.0f}'.format(plotSettings['plotCenters'].step, 
+                                                      plotSettings['plotHW'])
+            if fitType == 'nPoints':
+                figTitle += (' - ' + plotSettings['plotPoints'])
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1148,19 +987,24 @@ class CellCompression:
                 ax = axes[rowSp,colSp]
                 
             IC = self.listIndent[i]
-            IC.plot_SS(fig, ax, plotFit = plotFit, fitType = fitType)
+            IC.plot_SS(fig, ax, plotSettings, plotFit = plotFit, fitType = fitType)
             
         fig.tight_layout()
         return(fig, axes)
     
     
-    def plot_KS(self, fitType = 'stress_region'):
+    def plot_KS(self, plotSettings, fitType = 'stressRegion'):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
                                figsize = (3*nColsSubplot, 3*nRowsSubplot))
         figTitle = 'Tangeantial modulus'
         figTitle += '\nfit type: ' + fitType
+        if fitType in ['stressRegion', 'stressGaussian']:
+            figTitle += ' - {:.0f}_{:.0f}'.format(plotSettings['plotCenters'].step, 
+                                                  plotSettings['plotHW'])
+        if fitType == 'nPoints':
+            figTitle += (' - ' + plotSettings['plotPoints'])
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1172,13 +1016,272 @@ class CellCompression:
                 ax = axes[rowSp,colSp]
                 
             IC = self.listIndent[i]
-            IC.plot_KS(fig, ax, fitType = fitType)
+            IC.plot_KS(fig, ax, plotSettings, fitType = fitType)
             
         fig.tight_layout()
         return(fig, axes)
     
     
     
+    
+    def plot_and_save(self, plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells'):
+        # See the definition of plotSettings below !
+        suf = plotSettings['subfolder_suffix']
+        if len(suf) > 0:
+            suf = '_' + suf
+            figSubDir = figSubDir + suf
+        
+        # 1.
+        if plotSettings['FH(t)']:
+            try:
+                name = self.cellID + '_01_h(t)'
+                fig, ax = self.plot_Timeseries(plotSettings)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+            
+        # 2.
+        if plotSettings['F(H)']:
+            try:
+                name = self.cellID + '_02_F(h)'
+                fig, ax = self.plot_FH(plotSettings, plotH0 = True, plotFit = True)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+            
+        # 3.
+        if plotSettings['S(e)_stressRegion']:
+            try:
+                name = self.cellID + '_03-1_S(e)_stressRegion'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressRegion')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+        if plotSettings['K(S)_stressRegion']:
+            # try:
+            name = self.cellID + '_03-2_K(S)_stressRegion'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'stressRegion')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+            
+        # 4.
+        if plotSettings['S(e)_stressGaussian']:
+            try:
+                name = self.cellID + '_04-1_S(e)_stressGaussian'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressGaussian')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+        if plotSettings['K(S)_stressGaussian']:
+            try:
+                name = self.cellID + '_04-2_K(S)_stressGaussian'
+                fig, ax = self.plot_KS(plotSettings, fitType = 'stressGaussian')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+            
+        # 5.
+        if plotSettings['S(e)_nPoints']:
+            try:
+                name = self.cellID + '_05-1_S(e)_nPoints'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'nPoints')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+        if plotSettings['K(S)_nPoints']:
+            try:
+                name = self.cellID + '_05-2_K(S)_nPoints'
+                fig, ax = self.plot_KS(plotSettings, fitType = 'nPoints')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+    
+    
+    def make_mainResults(self, fitSettings):
+        # fitSettings = {'doChadwickFit' : True, 'doDimitriadisFit' : False,
+        #     'doStressRegionFits' : True, 'doStressGaussianFits' : True, 'doNPointsFits' : True
+        #     }
+        
+        #### Important setting : dictColumnsMeca
+        dictColumnsMeca = {'date':'',
+                           'cellName':'',
+                           'cellID':'',
+                           'manipID':'',
+                           'compNum':np.nan,
+                           'compDuration':'',
+                           'compStartTime':np.nan,
+                           'compAbsStartTime':np.nan,
+                           'compStartTimeThisDay':np.nan,
+                           'initialThickness':np.nan,
+                           'minThickness':np.nan,
+                           'maxIndent':np.nan,
+                           'previousThickness':np.nan,
+                           'surroundingThickness':np.nan,
+                           'surroundingDx':np.nan,
+                           'surroundingDy':np.nan,
+                           'surroundingDz':np.nan,
+                           'validatedThickness':False, 
+                           'jumpD3':np.nan,
+                           'minForce':np.nan, 
+                           'maxForce':np.nan, 
+                           'minStress':np.nan, 
+                           'maxStress':np.nan, 
+                           'minStrain':np.nan, 
+                           'maxStrain':np.nan,
+                           'ctFieldThickness':np.nan,
+                           'ctFieldFluctuAmpli':np.nan,
+                           'ctFieldDX':np.nan,
+                           'ctFieldDY':np.nan,
+                           'ctFieldDZ':np.nan,
+                           'bestH0':np.nan,
+                           'error_bestH0':True,
+                           'method_bestH0':'',
+                           }
+        
+        if fitSettings['doChadwickFit']:
+            method = 'Chadwick'
+            d = {'error_'+ method : True,
+                 'nbPts_'+ method : np.nan, 
+                 'E_'+ method : np.nan, 
+                 'ciwE_'+ method : np.nan, 
+                 'H0_'+ method : np.nan, 
+                 'R2_'+ method : np.nan,
+                 'valid_'+ method: False,
+                 }
+            dictColumnsMeca = {**dictColumnsMeca, **d}
+            
+        if fitSettings['doDimitriadisFit']:
+            method = 'Dimitriadis'
+            d = {'error_'+ method : True,
+                 'nbPts_'+ method : np.nan, 
+                 'E_'+ method : np.nan, 
+                 'ciwE_'+ method : np.nan, 
+                 'H0_'+ method : np.nan, 
+                 'R2_'+ method : np.nan,
+                 'valid_'+ method: False,
+                 }
+            dictColumnsMeca = {**dictColumnsMeca, **d}   
+        
+        
+        N = self.Ncomp
+        
+        results = {}
+        for k in dictColumnsMeca.keys():
+            results[k] = [dictColumnsMeca[k] for i in range(N)]
+        
+        # currentCellID = self.cellID
+        ctFieldH = (self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'D3'].values - self.DIAMETER)
+        ctFieldThickness   = np.median(ctFieldH)
+        ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
+        ctFieldDX = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dx'].values)
+        ctFieldDY = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dy'].values)
+        ctFieldDZ = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dz'].values)
+            
+        for i in range(N):
+            IC = self.listIndent[i]
+            
+            # Identifiers
+            results['date'][i] = ufun.findInfosInFileName(self.cellID, 'date')
+            results['manipID'][i] = ufun.findInfosInFileName(self.cellID, 'manipID')
+            results['cellName'][i] = ufun.findInfosInFileName(self.cellID, 'cellName')
+            results['cellID'][i] = self.cellID
+            results['compNum'][i] = i+1
+            
+            # Time-related
+            results['compDuration'][i] = self.expDf.at[self.expDf.index.values[0], 'compression duration']
+            results['compStartTime'][i] = IC.rawDf['T'].values[0]
+            results['compAbsStartTime'][i] = IC.rawDf['Tabs'].values[0]
+            
+            # Thickness-related ( = D3-DIAMETER)
+            previousMask = self.getMaskForCompression(i, task = 'previous')
+            surroundingMask = self.getMaskForCompression(i, task = 'surrounding')
+            previousThickness = np.median(self.tsDf.D3.values[previousMask] - self.DIAMETER)
+            surroundingThickness = np.median(self.tsDf.D3.values[surroundingMask] - self.DIAMETER)
+            surroundingDx = np.median(self.tsDf.dx.values[surroundingMask])
+            surroundingDy = np.median(self.tsDf.dy.values[surroundingMask])
+            surroundingDz = np.median(self.tsDf.dz.values[surroundingMask])
+            
+            results['previousThickness'][i] = previousThickness
+            results['surroundingThickness'][i] = surroundingThickness
+            results['surroundingDx'][i] = surroundingDx
+            results['surroundingDy'][i] = surroundingDy
+            results['surroundingDz'][i] = surroundingDz
+            results['ctFieldDX'][i] = ctFieldDX
+            results['ctFieldDY'][i] = ctFieldDY
+            results['ctFieldDZ'][i] = ctFieldDZ
+            results['ctFieldThickness'][i] = ctFieldThickness
+            results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
+            results['jumpD3'][i] = self.listJumpsD3[i]
+            
+            results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
+            results['minThickness'][i] = np.min(IC.hCompr)
+            results['maxIndent'][i] = results['initialThickness'][i] - results['minThickness'][i]
+
+            results['validatedThickness'][i] = np.min([results['initialThickness'][i],results['minThickness'][i],
+                                          results['previousThickness'][i],results['surroundingThickness'][i],
+                                          results['ctFieldThickness'][i]]) > 0
+            
+            # Force-related
+            results['minForce'][i] = np.min(IC.fCompr)
+            results['maxForce'][i] = np.max(IC.fCompr)
+            
+            # Best H0 related
+            results['bestH0'][i] = IC.bestH0
+            results['method_bestH0'][i] = IC.method_bestH0
+            results['error_bestH0'][i] = IC.error_bestH0
+            
+            # Strain-stress-related
+            results['minStress'][i] = np.min(IC.stressCompr)
+            results['maxStress'][i] = np.max(IC.stressCompr)
+            results['minStrain'][i] = np.min(IC.strainCompr)
+            results['maxStrain'][i] = np.max(IC.strainCompr)
+            
+            # Whole curve fits related
+            if fitSettings['doChadwickFit']:
+                method = 'Chadwick'
+                results['error_'+ method][i] = IC.dictFitFH_Chadwick['error']
+                results['nbPts_'+ method][i] = IC.dictFitFH_Chadwick['nbPts']
+                results['E_'+ method][i] = IC.dictFitFH_Chadwick['E']
+                results['ciwE_'+ method][i] = IC.dictFitFH_Chadwick['ciwE']
+                results['H0_'+ method][i] = IC.dictFitFH_Chadwick['H0']
+                results['R2_'+ method][i] = IC.dictFitFH_Chadwick['R2']
+                results['valid_'+ method][i] = IC.dictFitFH_Chadwick['valid']
+
+                    
+            if fitSettings['doDimitriadisFit']:
+                method = 'Dimitriadis'
+                results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
+                results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
+                results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
+                results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
+                results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
+                results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
+                results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+        
+        df_mainResults = pd.DataFrame(results)
+        self.df_mainResults = df_mainResults
+    
+    
+    def make_localFitsResults(self, fitSettings):
+        # fitSettings = {'doChadwickFit' : True, 'doDimitriadisFit' : False,
+        #     'doStressRegionFits' : True, 'doStressGaussianFits' : True, 'doNPointsFits' : True
+        #     }
+
+        if fitSettings['doStressRegionFits']:
+            df = pd.concat([IC.df_stressRegions for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_stressRegions = df
+            
+        if fitSettings['doStressGaussianFits']:
+            df = pd.concat([IC.df_stressGaussian for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_stressGaussian = df
+            
+        if fitSettings['doNPointsFits']:
+            df = pd.concat([IC.df_nPoints for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_nPoints = df
     
     
     #### METHODS IN DEVELOPMENT
@@ -1217,7 +1320,7 @@ class CellCompression:
         frac = 0.2
         # delta = np.max(stress_sorted) * 0.0075
         SK_smoothed = sm.nonparametric.lowess(exog=stress_sorted, endog=K_sorted, 
-                                           frac=frac, it=it)
+                                              frac=frac, it=it)
 
         ax.plot(stress_sorted, K_sorted, c = 'g', ls = '', marker = 'o', markersize = 2)
         ax.plot(SK_smoothed[:, 0], SK_smoothed[:, 1], c = 'r', ls = '-')
@@ -1463,12 +1566,12 @@ class IndentCompression:
         hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
         x = f
         y, yPredict = h, hPredict
-        err_chi2 = 30
+        #### err_Chi2 for distance (µm)
+        err_chi2 = 0.03
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, dictFitValidation)
         self.dictFitFH_Chadwick = dictFit
-        # return(dictFit)
 
                 
     def fitFH_Dimitriadis(self, dictFitValidation, mask = []):
@@ -1480,19 +1583,21 @@ class IndentCompression:
         fPredict = dimitriadisModel(h/1000, E, H0/1000, self.DIAMETER/1000, v = 0)
         x = h
         y, yPredict = f, fPredict
+        #### err_Chi2 for force (pN)
         err_chi2 = 100
         dictFit = makeDictFit_hf(params, ses, error, 
                            x, y, yPredict, 
                            err_chi2, dictFitValidation)
         self.dictFitFH_Dimitriadis = dictFit
-        # return(dictFit)
                 
     
     def fitSS_stressRegion(self, center, halfWidth, dictFitValidation):
         id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
+        
         lowS, highS = center - halfWidth, center + halfWidth
         mask = ((stress > lowS) & (stress < highS))
+        
         params, ses, error = fitLinear_ss(stress, strain, weights = mask)
         
         K, strain0 = params
@@ -1500,20 +1605,22 @@ class IndentCompression:
         
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
+        #### err_Chi2 for strain
         err_chi2 = 0.01
         
         dictFit = makeDictFit_ss(params, ses, error, 
                                  center, halfWidth, x, y, yPredict, 
                                  err_chi2, dictFitValidation)
-        self.dictFitsSS_stressRegions[id_range] = dictFit
-        # return(dictFit)            
+        self.dictFitsSS_stressRegions[id_range] = dictFit  
                 
     
     def fitSS_stressGaussian(self, center, halfWidth, dictFitValidation):
         id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
+        
         X = stress.flatten(order='C')
         weights = np.exp( -((X - center) ** 2) / halfWidth ** 2)
+        
         params, ses, error = fitLinear_ss(stress, strain, weights = weights)
         
         K, strain0 = params
@@ -1523,14 +1630,13 @@ class IndentCompression:
         
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
+        #### err_Chi2 for strain
         err_chi2 = 0.01
         
         dictFit = makeDictFit_ss(params, ses, error, 
                                  center, halfWidth, x, y, yPredict, 
                                  err_chi2, dictFitValidation)
-        
         self.dictFitsSS_stressGaussian[id_range] = dictFit
-        # return(dictFit)
     
     
     def fitSS_nPoints(self, mask, dictFitValidation):
@@ -1545,6 +1651,7 @@ class IndentCompression:
         
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
+        #### err_Chi2 for strain
         err_chi2 = 0.01
         center = np.median(x)
         halfWidth = (np.max(x) - np.min(x))/2
@@ -1552,61 +1659,34 @@ class IndentCompression:
         dictFit = makeDictFit_ss(params, ses, error, 
                                  center, halfWidth, x, y, yPredict, 
                                  err_chi2, dictFitValidation)
-        
         self.dictFitsSS_nPoints[id_range] = dictFit
-        # return(dictFit)
     
     
-    
-            
-        
-        
-    
-
-    # def dictFitToDataFrame(self, D):
-    #     if len(D) > 0:
-    #         fits =  list(D.keys())
-    #         Nfits = len(fits)
-    #         f0 = fits[0]
-    #         d0 = D[f0]
-    #         cols = [k for k in d0.keys() if k not in ['x', 'yPredict']]
-    #         # print(cols)
-    #         D2 = {}
-    #         for c in cols:
-    #             D2[c] = np.zeros(Nfits)
-        
-    #         for jj in range(Nfits):
-    #             f = fits[jj]
-    #             d = D[f]
-    #             for c in cols:
-    #                 D2[c][jj] = d[c]
-    #     else:
-    #         D2 = {}
-    #     df = pd.DataFrame(D2)
-    #     return(df)
-    
-    
-    
-    def dictFits_To_DataFrame(self, localFitSettings):
-        if localFitSettings['doStressRegionFits']:
+    def dictFits_To_DataFrame(self, fitSettings):
+        if fitSettings['doStressRegionFits']:
             df = nestedDict_to_DataFrame(self.dictFitsSS_stressRegions)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_stressRegions = df
             
-        if localFitSettings['doStressGaussianFits']:
+        if fitSettings['doStressGaussianFits']:
             df = nestedDict_to_DataFrame(self.dictFitsSS_stressGaussian)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_stressGaussian = df
             
-        if localFitSettings['doNPointsFits']:
+        if fitSettings['doNPointsFits']:
             df = nestedDict_to_DataFrame(self.dictFitsSS_nPoints)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_nPoints = df
-            
-        
-        
-        
-        
-
     
-    def plot_FH(self, fig, ax, plotH0 = True, plotFit = True):
+    
+    
+    def plot_FH(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
         if self.isValidForAnalysis:
             ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
             ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
@@ -1636,11 +1716,9 @@ class IndentCompression:
                 E_bestH0 = self.dictH0['E_' + method]
                 
                 if (not self.error_bestH0) and (method not in ['NaiveMax']):
-                    
                     max_h = np.max(self.hCompr)
                     high_h = np.linspace(max_h, bestH0, 20)
                     low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
-                    
                     
                     legendText = 'bestH0 = {:.2f}nm'.format(bestH0)
                     plot_startH = np.concatenate((self.dictH0['hArray_' + method][::-1], high_h))
@@ -1651,21 +1729,23 @@ class IndentCompression:
                     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
                     ax.legend(loc = 'upper right', prop={'size': 6})
             
-            ax.title.set_text(titleText)
-            for item in ([ax.title, ax.xaxis.label, \
-                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(9)
+                ax.title.set_text(titleText)
+                for item in ([ax.title, ax.xaxis.label, \
+                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                    item.set_fontsize(9)
             
             
         
-    def plot_SS(self, fig, ax, plotFit = True, fitType = 'stressRegion'):
+    def plot_SS(self, fig, ax, plotSettings, plotFit = True, fitType = 'stressRegion'):
         if self.isValidForAnalysis and not self.error_bestH0:
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            ax.title.set_text(titleText)
             ax.set_xlabel('Strain')
             ax.set_ylabel('Stress (Pa)')
             main_color = 'k'
             ls = '-'
             lw = 1.8
+            
             if not self.error_bestH0:
                 ax.plot(self.strainCompr, self.stressCompr, 
                         color = main_color, marker = 'o', 
@@ -1673,8 +1753,9 @@ class IndentCompression:
                 
                 if plotFit:
                     if fitType == 'stressRegion':
-                        HW = 75
-                        centers = range(100, 1500, 100)
+                        # Read settings
+                        HW = plotSettings['plotHW']
+                        centers = plotSettings['plotCenters']
                         dictFit = self.dictFitsSS_stressRegions
                         id_ranges = [str(C) + '_' + str(HW) for C in centers]
                         # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
@@ -1690,8 +1771,9 @@ class IndentCompression:
                                 ax.plot(y, x, color = color, ls = ls, lw = lw)
                                 
                     if fitType == 'stressGaussian':
-                        HW = 75
-                        centers = range(100, 1500, 100)
+                        # Read settings
+                        HW = plotSettings['plotHW']
+                        centers = plotSettings['plotCenters']
                         dictFit = self.dictFitsSS_stressGaussian
                         id_ranges = [str(C) + '_' + str(HW) for C in centers]
                         # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
@@ -1722,15 +1804,16 @@ class IndentCompression:
                                 ax.plot(y, x, color = color, ls = ls, lw = lw)
                     
     
-            ax.title.set_text(titleText)
-            for item in ([ax.title, ax.xaxis.label, \
-                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(9)
+                
+                for item in ([ax.title, ax.xaxis.label, \
+                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                    item.set_fontsize(9)
     
         
-    def plot_KS(self, fig, ax, fitType = 'stressRegion'):
+    def plot_KS(self, fig, ax, plotSettings, fitType = 'stressRegion'):
         if self.isValidForAnalysis and not self.error_bestH0:
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            ax.title.set_text(titleText)
             ax.set_ylabel('K (kPa)')
             ax.set_ylim([0, 16])
             
@@ -1739,8 +1822,9 @@ class IndentCompression:
                 ax.set_xlabel('Stress (Pa)')
                 ax.set_xlim([0, 1200])
                 
-                HW = 75
-                centers = range(100, 1500, 100)
+                # Read settings
+                HW = plotSettings['plotHW']
+                centers = plotSettings['plotCenters']
                 N = len(centers)
                 colors = gs.colorList30[:N]
                 
@@ -1767,8 +1851,9 @@ class IndentCompression:
                 ax.set_xlabel('Stress (Pa)')
                 ax.set_xlim([0, 1200])
                 
-                HW = 75
-                centers = range(100, 1500, 100)
+                # Read settings
+                HW = plotSettings['plotHW']
+                centers = plotSettings['plotCenters']
                 N = len(centers)
                 colors = gs.colorList30[:N]
                 
@@ -1810,14 +1895,13 @@ class IndentCompression:
                         color = 'w'
                         mec = colors[k]
                     if (not pd.isnull(Y)) and (Y > 0):
-                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
-                
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                    ms = 5, mec = mec, ecolor = colors[k])
             
-        ax.title.set_text(titleText)
-        for item in ([ax.title, ax.xaxis.label, \
-                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-            item.set_fontsize(9)
             
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
             
             
     
@@ -1911,10 +1995,10 @@ class IndentCompression:
     def fitSS_smooth(self):
         if not self.error_bestH0:
             T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
-            # fig, axes = plt.subplots(3,3, figsize = (16,12))
-            # titleText = self.cellID + '__c' + str(self.i_indent + 1)
-            # fig.suptitle(titleText)
-            # main_color = 'k'
+            fig, axes = plt.subplots(3,3, figsize = (16,12))
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            fig.suptitle(titleText)
+            main_color = 'k'
             
             matSS = np.array([stress, strain]).T            
             matSS_stressSorted = matSS[matSS[:, 0].argsort()]
@@ -1969,155 +2053,152 @@ class IndentCompression:
             
             # axes[0].set_title('Savgol smoothing\nlen = {:.0f} - deg = {:.0f}'.format(window_length, polyorder))
             
-            # 2.
-            # its = [0, 1, 3]
-            # fracs = [0.2, 0.2, 0.2]
+            2.
+            its = [0, 1, 3]
+            fracs = [0.2, 0.2, 0.2]
             
-            # for k in range(3):
-            #     it = its[k]
-            #     frac = fracs[k]
-            #     delta = np.max(stress) * 0.0075
-            #     smoothed = sm.nonparametric.lowess(exog=stress, endog=strain, 
-            #                                        frac=frac, it=it, delta=delta)
-            #     smoothed_c = np.copy(smoothed)
-            #     for ii in range(1, len(smoothed)):
-            #         if smoothed_c[ii, 1] < smoothed_c[ii-1, 1]:
-            #             smoothed_c[ii, 1] = smoothed_c[ii-1, 1] + 1e-9
+            for k in range(3):
+                it = its[k]
+                frac = fracs[k]
+                delta = np.max(stress) * 0.0075
+                smoothed = sm.nonparametric.lowess(exog=stress, endog=strain, 
+                                                    frac=frac, it=it, delta=delta)
+                smoothed_c = np.copy(smoothed)
+                for ii in range(1, len(smoothed)):
+                    if smoothed_c[ii, 1] < smoothed_c[ii-1, 1]:
+                        smoothed_c[ii, 1] = smoothed_c[ii-1, 1] + 1e-9
                         
-            #     smoothed_c_der = np.zeros((smoothed_c.shape[0], 3), dtype = np.float64)
-            #     smoothed_c_der[:, :2] = smoothed_c
-            #     for ii in range(1, len(smoothed_c)):
-            #         smoothed_c_der[ii, 2] = (smoothed_c[ii, 0] - smoothed_c[ii-1, 0]) / (smoothed_c[ii, 1] - smoothed_c[ii-1, 1])
+                smoothed_c_der = np.zeros((smoothed_c.shape[0], 3), dtype = np.float64)
+                smoothed_c_der[:, :2] = smoothed_c
+                for ii in range(1, len(smoothed_c)):
+                    smoothed_c_der[ii, 2] = (smoothed_c[ii, 0] - smoothed_c[ii-1, 0]) / (smoothed_c[ii, 1] - smoothed_c[ii-1, 1])
                     
-            #     # print(smoothed_c_der)
+                # print(smoothed_c_der)
 
-            #     # print(smoothed)
+                # print(smoothed)
                 
-            #     axes[0,k].set_xlabel('Strain')
-            #     axes[0,k].set_ylabel('Stress (Pa)')
-            #     axes[0,k].set_title('Lowess smoothing')
+                axes[0,k].set_xlabel('Strain')
+                axes[0,k].set_ylabel('Stress (Pa)')
+                axes[0,k].set_title('Lowess smoothing')
                 
-            #     axes[0,k].plot(strain, stress, 
-            #             color = main_color, marker = 'o', 
-            #             markersize = 2, ls = '', alpha = 0.8)
+                axes[0,k].plot(strain, stress, 
+                        color = main_color, marker = 'o', 
+                        markersize = 2, ls = '', alpha = 0.8)
                 
-            #     axes[0,k].plot(smoothed_c[:, 1], smoothed_c[:, 0],
-            #                   color = 'b', ls = '-')
-            #     axes[0,k].plot(smoothed[:, 1], smoothed[:, 0],
-            #                   color = 'r', ls = '-')
+                axes[0,k].plot(smoothed_c[:, 1], smoothed_c[:, 0],
+                              color = 'b', ls = '-')
+                axes[0,k].plot(smoothed[:, 1], smoothed[:, 0],
+                              color = 'r', ls = '-')
                 
-            #     axes[1,k].set_xlabel('Stress (Pa)')
-            #     axes[1,k].set_ylabel('K (Pa)')
-            #     # axes[1,k].set_title('')
-            #     axes[1,k].plot(smoothed_c_der[1:, 0], smoothed_c_der[1:, 2],
-            #                   color = 'g', ls = '', marker = 'o', markersize = 2)
+                axes[1,k].set_xlabel('Stress (Pa)')
+                axes[1,k].set_ylabel('K (Pa)')
+                # axes[1,k].set_title('')
+                axes[1,k].plot(smoothed_c_der[1:, 0], smoothed_c_der[1:, 2],
+                              color = 'g', ls = '', marker = 'o', markersize = 2)
                 
-            #     mask = (smoothed_c_der[:,2] > 0) & (smoothed_c_der[:,2] < 20e3)
-            #     smoothed_c_der = smoothed_c_der[mask]
-            #     axes[1,k].set_ylim([0, 20000])
+                mask = (smoothed_c_der[:,2] > 0) & (smoothed_c_der[:,2] < 20e3)
+                smoothed_c_der = smoothed_c_der[mask]
+                axes[1,k].set_ylim([0, 20000])
                 
-            #     self.SSK_filteredDer = smoothed_c_der
+                self.SSK_filteredDer = smoothed_c_der
 
                 
-            #     axes[0,k].set_title('Lowess smoothing\nfrac = {:.2f} - it = {:.1f}'.format(frac, it))
+                axes[0,k].set_title('Lowess smoothing\nfrac = {:.2f} - it = {:.1f}'.format(frac, it))
               
                 
-            # 3.
-            # sfacts = [0.0005,0.001,0.01]
-            # for k in range(3):
-            #     sfact = sfacts[k]
-            #     sp = si.splrep(stress_sorted, strain_sorted, s=sfact, k=5)
-            #     strain_smoothed = si.splev(stress_sorted, sp)
+            3.
+            sfacts = [0.0005,0.001,0.01]
+            for k in range(3):
+                sfact = sfacts[k]
+                sp = si.splrep(stress_sorted, strain_sorted, s=sfact, k=5)
+                strain_smoothed = si.splev(stress_sorted, sp)
 
-            #     print(smoothed)
+                print(smoothed)
                 
-            #     axes[2,k].set_xlabel('Strain')
-            #     axes[2,k].set_ylabel('Stress (Pa)')
-            #     axes[2,k].set_title('Spline smoothing')
+                axes[2,k].set_xlabel('Strain')
+                axes[2,k].set_ylabel('Stress (Pa)')
+                axes[2,k].set_title('Spline smoothing')
                 
-            #     axes[2,k].plot(strain_sorted, stress_sorted, 
-            #             color = main_color, marker = 'o', 
-            #             markersize = 2, ls = '', alpha = 0.8)
+                axes[2,k].plot(strain_sorted, stress_sorted, 
+                        color = main_color, marker = 'o', 
+                        markersize = 2, ls = '', alpha = 0.8)
                 
-            #     axes[2,k].plot(strain_smoothed, stress_sorted,
-            #                   color = 'r', ls = '-')
+                axes[2,k].plot(strain_smoothed, stress_sorted,
+                              color = 'r', ls = '-')
 
                 
-            #     axes[2,k].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
+                axes[2,k].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
             
             
 
         
-# %% main function
+# %%%% main function
         
-def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
+def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False):
     top = time.time()
     
     #### 0. Settings
-    # BestH0
+    #### 0.1 BestH0
     method_bestH0 = 'Dimitriadis'
     
-    # Local stress-strain fits
-    localFitSettings = {
-        'doStressRegionFits' : True,
-        'doStressGaussianFits' : True,
-        'doNPointsFits' : True
-        }
-    ## Options for StressRegionFits & StressGaussianFits
+    #### 0.2 Fits settings
+    fitSettings = {'doChadwickFit' : True,
+                   'doDimitriadisFit' : False,
+                   'doStressRegionFits' : True,
+                   'doStressGaussianFits' : True,
+                   'doNPointsFits' : True}
+    
+    #### 0.2.1 Options for StressRegionFits & StressGaussianFits
     centers = [ii for ii in range(100, 1550, 50)]
     halfWidths = [50, 75, 100]
-    ## Options for NPointsFits
-    nbPtsFit = 11
-    overlapFit = 6
-    ## Options for fits validation
+    #### 0.2.2 Options for NPointsFits
+    nbPtsFit = 13
+    overlapFit = 3
+    
+    #### 0.2.3 Options for fits validation
     crit_nbPts = 8 # sup or equal to
     crit_R2 = 0.6 # sup or equal to
     crit_Chi2 = 1 # inf or equal to
-    dictFitValidation = {'crit_nbPts': crit_nbPts, 'crit_R2': crit_R2, 'crit_Chi2': crit_Chi2}
+    str_crit = 'nbPts>{:.0f} - R2>{:.2f} - Chi2<{:.1f}'.format(crit_nbPts, crit_R2, crit_Chi2)
+    dictFitValidation = {'crit_nbPts': crit_nbPts, 
+                         'crit_R2': crit_R2, 
+                         'crit_Chi2': crit_Chi2,
+                         'str': str_crit}
+    
+    
+    #### 0.3 Plots
+    plotSettings = {'FH(t)':True,
+                    'F(H)':True,
+                    'S(e)_stressRegion':True,
+                    'K(S)_stressRegion':True,
+                    'S(e)_stressGaussian':True,
+                    'K(S)_stressGaussian':True,
+                    'S(e)_nPoints':True,
+                    'K(S)_nPoints':True,
+                    #
+                    'subfolder_suffix':taskName,
+                    'plotCenters':range(100, 1500, 100),
+                    'plotHW':75,
+                    'plotPoints':str(nbPtsFit)+'_'+str(overlapFit)}
     
     #### 1. Import experimental infos
     tsDf.dx, tsDf.dy, tsDf.dz, tsDf.D2, tsDf.D3 = tsDf.dx*1000, tsDf.dy*1000, tsDf.dz*1000, tsDf.D2*1000, tsDf.D3*1000
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
-    
     Ncomp = max(tsDf['idxAnalysis'])
-    EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
-    
-
-    
-    currentCellID = ufun.findInfosInFileName(f, 'cellID')
-    ctFieldH = (tsDf.loc[tsDf['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
-    ctFieldThickness   = np.median(ctFieldH)
-    ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
-    ctFieldDX = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dx'].values)
-    ctFieldDY = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dy'].values)
-    ctFieldDZ = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dz'].values)
+    cellID = ufun.findInfosInFileName(f, 'cellID')
     
     #### 2. Create CellCompression object
-    CC = CellCompression(currentCellID, tsDf, thisExpDf)
+    CC = CellCompression(cellID, tsDf, thisExpDf)
     CC.method_bestH0 = method_bestH0
 
-    results = {}
-    for k in dictColumnsMeca.keys():
-        results[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
     
     #### 3. Start looping over indents
     for i in range(Ncomp):
-        
-        
-        results['date'][i] = ufun.findInfosInFileName(f, 'date')
-        results['manipID'][i] = ufun.findInfosInFileName(f, 'manipID')
-        results['cellName'][i] = ufun.findInfosInFileName(f, 'cellName')
-        results['cellID'][i] = currentCellID
+
         
         #### 3.1 Correct jumps
         CC.correctJumpForCompression(i)
-            
             
         #### 3.2 Segment the i-th compression
         maskComp = CC.getMaskForCompression(i, task = 'compression')
@@ -2127,59 +2208,13 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
         IC = IndentCompression(CC, thisCompDf, thisExpDf, i)
         CC.listIndent.append(IC)
 
-        # Easy-to-get parameters
-        results['compNum'][i] = i+1
-        results['compDuration'][i] = thisExpDf.at[thisExpDf.index.values[0], 'compression duration']
-        results['compStartTime'][i] = thisCompDf['T'].values[0]
-        results['compAbsStartTime'][i] = thisCompDf['Tabs'].values[0]
-
         #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
 
         if doThisCompAnalysis:
             
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
-            IC.refineStartStop()
-            
-            #### 3.6 Get the points of constant field preceding and surrounding the current compression
-            # Ex : if the labview code was set so that there is 6 points of ct field before and after each compression,
-            # previousPoints will contains D3[iStart-12:iStart]
-            # surroundingPoints will contains D3[iStart-6:iStart] and D3[iStop:iStop+6]
-            
-            previousMask = CC.getMaskForCompression(i, task = 'previous')
-            surroundingMask = CC.getMaskForCompression(i, task = 'surrounding')
-            previousThickness = np.median(tsDf.D3.values[previousMask] - DIAMETER)
-            surroundingThickness = np.median(tsDf.D3.values[surroundingMask] - DIAMETER)
-            surroundingDx = np.median(tsDf.dx.values[surroundingMask])
-            surroundingDy = np.median(tsDf.dy.values[surroundingMask])
-            surroundingDz = np.median(tsDf.dz.values[surroundingMask])
-            
-
-            # Parameters relative to the thickness ( = D3-DIAMETER)
-            results['previousThickness'][i] = previousThickness
-            results['surroundingThickness'][i] = surroundingThickness
-            results['surroundingDx'][i] = surroundingDx
-            results['surroundingDy'][i] = surroundingDy
-            results['surroundingDz'][i] = surroundingDz
-            results['ctFieldDX'][i] = ctFieldDX
-            results['ctFieldDY'][i] = ctFieldDY
-            results['ctFieldDZ'][i] = ctFieldDZ
-            results['ctFieldThickness'][i] = ctFieldThickness
-            results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
-            results['jumpD3'][i] = CC.ListJumpsD3[i]
-            
-            results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
-            results['minThickness'][i] = np.min(IC.hCompr)
-            results['maxIndent'][i] = results['initialThickness'][i] - results['minThickness'][i]
-
-            results['validatedThickness'][i] = np.min([results['initialThickness'][i],results['minThickness'][i],
-                                         results['previousThickness'][i],results['surroundingThickness'][i],
-                                         results['ctFieldThickness'][i]]) > 0
-            
-            # Parameters relative to the force
-            results['minForce'][i] = np.min(IC.fCompr)
-            results['maxForce'][i] = np.max(IC.fCompr)
-            
+            IC.refineStartStop()            
             
             #### 3.7 Fit with Chadwick model of the force-thickness curve     
             IC.fitFH_Chadwick(dictFitValidation)
@@ -2191,2052 +2226,96 @@ def analyseTimeSeries_Class(f, tsDf, expDf, dictColumnsMeca):
             # IC.computeH0(method = 'all', zone = '%f_10')
             
             IC.setBestH0(method = method_bestH0)
-            
 
             #### 3.9 Compute stress and strain based on the best H0
-            IC.computeStressStrain(method = 'Chadwick')
-                
-            results['minStress'][i] = np.min(IC.stressCompr)
-            results['maxStress'][i] = np.max(IC.stressCompr)
-            results['minStrain'][i] = np.min(IC.strainCompr)
-            results['maxStrain'][i] = np.max(IC.strainCompr)
-            
+            IC.computeStressStrain(method = 'Chadwick')            
             
             #### 3.10 Local fits of stress-strain curves
             
             #### 3.10.1 Local fits based on stress regions
-            if localFitSettings['doStressRegionFits']:
+            if fitSettings['doStressRegionFits']:
                 for jj in range(len(halfWidths)):
                     for ii in range(len(centers)):
                         C, HW = centers[ii], halfWidths[jj]
                         validRange = ((C-HW) > 0)
                         if validRange:
                             IC.fitSS_stressRegion(C, HW, dictFitValidation)
-                            # dictFit = IC.fitSS_stressRegion(C, HW, dictFitValidation)
-                            # isValidated = (dictFit['K'] > 0 and
-                            #                dictFit['nbPts'] >= crit_nbPts and
-                            #                dictFit['R2'] >= crit_R2 and 
-                            #                dictFit['Chi2'] <= crit_Chi2)
-                            # dictFit['valid'] = isValidated
-                            # IC.dictFitsSS_stressRegions[id_range] = dictFit
             
             #### 3.10.2 Local fits based on sliding gaussian weights based on stress values
-            if localFitSettings['doStressGaussianFits']:
+            if fitSettings['doStressGaussianFits']:
                 for jj in range(len(halfWidths)):
                     for ii in range(len(centers)):
                         C, HW = centers[ii], halfWidths[jj]
                         validRange = ((C-HW) > 0)
                         if validRange:
                             IC.fitSS_stressGaussian(C, HW, dictFitValidation)
-                            # dictFit = IC.fitSS_stressGaussian(C, HW, dictFitValidation)
-                            # isValidated = (dictFit['K'] > 0 and
-                            #                dictFit['nbPts'] >= crit_nbPts and
-                            #                dictFit['R2'] >= crit_R2 and 
-                            #                dictFit['Chi2'] <= crit_Chi2)
-                            # dictFit['valid'] = isValidated
-                            # IC.dictFitsSS_stressGaussian[id_range] = dictFit
             
             #### 3.10.3 Local fits based on fixed number of points
-            if localFitSettings['doNPointsFits']:
+            if fitSettings['doNPointsFits']:
                 nbPtsTotal = len(IC.stressCompr)
                 iStart = 0
                 iStop = iStart + nbPtsFit
                 
                 while iStop < nbPtsTotal:
-                    # id_range = str(iStart) + '_' +str(iStop)
                     mask = np.array([((i >= iStart) and (i < iStop)) for i in range(nbPtsTotal)])
                     IC.fitSS_nPoints(mask, dictFitValidation)
-                    # dictFit = IC.fitSS_nPoints(mask, dictFitValidation)
-                    # isValidated = (dictFit['K'] > 0 and
-                    #                dictFit['nbPts'] >= crit_nbPts and
-                    #                dictFit['R2'] >= crit_R2 and 
-                    #                dictFit['Chi2'] <= crit_Chi2)
-                    # dictFit['valid'] = isValidated
-                    # IC.dictFitsSS_nPoints[id_range] = dictFit
                     
                     iStart = iStop - overlapFit
                     iStop = iStart + nbPtsFit
                     
             #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
-            IC.dictFits_To_DataFrame(localFitSettings)
+            IC.dictFits_To_DataFrame(fitSettings)
             
             
             #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain curves
             # IC.fitSS_polynomial()
             # IC.fitSS_smooth()
             
-            
+    
     
     #### Plots
     
-    # Settings
-    # plot_centers = [ii for ii in range(100, 1550, 50)]
-    # plot_halfWidth = 75
-    
-    # plotSettings = {'centers' : plot_centers,
-    #                 'halfWidth' : plot_halfWidth}
-    
-    fig1, axes1 = CC.plot_Timeseries()
-    fig2, axes2 = CC.plot_FH()
-    fig31, axes31 = CC.plot_SS(fitType='stressRegion')
-    fig41, axes41 = CC.plot_KS(fitType='stressRegion')
-    fig32, axes32 = CC.plot_SS(fitType='stressGaussian')
-    fig42, axes42 = CC.plot_KS(fitType='stressGaussian')
-    fig33, axes33 = CC.plot_SS(fitType='nPoints')
-    fig43, axes43 = CC.plot_KS(fitType='nPoints')
-    # fig5, axes5 = CC.plot_KS_smooth()
-    
-    plt.show()
-
-    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
-    
-    
-
-#%% Chadwick Computing functions
-
-def compressionFitChadwick(hCompr, fCompr, DIAMETER):
-    
-    error = False
-    
-    def chadwickModel(h, E, H0):
-        R = DIAMETER/2
-        f = (np.pi*E*R*((H0-h)**2))/(3*H0)
-        return(f)
-
-    def inversedChadwickModel(f, E, H0):
-        R = DIAMETER/2
-        h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
-        return(h)
-
-    # some initial parameter values - must be within bounds
-    initH0 = max(hCompr) # H0 ~ h_max
-    initE = (3*max(hCompr)*max(fCompr))/(np.pi*(DIAMETER/2)*(max(hCompr)-min(hCompr))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    # initH0, initE = initH0*(initH0>0), initE*(initE>0)
-    
-    initialParameters = [initE, initH0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, 0)
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
-    try:
-        params, covM = curve_fit(inversedChadwickModel, fCompr, hCompr, initialParameters, bounds = parameterBounds)
-
-        # Previously I fitted with y=F and x=H, but it didn't work so well cause H(t) isn't monotonous:
-        # params, covM = curve_fit(chadwickModel, hCompr, fCompr, initialParameters, bounds = parameterBounds)
-        # Fitting with the 'inverse Chadwick model', with y=H and x=F is more convenient
-
-        E, H0 = params
-        hPredict = inversedChadwickModel(fCompr, E, H0)
-        err = dictSelectionCurve['Error']
-        
-        comprMat = np.array([hCompr, fCompr]).T
-        comprMatSorted = comprMat[comprMat[:, 0].argsort()]
-        hComprSorted, fComprSorted = comprMatSorted[:, 0], comprMatSorted[:, 1]
-        fPredict = chadwickModel(hComprSorted, E, H0)
-        
-        # Stress and strain
-        deltaCompr = (H0 - hCompr)/1000 # µm
-        stressCompr = fCompr / (np.pi * (DIAMETER/2000) * deltaCompr)
-        strainCompr = deltaCompr / (3*(H0/1000)) 
-        strainPredict = stressCompr / (E*1e6) #((H0 - hPredict)/1000) / (3*(H0/1000))
-        
-        # residuals_h = hCompr-hPredict
-        # residuals_f = fComprSorted-fPredict
-
-        alpha = 0.975
-        dof = len(fCompr)-len(params)
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        R2 = ufun.get_R2(hCompr, hPredict)
-        
-        Chi2 = ufun.get_Chi2(strainCompr, strainPredict, dof, err)
-
-        varE = covM[0,0]
-        seE = (varE)**0.5
-        E, seE = E*1e6, seE*1e6
-        confIntE = [E-q*seE, E+q*seE]
-        confIntEWidth = 2*q*seE
-
-        varH0 = covM[1,1]
-        seH0 = (varH0)**0.5
-        confIntH0 = [H0-q*seH0, H0+q*seH0]
-        confIntH0Width = 2*q*seH0
-        
-        
-    except:
-        error = True
-        E, H0, hPredict, R2, Chi2, confIntE, confIntH0 = -1, -1, np.ones(len(hCompr))*(-1), -1, -1, [-1,-1], [-1,-1]
-    
-    return(E, H0, hPredict, R2, Chi2, confIntE, confIntH0, error)
-
-
-def compressionFitDimitriadis(hCompr, fCompr, DIAMETER, order = 2):
-    
-    error = False
-    
-    v = 0
-    
-    def dimitriadisModel(h, E, H0):
-        
-        R = DIAMETER/2
-        delta = H0-h
-        X = np.sqrt(R*delta)/h
-        ks = ufun.getDimitriadisCoefs(v, order)
-        
-        poly = np.zeros_like(X)
-        
-        for i in range(order+1):
-            poly = poly + ks[i] * X**i
-            
-        F = ((4 * E * R**0.5 * delta**1.5)/(3 * (1 - v**2))) * poly
-        return(F)
-
-    # some initial parameter values - must be within bounds
-    # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    initE = (3*max(hCompr)*max(fCompr))/(np.pi*(DIAMETER/2)*(max(hCompr)-min(hCompr))**2) 
-    # H0 ~ h_max
-    initH0 = max(hCompr) 
-
-    # initH0, initE = initH0*(initH0>0), initE*(initE>0)
-    
-    initialParameters = [initE, initH0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, max(hCompr))
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
-    try:
-        
-        params, covM = curve_fit(dimitriadisModel, hCompr, fCompr, p0=initialParameters, bounds = parameterBounds)
-        E, H0 = params
-        fPredict = dimitriadisModel(hCompr, E, H0)
-        err = 100
-        
-        comprMat = np.array([hCompr, fPredict]).T
-        comprMatSorted = comprMat[comprMat[:, 0].argsort()]
-        hComprSorted, fPredictSorted = comprMatSorted[:, 0], comprMatSorted[:, 1]
-
-        alpha = 0.975
-        dof = len(fCompr)-len(params)
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        R2 = ufun.get_R2(fCompr, fPredict)
-        
-        Chi2 = ufun.get_Chi2(fCompr, fPredict, dof, err)
-        
-        varE = covM[0,0]
-        seE = (varE)**0.5
-        E, seE = E*1e6, seE*1e6
-        confIntE = [E-q*seE, E+q*seE]
-        confIntEWidth = 2*q*seE
-
-        varH0 = covM[1,1]
-        seH0 = (varH0)**0.5
-        confIntH0 = [H0-q*seH0, H0+q*seH0]
-        confIntH0Width = 2*q*seH0
-        
-        
-    except:
-        error = True
-        E, H0, fPredict, R2, Chi2, confIntE, confIntH0 = -1, -1, np.ones(len(hCompr))*(-1), -1, -1, [-1,-1], [-1,-1]
-    
-    return(E, H0, fPredict, R2, Chi2, confIntE, confIntH0, error)
-
-
-    
-
-def compressionFitChadwick_StressStrain(hCompr, fCompr, H0, DIAMETER):
-    
-    error = False
-    
-    # def chadwickModel(h, E, H0):
-    #     R = DIAMETER/2
-    #     f = (np.pi*E*R*((H0-h)**2))/(3*H0)
-    #     return(f)
-
-    # def inversedChadwickModel(f, E, H0):
-    #     R = DIAMETER/2
-    #     h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
-    #     return(h)
-    
-    def computeStress(f, h, H0):
-        R = DIAMETER/2000
-        delta = (H0 - h)/1000
-        stress = f / (np.pi * R * delta)
-        return(stress)
-        
-    def computeStrain(h, H0):
-        delta = (H0 - h)/1000
-        strain = delta / (3 * (H0/1000))
-        return(strain)
-    
-    def constitutiveRelation(strain, K, stress0):
-        stress = (K * strain) + stress0
-        return(stress)
-    
-    def inversedConstitutiveRelation(stress, K, strain0):
-        strain = (stress / K) + strain0
-        return(strain)
-
-    # some initial parameter values - must be within bounds
-    initK = (3*max(hCompr)*max(fCompr))/(np.pi*(DIAMETER/2)*(max(hCompr)-min(hCompr))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    init0 = 0
-    
-    initialParameters = [initK, init0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, -np.Inf)
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
-
-    try:
-        strainCompr = computeStrain(hCompr, H0)
-        stressCompr = computeStress(fCompr, hCompr, H0)
-        
-        params, covM = curve_fit(inversedConstitutiveRelation, stressCompr, strainCompr, initialParameters, bounds = parameterBounds)
-
-        K, strain0 = params
-        strainPredict = inversedConstitutiveRelation(stressCompr, K, strain0)
-        err = dictSelectionCurve['Error']
-
-        alpha = 0.975
-        dof = len(stressCompr)-len(params)
-        
-        R2 = ufun.get_R2(strainCompr, strainPredict)
-        
-        Chi2 = ufun.get_Chi2(strainCompr, strainPredict, dof, err)
-
-        varK = covM[0,0]
-        seK = (varK)**0.5
-        
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        # K, seK = K*1e6, seK*1e6
-        confIntK = [K-q*seK, K+q*seK]
-        confIntKWidth = 2*q*seK
-        
-        
-    except:
-        error = True
-        K, strainPredict, R2, Chi2, confIntK = -1, np.ones(len(strainCompr))*(-1), -1, -1, [-1,-1]
-    
-    return(K, strainPredict, R2, Chi2, confIntK, error)
-
-def compressionFitChadwick_weightedLinearFit_V1(hCompr, fCompr, fitCentres_region, H0, DIAMETER):
-
-    error = False
-    K3Limit = 100 #Limiting the range of stressCompr to perform Chi2 tests with weighted stressPredict
-    
-    def computeStress(f, h, H0):
-        R = DIAMETER/2000
-        delta = (H0 - h)/1000
-        stress = f / (np.pi * R * delta)
-        return(stress)
-        
-    def computeStrain(h, H0):
-        delta = (H0 - h)/1000
-        strain = delta / (3 * (H0/1000))
-        return(strain)
-    
-    def constitutiveRelation(strain, K, stress0):
-        stress = (K * strain) + stress0
-        return(stress)
-    
-    def gaussianWeights(fitCentres_region, stressCompr, HR):
-        stressCompr = stressCompr.flatten(order='C')
-        return np.exp ( -((stressCompr - fitCentres_region) ** 2) / HR ** 2)
-    
-    # def gaussianWeights(fitCentres_region, stressCompr, HR):
-    #     stressCompr = stressCompr.flatten(order='C')
-    #     return np.exp ( -(stressCompr - fitCentres_region) / HR )
-    
-    def weightedLinearFit(strainCompr, stressCompr, fitCentres_region, HR = 100):
-        
-        strainCompr = strainCompr.reshape(-1, 1)
-        stressCompr = stressCompr.reshape(-1, 1)
-        
-        weights = gaussianWeights(fitCentres_region, stressCompr, HR)
-        regr = LinearRegression()
-        regr.fit(strainCompr, stressCompr, weights)
-        K = regr.coef_[0]
-        stress0 = regr.intercept_
-        strainCompr = strainCompr.flatten()
-        
-        stressCompr_copy = np.copy(stressCompr).flatten()
-        stressPredict = constitutiveRelation(strainCompr, K, stress0)
-        stressPredict = np.asarray(stressPredict)
-        
-
-        return(K, stressPredict, stress0)
-    
-    strainCompr = computeStrain(hCompr, H0)
-    stressCompr = computeStress(fCompr, hCompr, H0)
-    maxStressCompr = np.max(stressCompr)
-    
-    if fitCentres_region <= maxStressCompr:
-        K, stressPredict, stress0 = weightedLinearFit(strainCompr, stressCompr, fitCentres_region)
-        K = K[0] #Because the way regr.fit() returns the slope is within an array by default (very weird)
-        
-        lowS3, highS3 = int(fitCentres_region - K3Limit),  int(fitCentres_region + K3Limit)
-        
-        fitConditions = np.where(np.logical_and(stressPredict >= lowS3, \
-                                                  stressPredict <= highS3))
-        
-        stressCompr_fit = stressCompr[fitConditions]
-        stressPredict_fit = stressPredict[fitConditions]
-        
-        covM = np.cov(stressPredict_fit, stressCompr_fit)
-        
-        err = dictSelectionCurve['Error']
-        params = K, stress0
-        
-        alpha = 0.975
-        
-        # R2 = ufun.get_R2(strainCompr, stressPredict)
-        dof = len(stressCompr_fit)-len(params)
-
-        Chi2 = ufun.get_Chi2(stressCompr_fit, stressPredict_fit, dof, err)
-
-        varK = covM[0,0]
-        seK = (varK)**0.5
-        
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        # K, seK = K*1e6, seK*1e6
-        confIntK = [K-q*seK, K+q*seK]
-        confIntKWidth = 2*q*seK
-        # print(Chi2)
-        
-        # confIntK = st.t.interval(0.95, len(stressPredict)-1, loc=np.mean(stressPredict),\
-        #                          scale=st.sem(stressPredict))
-        # confIntKWidth = confIntK[1] - confIntK[0]
-       
-    
-    else:
-    # except:
-        error = True
-        K, stressPredict, Chi2, confIntK = -1, np.ones(len(stressCompr))*(-1), -1, [-1, -1]
-
-    
-    return(K, stressPredict, Chi2, confIntK, error)
-
-def compressionFitChadwick_weightedLinearFit(hCompr, fCompr, fitCentres_region, H0, DIAMETER):
-
-    error = False
-    K3Limit = 50 #Limiting the range of stressCompr to perform Chi2 tests with weighted stressPredict
-    
-    def computeStress(f, h, H0):
-        R = DIAMETER/2000
-        delta = (H0 - h)/1000
-        stress = f / (np.pi * R * delta)
-        return(stress)
-        
-    def computeStrain(h, H0):
-        delta = (H0 - h)/1000
-        strain = delta / (3 * (H0/1000))
-        return(strain)
-    
-    def constitutiveRelation(strain, K, stress0):
-        stress = (K * strain) + stress0
-        return(stress)
-    
-    def gaussianWeights(fitCentres_region, stressCompr, HR):
-        stressCompr = stressCompr.flatten(order='C')
-        return np.exp ( -((stressCompr - fitCentres_region) ** 2) / HR ** 2)
-    
-        
-    # def gaussianWeights(fitCentres_region, stressCompr, HR):
-    #     stressCompr = stressCompr.flatten(order='C')
-    #     return np.exp ( -(stressCompr - fitCentres_region) / HR )
-
-
-    def getConfInt(Npts, Nparms, parm, se):
-        alpha = 0.05
-        df = Npts - Nparms
-        # se = diag(cov)**0.5
-        q = st.t.ppf(1 - alpha / 2, df)
-        ConfInt = [parm - q*se, parm, parm + q*se]
-        return(ConfInt)
-
-
-    def weightedLinearFit(strainCompr, stressCompr, fitCentres_region, HR = 50):
-        weights = gaussianWeights(fitCentres_region, stressCompr, HR)
-        
-        wls_model = sm.WLS(stressCompr, sm.add_constant(strainCompr), weights=weights)
-        results_wls = wls_model.fit()
-        stress0, K = results_wls.params
-        cov0 = results_wls.cov_HC0
-        seK = cov0[1,1]**0.5
-
-        stressPredict = constitutiveRelation(strainCompr, K, stress0)
-
-        return(K, stressPredict, stress0, seK)
-    
-    strainCompr = computeStrain(hCompr, H0)
-    stressCompr = computeStress(fCompr, hCompr, H0)
-    maxStressCompr = np.max(stressCompr)
-    
-    if fitCentres_region <= maxStressCompr:
-        K3, K3_stressPredict, stress0, seK = weightedLinearFit(strainCompr, stressCompr, fitCentres_region)
-        
-        lowS3, highS3 = int(fitCentres_region - K3Limit),  int(fitCentres_region + K3Limit)
-        
-        fitConditions = np.where(np.logical_and(K3_stressPredict >= lowS3, \
-                                                  K3_stressPredict <= highS3))
-        
-        stressCompr_fit = stressCompr[fitConditions]
-        stressPredict_fit = K3_stressPredict[fitConditions]
-        
-        
-        err = dictSelectionCurve['Error']
-        params = K3, stress0
-        
-        alpha = 0.975
-        
-        dof = len(stressCompr_fit)-len(params)
-
-        K3_Chi2 = ufun.get_Chi2(stressCompr_fit, stressPredict_fit, dof, err)
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        K3_confInt = [K3-q*seK, K3+q*seK]
-        confIntKWidth = 2*q*seK
-        
-        
-    else:
-        error = True
-        
-        K3, K3_stressPredict, K3_Chi2, K3_confInt = -1, np.ones(len(stressCompr))*(-1), -1, [-1, -1]
-
-    return(K3, K3_stressPredict, K3_Chi2, K3_confInt, error)
-
-
-def compressionFitChadwick_pointBased(hCompr, fCompr, NbOfTargets, overlap, int_count, H0, DIAMETER):
-    
-    error = False
-    
-    def computeStress(f, h, H0):
-        R = DIAMETER/2000
-        delta = (H0 - h)/1000
-        stress = f / (np.pi * R * delta)
-        return(stress)
-        
-    def computeStrain(h, H0):
-        delta = (H0 - h)/1000
-        strain = delta / (3 * (H0/1000))
-        return(strain)
-    
-    def constitutiveRelation(strain, K, stress0):
-        stress = (K * strain) + stress0
-        return(stress)
-    
-    def inversedConstitutiveRelation(stress, K, strain0):
-        strain = (stress / K) + strain0
-        return(strain)
-
-    # some initial parameter values - must be within bounds
-    initK = (3*max(hCompr)*max(fCompr))/(np.pi*(DIAMETER/2)*(max(hCompr)-min(hCompr))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    init0 = 0
-    
-    initialParameters = [initK, init0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, -np.Inf)
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
-    try:
-        strainCompr = computeStrain(hCompr, H0)
-        stressCompr = computeStress(fCompr, hCompr, H0)
-        
-        if int_count == 1:
-            overlap = 0
-            
-        lowerLimit = (int_count-1)*NbOfTargets - overlap
-        upperLimit = (int_count)*NbOfTargets + overlap
-            
-        stressCompr_region = stressCompr[lowerLimit:upperLimit]
-        
-        strainCompr_region = strainCompr[lowerLimit:upperLimit]
-            
-        params, covM = curve_fit(constitutiveRelation, strainCompr_region, \
-                                 stressCompr_region, initialParameters, bounds = parameterBounds)
-    
-        K4, stress0 = params
-        
-        stressPredict = constitutiveRelation(strainCompr, K4, stress0)
-        
-        stressPredict_fit = stressPredict[lowerLimit:upperLimit]
-        stressCompr_fit = stressCompr[lowerLimit:upperLimit]
-        err = dictSelectionCurve['Error']
-        
-        alpha = 0.975
-        dof = len(stressCompr_fit)-len(params)
-        
-        # R2 = ufun.get_R2(strainCompr, stressPredict)
-        
-        K4_Chi2 = ufun.get_Chi2(stressCompr_fit, stressPredict_fit, dof, err)
-        
-        varK = covM[0,0]
-        seK = (varK)**0.5
-        
-        q = st.t.ppf(alpha, dof) # Student coefficient
-        # K, seK = K*1e6, seK*1e6
-        K4_confInt = [K4-q*seK, K4+q*seK]
-        confIntKWidth = 2*q*seK
-        
-    except:
-        error = True
-        K4, stressPredict, K4_Chi2, K4_confInt = -1, np.ones(len(strainCompr))*(-1), -1, [-1,-1]
-        
-        
-    return(K4, stressPredict, K4_Chi2, K4_confInt, error)  # R2, Chi2, confIntK,
-
-#%% Main Function
-
-def fitH0_allMethods(hCompr, fCompr, DIAMETER):
-    dictH0 = {}
-    
-    # findH0_E, H0_Chadwick15, findH0_hPredict, findH0_R2, findH0_Chi2, findH0_confIntE, findH0_confIntH0, findH0_fitError
-    Chadwick15_resultTuple = compressionFitChadwick(hCompr[:15], fCompr[:15], DIAMETER)
-    H0_Chadwick15 = Chadwick15_resultTuple[1]
-    dictH0['H0_Chadwick15'] = H0_Chadwick15
-    dictH0['H0_Chadwick15_resTuple'] = Chadwick15_resultTuple
-    
-    
-    Dimitriadis15_resultTuple = compressionFitDimitriadis(hCompr[:15], fCompr[:15], DIAMETER)
-    H0_Dimitriadis15 = Dimitriadis15_resultTuple[1]
-    dictH0['H0_Dimitriadis15'] = H0_Dimitriadis15
-    dictH0['H0_Dimitriadis15_resTuple'] = Dimitriadis15_resultTuple
-    
-    return(dictH0)
-
-
-
-def analyseTimeSeries_meca(f, tsDf, expDf, dictColumnsMeca, task, PLOT, PLOT_SHOW):
-    
-    plotSmallElements = True
-    
-    #### (0) Import experimental infos
-    split_f = f.split('_')
-    tsDf.dx, tsDf.dy, tsDf.dz, tsDf.D2, tsDf.D3 = tsDf.dx*1000, tsDf.dy*1000, tsDf.dz*1000, tsDf.D2*1000, tsDf.D3*1000
-    thisManipID = ufun.findInfosInFileName(f, 'manipID')
-    thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
-
-    # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
-    
-    EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
-    Ncomp = max(tsDf['idxAnalysis'])
-    
-    # Field infos
-    normalField = thisExpDf.at[thisExpDf.index.values[0], 'normal field']
-    normalField = int(normalField)
-    if 'compression' in EXPTYPE:
-        compField = thisExpDf.at[thisExpDf.index.values[0], 'ramp field'].split('_')
-        minCompField = float(compField[0])
-        maxCompField = float(compField[1])
-    
-    # Loop structure infos
-    loopStruct = thisExpDf.at[thisExpDf.index.values[0], 'loop structure'].split('_')
-    nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
-    if 'compression' in EXPTYPE:
-        loop_totalSize = int(loopStruct[0])
-        if len(loopStruct) >= 2:
-            loop_rampSize = int(loopStruct[1])
-        else:
-            loop_rampSize = 0
-        if len(loopStruct) >= 3:
-            loop_excludedSize = int(loopStruct[2])
-        else:
-            loop_excludedSize = 0
-        loop_ctSize = int((loop_totalSize - (loop_rampSize+loop_excludedSize))/nUplet)
-        
-    
-    # Initialize the results
-    results = {}
-    # for c in listColumnsMeca:
-    #     results[c] = []
-        
-    for k in dictColumnsMeca.keys():
-        results[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
-
-
-    #### (1) Get global values
-    # These values are computed once for the whole cell D3 time series, but since the table has 1 line per compression, 
-    # that same value will be put in the table for each line corresponding to that cell
-    ctFieldH = (tsDf.loc[tsDf['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
-    ctFieldDX = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dx'].values)
-    ctFieldDY = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dy'].values)
-    ctFieldDZ = np.median(tsDf.loc[tsDf['idxAnalysis'] == 0, 'dz'].values)
-    ctFieldThickness   = np.median(ctFieldH)
-    ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
-    
-    #### PLOT [1/4]
-    # First part of the plot [mainly ax1 and ax1bis]
-    if PLOT:
-        # 1st plot - fig1 & ax1, is the F(t) curves with the different compressions colored depending of the analysis success
-        fig1, ax1 = plt.subplots(1,1,figsize=(tsDf.shape[0]*(1/100),5))
-        color = 'blue'
-        ax1.set_xlabel('t (s)')
-        ax1.set_ylabel('h (nm)', color=color)
-        ax1.tick_params(axis='y', labelcolor=color)
-        fig1.tight_layout()
-        nColsSubplot = 5
-        nRowsSubplot = ((Ncomp-1) // nColsSubplot) + 1
-        
-        # 2nd plot - fig2 & ax2, gather all the F(h) curves, and will be completed later in the code
-        fig2, ax2 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        
-        # 3rd plot - fig3 & ax3, gather all the stress-strain curves, and will be completed later in the code
-        fig3, ax3 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        
-        # 4th plot - fig4 & ax4, gather all the F(h) curves with local fits, and will be completed later in the code
-        fig4, ax4 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        alreadyLabeled4 = []
-        
-        # 5th plot - fig5 & ax5, gather all the stress-strain curves with local fits, and will be completed later in the code
-        fig5, ax5 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        alreadyLabeled5 = []
-        
-        # 6th plot - fig6 & ax6
-        fig6, ax6 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        
-        if plotSmallElements:
-            # 7th plot - fig7 & ax7, gather all the "small elements", and will be completed later in the code
-            fig7, ax7 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-
-        # 8th plot - fig8 & ax8 - Gaussian weighted linear fit on the stress-strain curves
-        fig8, ax8 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        alreadyLabeled8 = []
-        
-        # 9th plot - fig9 & ax9 - K3 modulus vs. Sigma plot to see non-linearity
-        fig9, ax9 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        
-        # 10th plot - fig10 & ax10 - K4 modulus vs. Sigma plot - point-base tangential modulus
-        fig10, ax10 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-        alreadyLabeled10 = []
-        
-        # 11th plot - fig11 & ax11 - K4 modulus vs. Sigma plot to see non-linearity
-        fig11, ax11 = plt.subplots(nRowsSubplot,nColsSubplot,figsize=(3*nColsSubplot,3*nRowsSubplot))
-
-    for i in range(Ncomp):#Ncomp+1):
-
-        #### (1) Identifiers        
-        results['date'][i] = ufun.findInfosInFileName(f, 'date')
-        results['cellName'][i] = ufun.findInfosInFileName(f, 'cellName')
-        results['cellID'][i] = ufun.findInfosInFileName(f, 'cellID')
-        results['manipID'][i] = ufun.findInfosInFileName(f, 'manipID')
-        
-        currentCellID = results['cellID'][i]
-        
-        #### Jump correction
-        if EXPTYPE == 'compressionsLowStart' or normalField == minCompField:
-            colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
-            maskCompAndPrecomp = np.abs(tsDf['idxAnalysis']) == i+1
-            iStart = ufun.findFirst(np.abs(tsDf['idxAnalysis']), i+1)
-            for c in colToCorrect:
-                jump = np.median(tsDf[c].values[iStart:iStart+5]) - tsDf[c].values[iStart-1]
-                tsDf.loc[maskCompAndPrecomp, c] -= jump
-                if c == 'D3':
-                    D3corrected = True
-                    jumpD3 = jump
-        else:
-            D3corrected = False
-            jumpD3 = 0
-            
-        #### (2) Segment the compression n°i
-        thisCompDf = tsDf.loc[tsDf['idxAnalysis'] == i+1,:]
-        iStart = (ufun.findFirst(tsDf['idxAnalysis'], i+1))
-        iStop = iStart+thisCompDf.shape[0]
-
-        # Easy-to-get parameters
-        results['compNum'][i] = i+1
-        results['compDuration'][i] = thisExpDf.at[thisExpDf.index.values[0], 'compression duration']
-        results['compStartTime'][i] = thisCompDf['T'].values[0]
-        results['compAbsStartTime'][i] = thisCompDf['Tabs'].values[0]
-        results['compStartTimeThisDay'][i] = thisCompDf['Tabs'].values[0]
-
-        listB = thisCompDf.B.values
-        
-        # Test to check if most of the compression have not been deleted due to bad image quality 
-        highBvalues = (listB > (maxCompField + minCompField)/2)
-        N_highBvalues = np.sum(highBvalues)
-        testHighVal = (N_highBvalues > 20)
-
-        # Test to check if the range of B field is large enough
-        minB, maxB = min(listB), max(listB)
-        testRangeB = ((maxB-minB) > 0.7*(maxCompField - minCompField))
-        thresholdB = (maxB-minB)/50
-        thresholdDeltaB = (maxB-minB)/400
-
-        # Is the curve ok to analyse ?
-        doThisCompAnalysis = testHighVal and testRangeB # Some criteria can be added here
-
-        if doThisCompAnalysis:
-            #### (3) Inside the compression n°i, delimit the compression and relaxation phases
-
-            # Delimit the start of the increase of B (typically the moment when the field decrease from 5 to 3)
-            # and the end of its decrease (typically when it goes back from 3 to 5)
-            
-            try:
-                # Correct for bugs in the B data
-                if 'compressions' in EXPTYPE:
-                    for k in range(1,len(listB)):
-                        B = listB[k]
-                        if B > 1.25*maxCompField:
-                            listB[k] = listB[k-1]
-
-                offsetStart, offsetStop = 0, 0
-                minB, maxB = min(listB), max(listB)
-                thresholdB = (maxB-minB)/50
-                thresholdDeltaB = (maxB-minB)/400 # NEW CONDITION for the beginning of the compression : 
-                # remove the first points where the steps in B are very very small
-
-                k = 0
-                while (listB[k] < minB+thresholdB) or (listB[k+1]-listB[k] < thresholdDeltaB):
-                    offsetStart += int((listB[k] < minB+thresholdB) or ((listB[k+1]-listB[k]) < thresholdDeltaB))
-                    k += 1
-
-                k = 0
-                while (listB[-1-k] < minB+thresholdB):
-                    offsetStop += int(listB[-1-k] < minB+thresholdB)
-                    k += 1
-
-                jStart = offsetStart # Beginning of compression
-                jMax = np.argmax(thisCompDf.B) # End of compression, beginning of relaxation
-                jStop = thisCompDf.shape[0] - offsetStop # End of relaxation
-            
-            except:
-                print(listB)
-                print(testRangeB, thresholdB, thresholdDeltaB)
-
-            # Four arrays
-            hCompr = (thisCompDf.D3.values[jStart:jMax+1] - DIAMETER)
-            hRelax = (thisCompDf.D3.values[jMax+1:jStop] - DIAMETER)
-            fCompr = (thisCompDf.F.values[jStart:jMax+1])
-            fRelax = (thisCompDf.F.values[jMax+1:jStop])
-
-
-            # Refinement of the compression delimitation.
-            # Remove the 1-2 points at the begining where there is just the viscous relaxation of the cortex
-            # because of the initial decrease of B and the cortex thickness increases.
-            offsetStart2 = 0
-            k = 0
-            while (k<len(hCompr)-10) and (hCompr[k] < np.max(hCompr[k+1:min(k+10, len(hCompr))])):
-                offsetStart2 += 1
-                k += 1
-            # Better compressions arrays
-            hCompr = hCompr[offsetStart2:]
-            fCompr = fCompr[offsetStart2:]
-            
-            # Get the points of constant field preceding and surrounding the current compression
-            # Ex : if the labview code was set so that there is 6 points of ct field before and after each compression,
-            # previousPoints will contains D3[iStart-12:iStart]
-            # surroundingPoints will contains D3[iStart-6:iStart] and D3[iStop:iStop+6]
-            previousPoints = (tsDf.D3.values[max(0,iStart-(loop_ctSize)):iStart]) - DIAMETER
-            surroundingPoints = np.concatenate([tsDf.D3.values[max(0,iStart-(loop_ctSize//2)):iStart],tsDf.D3.values[iStop:iStop+(loop_ctSize//2)]]) - DIAMETER
-            surroundingPointsX = np.concatenate([tsDf.dx.values[max(0,iStart-(loop_ctSize//2)):iStart],tsDf.dx.values[iStop:iStop+(loop_ctSize//2)]])
-            surroundingPointsY = np.concatenate([tsDf.dy.values[max(0,iStart-(loop_ctSize//2)):iStart],tsDf.dy.values[iStop:iStop+(loop_ctSize//2)]])
-            surroundingPointsZ = np.concatenate([tsDf.dz.values[max(0,iStart-(loop_ctSize//2)):iStart],tsDf.dz.values[iStop:iStop+(loop_ctSize//2)]])
-            
-            # Parameters relative to the thickness ( = D3-DIAMETER)
-            results['initialThickness'][i] = np.mean(hCompr[0:3])
-            results['minThickness'][i] = np.min(hCompr)
-            results['maxIndent'][i] = results['initialThickness'][i] - results['minThickness'][i]
-            results['previousThickness'][i] = np.median(previousPoints)
-            results['surroundingThickness'][i] = np.median(surroundingPoints)
-            results['surroundingDx'][i] = np.median(surroundingPointsX)
-            results['surroundingDy'][i] = np.median(surroundingPointsY)
-            results['surroundingDz'][i] = np.median(surroundingPointsZ)
-            results['ctFieldDX'][i] = ctFieldDX
-            results['ctFieldDY'][i] = ctFieldDY
-            results['ctFieldDZ'][i] = ctFieldDZ
-            results['ctFieldThickness'][i] = ctFieldThickness
-            results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
-            results['jumpD3'][i] = jumpD3
-
-            validatedThickness = np.min([results['initialThickness'][i],results['minThickness'][i],
-                                         results['previousThickness'][i],results['surroundingThickness'][i],
-                                         results['ctFieldThickness'][i]]) > 0
-            
-            results['validatedThickness'][i] = validatedThickness
-            results['minForce'][i] = np.min(fCompr)
-            results['maxForce'][i] = np.max(fCompr)
-
-
-
-
-            #### (4) Fit with Chadwick model of the force-thickness curve
-            
-            #### Classic, all curve, Chadwick fit
-            E, H0, hPredict, R2, Chi2, confIntE, confIntH0, fitError = compressionFitChadwick(hCompr, fCompr, DIAMETER) # IMPORTANT SUBFUNCTION
-  
-            R2CRITERION = dictSelectionCurve['R2']
-            CHI2CRITERION = dictSelectionCurve['K2_Chi2']
-            critFit = 'R2 > ' + str(R2CRITERION)
-            
-            results['critFit'][i] = critFit
-            
-            validatedFit = ((R2 > R2CRITERION) and (Chi2 < CHI2CRITERION))
-
-
-            if not fitError:
-                results['validatedFit_Chadwick'][i] = validatedFit
-                if validatedFit:
-                    results['comments'][i] = 'ok'
-                else:
-                    results['comments'][i] = 'R2 < ' + str(R2CRITERION)
-
-                confIntEWidth = abs(confIntE[0] - confIntE[1])
-
-                results['H0Chadwick'][i] = H0
-                results['EChadwick'][i] = E
-                results['R2Chadwick'][i] = R2
-                results['EChadwick_CIWidth'][i] = confIntEWidth
-                
-            elif fitError:
-                results['comments'][i] = 'fitFailure'
-                
-                
-            #### (4.0) Find the best H0
-            
-            dictH0 = fitH0_allMethods(hCompr, fCompr, DIAMETER)
-            
-            H0_Chadwick15 = dictH0['H0_Chadwick15']
-            H0_Dimitriadis15 = dictH0['H0_Dimitriadis15']
-            try:
-                results['H0_Chadwick15'][i] = H0_Chadwick15
-                results['H0_Dimitriadis15'][i] = H0_Dimitriadis15
-            except:
-                pass
-            
-            bestH0 = dictH0[H0_bestMethod]
-            resTuple_bestH0 = dictH0[H0_bestMethod + '_resTuple']
-            error_bestH0 = resTuple_bestH0[-1]
-
-            maxH0 = max(H0, bestH0)
-            if max(hCompr) > maxH0:
-                error_bestH0 = True   
-            
-            
-            #### (4.1) Compute stress and strain based on the best H0
-            if not error_bestH0:
-                
-                results['bestH0'][i] = bestH0
-                results['error_bestH0'][i] = error_bestH0
-                
-                deltaCompr = (maxH0 - hCompr)/1000
-                stressCompr = fCompr / (np.pi * (DIAMETER/2000) * deltaCompr)
-
-                strainCompr = deltaCompr / (3*(maxH0/1000))
-                validDelta = (deltaCompr > 0)
-                
-                
-                results['minStress'][i] = np.min(stressCompr)
-                results['maxStress'][i] = np.max(stressCompr)
-                results['minStrain'][i] = np.min(strainCompr)
-                results['maxStrain'][i] = np.max(strainCompr)
-                
-                
-
-            #### (4.2) Fits on specific regions of the curve
-            
-                K2_list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-                K3_list_stressPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-                
-                N_Fits = len(regionFitsNames)
-                dictRegionFit = {}
-                for k in dictColumnsRegionFit.keys():
-                    dictRegionFit[k] = [dictColumnsRegionFit[k] for m in range(N_Fits)]
-
-
-                all_masks_region = np.zeros((N_Fits, len(stressCompr)), dtype = bool)
-                for kk in range(N_Fits):
-                    ftP = regionFitsNames[kk]
-                    lowS, highS = int(fitMin[kk]), int(fitMax[kk])
-                    all_masks_region[kk,:] = ((stressCompr > lowS) & (stressCompr < highS))                
-                    
-                for ii in range(N_Fits):
-                    regionFitName = regionFitsNames[ii]
-                    mask_region = all_masks_region[ii]
-                    Npts_region = np.sum(mask_region)
-                    fCompr_region = fCompr[mask_region]
-                    hCompr_region = hCompr[mask_region]
-                    
-                    if Npts_region > 5:
-                        # fCompr_region = fCompr[mask_region]
-                        # hCompr_region = hCompr[mask_region]
-                        
-                        # Vérifier la concordance !
-                        resTuple_FHregionFit = compressionFitChadwick(hCompr_region, fCompr_region, DIAMETER)
-                        K2_region, H0_region = resTuple_FHregionFit[0:2]
-                        
-                        K2_region, K2_strainPredict_region, K2_R2_region, K2_Chi2_region, K2_confIntK_region, \
-                        K2_fitError_region = compressionFitChadwick_StressStrain(hCompr_region, fCompr_region, maxH0, DIAMETER)
-                            
-                        K2_confIntWidthK_region = np.abs(K2_confIntK_region[0] - K2_confIntK_region[1])
-            
-                    else:
-                        
-                        K2_fitError_region = True
-                        
-                        
-                    if (regionFitName in fit_toPlot) and not K2_fitError_region:
-                        kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-                        K2_list_strainPredict_fitToPlot[kk] = K2_strainPredict_region
-
-                    
-                    if not K2_fitError_region:
-                        R2CRITERION = dictSelectionCurve['R2']
-                        CHI2CRITERION = dictSelectionCurve['K2_Chi2']
-                        K2_validatedFit_region = ((K2_R2_region > R2CRITERION) and 
-                                                (K2_Chi2_region < CHI2CRITERION))
-                        
-                        # Fill dictRegionFit (reinitialized for each cell)
-                        dictRegionFit['regionFitNames'][ii] = regionFitName
-                        dictRegionFit['Npts'][ii] = Npts_region
-                        dictRegionFit['K'][ii] = K2_region
-                        dictRegionFit['K2_CIW'][ii] = K2_confIntWidthK_region
-                        dictRegionFit['R2'][ii] = K2_R2_region
-                        dictRegionFit['K2'][ii] = K2_region
-                        dictRegionFit['H0'][ii] = H0_region
-                        # dictRegionFit['E'][ii] = E_region
-                        dictRegionFit['K2_fitError'][ii] = K2_fitError_region
-                        dictRegionFit['K2_validatedFit'][ii] = K2_validatedFit_region
-                        
-                        # Fill results (memorize everything)
-                        rFN = regionFitName
-                        results['Npts_'+rFN][i] = Npts_region
-                        results['KChadwick_'+rFN][i] = K2_region
-                        results['K2_CIW_'+rFN][i] = K2_confIntWidthK_region
-                        results['R2Chadwick_'+rFN][i] = K2_R2_region
-                        results['K2Chadwick_'+rFN][i] = K2_region
-                        results['H0Chadwick_'+rFN][i] = H0_region
-                        # results['EChadwick_'+rFN][i] = dictRegionFit['E'][ii]
-                        results['K2_validatedFit_'+rFN][i] = K2_validatedFit_region
-                    
-                    
-                    #### (4.1.2) Gaussian-weight fits on specific regions of the curve based on predefined stress-ranges
-                    
-                    # try:
-                    fitCentres_region = fitCenters[ii]
-                    K3_region, K3_stressPredict_region, K3_Chi2_region, K3_confIntK_region, \
-                    K3_fitError_region = compressionFitChadwick_weightedLinearFit(hCompr, fCompr, fitCentres_region, H0, DIAMETER)
-                    
-                    K3_confIntWidthK_region = np.abs(K3_confIntK_region[0] - K3_confIntK_region[1])
-                    # except:
-                    #     K3_fitError_region = True
-                    
-                    
-                    if (regionFitName in fit_toPlot) and not K3_fitError_region:
-                        kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-                        
-                        K3_list_stressPredict_fitToPlot[kk] = K3_stressPredict_region
-                    
-                    if not K3_fitError_region:
-                        CHI2CRITERION = dictSelectionCurve['K3_Chi2']
-                        K3_validatedFit_region = ((K3_Chi2_region < CHI2CRITERION))
-                        
-                        # Fill dictRegionFit (reinitialized for each cell)
-                        dictRegionFit['K3_CIW'][ii] = K3_confIntWidthK_region
-                        dictRegionFit['K3'][ii] = K3_region
-                        dictRegionFit['K3_fitError'][ii] = K3_fitError_region
-                        dictRegionFit['K3_validatedFit'][ii] = K3_validatedFit_region
-                        
-                        # Fill results (memorize everything)
-                        rFN = regionFitName
-                        results['K3_CIW_'+rFN][i] = K3_confIntWidthK_region
-                        results['K3Chadwick_'+rFN][i] = K3_region
-                        results['K3_validatedFit_'+rFN][i] = K3_validatedFit_region
-                        
-                #### (4.1.3) Fits on specific regions of the curve based on the number of points
-                
-                K4_list_stressPredict_fitToPlot = [[] for kk in range(NbOfTargets)]
-                validTargets = [0 for kk in range(NbOfTargets)]
-                CHI2CRITERION = dictSelectionCurve['K4_Chi2']
-                
-                for count in range(1, NbOfTargets):
-                    if count == 1:
-                        overlap = 0
-                        
-                    K4_region, K4_stressPredict_region, K4_Chi2_region, K4_confInt_region, K4_fitError_region \
-                        = compressionFitChadwick_pointBased(hCompr, fCompr, NbOfTargets, overlap, count, H0, DIAMETER)
-                    
-                    K4_confIntWidthK_region = np.abs(K4_confInt_region[0] - K4_confInt_region[1])
-                    # print(K4_region)
-                    if not K4_fitError_region:
-                        kk = count - 1
-                        K4_list_stressPredict_fitToPlot[kk] = K4_stressPredict_region
-                        validTargets[kk] = count
-                    
-                        K4_validatedFit_region = (K4_Chi2_region < CHI2CRITERION)
-                                                
-                    else:
-                        K4_validatedFit_region, K4_fitError_region = False, True
-                        K4_region, K4_confInt_region = np.nan, [np.nan, np.nan]
-                        K4_confIntWidthK_region = np.nan
-                        
-                    if not K4_fitError_region: 
-                        kk = count - 1
-                        targetPoint = str(int(count*NbOfTargets))
-                        dictRegionFit['K4'][kk] = (K4_region)
-                        dictRegionFit['K4_CIW'][kk] = (K4_confIntWidthK_region)
-                        dictRegionFit['K4_fitError'][kk] = (K4_fitError_region)
-                        dictRegionFit['K4_validatedFit'][kk] = (K4_validatedFit_region)
-                        
-                        results['K4Chadwick_'+targetPoint][i] = (K4_region)
-                        results['K4_validatedFit_'+targetPoint][i] = (K4_validatedFit_region)
- 
-            
-                for k in dictRegionFit.keys():
-                    dictRegionFit[k] = np.array(dictRegionFit[k])
-            
-
-            #### PLOT [2/4]
-            # Complete fig 1, 2, 3 with the results of the fit
-            # print(dictRegionFit['K4'])
-            if PLOT:
-                
-                #### fig1
-                if not fitError:
-                    ax1.plot(thisCompDf['T'].values, thisCompDf['D3'].values-DIAMETER, color = 'chartreuse', linestyle = '-', linewidth = 1.25)
-                    
-                    # if validatedFit:
-                    #     ax1.plot(thisCompDf['T'].values, thisCompDf['D3'].values-DIAMETER, color = 'chartreuse', linestyle = '-', linewidth = 1.25)
-                    # else:
-                    #     ax1.plot(thisCompDf['T'].values, thisCompDf['D3'].values-DIAMETER, color = 'gold', linestyle = '-', linewidth = 1.25)
-                else:
-                    ax1.plot(thisCompDf['T'].values, thisCompDf['D3'].values-DIAMETER, color = 'crimson', linestyle = '-', linewidth = 1.25)
-                
-                # Display jumpD3 >>> DISABLED
-                # if jumpD3 != 0:
-                #     x = np.mean(thisCompDf['T'].values)
-                #     y = np.mean(thisCompDf['D3'].values-DIAMETER) * 1.3
-                #     ax1.text(x, y, '{:.2f}'.format(jumpD3), ha = 'center')
-
-                fig1.suptitle(currentCellID)
-                
-
-                #### fig2 & fig3
-                colSp = (i) % nColsSubplot
-                rowSp = (i) // nColsSubplot
-                # ax2[i-1] with the 1 line plot
-                if nRowsSubplot == 1:
-                    thisAx2 = ax2[colSp]
-                    thisAx3 = ax3[colSp]
-                elif nRowsSubplot >= 1:
-                    thisAx2 = ax2[rowSp,colSp]
-                    thisAx3 = ax3[rowSp,colSp]
-
-                thisAx2.plot(hCompr,fCompr,'b-', linewidth = 0.8)
-                thisAx2.plot(hRelax,fRelax,'r-', linewidth = 0.8)
-                titleText = currentCellID + '__c' + str(i+1)
-                legendText = ''
-                thisAx2.set_xlabel('h (nm)')
-                thisAx2.set_ylabel('f (pN)')
-
-
-                if not fitError:
-                    legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    thisAx2.plot(hPredict,fCompr,'k--', linewidth = 0.8, label = legendText, zorder = 2)
-                    thisAx2.legend(loc = 'upper right', prop={'size': 6})
-                    # if not validatedFit:
-                    #     titleText += '\nNON VALIDATED'
-                        
-                    if not error_bestH0:
-                        thisAx3.plot(stressCompr, strainCompr, 'go', ms = 3)
-                        # thisAx3.plot(stressCompr, trueStrainCompr, 'bo', ms = 2)
-                        thisAx3.plot([np.percentile(stressCompr,10), np.percentile(stressCompr,90)], 
-                                     [np.percentile(stressCompr,10)/E, np.percentile(stressCompr,90)/E],
-                                     'k--', linewidth = 1.2, label = legendText)
-                        thisAx3.legend(loc = 'lower right', prop={'size': 6})
-                    thisAx3.set_xlabel('Stress (Pa)')
-                    thisAx3.set_ylabel('Strain')
-                    
-                else:
-                    titleText += '\nFIT ERROR'
-                    
-                if not error_bestH0:
-                    # Computations to display the fit of the H0_Chadwick15
-                    
-                    bestH0_resTuple = dictH0[H0_bestMethod + '_resTuple']
-                    # (E, H0, fPredict, R2, Chi2, confIntE, confIntH0, error)
-                    NbPts_bestH0 = 15
-                    E_bestH0 = bestH0_resTuple[0]
-                    hPredict_bestH0 = bestH0_resTuple[2]
-                    
-                    min_f = np.min(fCompr)
-                    low_f = np.linspace(0, min_f, 20)
-                    R = DIAMETER/2
-                    low_h = bestH0 - ((3*H0_Chadwick15*low_f)/(np.pi*(E_bestH0/1e6)*R))**0.5
-
-                    
-                    legendText2 = 'bestH0 = {:.2f}nm'.format(bestH0)
-                    plot_startH = np.concatenate((low_h, hPredict_bestH0[:]))
-                    plot_startF = np.concatenate((low_f, fCompr[:NbPts_bestH0]))
-                    thisAx2.plot(plot_startH[0], plot_startF[0], ls = '', 
-                                  marker = 'o', color = 'skyblue', markersize = 5, label = legendText2)
-                    thisAx2.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 1)
-                    thisAx2.legend(loc = 'upper right', prop={'size': 6})
-                
-                
-                multiAxes = [thisAx2, thisAx3]
-                
-                for ax in multiAxes:
-                    ax.title.set_text(titleText)
-                    for item in ([ax.title, ax.xaxis.label, \
-                                  ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                        item.set_fontsize(9)
-            
-                
-                if not error_bestH0:
-                    
-                    #### fig4 & fig5
-                    
-                    Npts_fitToPlot = dictRegionFit['Npts'][mask_fitToPlot]
-                    K_fitToPlot = dictRegionFit['K'][mask_fitToPlot]
-                    K2_CIW_fitToPlot =dictRegionFit['K2_CIW'][mask_fitToPlot]
-                    K2_fitToPlot = dictRegionFit['K2'][mask_fitToPlot]
-                    H0_fitToPlot = dictRegionFit['H0'][mask_fitToPlot]
-                    R2_fitToPlot = dictRegionFit['R2'][mask_fitToPlot]
-                    K2_fitError_fitToPlot = dictRegionFit['K2_fitError'][mask_fitToPlot]
-                    K2_validatedFit_fitToPlot = dictRegionFit['K2_validatedFit'][mask_fitToPlot]
-                    
-                    fitToPlot_masks_region = np.array(all_masks_region)[mask_fitToPlot]
-                    
-                    # else:
-                    #     fitError_fitToPlot = np.ones_like(fit_toPlot, dtype = bool)
-                        
-                    
-                    
-                    
-                    fitToPlot_masks_region = np.array(all_masks_region)[mask_fitToPlot]
-                    
-                    # ax2[i] with the 1 line plot
-                    if nRowsSubplot == 1:
-                        thisAx4 = ax4[colSp]
-                        thisAx5 = ax5[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx4 = ax4[rowSp,colSp]
-                        thisAx5 = ax5[rowSp,colSp]
-                    
-                    main_color = 'k' # colorList10[0]
-                    
-                    thisAx4.plot(hCompr,fCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8) # 'b-'
-                    # thisAx4.plot(hRelax,fRelax, color = main_color, ls = '-', linewidth = 0.8, alpha = 0.5) # 'r-'
-                    titleText = currentCellID + '__c' + str(i+1)
-                    thisAx4.set_xlabel('h (nm)')
-                    thisAx4.set_ylabel('f (pN)')
-                    
-    
-                    for k in range(len(fit_toPlot)):
-                        if not K2_fitError_fitToPlot[k]:
-    
-                            fit = fit_toPlot[k]
-                            
-                            Npts_fit = Npts_fitToPlot[k]
-                            K_fit = K_fitToPlot[k]
-                            K2_fit = K2_fitToPlot[k]
-                            H0_fit = H0_fitToPlot[k]
-                            R2_fit = R2_fitToPlot[k]
-                            fitError_fit = K2_fitError_fitToPlot[k]
-                            validatedFit_fit = K2_validatedFit_fitToPlot[k]
-                            fitConditions_fit = fitToPlot_masks_region[k]
-                            
-                            R = DIAMETER/2
-                            fCompr_fit = fCompr[fitConditions_fit]
-                            
-                            hPredict_fit2 = H0_fit - ((3*H0_fit*fCompr_fit)/(np.pi*(K2_fit/1e6)*R))**0.5
-                            
-                            color = gs.colorList30[k]
-                            legendText4 = ''
-                            
-                            # hPredict_fit0 = H0_Chadwick15 - ((3*H0_Chadwick15*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
-                            # strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
-                            # hPredict_fit = H0_Chadwick15 * (1 - 3*strainPredict_fit)
-                            # legendText4 += 'Range ' + fit + '\n'
-                            # legendText4 += 'K = {:.2e}Pa'.format(K_fit)
-                            # thisAx4.plot(hPredict_fit, fCompr_fit, color = color, ls = '--', linewidth = 1.8, label = legendText4)
-                            
-                            if fit not in alreadyLabeled4:
-                                alreadyLabeled4.append(fit)
-                                legendText4 += '' + fit + ''
-                                thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8, label = legendText4)
-                            elif fit in alreadyLabeled4:
-                                thisAx4.plot(hPredict_fit2, fCompr_fit, color = color, ls = '-', linewidth = 1.8)
-                        else:
-                            pass
-                    
-                    
-                    
-                    
-                    thisAx5.set_xlabel('Strain')
-                    thisAx5.set_ylabel('Stress (Pa)')
-                    if not fitError:
-                        thisAx5.plot(strainCompr, stressCompr, color = main_color, marker = 'o', markersize = 2, ls = '', alpha = 0.8)
-                        
-                        for k in range(len(fit_toPlot)):
-                            fit = fit_toPlot[k]
-                            
-                            Npts_fit = Npts_fitToPlot[k]
-                            K_fit = K_fitToPlot[k]
-                            R2_fit = R2_fitToPlot[k]
-                            fitError_fit = K2_fitError_fitToPlot[k]
-                            validatedFit_fit = K2_validatedFit_fitToPlot[k]
-                            fitConditions_fit = fitToPlot_masks_region[k]
-                            
-                            stressCompr_fit = stressCompr[fitConditions_fit]
-                            strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
-                            
-                            color = gs.colorList30[k]
-                            legendText5 = ''
-                            
-                            if not fitError_fit:
-                                if fit not in alreadyLabeled5:
-                                    alreadyLabeled5.append(fit)
-                                    legendText5 += '' + fit + ''
-                                    thisAx5.plot(strainPredict_fit, stressCompr_fit,  
-                                                 color = color, ls = '-', linewidth = 1.8, label = legendText5)
-                                elif fit in alreadyLabeled5:
-                                    thisAx5.plot(strainPredict_fit, stressCompr_fit,  
-                                                 color = color, ls = '-', linewidth = 1.8)
-                            else:
-                                pass
-    
-                    multiAxes = [thisAx4, thisAx5] # thisAx5 #
-                    
-                    for ax in multiAxes:
-                        ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, \
-                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                            item.set_fontsize(9)
-                            
-                            
-                    #### fig6
-                    
-                    fitCentersPlot = fitCenters[mask_fitToPlot]
-                    
-                    if nRowsSubplot == 1:
-                        thisAx6 = ax6[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx6 = ax6[rowSp,colSp]
-                    
-                    
-                    thisAx6.set_xlabel('sigma (Pa)')
-                    thisAx6.set_xlim([0, 1200])
-                    thisAx6.set_ylabel('K (kPa)')
-                    
-                    relativeError = np.zeros(len(K_fitToPlot))
-                    if not fitError:
-                        
-                        for k in range(len(fit_toPlot)):
-                            fit = fit_toPlot[k]
-                            
-                            K_fit = K_fitToPlot[k]
-                            K_CIW_fit = K2_CIW_fitToPlot[k]
-                            fitError_fit = K2_fitError_fitToPlot[k]
-                            validatedFit_fit = K2_validatedFit_fitToPlot[k]
-                            fitConditions_fit = fitToPlot_masks_region[k]
-                            
-                            stressCompr_fit = stressCompr[fitConditions_fit]
-                            strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
-                            
-                            color = gs.colorList30[k]
-                            
-                            if not fitError_fit:
-                                
-                                Err = K_CIW_fit
-                                relativeError[k] = (Err/K_fit)
-                                # mec = None
-                                thisAx6.errorbar([fitCentersPlot[k]], [K_fit/1000], yerr = [(Err/2)/1000],
-                                              color = color, marker = 'o', ms = 5) #, mec = mec)                           
-                                
-                            
-                        multiAxes = [thisAx6]
-                        
-                        for ax in multiAxes:
-                            ax.title.set_text(titleText)
-                            for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + \
-                                         ax.get_xticklabels() + ax.get_yticklabels()):
-                                item.set_fontsize(9)
-                                
-                    
-                            
-                    #### fig7
-                    if plotSmallElements:
-    
-                        if nRowsSubplot == 1:
-                            thisAx7 = ax7[colSp]
-                        elif nRowsSubplot >= 1:
-                            thisAx7 = ax7[rowSp,colSp]
-                            
-                        thisAx7.set_xlabel('epsilon')
-                        thisAx7.set_ylabel('ratios')
-                        legendText7 = ''
-                        
-                        # def def2delta(e):
-                        #     d = 3*H0_Chadwick15*e
-                        #     return(d)
-                        
-                        # def delta2def(d):
-                        #     e = d/(3*H0_Chadwick15)
-                        #     return(e)
-                        
-                        # secax = thisAx7.secondary_xaxis('top', functions=(def2delta, delta2def))
-                        # secax.set_xlabel('delta (nm)')
-                        
-                        if not fitError:
-                            
-                            A = 2* ((deltaCompr*(DIAMETER/2000))**0.5)
-                            largeX = A/(maxH0/1000)
-                            smallX = deltaCompr/(DIAMETER/1000)
-                            # legendText7 = 'H0_Chadwick15 = {:.2f}nm'.format(H0_Chadwick15)
-                            
-                            thisAx7.plot(strainCompr, largeX, color = 'red',     ls = '', marker = '+', label = 'a/H0',     markersize = 3)#, mec = 'k', mew = 0.5)
-                            thisAx7.plot(strainCompr, smallX, color = 'skyblue', ls = '', marker = '+', label = 'delta/2R', markersize = 3)#, mec = 'k', mew = 0.5)
-                            thisAx7.legend(loc = 'upper left', prop={'size': 5})
-                            thisAx7.set_yscale('log')
-                            thisAx7.set_ylim([5e-3,10])
-                            minPlot, maxPlot = thisAx7.get_xlim()
-                            thisAx7.set_xlim([0,maxPlot])
-                            thisAx7.plot([0,maxPlot], [1, 1], color = 'k', ls = '--', lw = 0.5)
-                            
-                            # # thisAx7bis.tick_params(axis='y', labelcolor='b')
-                            # thisAx7bis = thisAx7.twinx()
-                            # color = 'firebrick'
-                            # thisAx7bis.set_ylabel('F (pN)', color=color)
-                            # thisAx7bis.plot(strainCompr, fCompr, color=color, lw = 0.5)
-                            # thisAx7bis.set_ylim([0,1400])
-                            # thisAx7bis.tick_params(axis='y', labelrotation = 50, labelsize = 10)
-                            # # thisAx7bis.tick_params(axis='y', labelcolor=color)
-                            # # thisAx7bis.set_yticks([0,500,1000,1500])
-                            # # minh = np.min(tsDf['D3'].values-DIAMETER)
-                            
-                            
-                            epsLim = (largeX < 1.0)
-                            if len(strainCompr[epsLim]) > 0:
-                                strainLimit = np.max(strainCompr[epsLim])
-                                minPlot, maxPlot = thisAx5.get_ylim()
-                                # thisAx5.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
-                                minPlot, maxPlot = thisAx7.get_ylim()
-                                thisAx7.plot([strainLimit, strainLimit], [minPlot, maxPlot], color = 'gold', ls = '--')
-                            
-                                    
-                            multiAxes = [thisAx7] #, thisAx7bis]
-                            
-                            for ax in multiAxes:
-                                ax.title.set_text(titleText + '\nbestH0 = {:.2f}nm'.format(maxH0))
-                                for item in ([ax.title, ax.xaxis.label, \
-                                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                                    item.set_fontsize(9)
-                                    
-                     #### fig8
-                     
-                     
-                    if nRowsSubplot == 1:
-                        thisAx8 = ax8[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx8 = ax8[rowSp,colSp]
-                        
-                    K_fitToPlot = dictRegionFit['K3'][mask_fitToPlot]
-                    K3_CIW_fitToPlot =  dictRegionFit['K3_CIW'][mask_fitToPlot]
-                    K3_fitError_fitToPlot = dictRegionFit['K3_fitError'][mask_fitToPlot]
-                    K3_validatedFit_fitToPlot = dictRegionFit['K3_validatedFit'][mask_fitToPlot]
-                    fitCentersPlot = fitCenters[mask_fitToPlot]
-                    
-                    thisAx8.set_xlabel('epsilon')
-                    thisAx8.set_ylabel('sigma (Pa)')
-                    K3Limit = 50
-                    allFitConditions = []
-                    if not fitError:
-                        thisAx8.plot(strainCompr, stressCompr, color = main_color, marker = 'o', markersize = 3, ls = '', alpha = 0.8)
-                    
-                        for k in range(len(fit_toPlot)):
-                            fit = fit_toPlot[k]
-                            fitCenters_region = fitCentersPlot[k]
-                            fitError_fit = K3_fitError_fitToPlot[k]
-                            stressPredict_region = np.asarray(K3_list_stressPredict_fitToPlot[k])
-                            # print(gs.ORANGE + 'strain predict' + gs.NORMAL)
-                            # print(stressPredict_region)
-                            lowS3, highS3 = int(fitCenters_region - K3Limit),  int(fitCenters_region + K3Limit)
-                            
-                            fitConditions = np.where(np.logical_and(stressPredict_region >= lowS3, \
-                                                                      stressPredict_region <= highS3))
-                            
-                            
-                            allFitConditions.extend(fitConditions)    
-                                
-                            strainPredict_fit = strainCompr[fitConditions]
-                            stressPredict_region = stressPredict_region[fitConditions]
-                            
-                            
-                            
-                            color = gs.colorList30[k]
-                            legendText8 = ''
-                            
-                            if not fitError_fit:             
-                                if fit not in alreadyLabeled8:
-                                    alreadyLabeled8.append(fit)
-                                    legendText8 += '' + fit + ''
-        
-                                    thisAx8.plot(strainPredict_fit, stressPredict_region,  
-                                                 color = color, ls = '-', linewidth = 1.8, label = legendText8)
-                                elif fit in alreadyLabeled8:
-                                    thisAx8.plot(strainPredict_fit, stressPredict_region,  
-                                                 color = color, ls = '-', linewidth = 1.8)
-
-                                
-                    multiAxes = [thisAx8]
-                            
-                    for ax in multiAxes:
-                        ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, \
-                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                            item.set_fontsize(9)
-                    
-                    #### fig9
-                
-                    fitCentersPlot = fitCenters[mask_fitToPlot]
-                    K3_fitToPlot = dictRegionFit['K3'][mask_fitToPlot]
-                    
-                        
-                    if nRowsSubplot == 1:
-                        thisAx9 = ax9[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx9 = ax9[rowSp,colSp]
-                    
-                    thisAx9bis = thisAx9.twinx()
-                    
-                    thisAx9.set_xlabel('sigma (Pa)')
-                    thisAx9.set_xlim([0,1000])
-                    thisAx9.set_yscale('log')
-                    thisAx9.set_ylabel('K (Pa)')
-                    
-                    # thisAx9bis.set_yscale('linear')
-                    # thisAx9bis.set_ylabel('relative error', color='red')
-                    # relErrFilter = 0.5
-                    
-                    # relativeError = np.zeros(len(list_stressPredictK3_fitToPlot))
-                    # if not fitError and not findH0_fitError:
-                    if not fitError:
-                        for k in range(len(fit_toPlot)):
-                        
-                            fit = fit_toPlot[k]
-                            K3_fit = K3_fitToPlot[k]
-                            fitCenters_region = fitCentersPlot[k]
-                            K3_CIW_fit = K3_CIW_fitToPlot[k]
-                            K3_fitError_fit = K3_fitError_fitToPlot[k]
-                            K3_validatedFit_fit = K3_validatedFit_fitToPlot[k]
-    
-                            color = gs.colorList30[k]
-                            
-                            thisAx9.plot([fitCentersPlot[k]], [K3_fit], color = color, marker = 'o') 
-                            
-                            # if not fitError_fit:
-                                
-                            #     E = K3_CIW_fit
-                            #     relativeError[k] = (E/K3_fit)
-                            #     mec = None
-                            #     if (E/K3_fit) > relErrFilter:
-                            #         # print('true')
-                            #         mec = 'orangered'
-                                
-                            thisAx9.errorbar([fitCentersPlot[k]], [K3_fit], yerr = [E/2],
-                                         color = color, marker = 'o', ms = 5) #, mec = mec)                           
-                                # print(K3_fit)
-                                # print('ciw')
-                                # print(E)
-                                # print('fit')
-                                # print(K3_fit)
-                        # print(fitCentersPlot)
-                        # relativeError_subset = relativeError[relativeError != 0]
-                        # fitCenters_subset = fitCentersPlot[relativeError != 0]
-                        # thisAx9bis.plot([0,1000], [relErrFilter, relErrFilter], ls = '--', color = 'red', lw = 0.5)
-                        # thisAx9bis.plot(fitCenters_subset, relativeError_subset, marker = 'd', ms = 3, color = 'red', ls = '')
-                        
-                        # thisAx9bis.set_ylim([0,2])
-                        # thisAx9bis.tick_params(axis='y', labelcolor='red')
-                        # thisAx9bis.set_yticks([0,0.5,1,1.5,2])
-                                                    
-                    multiAxes = [thisAx9] #, thisAx9bis]
-                    
-                    for ax in multiAxes:
-                        ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, \
-                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                            item.set_fontsize(9)
-                
-                    #### fig10
-                    
-                    if nRowsSubplot == 1:
-                        thisAx10 = ax10[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx10 = ax10[rowSp,colSp]
-                        
-                    thisAx10.set_xlabel('epsilon')
-                    thisAx10.set_ylabel('sigma (Pa)')
-                    K4Limit = 50
-                    if not fitError:
-                        thisAx10.plot(strainCompr, stressCompr, color = main_color, marker = 'o', markersize = 3, ls = '', alpha = 0.8)
-                        for k in range(len(validTargets)):
-                            target = validTargets[k]
-                            # print(target)
-                            if target != 0:
-                                stressPredict_region = np.asarray(K4_list_stressPredict_fitToPlot[k])
-                                lowerLimit = (target-1)*NbOfTargets - overlap
-                                upperLimit = target*NbOfTargets + overlap
-                                
-                                strainPredict_region = strainCompr[lowerLimit:upperLimit]
-                                stressPredict_region = stressPredict_region[lowerLimit:upperLimit]
-                            
-                                color = gs.colorList30[k]
-                                legendText10 = ''
-                                
-                            # print('Compression {:.0f}'.format(i))
-    
-                                thisAx10.plot(strainPredict_region, stressPredict_region, \
-                                                      color = color, ls = '-', linewidth = 1.8)
-                
-                    multiAxes = [thisAx10]
-                                
-                    for ax in multiAxes:
-                        ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, \
-                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                            item.set_fontsize(9)
-                
-                
-                    ####fig11
-                    
-                    fitToPlot = (np.linspace(0, max(validTargets),max(validTargets) + 1))
-                    fitToPlot = [int(x) for x in fitToPlot]
-                    K4_fitToPlot = dictRegionFit['K4'][fitToPlot]
-                    K4_CIW_fitToPlot = dictRegionFit['K4_CIW'][fitToPlot]
-                    K4_fitError_fitToPlot = dictRegionFit['K4_fitError'][fitToPlot]
-                    K4_validatedFit_fitToPlot = dictRegionFit['K4_validatedFit'][fitToPlot]
-                    
-                    if nRowsSubplot == 1:
-                        thisAx11 = ax11[colSp]
-                    elif nRowsSubplot >= 1:
-                        thisAx11 = ax11[rowSp,colSp]
-                    
-                    thisAx11bis = thisAx11.twinx()
-                    
-                    thisAx11.set_xlabel('Target Point')
-                    thisAx11.set_xlim([0,NbOfTargets])
-                    thisAx11.set_yscale('log')
-                    thisAx11.set_ylabel('K (Pa)')
-                    
-                    # thisAx11bis.set_yscale('linear')
-                    # thisAx11bis.set_ylabel('relative error', color='red')
-                    # relErrFilter = 0.5
-                    
-                    # relativeError = np.zeros(len(K4_list_stressPredict_fitToPlot))
-                    validTargets = np.asarray(validTargets)
-                    if not fitError:
-                        for k in range(1, max(validTargets) + 1):
-                            color = gs.colorList30[k]
-                            target = k - 1
-                            
-                            # if validTargets[target] != 0:
-                            K4_fit = K4_fitToPlot[target]
-                            
-                            K4_CIW_fit = K4_CIW_fitToPlot[target]
-                            fitError_fit = K4_fitError_fitToPlot[target]
-                            validatedFit_fit = K4_validatedFit_fitToPlot[target]
-
-                            thisAx11.plot([validTargets[target]], [K4_fit], color = color, marker = 'o') 
-                            # if not K4_fitError_fit:
-                                
-                            #     E = K4_CIW_fit
-                            #     relativeError[target] = (E/K4_fit)
-                            #     mec = None
-                            #     if (E/K4_fit) > relErrFilter:
-                            #         # print('true')
-                            #         mec = 'orangered'
-                            thisAx11.errorbar([validTargets[target]], [K4_fit], yerr = [E/2],
-                                          color = color, marker = 'o', ms = 5) #, mec = mec)
-                                
-                    # relativeError_subset = relativeError[relativeError != 0]
-                                     
-                    # validTargets_subset = validTargets[relativeError != 0]
-                    # thisAx11bis.plot([0,1000], [relErrFilter, relErrFilter], ls = '--', color = 'red', lw = 0.5)
-                    # thisAx11bis.plot(validTargets_subset, relativeError_subset, marker = 'd', ms = 3, color = 'red', ls = '')
-                    
-                    # thisAx11bis.set_ylim([0,2])
-                    # thisAx11bis.tick_params(axis='y', labelcolor='red')
-                    # thisAx11bis.set_yticks([0,0.5,1,1.5,2])
-                                            
-                    multiAxes = [thisAx11] #, thisAx11bis]
-                    
-                    for ax in multiAxes:
-                        ax.title.set_text(titleText)
-                        for item in ([ax.title, ax.xaxis.label, \
-                                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                            item.set_fontsize(9)        
-
-            # #### (5) hysteresis (its definition may change)
-            # try:
-            #     # results['hysteresis'].append(hCompr[0] - hRelax[-1])
-            #     results['hysteresis'][i] = hCompr[0] - hRelax[-1]
-                
-            # except:
-            #     print('hysteresis computation failed, see hCompr and hRelax below:')
-            #     print(hCompr, hRelax)
-            #     print('Details of the delimitation of the curve')
-            #     print(jStart, jMax, jStop, offsetStop, thisCompDf.shape[0])
-            #     print(offsetStart2)
-            #     print(thisCompDf.B.values)
-                # results['hysteresis'].append(np.nan)
-        
-        #### (6) Deal with the non analysed compressions
-        else: # The compression curve was detected as not suitable for analysis
-            generalBug = True
-            results['comments'][i] = 'Unspecified bug in the code'
-
-        if not doThisCompAnalysis:
-            print('Curve not suitable for analysis !')
-            print(currentCellID)
-            print('Compression no ' + str(i+1))
-
-    for k in results.keys():
-        results[k] = np.array(results[k])
-    
-    #### PLOT [3/4]
-    
-    if PLOT:
-        #### fig1
-        color = 'blue'
-        ax1.plot(tsDf['T'].values, tsDf['D3'].values-DIAMETER, color = color, ls = '-', linewidth = 1, zorder = 1)
-        (axm, axM) = ax1.get_ylim()
-        ax1.set_ylim([min(0,axm), axM])
-        if (max(tsDf['D3'].values-DIAMETER) > 200):
-            ax1.set_yticks(np.arange(0, max(tsDf['D3'].values-DIAMETER), 100))
-        
-        twinAxis = True
-        if twinAxis:
-            ax1.tick_params(axis='y', labelcolor='b')
-            ax1bis = ax1.twinx()
-            color = 'firebrick'
-            ax1bis.set_ylabel('F (pN)', color=color)
-            ax1bis.plot(tsDf['T'].values, tsDf['F'].values, color=color)
-            ax1bis.tick_params(axis='y', labelcolor=color)
-            ax1bis.set_yticks([0,500,1000,1500])
-            minh = np.min(tsDf['D3'].values-DIAMETER)
-            ratio = min(1/abs(minh/axM), 5)
-#             print(ratio)
-            (axmbis, axMbis) = ax1bis.get_ylim()
-            ax1bis.set_ylim([0, max(axMbis*ratio, 3*max(tsDf['F'].values))])
-        
-        
-        #### fig3
-        # Rescale fig3 axes
-        eMin, eMax = 1, 0
-        sMin, sMax = 1000, 0
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            # ax2[i] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx3 = ax3[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx3 = ax3[rowSp,colSp]
-                
-            if thisAx3.get_ylim()[1] > eMax:
-                eMax = thisAx3.get_ylim()[1]
-            if thisAx3.get_xlim()[1] > sMax:
-                sMax = thisAx3.get_xlim()[1]
-                
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            # ax2[i] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx3 = ax3[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx3 = ax3[rowSp,colSp]
-                
-            sMax = min(sMax, 2100)
-            eMax = min(eMax, 0.5)
-            
-            thisAx3.set_xlim([0, sMax])
-            thisAx3.set_ylim([0, eMax])
-                
-        #### fig4
-        NL = len(alreadyLabeled4)
-        titleVoid = ' '
-        if NL > 16:
-            titleVoid += '\n '
-        fig4.suptitle(titleVoid)
-        fig4.legend(loc='upper center', bbox_to_anchor=(0.5,1), ncol = min(8, NL))
-                
-        #### fig5
-        
-        NL = len(alreadyLabeled5)
-        titleVoid = ' '
-        if NL > 16:
-            titleVoid += '\n '
-        fig5.suptitle(titleVoid)
-        fig5.legend(loc='upper center', bbox_to_anchor=(0.5,1), ncol = min(8, NL))
-        
-        # Rescale fig5 axes
-        eMin, eMax = 1, 0
-        sMin, sMax = 1000, 0
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx5 = ax5[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx5 = ax5[rowSp,colSp]
-                
-            if thisAx5.get_xlim()[1] > eMax:
-                eMax = thisAx5.get_xlim()[1]
-            if thisAx5.get_ylim()[1] > sMax:
-                sMax = thisAx5.get_ylim()[1]
-                
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx5 = ax5[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx5 = ax5[rowSp,colSp]
-            
-            sMax = min(sMax, 2100)
-            eMax = min(eMax, 0.5)
-            thisAx5.set_ylim([0, 1000])
-            thisAx5.set_xlim([0, 0.20])
-                
-        #### fig6
-        # Rescale fig6 axes
-        
-        sMax = 0
-        Kmax = 0
-
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            if nRowsSubplot == 1:
-                thisAx6 = ax6[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx6 = ax6[rowSp,colSp]
-
-            if thisAx6.get_xlim()[1] > sMax:
-                sMax = thisAx6.get_xlim()[1]
-            if thisAx6.get_ylim()[1] > Kmax:
-                Kmax = thisAx6.get_xlim()[1]
-        
-        for i in range(Ncomp):
-            colSp = i % nColsSubplot
-            rowSp = i // nColsSubplot
-            if nRowsSubplot == 1:
-                thisAx6 = ax6[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx6 = ax6[rowSp,colSp]
-                
-            Kmax = min(Kmax, 20)
-
-            thisAx6.set_xlim([0, sMax])
-            thisAx6.set_ylim([0, 30])
-        
-        #### fig8 
-        
-        NL = len(alreadyLabeled8)
-        titleVoid = ' '
-        if NL > 16:
-            titleVoid += '\n '
-        fig8.suptitle(titleVoid)
-        fig8.legend(loc='upper center', bbox_to_anchor=(0.5,1), ncol = min(8, NL))
-        
-        eMin, eMax = 1, 0
-        sMin, sMax = 1000, 0
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx8 = ax8[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx8 = ax8[rowSp,colSp]
-            title = thisAx8.title.get_text()
-            if not 'NON VALIDATED' in title:
-                if thisAx8.get_xlim()[0] < eMin:
-                    eMin = thisAx8.get_xlim()[0]
-                if thisAx8.get_xlim()[1] > eMax:
-                    eMax = thisAx8.get_xlim()[1]
-                if thisAx8.get_ylim()[0] < sMin:
-                    sMin = thisAx8.get_ylim()[0]
-                if thisAx8.get_ylim()[1] > sMax:
-                    sMax = thisAx8.get_ylim()[1]
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx8 = ax8[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx8 = ax8[rowSp,colSp]
-            title = thisAx8.title.get_text()
-            if not 'NON VALIDATED' in title:
-                sMin = max(0, sMin)
-                eMin = max(0, eMin)
-                eMax = min(0.5, eMax)
-                thisAx8.set_ylim([sMin, sMax])
-                thisAx8.set_xlim([eMin, eMax])
-        
-        #### fig9
-        
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx9 = ax9[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx9 = ax9[rowSp,colSp]
-            title = thisAx9.title.get_text()
-            if not 'NON VALIDATED' in title:
-                thisAx9.set_xlim([0,1000])
-                # thisAx6.set_ylim([KMin, KMax])
-                thisAx9.set_ylim([100, 5e4])
-        
-        #### fig10 
-        
-        NL = len(alreadyLabeled10)
-        titleVoid = ' '
-        if NL > 16:
-            titleVoid += '\n '
-        fig10.suptitle(titleVoid)
-        fig10.legend(loc='upper center', bbox_to_anchor=(0.5,1), ncol = min(8, NL))
-        
-        eMin, eMax = 1, 0
-        sMin, sMax = 1000, 0
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx10 = ax10[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx10 = ax10[rowSp,colSp]
-            title = thisAx10.title.get_text()
-            if not 'NON VALIDATED' in title:
-                if thisAx10.get_xlim()[0] < eMin:
-                    eMin = thisAx10.get_xlim()[0]
-                if thisAx10.get_xlim()[1] > eMax:
-                    eMax = thisAx10.get_xlim()[1]
-                if thisAx10.get_ylim()[0] < sMin:
-                    sMin = thisAx10.get_ylim()[0]
-                if thisAx10.get_ylim()[1] > sMax:
-                    sMax = thisAx10.get_ylim()[1]
-                    
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx10 = ax10[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx10 = ax10[rowSp,colSp]
-            title = thisAx10.title.get_text()
-            if not 'NON VALIDATED' in title:
-                sMin = max(0, sMin)
-                eMin = max(0, eMin)
-                eMax = min(0.5, eMax)
-                thisAx10.set_ylim([sMin, sMax])
-                thisAx10.set_xlim([eMin, eMax])
-                
-        #### fig11
-        
-        for i in range(1, Ncomp+1):
-            colSp = (i-1) % nColsSubplot
-            rowSp = (i-1) // nColsSubplot
-            # ax2[i-1] with the 1 line plot
-            if nRowsSubplot == 1:
-                thisAx11 = ax11[colSp]
-            elif nRowsSubplot >= 1:
-                thisAx11 = ax11[rowSp,colSp]
-            title = thisAx11.title.get_text()
-            if not 'NON VALIDATED' in title:
-                thisAx11.set_xlim([0, NbOfTargets])
-                thisAx11.set_ylim([100, 5e4])
-                
-                
-        Allfigs = [fig1,fig2,fig3,fig4,fig5,fig6,fig7,fig8,fig9,fig10,fig11]
-        
-        for fig in Allfigs:
-            fig.tight_layout()
-
-    
-    
-    #### PLOT [4/4]
-    # Save the figures
-    if PLOT:
-        
-        dpi = 150       
-        
-        figSubDir = 'MecaAnalysis_allCells_' + task
-        ufun.archiveFig(fig1, name = currentCellID + '_01_h(t)', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig2, name = currentCellID + '_02_F(h)', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig3, name = currentCellID + '_03_sig(eps)', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig4, name = currentCellID + '_04_F(h)_regionFits', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig5, name = currentCellID + '_05_sig(eps)_regionFits', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig6, name = currentCellID + '_06_K(s)', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig7, name = currentCellID + '_07_smallElements', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig8, name = currentCellID + '_08_sig(eps)_weightedRegionFits', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig9, name = currentCellID + '_09_K3(s)', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig10, name = currentCellID + '_10_sig(eps)_pointBasedFits', figSubDir = figSubDir, dpi = dpi)
-        ufun.archiveFig(fig11, name = currentCellID + '_11_K4(s)', figSubDir = figSubDir, dpi = dpi)
-        
-        
-        
-        if PLOT_SHOW:
-            Allfigs = [fig1,fig2,fig3,fig4,fig5,fig6,fig7,fig8,fig9,fig10,fig11]
-            # for fig in Allfigs:
-                # fig.tight_layout()
-                # fig.show()
+    if PLOT:        
+        # fig1, axes1 = CC.plot_Timeseries()
+        # fig2, axes2 = CC.plot_FH()
+        # fig31, axes31 = CC.plot_SS(fitType='stressRegion')
+        # fig41, axes41 = CC.plot_KS(fitType='stressRegion')
+        # fig32, axes32 = CC.plot_SS(fitType='stressGaussian')
+        # fig42, axes42 = CC.plot_KS(fitType='stressGaussian')
+        # fig33, axes33 = CC.plot_SS(fitType='nPoints')
+        # fig43, axes43 = CC.plot_KS(fitType='nPoints')
+        # fig5, axes5 = CC.plot_KS_smooth()
+        
+        CC.plot_and_save(plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells')
+        
+        if SHOW:
             plt.show()
         else:
             plt.close('all')
+    
+    #### Results
+    
+    CC.make_mainResults(fitSettings)
+    CC.make_localFitsResults(fitSettings)
+    
+    res = {'results_main' : CC.df_mainResults,
+           'results_stressRegions' : CC.df_stressRegions,
+           'results_stressGaussian' : CC.df_stressGaussian,
+           'results_nPoints' : CC.df_nPoints
+           }
 
-    return(results)
+    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
+    
+    return(res)
+
+# %%%% Simple wrapper
+
+#### TBC
+
+# %%%% Complex wrapper
 
 
-
-# def createDataDict_meca(list_mecaFiles, listColumnsMeca, task, PLOT):
-#     """
-#     Subfunction of computeGlobalTable_meca
-#     Create the dictionnary that will be converted in a pandas table in the end.
-#     """
-#     expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
-#     tableDict = {}
-#     Nfiles = len(list_mecaFiles)
-#     PLOT_SHOW = (Nfiles==1)
-#     PLOT_SHOW = 0
-#     if not PLOT_SHOW:
-#         plt.ioff()
-#     for c in listColumnsMeca:
-#         tableDict[c] = []
-#     for f in list_mecaFiles: #[:10]:
-#         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
-#         current_tsDf = pd.read_csv(tS_DataFilePath, sep = ';')
-#          # MAIN SUBFUNCTION
-#         current_resultDict = analyseTimeSeries_meca(f, current_tsDf, expDf, 
-#                                                     dictColumnsMeca, task,
-#                                                     PLOT, PLOT_SHOW)
-#         for k in current_resultDict.keys():
-#             tableDict[k] += current_resultDict[k]
-# #     for k in tableDict.keys():
-# #         print(k, len(tableDict[k]))
-#     return(tableDict)
-
-def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT):
+def buildDf_meca(list_mecaFiles, task, PLOT):
     """
     Subfunction of computeGlobalTable_meca
     Create the dictionnary that will be converted in a pandas table in the end.
@@ -4244,15 +2323,14 @@ def buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT):
     expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
     list_resultDf = []
     Nfiles = len(list_mecaFiles)
-    PLOT_SHOW = 0
     for f in list_mecaFiles: #[:10]:
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
         current_tsDf = pd.read_csv(tS_DataFilePath, sep = ';')
          # MAIN SUBFUNCTION
-        current_resultDict = analyseTimeSeries_meca(f, current_tsDf, expDf, 
-                                                    dictColumnsMeca, task,
-                                                    PLOT, PLOT_SHOW)
-        current_resultDf = pd.DataFrame(current_resultDict)
+        res = analyseTimeSeries_Dev(f, current_tsDf, expDf, 
+                                    taskName = task, PLOT=PLOT, SHOW=False)
+        results_main = res['results_main']
+        current_resultDf = pd.DataFrame(results_main)
         list_resultDf.append(current_resultDf)
     mecaDf = pd.concat(list_resultDf)
 
@@ -4267,20 +2345,20 @@ def updateUiDf_meca(ui_fileSuffix, mecaDf):
     
     listDates = mecaDf['date'].unique()
     
-    for date in listDates:
-        ui_fileName = date + '_' + ui_fileSuffix
+    for d in listDates:
+        ui_fileName = d + '_' + ui_fileSuffix
         
         try:
             savePath = os.path.join(cp.DirDataAnalysisUMS, (ui_fileName + '.csv'))
             uiDf = pd.read_csv(savePath, sep='\t')
             fromScratch = False
-            print(gs.GREEN + date + ' : imported existing UI table' + gs.NORMAL)
+            print(gs.GREEN + d + ' : imported existing UI table' + gs.NORMAL)
             
         except:
-            print(gs.DARKGREEN + date + ' : no existing UI table found' + gs.NORMAL)
+            print(gs.DARKGREEN + d + ' : no existing UI table found' + gs.NORMAL)
             fromScratch = True
     
-        new_uiDf = mecaDf[mecaDf['date'] == date][listColumnsUI[:5]]
+        new_uiDf = mecaDf[mecaDf['date'] == d][listColumnsUI[:5]]
         if not fromScratch:
             existingCellId = uiDf['cellID'].values
             new_uiDf = new_uiDf.loc[new_uiDf['cellID'].apply(lambda x : x not in existingCellId), :]
@@ -4304,14 +2382,15 @@ def updateUiDf_meca(ui_fileSuffix, mecaDf):
 
 def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData', 
                             save = False, PLOT = False, \
-                            source = 'Matlab', dictColumnsMeca=dictColumnsMeca,
+                            source = 'Python', 
                             ui_fileSuffix = 'UserManualSelection_MecaData'):
     """
     Compute the GlobalTable_meca from the time series data files.
     Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
     Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
     DEPRECATED : listColumnsMeca have to contain all the fields of the table that will be constructed.
-    dictColumnsMeca have to contain all the fields of the table that will be constructed AND their default values !
+    DEPRECATED : dictColumnsMeca have to contain all the fields of the table that will be constructed AND their default values !
+    Now dictColumnsMeca is defined inside the method CellCompression.make_mainResults().
     """
     top = time.time()
     
@@ -4340,7 +2419,7 @@ def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData',
         # # create the dataframe from it
         # mecaDf = pd.DataFrame(tableDict)
         
-        mecaDf = buildDf_meca(list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+        mecaDf = buildDf_meca(list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
         
         updateUiDf_meca(ui_fileSuffix, mecaDf)
         
@@ -4371,7 +2450,7 @@ def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData',
         # # create the dataframe from it
         # new_mecaDf = pd.DataFrame(new_tableDict)
         
-        new_mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+        new_mecaDf = buildDf_meca(new_list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
         # fuse the existing table with the new one
         mecaDf = pd.concat([existing_mecaDf, new_mecaDf])
         
@@ -4395,7 +2474,7 @@ def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData',
         # # create the dataframe from it
         # mecaDf = pd.DataFrame(new_tableDict)
         
-        mecaDf = buildDf_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
+        mecaDf = buildDf_meca(new_list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
         updateUiDf_meca(ui_fileSuffix, mecaDf)
     
     for c in mecaDf.columns:
@@ -4443,6 +2522,7 @@ def getGlobalTable_meca(fileName):
 
         
     return(mecaDf)
+
 
 # %%% (2.4) Fluorescence data
 

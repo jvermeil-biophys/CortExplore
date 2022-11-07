@@ -61,6 +61,7 @@ pd.reset_option('display.max_rows')
 
 ####  Matplotlib
 matplotlib.rcParams.update({'figure.autolayout': True})
+plt.ioff()
 
 #### Graphic options
 gs.set_default_options_jv()
@@ -76,9 +77,13 @@ expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 f = '22-07-15_M2_P1_C5_disc20um_L40_PY.csv'
 tsDf = taka2.getCellTimeSeriesData(f, fromCloud = True)
 
-dCM = taka2.dictColumnsMeca
+# res = taka2.analyseTimeSeries_Dev(f, tsDf, expDf, PLOT = False, SHOW = False)
 
-taka2.analyseTimeSeries_Class(f, tsDf, expDf, dCM)
+task = '22-07-15_M2_P1_C1'
+df = taka2.computeGlobalTable_meca(task = task, fileName = 'test', 
+                            save = True, PLOT = True, 
+                            source = 'Python', 
+                            ui_fileSuffix = 'UserManualSelection_MecaData')
 
 # %%
 
