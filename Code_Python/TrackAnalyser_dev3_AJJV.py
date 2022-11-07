@@ -792,9 +792,11 @@ class CellCompression:
     This class deals with all that requires the whole array of compressions.
     """
     
-    def __init__(self, cellID, timeseriesDf, thisExpDf):
+    def __init__(self, cellID, timeseriesDf, thisExpDf, fileName):
         self.tsDf = timeseriesDf
         self.expDf = thisExpDf
+        self.cellID = cellID
+        self.fileName = fileName
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
         
@@ -821,7 +823,7 @@ class CellCompression:
         loop_rampSize = int(loopStruct[1])
         loop_ctSize = int((loop_totalSize - loop_rampSize)/nUplet)
         
-        self.cellID = cellID
+        
         self.Ncomp = Ncomp
         self.DIAMETER = D
         self.EXPTYPE = EXPTYPE
@@ -885,6 +887,9 @@ class CellCompression:
                 D3corrected = True
                 jumpD3 = jump
         self.listJumpsD3[i] = jumpD3
+        
+    
+
     
         
     def plot_Timeseries(self, plotSettings):
@@ -1096,6 +1101,30 @@ class CellCompression:
                 ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             except:
                 pass
+            
+            
+    def exportTimeseriesWithStressStrain(self):
+        Nrows = self.tsDf.shape[0]
+        ts_H0 = np.full(Nrows, np.nan)
+        ts_stress = np.full(Nrows, np.nan)
+        ts_strain = np.full(Nrows, np.nan)
+        for IC in self.listIndent:
+            iStart = IC.i_tsDf + IC.jStart
+            iStop = IC.i_tsDf + IC.jMax+1
+            if not IC.error_bestH0:
+                ts_H0[iStart:iStop].fill(IC.bestH0)
+                ts_stress[iStart:iStop] = IC.stressCompr
+                ts_strain[iStart:iStop] = IC.strainCompr
+                
+        self.tsDf['H0'] = ts_H0
+        self.tsDf['Stress'] = ts_stress
+        self.tsDf['Strain'] = ts_strain
+        saveName = self.fileName[:-4] + '_stress-strain.csv'
+        savePath = os.path.join(cp.DirDataTimeseriesStressStrain, saveName)
+        self.tsDf.to_csv(savePath, sep=';', index = False)
+        if cp.CloudSaving != '':
+            cloudSavePath = os.path.join(cp.DirCloudTimeseriesStressStrain, saveName)
+            self.tsDf.to_csv(cloudSavePath, sep=';', index = False)
     
     
     def make_mainResults(self, fitSettings):
@@ -1125,12 +1154,16 @@ class CellCompression:
                            'jumpD3':np.nan,
                            'minForce':np.nan, 
                            'maxForce':np.nan, 
+                           'ctFieldForce':np.nan,
                            'minStress':np.nan, 
                            'maxStress':np.nan, 
                            'minStrain':np.nan, 
                            'maxStrain':np.nan,
                            'ctFieldThickness':np.nan,
                            'ctFieldFluctuAmpli':np.nan,
+                           'ctFieldMinThickness':np.nan,
+                           'ctFieldMaxThickness':np.nan,
+                           'ctFieldVarThickness':np.nan,
                            'ctFieldDX':np.nan,
                            'ctFieldDY':np.nan,
                            'ctFieldDZ':np.nan,
@@ -1173,6 +1206,11 @@ class CellCompression:
         # currentCellID = self.cellID
         ctFieldH = (self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'D3'].values - self.DIAMETER)
         ctFieldThickness   = np.median(ctFieldH)
+        ctFieldMinThickness = np.min(ctFieldH)
+        ctFieldMaxThickness = np.max(ctFieldH)
+        ctFieldVarThickness = np.var(ctFieldH)
+        ctFieldF   = (self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'F'].values)
+        ctFieldForce   = np.median(ctFieldF)
         ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
         ctFieldDX = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dx'].values)
         ctFieldDY = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dy'].values)
@@ -1225,6 +1263,7 @@ class CellCompression:
             # Force-related
             results['minForce'][i] = np.min(IC.fCompr)
             results['maxForce'][i] = np.max(IC.fCompr)
+            results['ctFieldForce'][i] = ctFieldForce
             
             # Best H0 related
             results['bestH0'][i] = IC.bestH0
@@ -1335,10 +1374,11 @@ class IndentCompression:
     This class deals with all that is done on a single compression.
     """
     
-    def __init__(self, CC, indentDf, thisExpDf, i_indent):
+    def __init__(self, CC, indentDf, thisExpDf, i_indent, i_tsDf):
         self.rawDf = indentDf
         self.thisExpDf = thisExpDf
         self.i_indent = i_indent
+        self.i_tsDf = i_tsDf
         
         self.cellID = CC.cellID
         self.DIAMETER = CC.DIAMETER
@@ -2189,23 +2229,23 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
     cellID = ufun.findInfosInFileName(f, 'cellID')
     
     #### 2. Create CellCompression object
-    CC = CellCompression(cellID, tsDf, thisExpDf)
+    CC = CellCompression(cellID, tsDf, thisExpDf, f)
     CC.method_bestH0 = method_bestH0
 
     
     #### 3. Start looping over indents
     for i in range(Ncomp):
 
-        
         #### 3.1 Correct jumps
         CC.correctJumpForCompression(i)
             
         #### 3.2 Segment the i-th compression
         maskComp = CC.getMaskForCompression(i, task = 'compression')
         thisCompDf = tsDf.loc[maskComp,:]
+        i_tsDf = ufun.findFirst(1, maskComp)
         
         #### 3.3 Create IndentCompression object
-        IC = IndentCompression(CC, thisCompDf, thisExpDf, i)
+        IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
         CC.listIndent.append(IC)
 
         #### 3.4 State if i-th compression is valid for analysis
@@ -2295,6 +2335,8 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
     
     #### Results
     
+    CC.exportTimeseriesWithStressStrain()
+    
     CC.make_mainResults(fitSettings)
     CC.make_localFitsResults(fitSettings)
     
@@ -2315,22 +2357,23 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
 # %%%% Complex wrapper
 
 
-def buildDf_meca(list_mecaFiles, task, PLOT):
+def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False):
     """
     Subfunction of computeGlobalTable_meca
     Create the dictionnary that will be converted in a pandas table in the end.
     """
-    expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+    # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+
     list_resultDf = []
+    
     Nfiles = len(list_mecaFiles)
     for f in list_mecaFiles: #[:10]:
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
         current_tsDf = pd.read_csv(tS_DataFilePath, sep = ';')
          # MAIN SUBFUNCTION
-        res = analyseTimeSeries_Dev(f, current_tsDf, expDf, 
-                                    taskName = task, PLOT=PLOT, SHOW=False)
-        results_main = res['results_main']
-        current_resultDf = pd.DataFrame(results_main)
+         #### TO DO
+        current_resultDf = analyseTimeSeries_Dev(f, current_tsDf, expDf, 
+                                                 taskName = task, PLOT = PLOT, SHOW = SHOW)
         list_resultDf.append(current_resultDf)
     mecaDf = pd.concat(list_resultDf)
 
@@ -2345,20 +2388,20 @@ def updateUiDf_meca(ui_fileSuffix, mecaDf):
     
     listDates = mecaDf['date'].unique()
     
-    for d in listDates:
-        ui_fileName = d + '_' + ui_fileSuffix
+    for date in listDates:
+        ui_fileName = date + '_' + ui_fileSuffix
         
         try:
             savePath = os.path.join(cp.DirDataAnalysisUMS, (ui_fileName + '.csv'))
             uiDf = pd.read_csv(savePath, sep='\t')
             fromScratch = False
-            print(gs.GREEN + d + ' : imported existing UI table' + gs.NORMAL)
+            print(gs.GREEN + date + ' : imported existing UI table' + gs.NORMAL)
             
         except:
-            print(gs.DARKGREEN + d + ' : no existing UI table found' + gs.NORMAL)
+            print(gs.DARKGREEN + date + ' : no existing UI table found' + gs.NORMAL)
             fromScratch = True
     
-        new_uiDf = mecaDf[mecaDf['date'] == d][listColumnsUI[:5]]
+        new_uiDf = mecaDf[mecaDf['date'] == date][listColumnsUI[:5]]
         if not fromScratch:
             existingCellId = uiDf['cellID'].values
             new_uiDf = new_uiDf.loc[new_uiDf['cellID'].apply(lambda x : x not in existingCellId), :]
@@ -2380,24 +2423,38 @@ def updateUiDf_meca(ui_fileSuffix, mecaDf):
 
 
 
-def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData', 
+
+
+
+
+def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
+                            fileName = 'Global_MecaData', 
                             save = False, PLOT = False, \
-                            source = 'Python', 
-                            ui_fileSuffix = 'UserManualSelection_MecaData'):
+                            source = 'Python'):
     """
-    Compute the GlobalTable_meca from the time series data files.
-    Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
-    Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
-    DEPRECATED : listColumnsMeca have to contain all the fields of the table that will be constructed.
-    DEPRECATED : dictColumnsMeca have to contain all the fields of the table that will be constructed AND their default values !
-    Now dictColumnsMeca is defined inside the method CellCompression.make_mainResults().
+    Compute the GlobalTable_meca from the time series data files. \n
+    > mode = 'fromScratch' or 'updateExisting':\n
+    - 'fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.\n
+    - 'updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new files.\n
+    > task = 'all' or a string containing a file prefix, or several prefixes separated by ' & '.\n
+    
+    - 'all' will include in the analysis all the files that correspond to the chosen 'mode'.\n
+    - giving file prefixes will include in the analysis all the files that start with this prefix and correspond to the chosen 'mode'. Examples: task = '22-05-03' or task = '22-05-03_M1 & 22-05-04_M2 & 22-05-05'.\n
+    > fileName: the name of the table that will be created. If mode='updateExisting', it is this table that will be updated.\n
+    > save: save the final table or not.\n
+    > PLOT: save the plots or not.\n
+    > source: 'Matlab' or 'Python', default is 'Python'.\n
+    > dictColumnsMeca: dict that has to contain all the fields of the table that will be constructed AND their default values: dictColumnsMeca = {col1: defaultVal1, col2: defaultVal2, etc}.
     """
     top = time.time()
     
-#     list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and ('R40' in f))] # Change to allow different formats in the future
+    ui_fileSuffix = 'UserManualSelection_MecaData'
     
+    # 1. Initialization
+    # 1.1 Get the experimental dataframe
+    expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+    
+    # 1.2 Get the list of all meca files    
     suffixPython = '_PY'
     if source == 'Matlab':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
@@ -2408,83 +2465,109 @@ def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData',
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
-        # print(list_mecaFiles)
     
-#     print(list_mecaFiles)
-    
-    if task == 'fromScratch':
-        # # create a dict containing the data
-        # tableDict = createDataDict_meca(list_mecaFiles, listColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        
-        # # create the dataframe from it
-        # mecaDf = pd.DataFrame(tableDict)
-        
-        mecaDf = buildDf_meca(list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
-        
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-        
-        # last step: now that the dataFrame is complete, one can use "compStartTimeThisDay" col to compute the start time of each compression relative to the first one done this day.
-        allDates = list(mecaDf['date'].unique())
-        for d in allDates:
-            subDf = mecaDf.loc[mecaDf['date'] == d]
-            experimentStartTime = np.min(subDf['compStartTimeThisDay'])
-            mecaDf['compStartTimeThisDay'].loc[mecaDf['date'] == d] = mecaDf['compStartTimeThisDay'] - experimentStartTime
-        
-    elif task == 'updateExisting':
-        # get existing table
+
+
+
+    # 2. Get the existing table if necessary
+    # 2.1
+    if mode == 'fromScratch':
+        existing_mecaDf = buildDf_meca([], 'fromScratch', expDf, PLOT=False)
+    # 2.2
+    elif mode == 'updateExisting':
         try:
             savePath = os.path.join(cp.DirDataAnalysis, (fileName + '.csv'))
             existing_mecaDf = pd.read_csv(savePath, sep=';')
         except:
             print('No existing table found')
-            
-        # find which of the time series files are new
-        new_list_mecaFiles = []
-        for f in list_mecaFiles:
-            currentCellID = ufun.findInfosInFileName(f, 'cellID')
-            if currentCellID not in existing_mecaDf.cellID.values:
-                new_list_mecaFiles.append(f)
-                
-        # # create the dict with new data
-        # new_tableDict = createDataDict_meca(new_list_mecaFiles, listColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        # # create the dataframe from it
-        # new_mecaDf = pd.DataFrame(new_tableDict)
-        
-        new_mecaDf = buildDf_meca(new_list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
-        # fuse the existing table with the new one
-        mecaDf = pd.concat([existing_mecaDf, new_mecaDf])
-        
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-        
-    else: # If task is neither 'fromScratch' nor 'updateExisting'
-    # Then task can be a substring that can be in some timeSeries file !
-    # It will create a table with only these files !
-
+    # 2.3
+    else:
+        existing_mecaDf = buildDf_meca([], 'fromScratch', expDf, PLOT=False)
+    
+    
+    
+    
+    # 3. Select the files to analyse from the list according to the task
+    list_taskMecaFiles = []
+    # 3.1
+    if task == 'all':
+        list_taskMecaFiles = list_mecaFiles
+    # 3.2
+    else:
         task_list = task.split(' & ')
-        new_list_mecaFiles = []
         for f in list_mecaFiles:
             currentCellID = ufun.findInfosInFileName(f, 'cellID')
             for t in task_list:
                 if t in currentCellID:
-                    new_list_mecaFiles.append(f)
+                    list_taskMecaFiles.append(f)
                     break
                 
-        # # create the dict with new data
-        # new_tableDict = createDataDict_meca(new_list_mecaFiles, dictColumnsMeca, task, PLOT) # MAIN SUBFUNCTION
-        # # create the dataframe from it
-        # mecaDf = pd.DataFrame(new_tableDict)
+    list_selectedMecaFiles = []
+    # 3.3
+    if mode == 'fromScratch':
+        list_selectedMecaFiles = list_taskMecaFiles
         
-        mecaDf = buildDf_meca(new_list_mecaFiles, task, PLOT) # MAIN SUBFUNCTION
-        updateUiDf_meca(ui_fileSuffix, mecaDf)
-    
-    for c in mecaDf.columns:
-            if 'Unnamed' in c:
-                mecaDf = mecaDf.drop([c], axis=1)
-    
+    # 3.4
+    elif mode == 'updateExisting':
+        for f in list_taskMecaFiles:
+            currentCellID = ufun.findInfosInFileName(f, 'cellID')
+            if currentCellID not in existing_mecaDf.cellID.values:
+                list_selectedMecaFiles.append(f)
+                
+                
+                
+        # 1.3 Exclude the ones that are not in expDf
+        listExcluded = []
+        listManips = expDf['manipID'].values
+        for i in range(len(list_selectedMecaFiles)): 
+            f = list_selectedMecaFiles[i]
+            manipID = ufun.findInfosInFileName(f, 'manipID')
+            if not manipID in listManips:
+                listExcluded.append(f)
+                
+        for f in listExcluded:
+            list_selectedMecaFiles.remove(f)
+                
+        if len(listExcluded) > 0:
+            textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
+            print(gs.ORANGE + textExcluded)
+            for f in listExcluded:
+                print(f)
+            print(gs.NORMAL)
+            
+                
+                
+    # 4. Run the analysis on the files, by blocks of 10
+    Nfiles = len(list_selectedMecaFiles)
+    mecaDf = existing_mecaDf
+    for i in range(0, Nfiles, 10):
+        i_start, i_stop = i, min(i+10, Nfiles)
+        bloc_selectedMecaFiles = list_selectedMecaFiles[i_start:i_stop]
+        # MAIN SUBFUNCTION
+        new_mecaDf = buildDf_meca(bloc_selectedMecaFiles, task, expDf, PLOT)
+        mecaDf = pd.concat([mecaDf, new_mecaDf])
+        if save:
+            saveName = fileName + '.csv'
+            savePath = os.path.join(cp.DirDataAnalysis, saveName)
+            mecaDf.to_csv(savePath, sep=';', index = False)
+            if cp.CloudSaving != '':
+                cloudSavePath = os.path.join(cp.DirCloudAnalysis, saveName)
+                mecaDf.to_csv(cloudSavePath, sep=';', index = False)
+            textSave = 'Intermediate save {:.0f}/{:.0f} successful !'.format((i+10)//10, ((Nfiles-1)//10)+1)
+            print(gs.CYAN + textSave + gs.NORMAL)
+         
+            
+    # 5. Final save
     if save:
         saveName = fileName + '.csv'
         savePath = os.path.join(cp.DirDataAnalysis, saveName)
-        mecaDf.to_csv(savePath, sep=';')
+        mecaDf.to_csv(savePath, sep=';', index = False)
+        if cp.CloudSaving != '':
+            cloudSavePath = os.path.join(cp.DirCloudAnalysis, saveName)
+            mecaDf.to_csv(cloudSavePath, sep=';', index = False)
+        print(gs.BLUE + 'Final save successful !' + gs.NORMAL)
+    
+    updateUiDf_meca(ui_fileSuffix, mecaDf)
     
     duration = time.time() - top
     print(gs.DARKGREEN + 'Total time: {:.0f}s'.format(duration) + gs.NORMAL)
@@ -2522,7 +2605,6 @@ def getGlobalTable_meca(fileName):
 
         
     return(mecaDf)
-
 
 # %%% (2.4) Fluorescence data
 
