@@ -9237,5 +9237,40 @@ ufun.archiveData(dfexport, name=('SFigBONUS _K' + srs + '_allLines_cellAvg'),
 
 plt.show()
 
+# %%%% Typical constant field force
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['ctFieldForce'] < 400),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11','aSFL-F8','aSFL-E4'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+fltr = Filters[0]
+for i in range(1, len(Filters)):
+    fltr = fltr & Filters[i]
+print(np.median(data[fltr]['maxForce']))
+# print(np.std(data[fltr]['ctFieldForce']))
+
+co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+           ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+           ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+           ['aSFL-A11 & none','aSFL-F8 & none'],
+           ['aSFL-A11 & none','aSFL-E4 & none']]
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype','drug'], Parameters=['minForce'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'v', stressBoxPlot= False, 
+                          returnData = 1, returnCount = 1)
+
 # %%%% Next
 
