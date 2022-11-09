@@ -94,5 +94,5 @@ res = taka2.analyseTimeSeries_meca(f, tsDf, expDf, PLOT = True, SHOW = False)
 
 task = '22-07-15_M1_P1_C1'
 
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'TEST_NEW_ANALYSIS', 
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'Global_MecaData_Drugs_Py', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
