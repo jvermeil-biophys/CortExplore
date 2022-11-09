@@ -57,6 +57,7 @@ for i in range(5,105,5):
                     
 # %% (1) TimeSeries functions
 
+
 def getCellTimeSeriesData(cellID, fromPython = True):
     if fromPython:
         allTimeSeriesDataFiles = [f for f in os.listdir(cp.DirDataTimeseries) 
@@ -83,6 +84,7 @@ def getCellTimeSeriesData(cellID, fromPython = True):
                 if 'Unnamed' in c:
                     timeSeriesDataFrame = timeSeriesDataFrame.drop([c], axis=1)
     return(timeSeriesDataFrame)
+
 
 def plotCellTimeSeriesData(cellID, fromPython = True):
     X = 'T'
@@ -738,6 +740,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
     dictH0['H0_Dimitriadis15_resTuple'] = Dimitriadis15_resultTuple
     
     return(dictH0)
+
 
 
 
@@ -1662,6 +1665,8 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     for k in results.keys():
         results[k] = np.array(results[k])
     result_df = pd.DataFrame(results)
+
+    
     return(result_df)
 
 
@@ -2097,7 +2102,7 @@ def createDataDict_sinus(listFiles, listColumns, PLOT):
 
 
 
-# %% (5) General import functions
+# %% (3) General import functions
     
 # %%% Main functions
 
