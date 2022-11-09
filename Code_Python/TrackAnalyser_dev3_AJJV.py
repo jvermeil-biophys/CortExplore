@@ -651,6 +651,7 @@ def makeDictFit_hf(params, ses, error,
         E, seE, H0, seH0 = np.nan, np.nan, np.nan, np.nan
         R2, Chi2 = np.nan, np.nan
         ciwE, ciwH0 = np.nan, np.nan
+        isValidated = False
         issue = 'error'
 
     res =  {'error':error,
