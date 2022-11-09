@@ -67,36 +67,32 @@ plt.ioff()
 gs.set_default_options_jv()
 
 
-# %%
+# %% Simple
 
 path = cp.DirCloudTimeseries
 ld = os.listdir(path)
 
 expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 
-f = '22-07-15_M1_P1_C5_disc20um_L40_PY.csv'
-tsDf = taka2.getCellTimeSeriesData(f, fromCloud = True)
+f = '22-07-15_M1_P1_C1_disc20um_L40_PY.csv'
+tsDf = taka2.getCellTimeSeriesData(f, fromCloud = False)
 
-res = taka2.analyseTimeSeries_Dev(f, tsDf, expDf, PLOT = False, SHOW = False)
+res = taka2.analyseTimeSeries_meca(f, tsDf, expDf, PLOT = True, SHOW = False)
 
-# task = '22-07-15_M2_P1_C1'
-# df = taka2.computeGlobalTable_meca(task = task, fileName = 'test', 
-#                             save = True, PLOT = False, 
-#                             source = 'Python', 
-#                             ui_fileSuffix = 'UserManualSelection_MecaData')
+# %% Complex
 
-# %%
+# dates_r1 = ['21-01-18', '21-01-21']
+# dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+# dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+# all_dates = dates_r1 + dates_r2 + dates_r3
 
-dates_r1 = ['21-01-18', '21-01-21']
-dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
-dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
-all_dates = dates_r1 + dates_r2 + dates_r3
+# MCA123task = ''
+# for d in all_dates[:-1]:
+#     MCA123task += d
+#     MCA123task += ' & '
+# MCA123task += all_dates[-1]
 
-MCA123task = ''
-for d in all_dates[:-1]:
-    MCA123task += d
-    MCA123task += ' & '
-MCA123task += all_dates[-1]
+task = '22-07-15_M1_P1_C1'
 
-taka2.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName = 'NEW_MecaData_MCA123', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'TEST_NEW_ANALYSIS', 
+                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'

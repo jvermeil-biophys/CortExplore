@@ -839,7 +839,7 @@ class CellCompression:
         # These fields are to be filled by methods later on
         self.listIndent = []
         self.listJumpsD3 = np.zeros(Ncomp, dtype = float)
-        self.method_bestH0 = 'Dimitriadis' # default
+        # self.method_bestH0 = 'Dimitriadis' # default
         
         self.df_mainResults = pd.DataFrame({})
         self.df_stressRegions = pd.DataFrame({})
@@ -1025,8 +1025,6 @@ class CellCompression:
             
         fig.tight_layout()
         return(fig, axes)
-    
-    
     
     
     def plot_and_save(self, plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells'):
@@ -1326,6 +1324,13 @@ class CellCompression:
     #### METHODS IN DEVELOPMENT
     
     
+    def getH0Df(self):
+        L = []
+        for IC in self.listIndent:
+            L.append(IC.getH0Df())
+        df = pd.concat(L, axis = 0)
+        return(df)
+    
     def plot_KS_smooth(self):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
@@ -1380,6 +1385,8 @@ class IndentCompression:
         self.i_indent = i_indent
         self.i_tsDf = i_tsDf
         
+        self.rawT0 = self.rawDf['T'].values[0]
+        
         self.cellID = CC.cellID
         self.DIAMETER = CC.DIAMETER
         self.EXPTYPE = CC.EXPTYPE
@@ -1399,13 +1406,18 @@ class IndentCompression:
         
         # refineStartStop()
         self.isRefined = False
-        self.hCompr = (self.rawDf.D3.values[:] - self.DIAMETER)
-        self.hRelax = (self.rawDf.D3.values[:] - self.DIAMETER)
-        self.fCompr = (self.rawDf.F.values[:])
-        self.fRelax = (self.rawDf.F.values[:])
         self.jMax = np.argmax(self.rawDf.B)
         self.jStart = 0
         self.jStop = len(self.rawDf.D3.values)
+        self.hCompr = (self.rawDf.D3.values[:self.jMax+1] - self.DIAMETER)
+        self.hRelax = (self.rawDf.D3.values[self.jMax+1:] - self.DIAMETER)
+        self.fCompr = (self.rawDf.F.values[:self.jMax+1])
+        self.fRelax = (self.rawDf.F.values[self.jMax+1:])
+        self.TCompr = (self.rawDf['T'].values[:self.jMax+1])
+        self.TRelax = (self.rawDf['T'].values[self.jMax+1:])
+        self.BCompr = (self.rawDf.B.values[:self.jMax+1])
+        self.BRelax = (self.rawDf.B.values[self.jMax+1:])
+        
         self.Df = self.rawDf
         
         # computeH0()
@@ -1414,6 +1426,7 @@ class IndentCompression:
         # setBestH0()
         self.bestH0 = np.nan
         self.method_bestH0 = ''
+        self.zone_bestH0 = ''
         self.error_bestH0 = True
         
         # computeStressStrain()
@@ -1514,6 +1527,8 @@ class IndentCompression:
         self.hRelax = (self.rawDf.D3.values[jMax+1:jStop] - self.DIAMETER)
         self.fCompr = (self.rawDf.F.values[jStart:jMax+1])
         self.fRelax = (self.rawDf.F.values[jMax+1:jStop])
+        self.BCompr = (self.rawDf.B.values[jStart:jMax+1])
+        self.BRelax = (self.rawDf.B.values[jMax+1:jStop])
         self.TCompr = (self.rawDf['T'].values[jStart:jMax+1])
         self.TRelax = (self.rawDf['T'].values[jMax+1:jStop])
         
@@ -1531,55 +1546,117 @@ class IndentCompression:
         
     def computeH0(self, method = 'Chadwick', zone = 'pts_15'):
         listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
-        [zoneType, zoneVal] = zone.split('_')
-        if zoneType == 'pts':
-            i1 = 0
-            i2 = int(zoneVal)
-            mask = np.array([((i >= i1) and (i < i2)) for i in range(len(self.fCompr))])    
-        elif zoneType == '%f':
-            thresh = (int(zoneVal)/100.) * np.max(self.fCompr)
-            mask = (self.fCompr < thresh)
+        listAllZones = ['pts_15', 'pts_30', 
+                        '%f_10', '%f_20', '%f_30', '%f_40', 
+                        '%h_10', '%h_20', '%h_30', '%h_40']
         
-        if method == 'Chadwick':
-            h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
-            params, covM, error = fitChadwick_hf(h, f, D)
-            H0, E = params[1], params[0]
-            self.dictH0['H0_' + method] = H0
-            self.dictH0['E_' + method] = E
-            self.dictH0['error_' + method] = error
-            self.dictH0['fArray_' + method] = f
-            self.dictH0['hArray_' + method] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
-            
-        elif method == 'Dimitriadis':
-            h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
-            params, covM, error = fitDimitriadis_hf(h, f, D)
-            H0, E = params[1], params[0]
-            self.dictH0['H0_' + method] = H0
-            self.dictH0['E_' + method] = E
-            self.dictH0['error_' + method] = error
-            self.dictH0['fArray_' + method] = dimitriadisModel(h/1000, E, H0/1000, D/1000)
-            self.dictH0['hArray_' + method] = h
-            
-        elif method == 'NaiveMax':
-            H0 = np.max(self.hCompr[:])
-            self.dictH0['H0_' + method] = H0
-            self.dictH0['E_' + method] = np.nan
-            self.dictH0['error_' + method] = False
-            self.dictH0['fArray_' + method] = np.array([])
-            self.dictH0['hArray_' + method] = np.array([])
-        
-        elif method == 'all':
+
+        if method == 'all' and zone != 'all':
             for m in listAllMethods:
                 self.computeH0(method = m, zone = zone)
+        elif method != 'all' and zone == 'all':
+            for z in listAllZones:
+                self.computeH0(method = method, zone = z)
+        elif method == 'all' and zone == 'all':
+            for m in listAllMethods:
+                if m != 'NaiveMax':
+                    for z in listAllZones:
+                        self.computeH0(method = m, zone = z)
+                else:
+                    self.computeH0(method = m, zone = '^_^')
+                    
+        else:
             
+            [zoneType, zoneVal] = zone.split('_')
             
+            if zoneType == 'pts':
+                i1 = 0
+                i2 = int(zoneVal)
+                mask = np.array([((i >= i1) and (i < i2)) for i in range(len(self.fCompr))])    
+            elif zoneType == '%f':
+                pseudoForce = self.fCompr - np.min(self.fCompr)
+                thresh = (int(zoneVal)/100.) * np.max(pseudoForce)
+                mask = (pseudoForce < thresh)
+            elif zoneType == '%h':
+                pseudoDelta = np.max(self.hCompr) - self.hCompr
+                thresh = (int(zoneVal)/100.) * np.max(pseudoDelta)
+                mask = (pseudoDelta < thresh)
             
-    def setBestH0(self, method):
-        self.bestH0 = self.dictH0['H0_' + method]
-        self.error_bestH0 = self.dictH0['error_' + method]
+            if method == 'Chadwick':
+                try:
+                    h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+                    params, covM, error = fitChadwick_hf(h, f, D)
+                    H0, E = params[1], params[0]
+                    self.dictH0['H0_' + method + '_' + zone] = H0
+                    self.dictH0['E_' + method + '_' + zone] = E
+                    self.dictH0['error_' + method + '_' + zone] = error
+                    self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+                    self.dictH0['fArray_' + method + '_' + zone] = f
+                    self.dictH0['hArray_' + method + '_' + zone] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
+                except:
+                    print(zoneType)
+                    print(thresh)
+                    print(self.i_indent)
+                    print(self.fCompr)
+                    print(self.hCompr)
+                    print(mask)
+                    
+                    
+                
+            elif method == 'Dimitriadis':
+                h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+                params, covM, error = fitDimitriadis_hf(h, f, D)
+                H0, E = params[1], params[0]
+                self.dictH0['H0_' + method + '_' + zone] = H0
+                self.dictH0['E_' + method + '_' + zone] = E
+                self.dictH0['error_' + method + '_' + zone] = error
+                self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+                self.dictH0['fArray_' + method + '_' + zone] = dimitriadisModel(h/1000, E, H0/1000, D/1000)
+                self.dictH0['hArray_' + method + '_' + zone] = h
+                
+            elif method == 'NaiveMax':
+                H0 = np.max(self.hCompr[:])
+                self.dictH0['H0_' + method] = H0
+                self.dictH0['E_' + method] = np.nan
+                self.dictH0['error_' + method] = False
+                self.dictH0['fArray_' + method] = np.array([])
+                self.dictH0['hArray_' + method] = np.array([])
+        
+            
+    def setBestH0(self, method, zone):
+        self.bestH0 = self.dictH0['H0_' + method + '_' + zone]
+        self.error_bestH0 = self.dictH0['error_' + method + '_' + zone]
         self.method_bestH0 = method
-    
-    
+        self.zone_bestH0 = zone
+        
+        
+    def getH0Df(self):
+        d = {'CompNum':[],
+             'method':[],
+             'zone':[],
+             'H0':[],
+             'nbPts':[],
+             'error':[],
+             }
+        for k in self.dictH0.keys():
+            if k.startswith('H0'):
+                infos = k.split('_')
+                if infos[1] in ['Chadwick', 'Dimitriadis']:
+                    CompNum = self.i_indent
+                    method = infos[1]
+                    zone = infos[2] + '_' + infos[3]
+                    H0 = self.dictH0[k]
+                    nbPts = self.dictH0['nbPts_' + method + '_' + zone]
+                    error = self.dictH0['error_' + method + '_' + zone]
+                    d['CompNum'].append(CompNum)
+                    d['method'].append(method)
+                    d['zone'].append(zone)
+                    d['H0'].append(H0)
+                    d['nbPts'].append(nbPts)
+                    d['error'].append(error)
+                    
+        df = pd.DataFrame(d)
+        return(df)
     
     
     def computeStressStrain(self, method = 'Chadwick'):
@@ -1595,7 +1672,6 @@ class IndentCompression:
             self.stressCompr = stressCompr
             self.strainCompr = strainCompr
         
-
     
     def fitFH_Chadwick(self, dictFitValidation, mask = []):
         if len(mask) == 0:
@@ -1606,8 +1682,8 @@ class IndentCompression:
         hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
         x = f
         y, yPredict = h, hPredict
-        #### err_Chi2 for distance (µm)
-        err_chi2 = 0.03
+        #### err_Chi2 for distance (nm)
+        err_chi2 = 30
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, dictFitValidation)
@@ -1753,16 +1829,18 @@ class IndentCompression:
             if plotH0:
                 bestH0 = self.bestH0
                 method = self.method_bestH0
-                E_bestH0 = self.dictH0['E_' + method]
+                zone = self.zone_bestH0
+                str_m_z = method + '_' + zone
+                E_bestH0 = self.dictH0['E_' + method + '_' + zone]
                 
                 if (not self.error_bestH0) and (method not in ['NaiveMax']):
                     max_h = np.max(self.hCompr)
                     high_h = np.linspace(max_h, bestH0, 20)
                     low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
                     
-                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0)
-                    plot_startH = np.concatenate((self.dictH0['hArray_' + method][::-1], high_h))
-                    plot_startF = np.concatenate((self.dictH0['fArray_' + method][::-1], low_f))
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
                     ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
                             label = legendText)
@@ -1949,93 +2027,178 @@ class IndentCompression:
             
     
     def fitSS_polynomial(self):
-        T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
+        T, B, F =  self.TCompr - self.rawT0, self.BCompr, self.fCompr
+        stress, strain = self.stressCompr, self.strainCompr
         fake_strain = np.linspace(np.min(strain), np.max(strain), 100)
         fake_stress = np.linspace(np.min(stress), np.max(stress), 100)
+        titleText = self.cellID + '__c' + str(self.i_indent + 1)
+        
         if not self.error_bestH0:
-            fig, axes = plt.subplots(1,4, figsize = (15,5))
+            fig, axes = plt.subplots(1,5, figsize = (15,4))
+            fig.suptitle(titleText, fontsize = 12)
             
             # 1. 
+            ax = axes[0]
+            ax.set_xlabel('T (s)')
+            ax.set_ylabel('B (mT)')
+            
+            rawT = (self.rawDf['T'].values[:self.jMax+1])
+            rawT = rawT-rawT[0]
+            rawB = (self.rawDf.B.values[:self.jMax+1])
+            rawF = self.rawDf['F'].values[:self.jMax+1]
+
+            ax.plot(T, B, 
+                    color = 'fuchsia', marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+            
+            axbis = ax.twinx()
+            
+            axbis.plot(T, F, 
+                    color = 'red', marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+            
+            # ax.set_xscale('log')
+            # ax.set_yscale('log')
+            # axbis.set_yscale('log')
+            axbis.set_ylabel('F (pN)')
+            
+            
+            B0 = 1
+            Bmax = np.max(rawB)
+            T0 = 0
+            Tmax = np.max(rawT)
+            Bt2 = B0 + ((Bmax-B0)/(Tmax-T0)**2) * (T-T0)**2
+            Bt3 = B0 + ((Bmax-B0)/(Tmax-T0)**3) * (T-T0)**3
+            Bt4 = B0 + ((Bmax-B0)/(Tmax-T0)**4) * (T-T0)**4
+            iStart = 0
+            ols_model = sm.OLS(np.log(B[:]-B0), sm.add_constant(np.log(T[:])))
+            results_ols = ols_model.fit()
+            params = results_ols.params[::-1]
+            # print(params)
+            # params, covM = np.polyfit(np.log(T), np.log(B), 1, cov=True)
+            # BPredict = B0 + np.exp(params[0]) * (T[iStart:]**(params[1]))
+            BPredict = (T[:]**(params[1]))
+            
+            ax.plot(T, Bt2, 
+                    color = gs.colorList40[16], ls = '-', lw = 0.8)
+            
+            ax.plot(T, Bt3, 
+                    color = gs.colorList40[26], ls = '--', lw = 0.8)
+            
+            ax.plot(T, Bt4, 
+                    color = gs.colorList40[36], ls = '-.', lw = 0.8)
+            
+            ax.set_xlim([0.1, 2.0])
+            axbis.set_xlim([0.1, 2.0])
+            
+            
+            # 2.
+            ax = axes[1]
+            
             params, covM = np.polyfit(strain, stress, 3, cov=True) # , rcond=None, full=False, w=None
             X = np.linspace(np.min(strain), np.max(strain), 100)
             YPredict = np.polyval(params, X)
-        
             
-            
-            titleText = self.cellID + '__c' + str(self.i_indent + 1)
-            axes[0].set_xlabel('Strain')
-            axes[0].set_ylabel('Stress (Pa)')
+            ax.set_xlabel('Strain')
+            ax.set_ylabel('Stress (Pa)')
             main_color = 'k'
             
-            axes[0].plot(strain, stress, 
+            ax.plot(strain, stress, 
                     color = main_color, marker = 'o', 
                     markersize = 2, ls = '', alpha = 0.8)
                 
-            axes[0].plot(X, YPredict, 
+            ax.plot(X, YPredict, 
                     color = 'r', ls = '-')
             
             poly5_SS = np.poly1d(params)
             der_poly5_SS = np.polyder(poly5_SS)
             der_YPredict = np.polyval(der_poly5_SS, fake_strain)
             
-            axes[1].plot(fake_stress, der_YPredict,
+            ax = axes[2]
+            
+            ax.plot(fake_stress, der_YPredict/1000,
                          color = 'b', ls = '-')
             
             
+            ax.set_xlabel('Stress (Pa)')
+            ax.set_ylabel('K (kPa)')
+            main_color = 'k'
+            
+            
         
-            # 2.
+            # 3.
             # print(T)
             # print(strain)
+            
+            ax = axes[3]
             
             params, covM = np.polyfit(T, strain, 5, cov=True) # , rcond=None, full=False, w=None
             YPredict = np.polyval(params, T)
             
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
-            axes[2].set_xlabel('T (s)')
-            axes[2].set_ylabel('Strain')
+            ax.set_xlabel('T (s)')
+            ax.set_ylabel('Strain')
             main_color = 'k'
             
-            axes[2].plot(T, strain, 
+            ax.plot(T, strain, 
                     color = main_color, marker = 'o', 
                     markersize = 2, ls = '', alpha = 0.8)
                 
-            axes[2].plot(T, YPredict, 
+            ax.plot(T, YPredict, 
                     color = 'r', ls = '-')
             
             poly5_TStrain = np.poly1d(params)
             der_poly5_TStrain = np.polyder(poly5_TStrain)
             der_YPredict = np.polyval(der_poly5_TStrain, T)
             
-            axes[2].plot(T, der_YPredict, 
+            ax.plot(T, der_YPredict, 
                     color = 'b', ls = '-')
         
             # 3.
+            ax = axes[4]
             params, covM = np.polyfit(T, stress, 5, cov=True) # , rcond=None, full=False, w=None
             YPredict = np.polyval(params, T)
             
+            
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
-            axes[3].set_xlabel('T (s)')
-            axes[3].set_ylabel('Stress (Pa)')
+            ax.set_xlabel('T (s)')
+            ax.set_ylabel('Stress (Pa)')
             main_color = 'k'
             
-            axes[3].plot(T, stress, 
+            ax.plot(T, stress, 
                     color = main_color, marker = 'o', 
                     markersize = 2, ls = '', alpha = 0.8)
                 
-            axes[3].plot(T, YPredict, 
+            ax.plot(T, YPredict, 
                     color = 'r', ls = '-')
             
             poly5_TStress = np.poly1d(params)
             der_poly5_TStress = np.polyder(poly5_TStress)
             der_YPredict = np.polyval(der_poly5_TStress, T)
             
-            axes[3].plot(T, der_YPredict, 
+            ax.plot(T, der_YPredict, 
                     color = 'b', ls = '-')
+        
+        
+        for ax in axes:
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
+        ax = axbis
+        for item in ([ax.title, ax.xaxis.label, \
+                      ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(9)
+                
+        fig.tight_layout()
+            
+            
+            
+            
             
     def fitSS_smooth(self):
         if not self.error_bestH0:
             T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
-            fig, axes = plt.subplots(3,3, figsize = (16,12))
+            fig, axes = plt.subplots(3,4, figsize = (16,12))
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             fig.suptitle(titleText)
             main_color = 'k'
@@ -2073,27 +2236,32 @@ class IndentCompression:
             
             # 1.
             
-            # matSS = np.array([stress, strain]).T            
-            # matSS_sorted = matSS[matSS[:, 0].argsort()]        
+            matSS = np.array([stress, strain]).T            
+            matSS_sorted = matSS[matSS[:, 0].argsort()]        
             
-            # axes[0].set_xlabel('Strain')
-            # axes[0].set_ylabel('Stress (Pa)')
+            window_length = [11, 21, 41]
+            polyorder = [5, 5, 5]
             
+            for k in range(3):
+                
+                wl, po = window_length[k], polyorder[k]
+                
+                axes[k,0].set_xlabel('Strain')
+                axes[k,0].set_ylabel('Stress (Pa)')
             
-            # axes[0].plot(matSS_sorted[:, 1], matSS_sorted[:, 0], 
-            #         color = main_color, marker = 'o', 
-            #         markersize = 2, ls = '', alpha = 0.8)
-        
-            # window_length, polyorder = 21, 3
-            # mode = 'interp'
-            # yPredict = savgol_filter(matSS_sorted[:, 1], window_length, polyorder, mode=mode)
+                axes[k,0].plot(matSS_sorted[:, 1], matSS_sorted[:, 0], 
+                        color = main_color, marker = 'o', 
+                        markersize = 2, ls = '', alpha = 0.8)
             
-            # axes[0].plot(yPredict, matSS_sorted[:, 0],
-            #         color = 'r', ls = '-')
+                mode = 'interp'
+                yPredict = savgol_filter(matSS_sorted[:, 1], wl, po, mode=mode)
+                
+                axes[k,0].plot(yPredict, matSS_sorted[:, 0],
+                        color = 'r', ls = '-')
+                
+                axes[k,0].set_title('Savgol smoothing\nlen = {:.0f} - deg = {:.0f}'.format(wl, po))
             
-            # axes[0].set_title('Savgol smoothing\nlen = {:.0f} - deg = {:.0f}'.format(window_length, polyorder))
-            
-            2.
+            # 2.
             its = [0, 1, 3]
             fracs = [0.2, 0.2, 0.2]
             
@@ -2117,69 +2285,73 @@ class IndentCompression:
 
                 # print(smoothed)
                 
-                axes[0,k].set_xlabel('Strain')
-                axes[0,k].set_ylabel('Stress (Pa)')
-                axes[0,k].set_title('Lowess smoothing')
+                axes[k,1].set_xlabel('Strain')
+                axes[k,1].set_ylabel('Stress (Pa)')
+                axes[k,1].set_title('Lowess smoothing')
                 
-                axes[0,k].plot(strain, stress, 
+                axes[k,1].plot(strain, stress, 
                         color = main_color, marker = 'o', 
                         markersize = 2, ls = '', alpha = 0.8)
                 
-                axes[0,k].plot(smoothed_c[:, 1], smoothed_c[:, 0],
+                axes[k,1].plot(smoothed_c[:, 1], smoothed_c[:, 0],
                               color = 'b', ls = '-')
-                axes[0,k].plot(smoothed[:, 1], smoothed[:, 0],
+                axes[k,1].plot(smoothed[:, 1], smoothed[:, 0],
                               color = 'r', ls = '-')
                 
-                axes[1,k].set_xlabel('Stress (Pa)')
-                axes[1,k].set_ylabel('K (Pa)')
-                # axes[1,k].set_title('')
-                axes[1,k].plot(smoothed_c_der[1:, 0], smoothed_c_der[1:, 2],
+                axes[k,2].set_xlabel('Stress (Pa)')
+                axes[k,2].set_ylabel('K (Pa)')
+                # axes[k,2].set_title('')
+                axes[k,2].plot(smoothed_c_der[1:, 0], smoothed_c_der[1:, 2],
                               color = 'g', ls = '', marker = 'o', markersize = 2)
                 
                 mask = (smoothed_c_der[:,2] > 0) & (smoothed_c_der[:,2] < 20e3)
                 smoothed_c_der = smoothed_c_der[mask]
-                axes[1,k].set_ylim([0, 20000])
+                axes[k,2].set_ylim([0, 20000])
                 
                 self.SSK_filteredDer = smoothed_c_der
 
                 
-                axes[0,k].set_title('Lowess smoothing\nfrac = {:.2f} - it = {:.1f}'.format(frac, it))
+                axes[k,1].set_title('Lowess smoothing\nfrac = {:.2f} - it = {:.1f}'.format(frac, it))
               
                 
-            3.
+            # 3.
             sfacts = [0.0005,0.001,0.01]
             for k in range(3):
                 sfact = sfacts[k]
                 sp = si.splrep(stress_sorted, strain_sorted, s=sfact, k=5)
                 strain_smoothed = si.splev(stress_sorted, sp)
-
-                print(smoothed)
                 
-                axes[2,k].set_xlabel('Strain')
-                axes[2,k].set_ylabel('Stress (Pa)')
-                axes[2,k].set_title('Spline smoothing')
+                axes[k,3].set_xlabel('Strain')
+                axes[k,3].set_ylabel('Stress (Pa)')
+                axes[k,3].set_title('Spline smoothing')
                 
-                axes[2,k].plot(strain_sorted, stress_sorted, 
+                axes[k,3].plot(strain_sorted, stress_sorted, 
                         color = main_color, marker = 'o', 
                         markersize = 2, ls = '', alpha = 0.8)
                 
-                axes[2,k].plot(strain_smoothed, stress_sorted,
+                axes[k,3].plot(strain_smoothed, stress_sorted,
                               color = 'r', ls = '-')
 
                 
-                axes[2,k].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
+                axes[k,3].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
             
             
 
         
 # %%%% main function
         
-def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False):
+def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False):
     top = time.time()
+    
+    print(gs.BLUE + f + gs.NORMAL)
+    plt.ioff()
     
     #### 0. Settings
     #### 0.1 BestH0
+    # listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
+    # listAllZones = ['pts_15', 'pts_30', '%f_15', '%f_30', '%h_15', '%h_30']
     method_bestH0 = 'Dimitriadis'
+    zone_bestH0 = '%f_30'
     
     #### 0.2 Fits settings
     fitSettings = {'doChadwickFit' : True,
@@ -2262,10 +2434,11 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
             # IC.dictFitFH_Chadwick = dictFit
                 
             #### 3.8 Find the best H0
-            IC.computeH0(method = 'all', zone = 'pts_15')
+            IC.computeH0(method = 'all', zone = 'all')
             # IC.computeH0(method = 'all', zone = '%f_10')
+            # print(IC.dictH0)
             
-            IC.setBestH0(method = method_bestH0)
+            IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
 
             #### 3.9 Compute stress and strain based on the best H0
             IC.computeStressStrain(method = 'Chadwick')            
@@ -2315,17 +2488,22 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
     
     #### Plots
     
+    # Tests
+    # fig1, axes1 = CC.plot_Timeseries(plotSettings)
+    # fig2, axes2 = CC.plot_FH(plotSettings)
+    # fig31, axes31 = CC.plot_SS(plotSettings, fitType='stressRegion')
+    # fig41, axes41 = CC.plot_KS(plotSettings, fitType='stressRegion')
+    # fig32, axes32 = CC.plot_SS(plotSettings, fitType='stressGaussian')
+    # fig42, axes42 = CC.plot_KS(plotSettings, fitType='stressGaussian')
+    # fig33, axes33 = CC.plot_SS(plotSettings, fitType='nPoints')
+    # fig43, axes43 = CC.plot_KS(plotSettings, fitType='nPoints')
+    # fig5, axes5 = CC.plot_KS_smooth()
+    # if SHOW:
+    #     plt.show()
+    # else:
+    #     plt.close('all')
+    
     if PLOT:        
-        # fig1, axes1 = CC.plot_Timeseries()
-        # fig2, axes2 = CC.plot_FH()
-        # fig31, axes31 = CC.plot_SS(fitType='stressRegion')
-        # fig41, axes41 = CC.plot_KS(fitType='stressRegion')
-        # fig32, axes32 = CC.plot_SS(fitType='stressGaussian')
-        # fig42, axes42 = CC.plot_KS(fitType='stressGaussian')
-        # fig33, axes33 = CC.plot_SS(fitType='nPoints')
-        # fig43, axes43 = CC.plot_KS(fitType='nPoints')
-        # fig5, axes5 = CC.plot_KS_smooth()
-        
         CC.plot_and_save(plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells')
         
         if SHOW:
@@ -2340,21 +2518,38 @@ def analyseTimeSeries_Dev(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = Fa
     CC.make_mainResults(fitSettings)
     CC.make_localFitsResults(fitSettings)
     
+    df_H0 = CC.getH0Df()
+    
     res = {'results_main' : CC.df_mainResults,
            'results_stressRegions' : CC.df_stressRegions,
            'results_stressGaussian' : CC.df_stressGaussian,
-           'results_nPoints' : CC.df_nPoints
+           'results_nPoints' : CC.df_nPoints,
+           'results_H0' : df_H0
            }
 
     print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
     
     return(res)
 
-# %%%% Simple wrapper
+# %%%% simple wrapper
+# Simple script to call just the analysis on 1 timeseries file
 
-#### TBC
+# path = cp.DirDataTimeseries
+# # path = cp.DirCloudTimeseries
+# ld = os.listdir(path)
 
-# %%%% Complex wrapper
+# expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+
+# f = '22-07-15_M1_P1_C1_disc20um_L40_PY.csv'
+
+# def simpleWrapper(f, expDf):
+#     tsDf = getCellTimeSeriesData(f, fromCloud = False)
+#     res = analyseTimeSeries_meca(f, tsDf, expDf, PLOT = True, SHOW = False)
+#     return(res)
+    
+# res = simpleWrapper(f, expDf)
+
+# %%%% complex wrapper
 
 
 def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False):
@@ -2362,21 +2557,33 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False):
     Subfunction of computeGlobalTable_meca
     Create the dictionnary that will be converted in a pandas table in the end.
     """
-    # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
-
     list_resultDf = []
+    # Nfiles = len(list_mecaFiles)
     
-    Nfiles = len(list_mecaFiles)
     for f in list_mecaFiles: #[:10]:
         tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
         current_tsDf = pd.read_csv(tS_DataFilePath, sep = ';')
-         # MAIN SUBFUNCTION
-         #### TO DO
-        current_resultDf = analyseTimeSeries_Dev(f, current_tsDf, expDf, 
-                                                 taskName = task, PLOT = PLOT, SHOW = SHOW)
-        list_resultDf.append(current_resultDf)
-    mecaDf = pd.concat(list_resultDf)
+        # MAIN SUBFUNCTION
+        res_all = analyseTimeSeries_meca(f, current_tsDf, expDf, 
+                                        taskName = task, PLOT = PLOT, SHOW = SHOW)
+        for k in res_all.keys():
+            
+            df = res_all[k]
+            if k == 'results_main':
+                res_main = df
+            else:
+                if df.size > 0:
+                    cellID = ufun.findInfosInFileName(f, 'cellID')
+                    fileName = cellID + '_' + k + '.csv'
+                    path = os.path.join(cp.DirDataAnalysisFits, fileName)
+                    df.to_csv(path, sep=';', index=False)
+                    if cp.CloudSaving != '':
+                        cloudpath = os.path.join(cp.DirCloudAnalysisFits, fileName)
+                        df.to_csv(cloudpath, sep=';', index=False)
+                    
+        list_resultDf.append(res_main)
 
+    mecaDf = pd.concat(list_resultDf)
     return(mecaDf)
 
 
@@ -2466,29 +2673,30 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
     
-
-
-
     # 2. Get the existing table if necessary
+    imported_mecaDf = False
+    
     # 2.1
     if mode == 'fromScratch':
-        existing_mecaDf = buildDf_meca([], 'fromScratch', expDf, PLOT=False)
+        pass
+
     # 2.2
     elif mode == 'updateExisting':
         try:
+            imported_mecaDf = True
             savePath = os.path.join(cp.DirDataAnalysis, (fileName + '.csv'))
             existing_mecaDf = pd.read_csv(savePath, sep=';')
+            
         except:
             print('No existing table found')
     # 2.3
     else:
-        existing_mecaDf = buildDf_meca([], 'fromScratch', expDf, PLOT=False)
-    
-    
-    
+        pass
+        # existing_mecaDf = buildDf_meca([], 'fromScratch', expDf, PLOT=False)
     
     # 3. Select the files to analyse from the list according to the task
     list_taskMecaFiles = []
+    
     # 3.1
     if task == 'all':
         list_taskMecaFiles = list_mecaFiles
@@ -2514,38 +2722,41 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
             if currentCellID not in existing_mecaDf.cellID.values:
                 list_selectedMecaFiles.append(f)
                 
-                
-                
-        # 1.3 Exclude the ones that are not in expDf
-        listExcluded = []
-        listManips = expDf['manipID'].values
-        for i in range(len(list_selectedMecaFiles)): 
-            f = list_selectedMecaFiles[i]
-            manipID = ufun.findInfosInFileName(f, 'manipID')
-            if not manipID in listManips:
-                listExcluded.append(f)
-                
+    # Exclude the ones that are not in expDf
+    listExcluded = []
+    listManips = expDf['manipID'].values
+    for i in range(len(list_selectedMecaFiles)): 
+        f = list_selectedMecaFiles[i]
+        manipID = ufun.findInfosInFileName(f, 'manipID')
+        if not manipID in listManips:
+            listExcluded.append(f)
+            
+    for f in listExcluded:
+        list_selectedMecaFiles.remove(f)
+            
+    if len(listExcluded) > 0:
+        textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
+        print(gs.ORANGE + textExcluded)
         for f in listExcluded:
-            list_selectedMecaFiles.remove(f)
-                
-        if len(listExcluded) > 0:
-            textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
-            print(gs.ORANGE + textExcluded)
-            for f in listExcluded:
-                print(f)
-            print(gs.NORMAL)
+            print(f)
+        print(gs.NORMAL)
             
                 
                 
     # 4. Run the analysis on the files, by blocks of 10
+    listMecaDf = []
     Nfiles = len(list_selectedMecaFiles)
-    mecaDf = existing_mecaDf
+    
+    if imported_mecaDf:
+        listMecaDf.append(existing_mecaDf)
+        
     for i in range(0, Nfiles, 10):
         i_start, i_stop = i, min(i+10, Nfiles)
         bloc_selectedMecaFiles = list_selectedMecaFiles[i_start:i_stop]
         # MAIN SUBFUNCTION
         new_mecaDf = buildDf_meca(bloc_selectedMecaFiles, task, expDf, PLOT)
-        mecaDf = pd.concat([mecaDf, new_mecaDf])
+        listMecaDf.append(new_mecaDf) 
+        mecaDf = pd.concat(listMecaDf)
         if save:
             saveName = fileName + '.csv'
             savePath = os.path.join(cp.DirDataAnalysis, saveName)
@@ -2787,7 +2998,7 @@ def createDataDict_sinus(listFiles, listColumns, PLOT):
 
 
 
-# %% (5) General import functions
+# %% (3) General import functions
     
 # %%% Main functions
 
