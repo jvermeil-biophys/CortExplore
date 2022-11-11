@@ -35,7 +35,16 @@ elif COMPUTERNAME == '':
 
 # Add the folder to path
 sys.path.append(mainDir + "//Code_Python")
-import utilityFunctions_JV as jvu
+# import utilityFunctions_JV as jvu
+import UtilityFunctions as ufun
+
+mainDataDir = 'D:/Anumita/MagneticPincherData'
+experimentalDataDir = os.path.join(mainDir, "Data_Experimental_AJ")
+dataDir = os.path.join(mainDir, "Data_Analysis")
+timeSeriesDataDir = os.path.join(rawDir, "Data_TimeSeries")
+
+figDir = os.path.join(rawDir, "Figures")
+todayFigDir = os.path.join(figDir, "Historique/" + str(date.today()))
 
 #%% Global constants
 
@@ -56,13 +65,6 @@ BLUE  = '\033[36m' # blue
 
 # %% Directories adress
 
-mainDataDir = 'D:/Anumita/MagneticPincherData'
-experimentalDataDir = os.path.join(mainDir, "Data_Experimental_AJ")
-dataDir = os.path.join(mainDir, "Data_Analysis")
-timeSeriesDataDir = os.path.join(rawDir, "Data_TimeSeries")
-
-figDir = os.path.join(rawDir, "Figures")
-todayFigDir = os.path.join(figDir, "Historique/" + str(date.today()))
 
 
 #%% Utility functions specific to Opto experiments
@@ -101,7 +103,7 @@ def getCellTimeSeriesData(cellID, fromPython = True):
 
 
 def getOptoMeta(cellID):
-    date = jvu.findInfosInFileName(cellID, 'date')
+    date = ufun.findInfosInFileName(cellID, 'date')
     date = date.replace('-', '.')
     optoMetaDataPath = rawDir+'//Raw//'+date
     allOptoMetaDataFiles = [f for f in os.listdir(optoMetaDataPath) 
@@ -188,7 +190,7 @@ def ctFieldThicknessIndividual(experimentalDataDir, todayFigDir, date, save = Fa
     except:
         pass
     
-    expDf = jvu.getExperimentalConditions(experimentalDataDir, save = False, sep = ',') 
+    expDf = ufun.getExperimentalConditions(experimentalDataDir, save = False) 
     files = os.listdir(rawDir+'/Raw/'+date)
 
     if background == 'dark':
@@ -198,10 +200,10 @@ def ctFieldThicknessIndividual(experimentalDataDir, todayFigDir, date, save = Fa
 
     for f in files:
         if f.endswith('.tif'):
-            cellID = jvu.findInfosInFileName(f, 'cellID')
+            cellID = ufun.findInfosInFileName(f, 'cellID')
             timeSeriesDf = getCellTimeSeriesData(cellID)            
             optoMetaDataDf = getOptoMeta(cellID)
-            manipID = jvu.findInfosInFileName(cellID, 'manipID')
+            manipID = ufun.findInfosInFileName(cellID, 'manipID')
             print(f)
             try:
                Tact = optoMetaDataDf['T_abs'].values[0]
@@ -225,6 +227,7 @@ def ctFieldThicknessIndividual(experimentalDataDir, todayFigDir, date, save = Fa
             
             plt.savefig(todayFigDir+'/'+cellID+'_ThicknessvTime')
             plt.show()
+    plt.close('all')
 
 def ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = 'none', tag = 'all',  save = False, background = 'default'):
     bead_dia = 4.503
@@ -236,10 +239,11 @@ def ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = 'no
     
     if background == 'dark':
         plt.style.use('dark_background')
+        
     else:
         plt.style.use('default')
     
-    expDf = jvu.getExperimentalConditions(experimentalDataDir, save = False, sep = ',') 
+    expDf = ufun.getExperimentalConditions(experimentalDataDir, save = False) 
     expDf = expDf[expDf['experimentType'] == 'optoGen']
     expDf = expDf[expDf['microscope'] == 'metamorph']
     cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
@@ -273,8 +277,8 @@ def ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = 'no
     
         cellIDs = np.asarray(cellIDs)
     
-    plt.figure(figsize=(20,10))
-    plt.rcParams.update({'font.size': 22})
+    plt.figure(figsize=(15,10))
+    plt.rcParams.update({'font.size': 28})
     for cellID, i in zip(cellIDs, range(len(cellIDs))):
         timeSeriesDf = getCellTimeSeriesData(cellID)            
         optoMetaDataDf = getOptoMeta(cellID)
@@ -303,13 +307,18 @@ def ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = 'no
             plt.plot(time, timeSeriesDf['D3'].values - bead_dia, color = color, label = label, alpha = alpha)
             
         else:
-            
-            plt.plot(time, timeSeriesDf['D3'].values - bead_dia, label = label)
-            
+           plt.rcParams['axes.prop_cycle']
+           
+           for i in range(23):
+               plt.axvline(x= 5.5 + i*((30/60)), color = 'blue', ymax = 0.05, linewidth = 4)
+           plt.plot(time, timeSeriesDf['D3'].values - bead_dia, label = label)
+           
     
     plt.axvline(x = 5.0, color = 'r')
     plt.title('Thickness (um) vs Time : '+tag+' | On '+param_type)
     plt.legend(loc = 2, prop={'size': 10})
+    plt.xlim(0,18)
+    plt.ylim(0, 0.85)
     plt.show()
     plt.savefig(todayFigDir+'/All_'+tag+'_'+param_type+'_ThicknessvTime')
 
@@ -320,10 +329,10 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
         os.mkdir(todayFigDir)
     except:
         pass
-
+    
     #### No activation experiments
     if kind == 'none':
-        
+        plt.style.use('default')
         
         cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
         cellConditionsDf = cellConditionsDf[cellConditionsDf['excluded'] == 'no']
@@ -449,6 +458,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             ax1 = plt.figure()
             palette = sns.color_palette("light:b")
             sns.set_palette(palette)
+            dataSpec = summaryDf[summaryDf['activationTag'] == 'Before']
             ax1 = sns.boxplot(x = 'magField', y='medianThicknessWhole', data=summaryDf, palette = palette)
             ax1 = sns.swarmplot(x = 'magField', y='medianThicknessWhole', data=summaryDf, color ='black', size = 6)
             # ax1.set_ylim(0, 1)
@@ -456,12 +466,10 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             for patch in ax1.artists:
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
-            
-            try:
-                addStat_df(ax1, summaryDf, [('3mT', '7mT', '15mT')], param = 'medianThicknessWhole', test = 'Mann-Whitney', cond = 'magField')
-            except:
-                pass
-            
+                        
+            # print(len(dataSpec[''])
+            addStat_df(ax1, dataSpec, [('3mT', '7mT'), ('3mT', '15mT'), ('7mT', '15mT')], param = 'medianThicknessWhole', test = 'Mann-Whitney', cond = 'magField')
+         
             plt.suptitle('Median Thickness | '+str(parameter))
             plt.savefig(todayFigDir+'/medianThickness_'+kind+'_'+str(parameter)+'.png')
             plt.show()
@@ -479,8 +487,9 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
-            # addStat_df(ax1b, dataSpec, [('3mT', '7mT', '15mT')], param = 'medianThicknessToComp', test = 'Mann-Whitney', cond = 'magField')
-            
+            dataSpec_test = dataSpec.dropna()
+            addStat_df(ax1b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'medianThicknessToComp', test = 'Mann-Whitney', cond = 'magField')
+           
             
             plt.suptitle('Median Thickness_5mins | '+str(parameter))
             plt.savefig(todayFigDir+'/medianThickness5mins_'+kind+'_'+str(parameter)+'.png')
@@ -490,6 +499,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             ax2 = plt.figure()
             palette = sns.color_palette("light:b")
             sns.set_palette(palette)
+            dataSpec = summaryDf[summaryDf['activationTag'] == 'Before']
             ax2 = sns.boxplot(x = 'magField', y='fluctuationsWhole', data=summaryDf, palette = palette)
             ax2 = sns.swarmplot(x = 'magField', y='fluctuationsWhole', data=summaryDf, color ='black', size = 6)
             # ax1.set_ylim(0, 1)
@@ -498,10 +508,8 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
-            try:
-                addStat_df(ax2, summaryDf, [('3mT', '7mT', '15mT')], param = 'fluctuationsWhole', test = 'Mann-Whitney', cond = 'magField')
-            except:
-                pass
+            addStat_df(ax2, dataSpec, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsWhole', test = 'Mann-Whitney', cond = 'magField')
+
             plt.suptitle('Fluctuations | '+str(parameter))
             plt.savefig(todayFigDir+'/fluctuations_'+kind+'_'+str(parameter)+'.png')
             plt.show()
@@ -519,7 +527,10 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
-            # addStat_df(ax2b, dataSpec, [('3mT', '7mT', '15mT')], param = 'fluctuationsToComp', test = 'Mann-Whitney', cond = 'magField')
+
+            dataSpec_test = dataSpec.dropna()
+            addStat_df(ax2b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsToComp', test = 'Mann-Whitney', cond = 'magField')
+            
             plt.suptitle('Fluctuations_5mins | '+str(parameter))
             plt.savefig(todayFigDir+'/fluctuations5mins_'+kind+'_'+str(parameter)+'.png')
             plt.show()
@@ -636,7 +647,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
     
     #### Optogenetic experiments
     if kind == 'optogen':
-        expDf = jvu.getExperimentalConditions(experimentalDataDir, save = False, sep = ',')
+        expDf = ufun.getExperimentalConditions(experimentalDataDir, save = False)
         cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
         plt.style.use('default')
         listOfCells = np.asarray(cellConditionsDf['cellID'][cellConditionsDf['excluded'] == 'no'])
@@ -664,10 +675,10 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             print(cellID)
             timeSeriesDf = getCellTimeSeriesData(cellID)
             optoMetaDataDf = getOptoMeta(cellID)
-            manipID = jvu.findInfosInFileName(cellID, 'manipID')
+            manipID = ufun.findInfosInFileName(cellID, 'manipID')
     
-            # Tact = optoMetaDataDf['T_abs'].values[0]
-            Tact = 5.0
+            Tact = optoMetaDataDf['T_abs'].values[0]
+            # Tact = 5.0
         
             summaryDict['cellID'].append(cellID)
             thicknessBefore = (timeSeriesDf['D3']-bead_dia)[(timeSeriesDf['T']*1000/60 < Tact)]
@@ -701,7 +712,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             summaryDict['ratioFluctThick'].append((fluctAfter/fluctBefore)/(medianThicknessAfter/medianThicknessBefore))
             summaryDict['phenotype'].append(cellConditionsDf['phenotype'][cellConditionsDf['cellID']==cellID].values[0])
             
-            thicknessLast5min = thicknessAfter[timeSeriesDf['T']*1000/60 > 7.0]
+            thicknessLast5min = thicknessAfter[timeSeriesDf['T']*1000/60 > 10.0]
             medianThicknessLast5min = thicknessLast5min.median()
             summaryDict['medianThickness5minRange'].append(medianThicknessLast5min)
             fluctuationsLast5min = np.percentile(thicknessLast5min, 90) - np.percentile(thicknessLast5min, 10)
@@ -997,9 +1008,11 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
         text_x = [0.05, 0.38, 0.7]
         text1_y = [0.812, 0.812, 0.812]
         text2_y = [0.78, 0.78, 0.78]
+        activationType = ['global', 'at beads', 'away from beads']
         #Calculating correlation coefficient b/w fluctuation and median thickness
         for j in range(len(activationType)):
             dataSpec = summaryDf[summaryDf['activationType'] == activationType[j]]
+            print(activationType[j])
             fluctuationsSpecAfter = dataSpec['fluctuations'][dataSpec['activationTag'] == 'After'].values
             thicknessSpecAfter = dataSpec['medianThickness'][dataSpec['activationTag'] == 'After'].values
             corrCoefAfter = np.corrcoef(thicknessSpecAfter, fluctuationsSpecAfter)
@@ -1008,11 +1021,11 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             fluctuationsSpecBefore = dataSpec['fluctuations'][dataSpec['activationTag'] == 'Before'].values
             thicknessSpecBefore = dataSpec['medianThickness'][dataSpec['activationTag'] == 'Before'].values
             corrCoefBefore = np.corrcoef(thicknessSpecBefore, fluctuationsSpecBefore)
-            print(corrCoefBefore)
-            print(corrCoefAfter)
+            # # print(corrCoefBefore)
+            # print(corrCoefAfter)
             
-            # fig3.text(text_x[j], text1_y[j], str(np.round(corrCoefAfter[0][1], 3)), color = 'orange')
-            # fig3.text(text_x[j], text2_y[j], str(np.round(corrCoefBefore[0][1], 3)), color = 'blue')
+            fig3.text(text_x[j], text1_y[j], str(np.round(corrCoefAfter[0][1], 3)), color = 'orange')
+            fig3.text(text_x[j], text2_y[j], str(np.round(corrCoefBefore[0][1], 3)), color = 'blue')
         
         fig3.suptitle('Fluctuations vs. Median thickness')
         fig3.tight_layout()
@@ -1123,7 +1136,6 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
         plt.legend()
         plt.show()
     
-    
         cellConditionsDf.to_excel(todayFigDir+"/cellConditions_Ct"+kind+".xlsx")  
     plt.close('all')
     return(summaryDf)
@@ -1131,21 +1143,21 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
 
 # %% Constant field plots
 #%%% Plotting summary of thickness plots
-kind = 'optogen'
-parameter =  'phenotype' # ['all']
-summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 0, kind = kind)
+kind = 'none'
+parameter = ['all'] # 'phenotype' # # ['all']
+summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 2, kind = kind)
 
-#%%%%% Plotting summary of thickness plots if you want cell specific curves for different conditions
+ #%%%%% Plotting summary of thickness plots if you want cell specific curves for different conditions
 
 cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
 cellIDs = cellConditionsDf['cellID'][cellConditionsDf['excluded'] == 'no']
 
-# kind = 'none'
-# for i in cellIDs:
-#     date = jvu.findInfosInFileName(i,'date')
-#     cellID = jvu.findInfosInFileName(i,'cellID')[-5:]
-#     parameter =  [date, cellID] # ['none']
-#     summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 1, kind = kind)
+kind = 'none'
+for i in cellIDs:
+    date = ufun.findInfosInFileName(i,'date')
+    cellID = ufun.findInfosInFileName(i,'cellID')[-5:]
+    parameter =  [date, cellID] # ['none']
+    summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 1, kind = kind)
 
 
 # %% Close all open plots
@@ -1161,11 +1173,12 @@ ctFieldThicknessIndividual(experimentalDataDir, todayFigDir, date, save = True, 
 
 #%%% Plotting 3D trajectories of all cells
 
-tag = 'all'
+tag = 'global'
 param_type = 'none'
+background = 'dark'
 # param = 'phenotype'
 ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = param_type, \
-                    tag = tag,  save = True)
+                    tag = tag, background = background, save = True)
 
 # %%
 # plt.close('all')

@@ -1258,8 +1258,8 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                 
             #### (4.1.1) Fits on specific regions of the curve based on predefined stress-ranges
             
-            list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
-            list_stressPredictK3_fitToPlot = [[] for kk in range(len(fit_toPlot))]
+            K2_list_strainPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
+            K3_list_stressPredict_fitToPlot = [[] for kk in range(len(fit_toPlot))]
             
             # 'E' : [], 'H0' : []
             
@@ -1309,7 +1309,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                     
                     if (regionFitName in fit_toPlot) and not fitError_region:
                         kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-                        list_strainPredict_fitToPlot[kk] = strainPredict_region
+                        K2_list_strainPredict_fitToPlot[kk] = strainPredict_region
                     
                     
                     if not fitError_region:
@@ -1333,10 +1333,10 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                     
                     if (regionFitName in fit_toPlot) and not fitErrorK3_region:
                         kk = np.argmax(np.array(fit_toPlot) == regionFitName)
-                        list_stressPredictK3_fitToPlot[kk] = stressPredictK3_region
+                        K3_list_stressPredict_fitToPlot[kk] = stressPredictK3_region
                         # E_region  = np.nan
                     
-                    if not fitErrorK3_region:
+                    if not fitError_region:
                         validatedFit_region_K3 = (Chi2_K3 < CHI2CRITERION)
                         
                     else:
@@ -1603,7 +1603,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                         legendText4 = ''
                         
                         # hPredict_fit0 = bestH0 - ((3*bestH0*fCompr_fit)/(np.pi*(K_fit/1e6)*R))**0.5
-                        # strainPredict_fit = list_strainPredict_fitToPlot[k]
+                        # strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
                         # hPredict_fit = bestH0 * (1 - 3*strainPredict_fit)
                         # legendText4 += 'Range ' + fit + '\n'
                         # legendText4 += 'K = {:.2e}Pa'.format(K_fit)
@@ -1639,7 +1639,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                         fitConditions_fit = fitConditions_fitToPlot[k]
                         
                         stressCompr_fit = stressCompr[fitConditions_fit]
-                        strainPredict_fit = list_strainPredict_fitToPlot[k]
+                        strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
                         
                         color = gs.colorList30[k]
                         legendText5 = ''
@@ -1701,7 +1701,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                         fitConditions_fit = fitConditions_fitToPlot[k]
                         
                         # stressCompr_fit = stressCompr[fitConditions_fit]
-                        # strainPredict_fit = list_strainPredict_fitToPlot[k]
+                        # strainPredict_fit = K2_list_strainPredict_fitToPlot[k]
     
                         color = gs.colorList30[k]
                         
@@ -1833,7 +1833,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, listColumnsMeca, task, PLOT, PLOT_SHO
                         fit = fit_toPlot[k]
                         fitCenters_region = fitCentersPlot[k]
                         fitError_fit = fitErrorK3_fitToPlot[k]
-                        stressPredict_region = np.asarray(list_stressPredictK3_fitToPlot[k])
+                        stressPredict_region = np.asarray(K3_list_stressPredict_fitToPlot[k])
                         lowS3, highS3 = int(fitCenters_region - K3Limit),  int(fitCenters_region + K3Limit)
                         
                         fitConditions = np.where(np.logical_and(stressPredict_region >= lowS3, \

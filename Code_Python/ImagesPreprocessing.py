@@ -46,12 +46,12 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-# date = '22.08.26'
-# DirSave = os.path.join(cp.DirDataRaw, date)
-# DirExt = 'G:/20220826_100xoil_3t3optorhoa_4.5beadsStrept_Mechanics/22.08.26'
-# # prefix = 'cell'
-# # channel = 'w1TIRF DIC'
-# microscope = 'labview'
+date = '22.10.06'
+DirSave = os.path.join(cp.DirDataRaw, date)
+DirExt = 'F:/20221006_3t3optorhoa_100x_4.5StreptBeads_Mechanics/22.10.06'
+# prefix = 'cell'
+# channel = 'w1TIRF DIC'
+microscope = 'labview'
 
 #%% Define parameters # Jojo
 
@@ -521,7 +521,7 @@ cv2.destroyAllWindows()
 
 print(gs.BLUE + 'Saving all tiff stacks...' + gs.NORMAL)
 
-cropAndCopy(DirExt, DirSave, allRefPoints, allCellsToCrop, microscope)
+cropAndCopy(DirExt, DirSave, allRefPoints[1:], allCellsToCrop[1:], microscope)
 
 
 #%% Creating .tif stacks of 561n recruitment images

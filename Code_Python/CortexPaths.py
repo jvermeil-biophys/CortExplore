@@ -84,6 +84,7 @@ DirDataRawDepthoInter = os.path.join(DirDataRawDeptho, 'IntermediateSteps')
 # DirDataExp = os.path.join(DirData, "Data_Experimental")
 
 DirDataAnalysis = os.path.join(DirData, "Data_Analysis")
+DirDataAnalysisFits = os.path.join(DirDataAnalysis, "Fits")
 DirDataAnalysisUMS = os.path.join(DirDataAnalysis, "UserManualSelection")
 DirDataTimeseries = os.path.join(DirData, "Data_Timeseries")
 DirDataTimeseriesRawtraj = os.path.join(DirDataTimeseries, "Trajectories_raw")
@@ -96,13 +97,14 @@ DirDataFigToday = os.path.join(DirDataFig, "Historique", str(date.today()))
 if not CloudSaving == '':
     DirCloudExp = os.path.join(DirCloud, "Data_Experimental")
     DirCloudAnalysis = os.path.join(DirCloud, "Data_Analysis")
+    DirCloudAnalysisFits = os.path.join(DirCloudAnalysis, "Fits")
     DirCloudAnalysisUMS = os.path.join(DirCloudAnalysis, "UserManualSelection")
     DirCloudTimeseries = os.path.join(DirCloud, "Data_Timeseries")
     DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Timeseries_stress-strain")
     DirCloudFig = os.path.join(DirCloud, "Figures")
     DirCloudFigToday = os.path.join(DirCloudFig, "Historique", str(date.today()))
 else:
-    DirCloudExp, DirCloudAnalysis, DirCloudAnalysisUMS = "", "", "" 
+    DirCloudExp, DirCloudAnalysis, DirCloudAnalysisFits, DirCloudAnalysisUMS = "", "", "", ""
     DirCloudTimeseries, DirCloudTimeseriesStressStrain = "", ""
     DirCloudFig, DirCloudFigToday = "", ""
 

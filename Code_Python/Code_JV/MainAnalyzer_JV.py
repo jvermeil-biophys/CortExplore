@@ -42,7 +42,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
-# import TrackAnalyser_dev_AJ as taka
+import TrackAnalyser_dev3_AJJV as taka2
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -130,7 +130,7 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = '
 # %%%% Drugs
 
 drugTask = '22-03-30'
-taka.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
+taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
 

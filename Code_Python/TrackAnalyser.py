@@ -72,6 +72,7 @@ for i in range(5,105,5):
                     
 # %% (1) TimeSeries functions
 
+
 def getCellTimeSeriesData(cellID, fromPython = True):
     if fromPython:
         allTimeSeriesDataFiles = [f for f in os.listdir(cp.DirDataTimeseries) 
@@ -98,6 +99,7 @@ def getCellTimeSeriesData(cellID, fromPython = True):
                 if 'Unnamed' in c:
                     timeSeriesDataFrame = timeSeriesDataFrame.drop([c], axis=1)
     return(timeSeriesDataFrame)
+
 
 def plotCellTimeSeriesData(cellID, fromPython = True):
     X = 'T'
@@ -424,6 +426,7 @@ dictColumnsMeca = {'date':'',
                    'jumpD3':np.nan,
                    'minForce':np.nan, 
                    'maxForce':np.nan, 
+                   'ctFieldForce':np.nan,
                    'minStress':np.nan, 
                    'maxStress':np.nan, 
                    'minStrain':np.nan, 
@@ -758,6 +761,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 
 
+
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
     print(gs.BLUE + f + gs.NORMAL)
@@ -813,6 +817,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     # These values are computed once for the whole cell D3 time series, but since the table has 1 line per compression, 
     # that same value will be put in the table for each line corresponding to that cell
     ctFieldH = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
+    ctFieldF = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'F'].values)
     ctFieldDX = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dx'].values - DIAMETER)
     ctFieldDZ = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dz'].values)
     ctFieldThickness    = np.median(ctFieldH)
@@ -821,6 +826,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     ctFieldVarThickness = np.var(ctFieldH)
     ctFieldFluctuAmpli  = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
 
+    ctFieldForce   = np.median(ctFieldF)
     
     #### Save stress-strain [1/3] 
     # Export a file "Timeseries_stress-strain"
@@ -1010,6 +1016,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
             results['validatedThickness'][i] = validatedThickness
             results['minForce'][i] = np.min(fCompr)
             results['maxForce'][i] = np.max(fCompr)
+            results['ctFieldForce'][i] = ctFieldForce
 
             
     
@@ -1683,6 +1690,8 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     for k in results.keys():
         results[k] = np.array(results[k])
     result_df = pd.DataFrame(results)
+
+    
     return(result_df)
 
 
@@ -2118,7 +2127,7 @@ def createDataDict_sinus(listFiles, listColumns, PLOT):
 
 
 
-# %% (5) General import functions
+# %% (3) General import functions
     
 # %%% Main functions
 

@@ -50,7 +50,7 @@ from BeadTracker import XYZtracking
 
 # 4. Import of the experimental conditions
 
-expDf = ufun.getExperimentalConditions(DirExp = cp.DirRepoExp, save = True, sep = ',', suffix = cp.suffix)
+expDf = ufun.getExperimentalConditions(DirExp = cp.DirRepoExp, save = True, suffix = cp.suffix)
 
 # %% Setting of the directories
 
@@ -293,11 +293,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : Global activation
 
 dates = '22.03.01'
-manips, wells, cells = 1, 2, 'all'
+manips, wells, cells = 1, 1, 6
 depthoNames = '22.03.01_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -413,11 +413,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : Global activation, 60s frequency
 
 dates = '22.05.09'
-manips, wells, cells = 3, 1, 'all'
-depthoNames = '22.05.09_P1_M450_step20_100X'
+manips, wells, cells = 3, 2, 5
+depthoNames = '22.05.09_P2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -425,11 +425,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M4 : Global activation, 60s frequency
 
 dates = '22.05.09'
-manips, wells, cells = 4, 2, 'all'
+manips, wells, cells = 4, 2, 2
 depthoNames = '22.05.09_P2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -449,11 +449,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M6 : Global activation, 60s frequency
 
 dates = '22.05.09'
-manips, wells, cells = 6, 2, 'all'
-depthoNames = '22.05.09_P2_M450_step20_100X'
+manips, wells, cells = 6, 1, 4
+depthoNames = '22.05.09_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 # %% 09/06/2022 :
@@ -545,7 +545,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M2 : Global activation, 60s frequency
 
 dates = '22.06.21'
-manips, wells, cells = 2, 1, 'all'
+manips, wells, cells = 2, 2, 'all'
 depthoNames = '22.06.21_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -556,8 +556,8 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : Global activation, 60s frequency
 
 dates = '22.06.21'
-manips, wells, cells = 3, 3, 'all'
-depthoNames = '22.06.09_P3_M450_step20_100X'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '22.06.21_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, MatlabStyle = True, trackAll = False, 
@@ -684,7 +684,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M6 : Half activation, At beads, 500ms once
 
 dates = '22.03.31'
-manips, wells, cells = 6, 2, 3
+manips, wells, cells = 6, 2, 'all'
 depthoNames = '22.03.31_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -708,11 +708,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M8 : Global activation, 500ms once
 
 dates = '22.03.31'
-manips, wells, cells = 8, 2, 3
+manips, wells, cells = 8, 2, 2
 depthoNames = '22.03.31_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -897,6 +897,102 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 dates = '22.08.26'
 manips, wells, cells = 10, 1, 2
 depthoNames = '22.08.26_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %% 05/10/22 : Experiment in PMMH Mechanics - aSFL 3T3 to check if they are stress-softening
+
+# %%%% M1 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.05'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '22.10.05_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.05'
+manips, wells, cells = 2, 2, 'all'
+depthoNames = '22.10.05_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %% 06/10/22 : Experiment in PMMH Mechanics - aSFL 3T3 to check if they are stress-softening
+
+# %%%% M1 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 1, 2, 'all'
+depthoNames = '22.10.06_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 2, 3, 'all'
+depthoNames = '22.10.06_P3_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '22.10.06_P3_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 4, 3, 'all'
+depthoNames = '22.10.06_P3_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 5, 3, 'all'
+depthoNames = '22.10.06_P3_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : At beads activation, level 3 fluo intensity, filter 6, initial 500ms 
+# with 50ms activation at the end of every loop
+
+dates = '22.10.06'
+manips, wells, cells = 6, 3, 'all'
+depthoNames = '22.10.06_P3_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, MatlabStyle = True, trackAll = False, 
