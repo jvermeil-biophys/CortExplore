@@ -662,7 +662,9 @@ renameDict_MCA3 = {'SurroundingThickness':'Thickness (nm) [b&a]',
                }
 
 
-styleDict_MCA3 = {'aSFL-A11':{'color':gs.colorList40[10],
+styleDict_MCA3 = { '3T3':{'color':gs.colorList40[20],
+                               'marker':'o'},
+                  'aSFL-A11':{'color':gs.colorList40[10],
                               'marker':'o'},
                   'aSFL-F8':{'color':gs.colorList40[11],
                              'marker':'o'},   
@@ -1680,9 +1682,8 @@ def D2Plot_wFit(data, fig = None, ax = None,
             for co in delCo:
                 co_order.remove(co)
                 
-        print(co_order)
         try:
-            colorList, markerList = getStyleLists(co_order, styleDict1)
+            colorList, markerList = getStyleLists(co_order, styleDict_MCA3)
         except:
             colorList, markerList = gs.colorList30, gs.markerList10
     else:
@@ -9273,4 +9274,52 @@ fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype','drug'], Para
                           returnData = 1, returnCount = 1)
 
 # %%%% Next
+
+# %%% Fig for TAC
+
+# %%%% E(h)
+
+data = GlobalTable_meca_MCA123
+dates_r1 = ['21-01-18', '21-01-21'] #, '22-07-15', '22-07-20']
+# dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+# dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 # + dates_r2 + dates_r3
+cellsSub = ['ctrl', 'aSFL-A11'] # ,'aSFL-F8','aSFL-E4']
+drugs = ['none']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+            (data['surroundingThickness'] >= 80),
+           (data['cell type'] == '3T3'), 
+           (data['drug'].apply(lambda x : x in drugs)), 
+           (data['cell subtype'].apply(lambda x : x in cellsSub)), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+# fltr = Filters[0]
+# for i in range(1, len(Filters)):
+#     fltr = fltr & Filters[i]
+# print(np.median(data[fltr]['maxForce']))
+# print(np.std(data[fltr]['ctFieldForce']))
+
+# co_order = makeOrder(['aSFL-A11','aSFL-F8','aSFL-E4'],['none','doxycyclin'])
+# box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin'],
+#            ['aSFL-F8 & none','aSFL-F8 & doxycyclin'],
+#            ['aSFL-E4 & none','aSFL-E4 & doxycyclin'],
+#            ['aSFL-A11 & none','aSFL-F8 & none'],
+#            ['aSFL-A11 & none','aSFL-E4 & none']]
+
+# fig, ax = D2Plot(data, CondCols=['cell subtype','drug'], Parameters=['minForce'],Filters=Filters,
+#                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                 box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'v', stressBoxPlot= False, 
+#                 returnData = 1, returnCount = 1)
+
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness', YCol='EChadwick', CondCol=['cell type'], Filters=Filters, 
+           cellID='cellID', AvgPerCell=True, co_order=['3T3'], modelFit=True, modelType='y=k*x^a', writeEqn = True,
+           xscale = 'log', yscale = 'log', 
+           figSizeFactor = 1, markersizeFactor = 1.4)
+ax.set_xlim([95, 1800])
+renameAxes(ax,renameDict_MCA3)
+
 
