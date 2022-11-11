@@ -106,6 +106,56 @@ axes[0].set_xticklabels([str(x*4.5) for x in xtVal])
 fig.show()
 
 # %%
+
+import seaborn as sns
+sns.set_theme(style="ticks", palette="pastel")
+
+fig, ax = plt.subplots(1,1)
+
+# Load the example tips dataset
+tips = sns.load_dataset("tips")
+
+# Draw a nested boxplot to show bills by day and time
+sns.boxplot(x="day", y="total_bill", ax = ax,
+            hue="smoker", 
+            palette=["m", "g"],
+            data=tips)
+sns.despine(ax = ax, offset=10, trim=True)
+
+plt.show()
+
+# %%
+
+import  pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+fig, ax = plt.subplots(1,1)
+ax.errorbar([1], [2], [[1.5],[5]], marker = 'o')
+plt.show()
+
+# %%
+
+import  pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+dicta={'val' : [1,2,3,4,2.5,3.5], 'cat' : ['A','B','A','A','B','B'], 'sub' : ['q','q','w','w','w','q']}
+df = pd.DataFrame(dicta)
+
+S = ['q','q','w','w','w','q']
+
+fig, ax = plt.subplots(1,1)
+
+# sns.stripplot(ax = ax, data = df, x = 'cat', y = 'val')
+Y = np.array([[2,3],[4,5]])
+sns.stripplot(ax = ax, x = np.array([1,2]), y = Y)
+
+plt.show()
+
+# %%
 import  pandas as pd
 import numpy as np
 

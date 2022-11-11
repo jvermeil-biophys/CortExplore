@@ -1,8 +1,26 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr  6 21:27:55 2022
+@author: Joseph Vermeil
 
-@author: JosephVermeil
+MainPlotter_##.py - Script to plot graphs.
+Please replace the "_NewUser" in the name of the file by "_##", 
+a suffix corresponding to the user's name (ex: JV for Joseph Vermeil) 
+Joseph Vermeil, 2022
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 
 #!/usr/bin/env python
@@ -27,6 +45,7 @@ import random
 import warnings
 import itertools
 import matplotlib
+import numbers
 
 from copy import copy
 from cycler import cycler
@@ -45,10 +64,6 @@ import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
 
-#### Potentially useful lines of code
-# get_ipython().run_line_magic('load_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
-# cp.DirDataFigToday
 
 #### Pandas
 pd.set_option('display.max_columns', None)
@@ -529,12 +544,12 @@ renameDict1 = {'SurroundingThickness':'Thickness (nm) [b&a]',
                'doxycyclin':'expressing iMC linker',               
                }
 
-styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},               
-               'doxycyclin & BSA coated glass':{'color':'#d62728','marker':'^'},               
-               'none & 20um fibronectin discs':{'color':'#aec7e8','marker':'o'},               
-               'doxycyclin & 20um fibronectin discs':{'color':'#1f77b4','marker':'o'},               
-               'none':{'color':'#aec7e8','marker':'o'},               
-               'doxycyclin':{'color':'#1f77b4','marker':'o'},               
+styleDict1 =  {'aSFL-A11 & none':{'color':gs.colorList40[20],'marker':'o'},              
+                'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
+                'aSFL-F8 & none':{'color':gs.colorList40[21],'marker':'o'},              
+                'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
+                'aSFL-E4 & none':{'color':gs.colorList40[22],'marker':'o'},              
+                'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},             
                }
 
 
@@ -659,223 +674,6 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
     return(fig, ax)
 
 
-
-def D1PlotDetailed(data, CondCol=[], Parameters=[], Filters=[], Boxplot=True, cellID='cellID', 
-                   co_order=[], stats=True, statMethod='Mann-Whitney', box_pairs=[],
-                   figSizeFactor = 1, markersizeFactor=1, orientation = 'h', showManips = True):
-    
-    data_f = data
-    for fltr in Filters:
-        data_f = data_f.loc[fltr]    
-    NCond = len(CondCol)
-    
-    print(min(data_f['EChadwick'].values))
-    
-    if NCond == 1:
-        CondCol = CondCol[0]
-        
-    elif NCond > 1:
-        newColName = ''
-        for i in range(NCond):
-            newColName += CondCol[i]
-            newColName += ' & '
-        newColName = newColName[:-3]
-        data_f[newColName] = ''
-        for i in range(NCond):
-            data_f[newColName] += data_f[CondCol[i]].astype(str)
-            data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
-        data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
-        
-    data_f_agg = getAggDf(data_f, cellID, CondCol, Parameters)
-    
-    NPlots = len(Parameters)
-    Conditions = list(data_f[CondCol].unique())
-        
-    if orientation == 'h':
-        fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
-    elif orientation == 'v':
-        fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
-    
-    markersize = 5*markersizeFactor
-    
-    if NPlots == 1:
-        ax = np.array([ax])
-    
-    # Colors and markers
-    if len(co_order) > 0:
-        Conditions = co_order
-        gs.colorList, mL = getStyleLists(co_order, styleDict1)
-    else:
-        co_order = Conditions
-        gs.colorList = gs.colorList10
-    markerList = gs.markerList10
-        
-        
-    for k in range(NPlots):
-        
-        Parm = Parameters[k]
-        if 'EChadwick' in Parm or 'KChadwick' in Parm:
-            ax[k].set_yscale('log')
-
-        for i in range(len(Conditions)):
-            c = Conditions[i]
-            sub_data_f_agg = data_f_agg.loc[data_f_agg[CondCol] == c]
-            Ncells = sub_data_f_agg.shape[0]
-            
-            color = gs.colorList[i]
-            
-            if showManips:
-                allManipID = list(sub_data_f_agg['manipID'].unique())
-                alreadyLabeledManip = []
-                dictMarker = {}
-                for mi in range(len(allManipID)):
-                    dictMarker[allManipID[mi]] = markerList[mi]
-
-                
-            midPos = i
-            startPos = i-0.4
-            stopPos = i+0.4
-            
-            values = sub_data_f_agg[Parm + '_mean'].values
-            errors = sub_data_f_agg[Parm + '_std'].values
-            
-            if Boxplot:
-                ax[k].boxplot(values, positions=[midPos], widths=0.4, patch_artist=True,
-                            showmeans=False, showfliers=False,
-                            medianprops={"color": 'k', "linewidth": 1.5, 'alpha' : 0.5},
-                            boxprops={"facecolor": color, "edgecolor": 'k',
-                                      "linewidth": 1, 'alpha' : 0.5},
-    #                         boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 1.5, 'alpha' : 0.5},
-                            capprops={"color": 'k', "linewidth": 1.5, 'alpha' : 0.5},
-                             zorder = 1)
-                
-
-            step = 0.8/(Ncells-1)
-            
-            for m in range(Ncells):
-                
-                thisCellID = sub_data_f_agg.index.values[m]
-                thisCell_data = data_f.loc[data_f[cellID] == thisCellID]
-                thisCell_allValues = thisCell_data[Parm].values
-                nval = len(thisCell_allValues)
-                
-                if showManips:
-                    thisManipID = sub_data_f_agg['manipID'].values[m]
-                    marker = dictMarker[thisManipID]
-                else:
-                    marker = 'o'
-                
-                cellpos = startPos + m*step
-                ax[k].errorbar([cellpos], [values[m]], color = color, marker = marker, markeredgecolor = 'k', 
-                               yerr=errors[m], capsize = 2, ecolor = 'k', elinewidth=0.8, barsabove = False)
-                
-                if showManips and thisManipID not in alreadyLabeledManip:
-                    alreadyLabeledManip.append(thisManipID)
-                    textLabel = thisManipID
-                    ax[k].plot([cellpos], [values[m]], 
-                               color = color, 
-                               marker = marker, markeredgecolor = 'k', markersize = markersize,
-                               label = textLabel)
-                    
-                ax[k].plot(cellpos*np.ones(nval), thisCell_allValues, 
-                           color = color, marker = '_', ls = '', markersize = markersize)
-
-        ax[k].set_xlabel('')
-        ax[k].set_xticklabels(labels = Conditions)
-        ax[k].tick_params(axis='x', labelrotation = 10)
-        
-        ax[k].set_ylabel(Parameters[k])
-        ax[k].yaxis.grid(True)
-        
-        ax[k].legend(fontsize = 6)
-        
-        if stats:
-            renameDict = {Parameters[k] + '_mean' : Parameters[k]}
-            if len(box_pairs) == 0:
-                box_pairs = makeBoxPairs(co_order)
-            addStat_df(ax[k], data_f_agg.rename(columns = renameDict), 
-                    box_pairs, Parameters[k], CondCol, test = statMethod)
-        
-    plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
-    return(fig, ax)
-
-
-
-
-def D1PlotPaired(data, Parameters=[], Filters=[], Boxplot=True, cellID='cellID', 
-                   co_order=[], stats=True, statMethod='Wilcox_greater', box_pairs=[],
-                   figSizeFactor = 1, markersizeFactor=1, orientation = 'h', labels = []):
-    
-    data_f = data
-    for fltr in Filters:
-        data_f = data_f.loc[fltr]
-    
-    if orientation == 'h':
-        fig, ax = plt.subplots(1, 1, figsize = (5*figSizeFactor, 5))
-    elif orientation == 'v':
-        fig, ax = plt.subplots(1, 1, figsize = (5*figSizeFactor, 5))
-        
-    markersize = 5*markersizeFactor
-        
-    if 'EChadwick' in Parameters[0]:
-        ax.set_yscale('log')
-    
-    pos = 1
-    start = pos - 0.4
-    stop = pos + 0.4
-    NParms = len(Parameters)
-    width = (stop-start)/NParms
-    
-    if len(labels) == len(Parameters):
-        tickLabels = labels
-    else:
-        tickLabels = Parameters
-    
-    posParms = [start + 0.5*width + i*width for i in range(NParms)]
-    parmsValues = np.array([data_f[P].values for P in Parameters])
-#     for P in Parameters:
-#         print(len(data_f[P].values))
-#         print(data_f[P].values)
-#     print(parmsValues)
-    NValues = parmsValues.shape[1]
-    print('Number of values : {:.0f}'.format(NValues))
-    
-    for i in range(NParms):
-        color = gs.my_default_color_list[i]
-        
-        ax.plot([posParms[i] for k in range(NValues)], parmsValues[i,:], 
-                color = color, marker = 'o', markeredgecolor = 'k', markersize = markersize,
-                ls = '', zorder = 3)
-        
-        if Boxplot:
-            ax.boxplot([parmsValues[i]], positions=[posParms[i]], widths=width*0.8, patch_artist=True,
-                        showmeans=False, showfliers=False,
-                        medianprops={"color": 'k', "linewidth": 2, 'alpha' : 0.75},
-                        boxprops={"facecolor": color, "edgecolor": 'k',
-                                  "linewidth": 1, 'alpha' : 0.5},
-#                         boxprops={"color": color, "linewidth": 0.5},
-                        whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.5},
-                        capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.5},
-                         zorder = 1)
-    
-    for k in range(NValues):
-        ax.plot(posParms, parmsValues[:,k], 'k', ls = '-', linewidth = 0.5, marker = '', zorder = 2)
-        
-    if stats:
-        X = np.array(posParms)
-        Y = parmsValues
-        box_pairs = makeBoxPairs([i for i in range(NParms)])
-        addStat_arrays(ax, X, Y, box_pairs, test = statMethod, percentHeight = 99)
-        
-    ax.set_xlabel('')
-    ax.set_xlim([pos-0.5, pos+0.5])
-    ax.set_xticks(posParms)
-    ax.set_xticklabels(labels = tickLabels, fontsize = 10)
-    ax.tick_params(axis='x', labelrotation = 10)
-        
-    return(fig, ax)
 
 
 
@@ -1142,180 +940,55 @@ def D2Plot_wFit(data, fig = None, ax = None,
     return(fig, ax)
 
 
-# These functions use the Bokeh library to display 1D categorical or 2D plots with interactive plots. They are less flexible but can be nice to explore the data set since you can display the cellID which is the source of each point by passing your pointer over it.
-
-
-
-def D1PlotInteractive(data, CondCol='',Parameters=[],Filters=[],AvgPerCell=False,cellID='cellID'):
-    data_filtered = data
-    for fltr in Filters:
-        data_filtered = data_filtered.loc[fltr]
-        
-#     print(data_filtered[cellID])
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
-        data_filtered.reset_index(level=0, inplace=True)
-    
-#     return(data_filtered)
-    
-    NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())
-    if NPlots > 1:
-        plots = []
-        NCond = len(Conditions)
-        data_filtered['X'] = 0
-        data_filtered['X_jitter'] = 0.
-        dictTicks = {}
-        for i in range(NCond):
-            mask = data_filtered[CondCol] == Conditions[i]
-            data_filtered.loc[mask, 'X'] = i+1
-            dictTicks[i+1] = Conditions[i]
-        for i in data_filtered.index:
-            data_filtered.loc[i, 'X_jitter'] = data_filtered.loc[i, 'X'] + 0.4*(np.random.rand(1)[0]-0.5)
-        source = ColumnDataSource(
-            data=data_filtered[[cellID]+[CondCol]+Parameters+['X','X_jitter']]
-        )        
-        
-        for k in range(NPlots):
-            hover = HoverTool(
-                tooltips=[
-                    ('Cell ID', "@"+cellID),
-                    (Parameters[k], "@"+Parameters[k]),
-                ]
-            )
-            index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-            p = figure(plot_width=450, plot_height=500, tools=[hover], title="InteractivePlot") # 
-            p.circle('X_jitter', Parameters[k], size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-            # Format
-            p.x_range = Range1d(0, NCond+1)
-            p.y_range = Range1d(min(0,1.1*np.min(data_filtered[Parameters[0]])), 1.1*np.max(data_filtered[Parameters[k]]))
-            p.xaxis.ticker = [i for i in range(1,NCond+1)]
-            p.xaxis.major_label_overrides = dictTicks
-            p.xaxis.axis_label = CondCol
-            p.xaxis.axis_label_text_font_size = '18pt'
-            p.xaxis.major_label_text_font_size = '16pt'
-            p.yaxis.axis_label = Parameters[k]
-            p.yaxis.axis_label_text_font_size = '18pt'
-            p.yaxis.major_label_text_font_size = '16pt'
-            
-            plots.append(p)
-            
-        p = gridplot(plots, ncols=2, toolbar_location=None)
-        
-        
-    else:
-        hover = HoverTool(
-            tooltips=[
-                ('Cell ID', "@"+cellID),
-                (Parameters[0], "@"+Parameters[0]),
-            ]
-        )
-        
-        NCond = len(Conditions)
-        data_filtered['X'] = 0
-        data_filtered['X_jitter'] = 0.
-        dictTicks = {}
-        for i in range(NCond):
-            mask = data_filtered[CondCol] == Conditions[i]
-            data_filtered.loc[mask, 'X'] = i+1
-            dictTicks[i+1] = Conditions[i]
-        for i in data_filtered.index:
-            data_filtered.loc[i, 'X_jitter'] = data_filtered.loc[i, 'X'] + 0.4*(np.random.rand(1)[0]-0.5)
-        source = ColumnDataSource(
-            data=data_filtered[[cellID]+[CondCol]+Parameters+['X','X_jitter']]
-        )
-        index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-        TOOLS = "hover,pan,box_zoom,wheel_zoom,reset,save,help"
-        p = figure(plot_width=500, plot_height=500, tools=TOOLS, title="InteractivePlot") # 
-        p.circle('X_jitter', Parameters[0], size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-        # Format
-        p.x_range = Range1d(0, NCond+1)
-        p.y_range = Range1d(min(0,1.1*np.min(data_filtered[Parameters[0]])), 1.1*np.max(data_filtered[Parameters[0]]))
-        p.xaxis.ticker = [i for i in range(1,NCond+1)]
-        p.xaxis.major_label_overrides = dictTicks
-        p.xaxis.axis_label = CondCol
-        p.xaxis.axis_label_text_font_size = '18pt'
-        p.xaxis.major_label_text_font_size = '16pt'
-        p.yaxis.axis_label = Parameters[0]
-        p.yaxis.axis_label_text_font_size = '18pt'
-        p.yaxis.major_label_text_font_size = '16pt'
-    return(p)
-
-
-
-def D2PlotInteractive(data, XCol='',YCol='',CondCol='',Filters=[], cellID='cellID',AvgPerCell=False):
-    
-    data_filtered = data
-    for fltr in Filters:
-        data_filtered = data_filtered.loc[fltr]
-        
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
-        data_filtered.reset_index(level=0, inplace=True)
-    
-    Conditions = list(data_filtered[CondCol].unique())
-
-    NCond = len(Conditions)
-    dictTicks = {}
-    for i in range(NCond):
-        dictTicks[i+1] = Conditions[i]
-    
-    source = ColumnDataSource(
-        data=data_filtered[[cellID,CondCol,XCol,YCol]]
-    )
-    
-    hover = HoverTool(
-        tooltips=[
-            ('Cell ID', "@"+cellID),
-            (XCol, "@"+XCol),
-            (YCol, "@"+YCol),
-            (CondCol, "@"+CondCol),
-        ]
-    )
-    
-    index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-    TOOLS = "pan,box_zoom,wheel_zoom,reset,save,help"
-    p = figure(plot_width=900, plot_height=500, tools=TOOLS, title="InteractivePlot",toolbar_location="below") # 
-    p.circle(XCol, YCol, size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-    p.add_tools(hover)
-    # Format
-    p.x_range = Range1d(0, 1.1*np.max(data_filtered[XCol]))
-    p.y_range = Range1d(0, 1.1*np.max(data_filtered[YCol]))
-    p.xaxis.axis_label = XCol
-    p.xaxis.axis_label_text_font_size = '18pt'
-    p.xaxis.major_label_text_font_size = '16pt'
-    p.yaxis.axis_label = YCol
-    p.yaxis.axis_label_text_font_size = '18pt'
-    p.yaxis.major_label_text_font_size = '16pt'
-    return(p)
-
 
 # %%% Subfunctions
 
 
-
+    
 def getDictAggMean(df):
     dictAggMean = {}
     for c in df.columns:
-    #         t = df[c].dtype
-    #         print(c, t)
-            try :
-                if np.array_equal(df[c], df[c].astype(bool)):
-                    dictAggMean[c] = 'min'
+        # print(c)
+        S = df[c].dropna()
+        lenNotNan = S.size
+        if lenNotNan == 0:
+            dictAggMean[c] = 'first'
+        else:
+            S.infer_objects()
+            if S.dtype == bool:
+                dictAggMean[c] = np.nanmin
+            else:
+                # print(c)
+                # print(pd.Series.all(S.apply(lambda x : isinstance(x, numbers.Number))))
+                if pd.Series.all(S.apply(lambda x : isinstance(x, numbers.Number))):
+                    dictAggMean[c] = np.nanmean
                 else:
-                    try:
-                        if not c.isnull().all():
-                            np.mean(df[c])
-                            dictAggMean[c] = 'mean'
-                    except:
-                        dictAggMean[c] = 'first'
-            except:
                     dictAggMean[c] = 'first'
+                    
+    if 'compNum' in dictAggMean.keys():
+        dictAggMean['compNum'] = np.nanmax
+                    
     return(dictAggMean)
+
+
+
+# def getDictAggMean_V1(df):
+#     dictAggMean = {}
+#     for c in df.columns:
+#     #         t = df[c].dtype
+#     #         print(c, t)
+#             try:
+#                 if np.array_equal(df[c], df[c].astype(bool)):
+#                     dictAggMean[c] = 'min'
+#                 else:
+#                     try:
+#                         if not c.isnull().all():
+#                             dictAggMean[c] = 'nanmean'
+#                     except:
+#                         dictAggMean[c] = 'first'
+#             except:
+#                     dictAggMean[c] = 'first'
+#     return(dictAggMean)
 
 
 def getAggDf(df, cellID, CondCol, Variables):
@@ -1519,7 +1192,7 @@ def renameAxes(axes, rD):
         axes[i].set_ylabel(newYlabel)
         
 
-def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentHeight = 95):
+def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentHeight = 98):
     refHeight = np.percentile(data[param].values, percentHeight)
     currentHeight = refHeight
     scale = ax.get_yscale()
@@ -1547,15 +1220,15 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
             text = '***'
         elif pval < 0.0001:
             text = '****'
-        ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1)
+        ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1.5, zorder = 4)
         XposText = (dictXTicks[bp[0]]+dictXTicks[bp[1]])/2
         if scale == 'log':
             power = 0.01* (text=='ns') + 0.000 * (text!='ns')
             YposText = currentHeight*(refHeight**power)
         else:
-            factor = 0.03 * (text=='ns') + 0.000 * (text!='ns')
+            factor = 0.02 * (text=='ns') + 0.000 * (text!='ns')
             YposText = currentHeight + factor*refHeight
-        ax.text(XposText, YposText, text, ha = 'center', color = 'k')
+        ax.text(XposText, YposText, text, ha = 'center', color = 'k', size = 11, zorder = 4)
 #         if text=='ns':
 #             ax.text(posText, currentHeight + 0.025*refHeight, text, ha = 'center')
 #         else:
@@ -1563,8 +1236,8 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
         if scale == 'log':
             currentHeight = currentHeight*(refHeight**0.05)
         else:
-            currentHeight =  currentHeight + 0.15*refHeight
-    ax.set_ylim([ax.get_ylim()[0], currentHeight])
+            currentHeight =  currentHeight + 0.1*refHeight
+    # ax.set_ylim([ax.get_ylim()[0], currentHeight])
     
 
 def addStat_arrays(ax, X, Y, box_pairs, test = 'Mann-Whitney', percentHeight = 98):
@@ -1684,6 +1357,12 @@ def getStyleLists(co_order, styleDict):
             markers.append('')
     print(colors, markers)
     return(colors, markers)
+
+
+def buildStyleDictMCA():
+    # TBC
+    styleDict = {}
+    return(styleDict)
 
 
 
