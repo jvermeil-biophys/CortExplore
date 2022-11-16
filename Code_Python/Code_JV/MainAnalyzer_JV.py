@@ -130,8 +130,8 @@ taka.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = '
 # %%%% Drugs
 
 drugTask = '22-03-30'
-taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
-                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
+taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
+                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 
 # %%%% Non-Lin
