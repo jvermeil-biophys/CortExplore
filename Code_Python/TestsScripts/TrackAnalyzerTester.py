@@ -31,6 +31,7 @@ from cycler import cycler
 from datetime import date
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
+from skimage import io, filters, exposure, measure, transform, util, color
 
 #### Local Imports
 
@@ -65,6 +66,47 @@ plt.ioff()
 
 #### Graphic options
 gs.set_default_options_jv()
+
+# %% Plot
+
+cellID = '21-01-18_M2_P1_C5'
+date = ufun.findInfosInFileName(cellID, 'date')
+date_split = date.split('-')
+date = date_split[0] + '.' + date_split[1] + '.' + date_split[2]
+
+[traj1, traj2] = taka.getCellTrajData(cellID, Ntraj = 2)
+pathRawDir = os.path.join(cp.DirDataRaw, date)
+allFiles = os.listdir(pathRawDir)
+fileName = ''
+for f in allFiles:
+    if f.startswith(cellID) and f.endswith('.tif'):
+        fileName = f
+        break
+    
+pathRawImage = allFiles = os.path.join(pathRawDir, fileName)
+I = io.imread(pathRawImage)
+I_last = I[-2,:,:]
+vmin, vmax = np.percentile(I_last, 1), np.percentile(I_last, 99)
+
+
+fig, ax = plt.subplots(1,1, figsize = (5,5))
+ax.imshow(I_last, cmap='gray', vmin=vmin, vmax=vmax)
+
+ax.plot(traj1['df']['X'].values[0], traj1['df']['Y'].values[0], 
+        c='red', ls='', marker = 'P', markersize = 8, mec='k')
+ax.plot(traj1['df']['X'].values[-1], traj1['df']['Y'].values[-1], 
+        c='red', ls='', marker = 'o', markersize = 8, mec='k')
+
+ax.plot(traj1['df']['X'], traj1['df']['Y'], c='red', ls='-', lw=0.8)
+
+ax.plot(traj2['df']['X'].values[0], traj2['df']['Y'].values[0], 
+        c='orange', ls='', marker = 'P', markersize = 8, mec='k')
+ax.plot(traj2['df']['X'].values[-1], traj2['df']['Y'].values[-1], 
+        c='orange', ls='', marker = 'o', markersize = 8, mec='k')
+
+ax.plot(traj2['df']['X'], traj2['df']['Y'], c='orange', ls='-', lw=0.8)
+
+plt.show()
 
 
 # %% Simple
