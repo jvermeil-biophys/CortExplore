@@ -2172,12 +2172,16 @@ def getAnalysisTable(fileName):
     except:
         print(gs.ORANGE + 'Could not infer Manip Ids' + gs.NORMAL)
         
+
+                
+        
     return(df)
 
 
 
 def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
-                   mergeExpDf = True, mergeFluo = False, mergeUMS = False):
+                   mergeExpDf = True, mergeFluo = False, mergeUMS = False, 
+                   findSubstrates = True):
     
     df = getAnalysisTable(fileName)
     
@@ -2208,7 +2212,7 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
                     listFiles_UMS_matching.append(f)
             
         listPaths_UMS_matching = [os.path.join(cp.DirDataAnalysisUMS, f) for f in listFiles_UMS_matching]
-        listDF_UMS_matching = [pd.read_csv(p, sep = '\t') for p in listPaths_UMS_matching]
+        listDF_UMS_matching = [pd.read_csv(p, sep=None, engine='python') for p in listPaths_UMS_matching]
         
         umsDf = pd.concat(listDF_UMS_matching)
         # f_filterCol = lambda x : x not in ['date', 'cellName', 'manipID']
@@ -2219,9 +2223,7 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         #     copy=True,indicator=False,validate=None,[umsCols]
         )
         
-    df = ufun.removeColumnsDuplicate(df)
-    
-    
+    df = ufun.removeColumnsDuplicate(df)    
     
     if mergeExpDf:
         expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
@@ -2229,6 +2231,27 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,
         )
+        
+    df = ufun.removeColumnsDuplicate(df)
+        
+    if findSubstrates and 'substrate' in df.columns:
+        vals_substrate = df['substrate'].values
+        if 'diverse fibronectin discs' in vals_substrate:
+            try:
+                cellIDs = df[df['substrate'] == 'diverse fibronectin discs']['cellID'].values
+                listFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
+                              if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv"))]
+                for Id in cellIDs:
+                    for f in listFiles:
+                        if Id == ufun.findInfosInFileName(f, 'cellID'):
+                            thisCellSubstrate = ufun.findInfosInFileName(f, 'substrate')
+                            thisCellSubstrate = dictSubstrates[thisCellSubstrate]
+                            if not thisCellSubstrate == '':
+                                df.loc[df['cellID'] == Id, 'substrate'] = thisCellSubstrate
+                print(gs.GREEN  + 'Automatic determination of substrate type SUCCEDED !' + gs.NORMAL)
+                
+            except:
+                print(gs.RED  + 'Automatic determination of substrate type FAILED !' + gs.NORMAL)
         
     df = ufun.removeColumnsDuplicate(df)
     
