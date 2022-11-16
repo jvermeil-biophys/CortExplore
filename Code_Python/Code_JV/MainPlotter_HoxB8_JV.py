@@ -469,8 +469,8 @@ GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', m
 
 Styles = {''} # Project of automatic formatting according to the type of data
 
-renameDict1 = {'SurroundingThickness':'Thickness (nm) [b&a]',
-               'surroundingThickness':'Thickness (nm) [b&a]',
+renameDict1 = {'SurroundingThickness':'Thickness at low force (nm)',
+               'surroundingThickness':'Thickness at low force (nm)',
                'ctFieldThickness':'Thickness at low force (nm)',
                'bestH0':'Thickness from fit (nm)',
                'EChadwick': 'E Chadwick (Pa)',
@@ -501,8 +501,14 @@ renameDict1 = {'SurroundingThickness':'Thickness (nm) [b&a]',
                'smifh2' : 'SMIFH2, no linker', 
                'dmso, doxycyclin' : 'DMSO, iMC linker', 
                'smifh2, doxycyclin' : 'SMIFH2, iMC linker',
+               # HoxB8
                'ctrl':'Control',
-               'tko':'TKO'}
+               'tko':'TKO',
+               'bare glass & ctrl':'Control on bare glass',
+               'bare glass & tko':'TKO on bare glass',
+               '20um fibronectin discs & ctrl':'Control on fibronectin',
+               '20um fibronectin discs & tko':'TKO on fibronectin',
+               }
 
 styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},               
                'doxycyclin & BSA coated glass':{'color':'#d62728','marker':'^'},               
@@ -535,77 +541,21 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
                'DictyDB_M450':{'color': 'maroon','marker':'o'},
                'M270':{'color':'lightskyblue','marker':'o'}, 
                'M450':{'color': 'maroon','marker':'o'},
+               
                # HoxB8
                'ctrl':{'color': gs.colorList40[10],'marker':'^'},
                'tko':{'color': gs.colorList40[30],'marker':'^'},
                'bare glass & ctrl':{'color': gs.colorList40[10],'marker':'^'},
                'bare glass & tko':{'color': gs.colorList40[30],'marker':'^'},
                '20um fibronectin discs & ctrl':{'color': gs.colorList40[12],'marker':'o'},
-               '20um fibronectin discs & tko':{'color': gs.colorList40[32],'marker':'o'}
-               }
-
-
-renameDict_MCA3 = {'SurroundingThickness':'Thickness (nm) [b&a]',
-               'surroundingThickness':'Thickness (nm) [b&a]',
-               'ctFieldThickness':'Thickness at low force (nm)',
-               'ctFieldThickness_normalized':'Thickness at low force (nm) [Ratio]',
-               'bestH0':'Thickness from fit (nm)',
-               'bestH0_normalized':'Thickness from fit (nm) [Ratio]',
-               'EChadwick': 'E Chadwick (Pa)',
-               'medianThickness': 'Median Thickness (nm)',               
-               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
-               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)',               
-               'none':'control',               
-               'doxycyclin':'expressing iMC linker',
+               '20um fibronectin discs & tko':{'color': gs.colorList40[32],'marker':'o'},
                
-                'aSFL-A11 & none':'clone A11 - ctrl',              
-                'aSFL-A11 & doxycyclin':'clone A11 - iMC',
-                'aSFL-F8 & none':'clone F8 - ctrl',              
-                'aSFL-F8 & doxycyclin':'clone F8 - long iMC',
-                'aSFL-E4 & none':'clone E4 - ctrl',              
-                'aSFL-E4 & doxycyclin':'clone E4 - long iMC',
-                'aSFL-A11 & MCA1 & none':'Round1: clone A11 - ctrl',              
-                'aSFL-A11 & MCA1 & doxycyclin':'Round1: clone A11 - iMC',
-                'aSFL-F8 & MCA2 & none':'Round2: clone F8 - ctrl',                 
-                'aSFL-F8 & MCA2 & doxycyclin':'Round2: clone F8 - long iMC',
-                'aSFL-E4 & MCA1 & none':'Round1: clone E4 - ctrl',                  
-                'aSFL-E4 & MCA1 & doxycyclin':'Round1: clone E4 - long iMC',
-                'aSFL-A11 & MCA3 & none':'Round3: clone A11 - ctrl',                  
-                'aSFL-A11 & MCA3 & doxycyclin':'Round3: clone A11 - iMC',
-                'aSFL-F8 & MCA3 & none':'Round3: clone F8 - ctrl',                  
-                'aSFL-F8 & MCA3 & doxycyclin':'Round3: clone F8 - long iMC',
-                'aSFL-E4 & MCA3 & none':'Round3: clone E4 - ctrl',               
-                'aSFL-E4 & MCA3 & doxycyclin':'Round3: clone E4 - long iMC'
+               # Comparison
+               '3T3':{'color': gs.colorList40[31],'marker':'o'},
+               'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
                }
 
 
-styleDict_MCA3 = {'aSFL-A11':{'color':gs.colorList40[10],'marker':'o'},
-                  'aSFL-F8':{'color':gs.colorList40[11],'marker':'o'},   
-                  'aSFL-E4':{'color':gs.colorList40[12],'marker':'o'}, 
-                  'aSFL-A11 & none':{'color':gs.colorList40[10],'marker':'o'},              
-                  'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
-                  'aSFL-F8 & none':{'color':gs.colorList40[11],'marker':'o'},              
-                  'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
-                  'aSFL-E4 & none':{'color':gs.colorList40[12],'marker':'o'},              
-                  'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
-                  'aSFL-A11 & MCA1 & none':{'color':gs.colorList40[10],'marker':'o'},              
-                  'aSFL-A11 & MCA1 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
-                  'aSFL-F8 & MCA2 & none':{'color':gs.colorList40[11],'marker':'o'},              
-                  'aSFL-F8 & MCA2 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
-                  'aSFL-E4 & MCA1 & none':{'color':gs.colorList40[12],'marker':'o'},              
-                  'aSFL-E4 & MCA1 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
-                  'aSFL-A11 & MCA3 & none':{'color':gs.colorList40[10],'marker':'o'},              
-                  'aSFL-A11 & MCA3 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
-                  'aSFL-F8 & MCA3 & none':{'color':gs.colorList40[11],'marker':'o'},              
-                  'aSFL-F8 & MCA3 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
-                  'aSFL-E4 & MCA3 & none':{'color':gs.colorList40[12],'marker':'o'},              
-                  'aSFL-E4 & MCA3 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'}
-                  }
-
-splitterStyleDict_MCA = {'high':'^',
-                          'mid':'D',   
-                          'low':'v', 
-                          'none':'X'}
 
 
 # These functions use matplotlib.pyplot and seaborn libraries to display 1D categorical or 2D plots
@@ -692,22 +642,32 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
 
         if Boxplot:
             if stressBoxPlot:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
-                            width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-        #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-                            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
-                            # scaley = scaley)
+                if stressBoxPlot == 2:
+                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
+                                width = 0.5, showfliers = False, order= co_order, 
+                                medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
+                                boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+            #                   boxprops={"color": color, "linewidth": 0.5},
+                                whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+                                capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
+                                # scaley = scaley)
+                elif stressBoxPlot == 1:
+                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
+                                width = 0.5, showfliers = False, order= co_order, 
+                                medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+                                boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            #                   boxprops={"color": color, "linewidth": 0.5},
+                                whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+                                capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2})
+                                # scaley = scaley)
             else:
                 sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
                             width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
+                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
         #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
-                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1})
+                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2})
                             # scaley = scaley)
             
             # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
@@ -727,176 +687,6 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
                           hue = 'manipID')
             legend = ax[k].legend()
             legend.remove()
-
-        ax[k].set_xlabel('')
-        ax[k].set_ylabel(Parameters[k])
-        ax[k].tick_params(axis='x', labelrotation = 10)
-        ax[k].yaxis.grid(True)
-        if ax[k].get_yscale() == 'linear':
-            ax[k].set_ylim([0, ax[k].get_ylim()[1]])
-        
-    plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
-        
-    
-    if returnCount > 0:
-        groupByCell = small_df.groupby(cellID)
-        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
-        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
-
-        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
-        d_agg = {cellID: 'count', 'compCount': 'sum', 
-                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
-        d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
-        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
-        
-        if returnCount == 1:
-            return(fig, ax, df_CountByCond)
-        elif returnCount == 2:
-            return(fig, ax, df_CountByCond, df_CountByCell)
-    
-    else:
-        return(fig, ax)
-    
-    
-    
-def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = [], 
-                       Parameters=[], Filters=[], 
-                       Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
-                       stats=True, statMethod='Mann-Whitney', box_pairs=[], 
-                       figSizeFactor = 1, markersizeFactor=1, orientation = 'h', useHue = False, 
-                       stressBoxPlot = False, bypassLog = False, returnCount = 0):
-    
-    data_filtered = data
-    # for fltr in Filters:
-    #     data_filtered = data_filtered.loc[fltr]
-
-    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-    for kk in range(len(Filters)):
-        globalFilter = globalFilter & Filters[kk]
-    data_filtered = data_filtered[globalFilter]
-    
-    NCond = len(CondCol)
-    if NCond == 1:
-        CondCol = CondCol[0]
-    elif NCond > 1:
-        newColName = ''
-        for i in range(NCond):
-            newColName += CondCol[i]
-            newColName += ' & '
-        newColName = newColName[:-3]
-        data_filtered[newColName] = ''
-        for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
-            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
-        data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
-        
-    NSplits = len(InnerSplitCol)
-    if NSplits == 1:
-        InnerSplitCol = InnerSplitCol[0]
-    elif NSplits > 1:
-        newColName = ''
-        for i in range(NSplits):
-            newColName += InnerSplitCol[i]
-            newColName += ' & '
-        newColName = newColName[:-3]
-        data_filtered[newColName] = ''
-        for i in range(NSplits):
-            data_filtered[newColName] += data_filtered[InnerSplitCol[i]].astype(str)
-            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
-        data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        InnerSplitCol = newColName
-        
-    small_df = data_filtered[['cellID', 'compNum', 'date', 'manipID', CondCol, InnerSplitCol]]
-    
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-#         dictAggMean['EChadwick'] = 'median'
-        data_filtered = group.agg(dictAggMean)
-        
-    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
-    
-    NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())  
-    Splitters = list(data_filtered[InnerSplitCol].unique())  
-    print(Splitters)
-    
-    if len(co_order) > 0:
-        if len(co_order) != len(Conditions):
-            delCo = [co for co in co_order if co not in Conditions]
-            for co in delCo:
-                co_order.remove(co)
-                
-        p = getStyleLists_Sns(co_order, styleDict_MCA3)
-        
-    else: # len(co_order) == 0
-        p = sns.color_palette()
-        co_order = Conditions
-
-    if fig == None:
-        if orientation == 'h':
-            fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
-        elif orientation == 'v':
-            fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
-    else:
-        pass
-        
-    markersize = 5*markersizeFactor
-    
-    if NPlots == 1:
-        ax = np.array([ax])
-    
-    for k in range(NPlots):
-
-        if not bypassLog and (('EChadwick' in Parameters[k]) or ('KChadwick' in Parameters[k])):
-            ax[k].set_yscale('log')
-
-        if Boxplot:
-            if stressBoxPlot:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
-                            width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-        #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-                            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
-                            # scaley = scaley)
-            else:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
-                            width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
-        #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
-                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1})
-                            # scaley = scaley)
-        
-        for split in Splitters:
-            marker = splitterStyleDict_MCA[split]
-            data_filtered_split = data_filtered[data_filtered[InnerSplitCol] == split]
-            sns.stripplot(x=CondCol, y=Parameters[k], data=data_filtered_split, ax=ax[k], order = co_order,
-                          jitter = True, marker=marker, 
-                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, 
-                          palette = p)
-            
-            # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
-
-        if stats:
-            if len(box_pairs) == 0:
-                box_pairs = makeBoxPairs(co_order)
-            addStat_df(ax[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
-            # add_stat_annotation(ax[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
-        
-        # if not useHue:
-        #     sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-        #                   size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
-        # else:
-        #     sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-        #                   size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
-        #                   hue = 'manipID')
-        #     legend = ax[k].legend()
-        #     legend.remove()
 
         ax[k].set_xlabel('')
         ax[k].set_ylabel(Parameters[k])
@@ -987,7 +777,7 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
             for co in delCo:
                 co_order.remove(co)
                 
-        p = getStyleLists_Sns(co_order, styleDict_MCA3)
+        p = getStyleLists_Sns(co_order, styleDict1)
         
     else: # len(co_order) == 0
         p = sns.color_palette()
@@ -1609,158 +1399,169 @@ def D2Plot_wFit(data, fig = None, ax = None,
     return(fig, ax)
 
 
-# These functions use the Bokeh library to display 1D categorical or 2D plots with interactive plots. They are less flexible but can be nice to explore the data set since you can display the cellID which is the source of each point by passing your pointer over it.
 
 
 
-def D1PlotInteractive(data, CondCol='',Parameters=[],Filters=[],AvgPerCell=False,cellID='cellID'):
-    data_filtered = data
-    for fltr in Filters:
-        data_filtered = data_filtered.loc[fltr]
-        
-#     print(data_filtered[cellID])
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
-        data_filtered.reset_index(level=0, inplace=True)
+def plotPopKS(data, width, centers, Filters = [], condCol = '', 
+              mode = 'wholeCurve', scale = 'lin', printText = True):
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
     
-#     return(data_filtered)
+    data_f = data[globalFilter]
+
+    # regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+    regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(centers[ii], width//2) for ii in range(len(centers))]
+
+    fig, ax = plt.subplots(1,1, figsize = (9,6))
+
+    ListDfWhole = []
+
+    conditions = np.array(data_f[condCol].unique())
+
+    valStr = 'KChadwick_'
+    weightStr = 'K_Weight_'
     
-    NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())
-    if NPlots > 1:
-        plots = []
-        NCond = len(Conditions)
-        data_filtered['X'] = 0
-        data_filtered['X_jitter'] = 0.
-        dictTicks = {}
-        for i in range(NCond):
-            mask = data_filtered[CondCol] == Conditions[i]
-            data_filtered.loc[mask, 'X'] = i+1
-            dictTicks[i+1] = Conditions[i]
-        for i in data_filtered.index:
-            data_filtered.loc[i, 'X_jitter'] = data_filtered.loc[i, 'X'] + 0.4*(np.random.rand(1)[0]-0.5)
-        source = ColumnDataSource(
-            data=data_filtered[[cellID]+[CondCol]+Parameters+['X','X_jitter']]
-        )        
-        
-        for k in range(NPlots):
-            hover = HoverTool(
-                tooltips=[
-                    ('Cell ID', "@"+cellID),
-                    (Parameters[k], "@"+Parameters[k]),
-                ]
-            )
-            index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-            p = figure(plot_width=450, plot_height=500, tools=[hover], title="InteractivePlot") # 
-            p.circle('X_jitter', Parameters[k], size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-            # Format
-            p.x_range = Range1d(0, NCond+1)
-            p.y_range = Range1d(min(0,1.1*np.min(data_filtered[Parameters[0]])), 1.1*np.max(data_filtered[Parameters[k]]))
-            p.xaxis.ticker = [i for i in range(1,NCond+1)]
-            p.xaxis.major_label_overrides = dictTicks
-            p.xaxis.axis_label = CondCol
-            p.xaxis.axis_label_text_font_size = '18pt'
-            p.xaxis.major_label_text_font_size = '16pt'
-            p.yaxis.axis_label = Parameters[k]
-            p.yaxis.axis_label_text_font_size = '18pt'
-            p.yaxis.major_label_text_font_size = '16pt'
-            
-            plots.append(p)
-            
-        p = gridplot(plots, ncols=2, toolbar_location=None)
-        
+    listColumnsMeca = []
+    KChadwick_Cols = []
+    KWeight_Cols = []
+    
+    for rFN in regionFitsNames:
+        listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
+                            'H0Chadwick_'+rFN, 'Npts_'+rFN, 'validatedFit_'+rFN]
+        KChadwick_Cols += [('KChadwick_'+rFN)]
+    
+        K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
+        KWeight = (data_f['KChadwick_'+rFN]/K_CIWidth)**2
+        data_f['K_Weight_'+rFN] = KWeight
+        data_f['K_Weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
+        data_f['K_Weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
+        data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+        KWeight_Cols += [('K_Weight_'+rFN)]
+    
+
+    #### Useful functions
+    
+    def w_std(x, w):
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        return(std)
+    
+    def nan2zero(x):
+        if np.isnan(x):
+            return(0)
+        else:
+            return(x)
+    
+    
+    #### Whole curve / local part
+    
+    if mode == 'wholeCurve':
+        data2_f = data_f
+        ax.set_xlim([0, np.max(centers)+50])  
         
     else:
-        hover = HoverTool(
-            tooltips=[
-                ('Cell ID', "@"+cellID),
-                (Parameters[0], "@"+Parameters[0]),
-            ]
-        )
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+        centers = centers[(centers>=(Sinf)) & (centers<=Ssup)] # <800
+    
+        data2_f = data_f
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data2_f = data2_f[globalExtraFilter]
+            
+        ax.set_xlim([np.min(centers)-50, np.max(centers)+50])        
+    
+    for co in conditions:
+        Kavg = []
+        Kstd = []
+        D10 = []
+        D90 = []
+        N = []
         
-        NCond = len(Conditions)
-        data_filtered['X'] = 0
-        data_filtered['X_jitter'] = 0.
-        dictTicks = {}
-        for i in range(NCond):
-            mask = data_filtered[CondCol] == Conditions[i]
-            data_filtered.loc[mask, 'X'] = i+1
-            dictTicks[i+1] = Conditions[i]
-        for i in data_filtered.index:
-            data_filtered.loc[i, 'X_jitter'] = data_filtered.loc[i, 'X'] + 0.4*(np.random.rand(1)[0]-0.5)
-        source = ColumnDataSource(
-            data=data_filtered[[cellID]+[CondCol]+Parameters+['X','X_jitter']]
-        )
-        index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-        TOOLS = "hover,pan,box_zoom,wheel_zoom,reset,save,help"
-        p = figure(plot_width=500, plot_height=500, tools=TOOLS, title="InteractivePlot") # 
-        p.circle('X_jitter', Parameters[0], size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-        # Format
-        p.x_range = Range1d(0, NCond+1)
-        p.y_range = Range1d(min(0,1.1*np.min(data_filtered[Parameters[0]])), 1.1*np.max(data_filtered[Parameters[0]]))
-        p.xaxis.ticker = [i for i in range(1,NCond+1)]
-        p.xaxis.major_label_overrides = dictTicks
-        p.xaxis.axis_label = CondCol
-        p.xaxis.axis_label_text_font_size = '18pt'
-        p.xaxis.major_label_text_font_size = '16pt'
-        p.yaxis.axis_label = Parameters[0]
-        p.yaxis.axis_label_text_font_size = '18pt'
-        p.yaxis.major_label_text_font_size = '16pt'
-    return(p)
-
-
-
-def D2PlotInteractive(data, XCol='',YCol='',CondCol='',Filters=[], cellID='cellID',AvgPerCell=False):
-    
-    data_filtered = data
-    for fltr in Filters:
-        data_filtered = data_filtered.loc[fltr]
+        data_ff = data2_f[data2_f[condCol] == co]
+        color = styleDict1[co]['color']
         
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
-        data_filtered.reset_index(level=0, inplace=True)
-    
-    Conditions = list(data_filtered[CondCol].unique())
-
-    NCond = len(Conditions)
-    dictTicks = {}
-    for i in range(NCond):
-        dictTicks[i+1] = Conditions[i]
-    
-    source = ColumnDataSource(
-        data=data_filtered[[cellID,CondCol,XCol,YCol]]
-    )
-    
-    hover = HoverTool(
-        tooltips=[
-            ('Cell ID', "@"+cellID),
-            (XCol, "@"+XCol),
-            (YCol, "@"+YCol),
-            (CondCol, "@"+CondCol),
-        ]
-    )
-    
-    index_cmap = factor_cmap(CondCol, palette=Category10[10], factors=sorted(data_filtered[CondCol].unique()), end=1)
-    TOOLS = "pan,box_zoom,wheel_zoom,reset,save,help"
-    p = figure(plot_width=900, plot_height=500, tools=TOOLS, title="InteractivePlot",toolbar_location="below") # 
-    p.circle(XCol, YCol, size=8, alpha = 0.6, source=source,fill_color=index_cmap,line_color='black')
-    p.add_tools(hover)
-    # Format
-    p.x_range = Range1d(0, 1.1*np.max(data_filtered[XCol]))
-    p.y_range = Range1d(0, 1.1*np.max(data_filtered[YCol]))
-    p.xaxis.axis_label = XCol
-    p.xaxis.axis_label_text_font_size = '18pt'
-    p.xaxis.major_label_text_font_size = '16pt'
-    p.yaxis.axis_label = YCol
-    p.yaxis.axis_label_text_font_size = '18pt'
-    p.yaxis.major_label_text_font_size = '16pt'
-    return(p)
-
-
+        for ii in range(len(centers)):
+            S = centers[ii]
+            rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+            variable = valStr+rFN
+            weight = weightStr+rFN
+            
+            x = data_ff[variable].apply(nan2zero).values
+            w = data_ff[weight].apply(nan2zero).values
+            
+            m = np.average(x, weights=w)
+            v = np.average((x-m)**2, weights=w)
+            std = v**0.5
+            
+            d10, d90 = np.percentile(x[x != 0], (10, 90))
+            n = len(x[x != 0])
+            
+            Kavg.append(m)
+            Kstd.append(std)
+            D10.append(d10)
+            D90.append(d90)
+            N.append(n)
+        
+        Kavg = np.array(Kavg)
+        Kstd = np.array(Kstd)
+        D10 = np.array(D10)
+        D90 = np.array(D90)
+        N = np.array(N)
+        Kste = Kstd / (N**0.5)
+        
+        alpha = 0.975
+        dof = N
+        q = st.t.ppf(alpha, dof) # Student coefficient
+        
+        d_val = {'S' : centers, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+        
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            
+            ax.set_yscale('linear')
+            # ax.set_ylim([0,1.2e1])
+            # ax.set_ylim([0,0.8e1])
+                
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            
+            ax.set_yscale('log')
+            # ax.set_ylim([0.5,2e1])
+            
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
+                    label = co)
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left', fontsize = 11)
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (kPa)')
+        ax.grid(visible=True, which='major', axis='y')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
+        
+        df_val = pd.DataFrame(d_val)
+        ListDfWhole.append(df_val)
+        
+    fig.suptitle('K(s)'+' - fits width: {:.0f}Pa'.format(width))  
+    return(fig, ax)
 # %%% Subfunctions
 
 
@@ -2435,6 +2236,51 @@ renameAxes(ax,renameDict1)
 fig.suptitle('HoxB8 H0 plot' + '\naverage per cell')
 
 ufun.archiveFig(fig, name=('HoxB8_'+thicknessType+' only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+
+
+plt.show()
+
+
+# %%%% Fibro only H0
+
+data = GlobalTable_meca_HoxB8
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['UI_Valid'] == True),
+            (data['substrate'] == '20um fibronectin discs'),
+            (data['cell type'] == 'HoxB8-Macro'), 
+            (data['bead type'] == 'M450'),
+            (data[thicknessType] <= 800),
+            (data['date'].apply(lambda x : x in dates))]
+
+
+
+# co_order = makeOrder(['ctrl','tko'],['naked glass','20um fibronectin discs'])
+# co_order = makeOrder(['bare glass','20um fibronectin discs'],['ctrl','tko'])
+co_order = makeOrder(['20um fibronectin discs'],['ctrl','tko'])
+
+# fig, ax, dfcount = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=[thicknessType],Filters=Filters,
+#                  AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+#                  box_pairs=[], figSizeFactor = 0.5, markersizeFactor = 1.0, orientation = 'v', returnCount = 1,
+#                  stressBoxPlot=True)
+
+# renameAxes(ax,renameDict1)
+# fig.suptitle('HoxB8 H0 plot' + '\nall compressions')
+
+# ufun.archiveFig(fig, name=('HoxB8_'+thicknessType+' only' + '_allComps'), figDir = 'HoxB8project', dpi = 100)
+
+
+fig, ax, dfcount = D1Plot(data, CondCol=['substrate','cell subtype'], Parameters=[thicknessType],Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=[], figSizeFactor = 0.5, markersizeFactor = 1.5, orientation = 'v', returnCount = 1)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('HoxB8 thickness')
+
+# ufun.archiveFig(fig, name=('HoxB8_'+thicknessType+' only' + '_cellAvg'), figDir = 'HoxB8project', dpi = 100)
 
 
 plt.show()
@@ -3232,7 +3078,43 @@ plt.show()
 ufun.archiveFig(fig, name='HoxB8_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
                 figDir = 'HoxB8project', dpi = 100)
 
+# %%%%% Using the function
 
+data = GlobalTable_meca_MCAHoxB8
+data['HoxB8_Co'] = data['substrate'].values + \
+                   np.array([' & ' for i in range(data.shape[0])]) + \
+                   data['cell subtype'].values
+
+dates = ['22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 800),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['cell type'] == 'HoxB8-Macro'),
+            (data['cell subtype'].apply(lambda x : x in ['ctrl', 'tko']))]  # (data['validatedFit'] == True),
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+
+data_f = data[globalFilter]
+
+width = 150 # 200
+centers =  np.array([S for S in range(100, 900, 50)])
+
+
+fig1, ax1 = plotPopKS(data, width, centers, Filters = Filters, 
+                    condCol = 'HoxB8_Co', mode = 'wholeCurve', scale = 'lin', printText = False)
+fig2, ax2 = plotPopKS(data, width, centers, Filters = Filters, 
+                    condCol = 'HoxB8_Co', mode = '300_800', scale = 'lin', printText = True)
+
+fig1.suptitle('HoxB8 ctrl v. tko - stiffness')
+fig2.suptitle('HoxB8 ctrl v. tko - stiffness')
+plt.show()
 
 
 # %%%% Comparison with 3T3aSFL
@@ -3294,40 +3176,43 @@ dates = ['22-02-09', '22-05-03', '22-05-04', '22-05-05']
 
 
 
-filterList = [(data['validatedThickness'] == True),
+Filters = [(data['validatedThickness'] == True),
               (data['substrate'] == '20um fibronectin discs'), 
               (data['drug'] == 'none'), 
               (data['bead type'] == 'M450'),
               (data['UI_Valid'] == True),
               (data['bestH0'] <= 800),
               (data['date'].apply(lambda x : x in dates)),
-              (data['cell subtype'].apply(lambda x : x in ['aSFL', 'ctrl']))]
-
+              (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]
 
 
 # co_order = makeOrder(['ctrl','tko'],['naked glass','20um fibronectin discs'])
 co_order = ['3T3','HoxB8-Macro']
 
 # All comp
-fig, ax, dfcount = D1Plot(data, CondCol=['cell type'], Parameters=['bestH0'],Filters=Filters,
-                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
-                          box_pairs=[], figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'h', returnCount = 1)
+fig, ax, dfcount = D1Plot(data, CondCol=['cell type'], Parameters=['surroundingThickness'],Filters=Filters,cellID='cellID',
+                          AvgPerCell=False, co_order=co_order, stats=True, statMethod='Mann-Whitney', box_pairs=[],
+                          figSizeFactor = 1.0, markersizeFactor=0.9, orientation = 'h', stressBoxPlot=2, 
+                          returnCount = 1)
 
 renameAxes(ax,renameDict1)
 fig.suptitle('HoxB8 summary plot')
 
-ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_allComps'), figDir = 'HoxB8project', dpi = 100)
+# ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_allComps'), figDir = 'HoxB8project', dpi = 100)
+ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_allComps'), dpi = 100)
 
 
 # Avg per cell
-fig, ax, dfcount = D1Plot(data, CondCol=['cell type'], Parameters=['bestH0'],Filters=Filters,
-                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
-                          box_pairs=[], figSizeFactor = 0.8, markersizeFactor=0.8, orientation = 'h', returnCount = 1)
+fig, ax, dfcount = D1Plot(data, CondCol=['cell type'], Parameters=['surroundingThickness'],Filters=Filters, cellID='cellID',
+                          AvgPerCell=True,  co_order=co_order, stats=True, statMethod='Mann-Whitney', box_pairs=[],
+                          figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1,
+                          returnCount = 1)
 
 renameAxes(ax,renameDict1)
-fig.suptitle('HoxB8 summary plot')
+fig.suptitle('3T3 vs. HoxB8 - thickness')
 
-ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+# ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_cellAvg'), figDir = 'HoxB8project', dpi = 100)
+ufun.archiveFig(fig, name=('3T3vsHoxB8_onlyH0_cellAvg'), dpi = 100)
 
 plt.show()
 
@@ -3347,7 +3232,7 @@ filterList = [(data['validatedThickness'] == True),
               (data['UI_Valid'] == True),
               (data['bestH0'] <= 800),
               (data['date'].apply(lambda x : x in dates)),
-              (data['cell subtype'].apply(lambda x : x in ['aSFL', 'ctrl']))]  # (data['validatedFit'] == True),
+              (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]  # (data['validatedFit'] == True),
 
 globalFilter = filterList[0]
 for k in range(1, len(filterList)):
@@ -3360,7 +3245,7 @@ data_f = data[globalFilter]
 #                      data_f['cell subtype'].values
 
 width = 150 # 200
-fitCenters =  np.array([S for S in range(100, 1100, 50)])
+fitCenters =  np.array([S for S in range(100, 900, 50)])
 # fitMin = np.array([int(S-(width/2)) for S in fitCenters])
 # fitMax = np.array([int(S+(width/2)) for S in fitCenters])
 
@@ -3418,8 +3303,8 @@ ListDfWhole = []
 conditions = np.array(data_f['cell type'].unique())
 
 
-cD = {'HoxB8-Macro':[gs.colorList40[20], gs.colorList40[20]],
-      '3T3':[gs.colorList40[21], gs.colorList40[21]]}
+cD = {'HoxB8-Macro':[gs.colorList40[22], gs.colorList40[22]],
+      '3T3':[gs.colorList40[20], gs.colorList40[20]]}
 
 # oD = {'none': [-15, 1.02] , 'doxycyclin': [5, 0.97] }
 # lD = {'naked glass & ctrl':', 
@@ -3476,12 +3361,23 @@ for co in conditions:
     
     d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
     
+    if co == conditions[0]:
+        texty_1 = Kavg**0.95
+        texty_2 = Kavg + 2500
+    else:
+        texty_1 = texty_1**0.98
+        texty_2 = texty_2 + 750
+        
+    axes[0].set_yscale('log')
+    axes[0].set_ylim([500,2e4])
+    axes[1].set_ylim([0,1.4e4])
+    
     for ax in axes:
         # Weighted means -- Weighted ste 95% as error
         ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
                        ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
         ax.set_ylim([500,2e4])
-        ax.set_xlim([0,1100])
+        ax.set_xlim([0,950])
         ax.set_title('K(s) - All compressions pooled')
         
         ax.legend(loc = 'upper left')
@@ -3490,10 +3386,29 @@ for co in conditions:
         ax.set_ylabel('K (Pa)')
         
         for kk in range(len(N)):
-            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
-        # for kk in range(len(N)):
-        #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
-        #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
+            if ax.get_yscale() == 'log':
+                ax.text(x=fitCenters[kk], y=texty_1[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+            elif ax.get_yscale() == 'linear':
+                ax.text(x=fitCenters[kk], y=texty_2[kk], s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+    
+    # for ax in axes:
+    #     # Weighted means -- Weighted ste 95% as error
+    #     ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
+    #                    ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
+    #     ax.set_ylim([500,2e4])
+    #     ax.set_xlim([0,1100])
+    #     ax.set_title('K(s) - All compressions pooled')
+        
+    #     ax.legend(loc = 'upper left')
+        
+    #     ax.set_xlabel('Stress (Pa)')
+    #     ax.set_ylabel('K (Pa)')
+        
+    #     for kk in range(len(N)):
+    #         ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
+    #     # for kk in range(len(N)):
+    #     #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
+    #     #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
         
     axes[0].set_yscale('log')
     axes[0].set_ylim([500,2e4])
@@ -3508,7 +3423,8 @@ for co in conditions:
 
 plt.show()
 
-ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)', figDir = 'HoxB8project', dpi = 100)
+# ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)', figDir = 'HoxB8project', dpi = 100)
+ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)', dpi = 100)
 
 
 
@@ -3517,7 +3433,7 @@ ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)', figDir = 'HoxB8project', dpi = 100)
 
 #### Local zoom
 
-Sinf, Ssup = 400, 900
+Sinf, Ssup = 150, 450
 extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
 fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
 # fitMin = np.array([int(S-(width/2)) for S in fitCenters])
@@ -3538,8 +3454,8 @@ conditions = np.array(data_f['cell type'].unique())
 print(conditions)
 
 
-cD = {'HoxB8-Macro':[gs.colorList40[20], gs.colorList40[20]],
-      '3T3':[gs.colorList40[21], gs.colorList40[21]]}
+cD = {'HoxB8-Macro':[gs.colorList40[22], gs.colorList40[22]],
+      '3T3':[gs.colorList40[20], gs.colorList40[20]]}
 
 listDfZoom = []
 
@@ -3632,12 +3548,207 @@ fig.suptitle('K(s)'+' - (fits width: {:.0f}Pa)'.format(width))
 
 plt.show()
 
+# ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
+#                 figDir = 'HoxB8project', dpi = 100)
+
 ufun.archiveFig(fig, name='3T3vsHoxB8_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
-                figDir = 'HoxB8project', dpi = 100)
+                dpi = 100)
 
 
 
+# %%%%% K(s) - as a function
 
+
+
+def plotPopKS(data, width, centers, Filters = [], condCol = '', 
+              mode = 'wholeCurve', scale = 'lin', printText = True):
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(filterList)):
+        globalFilter = globalFilter & filterList[k]
+    
+    data_f = data[globalFilter]
+
+    # regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
+    regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(centers[ii], width//2) for ii in range(len(centers))]
+
+    fig, ax = plt.subplots(1,1, figsize = (9,6))
+
+    ListDfWhole = []
+
+    conditions = np.array(data_f[condCol].unique())
+
+    valStr = 'KChadwick_'
+    weightStr = 'K_Weight_'
+    
+    listColumnsMeca = []
+    KChadwick_Cols = []
+    KWeight_Cols = []
+    
+    for rFN in regionFitsNames:
+        listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
+                            'H0Chadwick_'+rFN, 'Npts_'+rFN, 'validatedFit_'+rFN]
+        KChadwick_Cols += [('KChadwick_'+rFN)]
+    
+        K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
+        KWeight = (data_f['KChadwick_'+rFN]/K_CIWidth)**2
+        data_f['K_Weight_'+rFN] = KWeight
+        data_f['K_Weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
+        data_f['K_Weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
+        data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+        KWeight_Cols += [('K_Weight_'+rFN)]
+    
+
+    #### Useful functions
+    
+    def w_std(x, w):
+        m = np.average(x, weights=w)
+        v = np.average((x-m)**2, weights=w)
+        std = v**0.5
+        return(std)
+    
+    def nan2zero(x):
+        if np.isnan(x):
+            return(0)
+        else:
+            return(x)
+    
+    
+    #### Whole curve / local part
+    
+    if mode == 'wholeCurve':
+        data2_f = data_f
+        ax.set_xlim([0, np.max(centers)+50])  
+        
+    else:
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+        centers = centers[(centers>=(Sinf)) & (centers<=Ssup)] # <800
+    
+        data2_f = data_f
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data2_f = data2_f[globalExtraFilter]
+            
+        ax.set_xlim([np.min(centers)-50, np.max(centers)+50])        
+    
+    for co in conditions:
+        Kavg = []
+        Kstd = []
+        D10 = []
+        D90 = []
+        N = []
+        
+        data_ff = data2_f[data2_f['cell type'] == co]
+        color = styleDict1[co]['color']
+        
+        for ii in range(len(centers)):
+            S = centers[ii]
+            rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
+            variable = valStr+rFN
+            weight = weightStr+rFN
+            
+            x = data_ff[variable].apply(nan2zero).values
+            w = data_ff[weight].apply(nan2zero).values
+            
+            m = np.average(x, weights=w)
+            v = np.average((x-m)**2, weights=w)
+            std = v**0.5
+            
+            d10, d90 = np.percentile(x[x != 0], (10, 90))
+            n = len(x[x != 0])
+            
+            Kavg.append(m)
+            Kstd.append(std)
+            D10.append(d10)
+            D90.append(d90)
+            N.append(n)
+        
+        Kavg = np.array(Kavg)
+        Kstd = np.array(Kstd)
+        D10 = np.array(D10)
+        D90 = np.array(D90)
+        N = np.array(N)
+        Kste = Kstd / (N**0.5)
+        
+        alpha = 0.975
+        dof = N
+        q = st.t.ppf(alpha, dof) # Student coefficient
+        
+        d_val = {'S' : centers, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
+        
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            
+            ax.set_yscale('linear')
+            # ax.set_ylim([0,1.2e1])
+            # ax.set_ylim([0,0.8e1])
+                
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            
+            ax.set_yscale('log')
+            # ax.set_ylim([0.5,2e1])
+            
+        # Weighted means -- Weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
+                    label = co)
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left', fontsize = 11)
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (kPa)')
+        ax.grid(visible=True, which='major', axis='y')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
+        
+        df_val = pd.DataFrame(d_val)
+        ListDfWhole.append(df_val)
+        
+    fig.suptitle('K(s)'+' - fits width: {:.0f}Pa'.format(width))  
+    return(fig, ax)
+
+
+#### Making the Dataframe 
+
+data = GlobalTable_meca_MCAHoxB8
+
+dates = ['22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 800),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]  # (data['validatedFit'] == True),
+
+width = 150 # 200
+centers =  np.array([S for S in range(100, 900, 50)])
+
+
+fig1, ax1 = plotPopKS(data, width, centers, Filters = Filters, 
+                    condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+fig2, ax2 = plotPopKS(data, width, centers, Filters = Filters, 
+                    condCol = 'cell type', mode = '150_450', scale = 'lin', printText = False)
+
+fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
 
 
 

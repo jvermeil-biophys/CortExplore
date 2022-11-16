@@ -206,17 +206,17 @@ fig, ax = plt.subplots(1,1, figsize = (10,5))
 if not tSDF.size == 0:
 #         plt.tight_layout()
 #         fig.show() # figsize=(20,20)
-    tsDFplot = tSDF[(tSDF['T']>=3.04) & (tSDF['T']<=6.05)]
+    tsDFplot = tSDF #[(tSDF['T']>=3.04) & (tSDF['T']<=6.05)]
     
     ax.plot(tsDFplot['T'], 1000*(tsDFplot['D3']-4.503), color = gs.colorList40[30], label = 'Thickness')
     ax.set_ylabel('Thickness (nm)', color = gs.colorList40[30])
-    ax.set_ylim([0, 350])
+    # ax.set_ylim([0, 350])
     ax.set_xlabel('Time (s)')
 
     axR = ax.twinx()
     axR.plot(tsDFplot['T'], tsDFplot['F'], color = gs.colorList40[23], label = 'Force')
     axR.set_ylabel('Force (pN)', color = gs.colorList40[23])
-    axR.set_ylim([0, 150])
+    # axR.set_ylim([0, 150])
 
     # axes = tSDF[(tSDF['T']>=20) & (tSDF['T']<=60)].plot(x=X, y=Y, kind='line', 
     #                 subplots=True, sharex=True, sharey=False,
@@ -6327,27 +6327,31 @@ plt.show()
 data = GlobalTable_meca_drugs
 
 dates = ['22-03-30']
-fit = '_S=400+/-75'
 
-thicknessType = 'ctFieldThickness'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
 
 Filters = [(data['validatedThickness'] == True), 
-           (data['bestH0'] <= 800),
-           (data['validatedFit' + fit] == True), 
-           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+           (data['valid_Chadwick'] == True),
+           (data['surroundingThickness'] <= 700),
+            # (data['ctFieldMinThickness'] >= 200**2),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D1Plot(data, CondCol=['drug'], Parameters=[thicknessType, 'K' + fit], Filters=Filters, 
-                Boxplot=True, cellID='cellID', co_order=['dmso', 'blebbistatin'], stats=True, statMethod='Mann-Whitney', 
-                box_pairs=[], figSizeFactor = 0.9, markersizeFactor=1, orientation = 'h', AvgPerCell = True)
+co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
 
-rD = {'dmso' : 'Control', 'blebbistatin' : 'Blebbistatin',
-              'bestH0' : 'Thickness (nm)', 'K' + fit : 'Tangeantial Modulus (Pa)'}
+fig, ax = D1Plot(data, CondCol=['drug'], Parameters=[thicknessType, 'E_Chadwick'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
+
+rD = {'none' : 'Control\n(nothing)', 'dmso' : 'Control\n(DMSO)', 
+      'blebbistatin' : 'Blebbistatin', 'latrunculinA' : 'LatA', 
+      'bestH0' : 'Thickness (nm)', 'K' + fit : 'Tangeantial Modulus (Pa)'}
 
 renameAxes(ax, rD)
 renameAxes(ax, renameDict1)
 
-ax[0].set_ylim([0, 1000])
+# ax[0].set_ylim([0, 1000])
 # ax[0].legend(loc = 'upper right', fontsize = 8)
 # ax[1].legend(loc = 'upper right', fontsize = 8)
 fig.suptitle('3T3aSFL & drugs\nPreliminary data')
