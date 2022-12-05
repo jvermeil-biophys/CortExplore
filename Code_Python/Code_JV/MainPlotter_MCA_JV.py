@@ -53,6 +53,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
+import TrackAnalyser_dev3_AJJV as taka2
 # import TrackAnalyser_dev_AJ as taka
 
 #### Potentially useful lines of code
@@ -514,6 +515,7 @@ GlobalTable_meca_HoxB8 = taka.getMergedTable('Global_MecaData_HoxB8', mergeUMS =
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
 GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', mergeUMS = True)
+
 
 
 # %%% Custom data export

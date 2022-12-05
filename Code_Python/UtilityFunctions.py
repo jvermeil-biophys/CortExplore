@@ -90,6 +90,8 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     NEW FEATURE: Thanks to "engine='python'" in pd.read_csv() the separator can now be detected automatically !
     """
     
+    top = time.time()
+    
     #### 0. Import the table
     if suffix == '':
         experimentalDataFile = 'ExperimentalConditions.csv'
@@ -177,6 +179,20 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     #### 3.1 Make 'manipID'
     expDf['manipID'] = expDf['date'] + '_' + expDf['manip']
     
+    #### 3.2 Make 'first time point'
+    dict_firstTimePoint = {}
+    unique_dates = expDf.date.unique()
+    unique_T0 = np.zeros_like(unique_dates, dtype = np.float64)
+    for kk in range(len(unique_dates)):
+        d = unique_dates[kk]
+        d_T0 = findFirstAbsTimeOfDate(cp.DirDataTimeseries, d, suffix = '.csv')
+        unique_T0[kk] = d_T0
+        
+    dictT0 = {unique_dates[ii]:unique_T0[ii] for ii in range(len(unique_dates))}
+    all_T0 = np.array([dictT0[d] for d in expDf.date.values])
+    expDf['date_T0'] = all_T0
+        
+    
     # def str2int(s):
     #     try:
     #         x = int(s)
@@ -214,8 +230,9 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     # expDf.loc[:,'loop structure'] = ls
 
     #### 4. END
+    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
+    
     return(expDf)
-
 
 
 def correctExcelDatesInDf(df, dateColumn, dateExample = ''):
@@ -228,6 +245,41 @@ def correctExcelDatesInDf(df, dateColumn, dateExample = ''):
         print(gs.ORANGE + 'dates : format corrected' + gs.NORMAL)
         df.loc[:,dateColumn] = df.loc[:,dateColumn].apply(lambda x: x.split('-')[0] + '-' + x.split('-')[1] + '-' + x.split('-')[2][2:])
     return(df)
+
+
+def findFirstAbsTimeOfDate(src_path, date, suffix = '.csv'):
+    """
+    Given a directory containing time series (src_path), a date (date), 
+    and a suffix (suffix='.csv'), goes through all the files which name contains 
+    date and ends with suffix, and consider all the first elements of the columns named 'Tabs'.
+    Return the min of these elements.
+    
+    Should be called with src_path = cp.DirDataTimeseries, date = chosen_date, suffix = '.csv',
+    'chosen_date' being the date of an experiment in the format yy-mm-dd.
+    """
+    files = os.listdir(src_path)
+    selected_files = []
+    for f in files:
+        if date in f and f.endswith(suffix):
+            selected_files.append(f)
+    dictOrd = {}
+    listOrd = []
+    for f in selected_files:
+        ordVal = findInfosInFileName(f, 'ordinalValue')
+        dictOrd[ordVal] = f
+        listOrd.append(int(ordVal))
+    try:
+        minOrdVal = str(np.min(listOrd))
+        first_f = dictOrd[minOrdVal]
+        first_f_path = os.path.join(src_path, first_f)
+        df = pd.read_csv(first_f_path, sep = ';', usecols=['Tabs'], nrows=1)
+        date_T0 = df['Tabs'].values[0]
+        
+    except:
+        date_T0 = np.nan
+    
+    return(date_T0)
+        
 
 
 def removeColumnsDuplicate(df):
@@ -252,13 +304,23 @@ def findInfosInFileName(f, infoType):
     Return a given type of info from a file name.
     Inputs : f (str), the file name.
              infoType (str), the type of info wanted.
+             
              infoType can be equal to : 
+                 
              * 'M', 'P', 'C' -> will return the number of manip (M), well (P), or cell (C) in a cellID.
              ex : if f = '21-01-18_M2_P1_C8.tif' and infoType = 'C', the function will return 8.
+             
              * 'manipID'     -> will return the full manip ID.
              ex : if f = '21-01-18_M2_P1_C8.tif' and infoType = 'manipID', the function will return '21-01-18_M2'.
+             
              * 'cellID'     -> will return the full cell ID.
              ex : if f = '21-01-18_M2_P1_C8.tif' and infoType = 'cellID', the function will return '21-01-18_M2_P1_C8'.
+             
+             * 'substrate'  -> will return the string describing the disc used for cell adhesion.
+             ex : if f = '21-01-18_M2_P1_C8_disc15um.tif' and infoType = 'substrate', the function will return 'disc15um'.
+             
+             * 'ordinalValue'  -> will return a value that can be used to order the cells. It is equal to M*1e6 + P*1e3 + C
+             ex : if f = '21-01-18_M2_P1_C8.tif' and infoType = 'ordinalValue', the function will return "2'001'008".
     """
     infoString = ''
     try:
@@ -301,6 +363,19 @@ def findInfosInFileName(f, infoType):
                 infoString = f[pos.start():pos.end()]
             except:
                 infoString = ''
+                
+        elif infoType == 'ordinalValue':
+            M, P, C = findInfosInFileName(f, 'M'), findInfosInFileName(f, 'P'), findInfosInFileName(f, 'C')
+            L = [M, P, C]
+            for i in range(len(L)):
+                s = L[i]
+                if '-' in s:
+                    s = s.replace('-', '.')
+                    L[i] = s
+            [M, P, C] = L
+            ordVal = int(float(M)*1e9 + float(P)*1e6 + float(C)*1e3)
+            infoString = str(ordVal)
+            
     except:
         pass
                              
