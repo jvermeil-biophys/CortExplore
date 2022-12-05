@@ -489,30 +489,9 @@ renameDict1 = {'SurroundingThickness':'Thickness at low force (nm)',
                'medianThickness': 'Median Thickness (nm)',               
                'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
                'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)',               
-               'none':'control',               
-               'doxycyclin':'expressing iMC linker',               
-               'none & BSA coated glass':'control & non adherent',               
-               'doxycyclin & BSA coated glass':'iMC & non adherent',               
-               'none & 20um fibronectin discs':'control & adherent on fibro',               
-               'doxycyclin & 20um fibronectin discs':'iMC & adherent on fibro',               
-               'BSA coated glass & none':'control & non adherent',               
-               'BSA coated glass & doxycyclin':'iMC & non adherent',               
-               '20um fibronectin discs & none':'control & adherent on fibro',               
-               '20um fibronectin discs & doxycyclin':'iMC & adherent on fibro',               
-               'aSFL & none':'aSFL control',
-               'aSFL & doxycyclin':'aSFL iMC',
-               'aSFL-6FP & none':'aSFL-6FP control',               
-               'aSFL-6FP & doxycyclin':'aSFL-6FP long-iMC',               
-               'aSFL-6FP-2 & none':'aSFL-6FP-2 control',               
-               'aSFL-6FP-2 & doxycyclin':'aSFL-6FP-2 long-iMC',               
-               'aSFL-A8 & none':'aSFL-A8 control',               
-               'aSFL-A8 & doxycyclin':'aSFL-A8 iMC',               
-               'aSFL-A8-2 & none':'aSFL-A8-2 control',               
-               'aSFL-A8-2 & doxycyclin':'aSFL-A8-2 iMC',               
-               'dmso' : 'DMSO, no linker', 
-               'smifh2' : 'SMIFH2, no linker', 
-               'dmso, doxycyclin' : 'DMSO, iMC linker', 
-               'smifh2, doxycyclin' : 'SMIFH2, iMC linker',
+               'none':'control',    
+               'fit_K':'Tangeantial Modulus (Pa)',
+               
                # HoxB8
                'ctrl':'Control',
                'tko':'TKO',
@@ -522,34 +501,7 @@ renameDict1 = {'SurroundingThickness':'Thickness at low force (nm)',
                '20um fibronectin discs & tko':'TKO on fibronectin',
                }
 
-styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},               
-               'doxycyclin & BSA coated glass':{'color':'#d62728','marker':'^'},               
-               'none & 20um fibronectin discs':{'color':'#aec7e8','marker':'o'},               
-               'doxycyclin & 20um fibronectin discs':{'color':'#1f77b4','marker':'o'},               
-               'none':{'color':'#aec7e8','marker':'o'},               
-               'doxycyclin':{'color':'#1f77b4','marker':'o'},               
-               'BSA coated glass & none':{'color':'#ff9896','marker':'^'},               
-               'BSA coated glass & doxycyclin':{'color':'#d62728','marker':'^'},               
-               '20um fibronectin discs & none':{'color':'#aec7e8','marker':'o'},               
-               '20um fibronectin discs & doxycyclin':{'color':'#1f77b4','marker':'o'},               
-               'aSFL':{'color':'gs.colorList40[10]','marker':'o'},               
-               'aSFL-6FP':{'color':'#2ca02c','marker':'o'},               
-               'aSFL-A8':{'color':'#ff7f0e','marker':'o'},                
-               'aSFL & none':{'color':'gs.colorList40[10]','marker':'o'},               
-               'aSFL & doxycyclin':{'color':'gs.colorList40[30]','marker':'o'},               
-               'aSFL-6FP & none':{'color':'#98df8a','marker':'o'},               
-               'aSFL-6FP & doxycyclin':{'color':'#2ca02c','marker':'o'},               
-               'aSFL-A8 & none':{'color':'#ffbb78','marker':'o'},              
-               'aSFL-A8 & doxycyclin':{'color':'#ff7f0e','marker':'o'},
-               
-               'aSFL-A11 & none':{'color':gs.colorList40[20],'marker':'o'},              
-               'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],'marker':'o'},
-               'aSFL-F8 & none':{'color':gs.colorList40[21],'marker':'o'},              
-               'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],'marker':'o'},
-               'aSFL-E4 & none':{'color':gs.colorList40[22],'marker':'o'},              
-               'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],'marker':'o'},
-               
-               'DictyDB_M270':{'color':'lightskyblue','marker':'o'}, 
+styleDict1 =  {'DictyDB_M270':{'color':'lightskyblue','marker':'o'}, 
                'DictyDB_M450':{'color': 'maroon','marker':'o'},
                'M270':{'color':'lightskyblue','marker':'o'}, 
                'M450':{'color': 'maroon','marker':'o'},
@@ -4073,11 +4025,80 @@ plt.show()
 
 # %%%%% Thickness
 
+data_main = GlobalTable_meca_HoxB8_new
+data = data_main
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['surroundingThickness'] <= 900),
+           (data['ctFieldThickness'] <= 1000),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+descText = """
+data_main = GlobalTable_meca_HoxB8_new
+data = data_main
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['surroundingThickness'] <= 900),
+           (data['ctFieldThickness'] <= 1000),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+"""
+
+
+
+co_order = ['ctrl', 'tko']
+box_pairs=[]
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['surroundingThickness'],Filters=Filters,
+                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1, orientation = 'v', stressBoxPlot=2,
+                          returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('Fig 1 - Thickness - Bare Glass')
+
+ufun.archiveFig(fig, name=('Fig1_surroundingH_BareGlass_allComps'), figDir = 'HoxB8_Paper', dpi = 100)
+ufun.archiveData(dfexport, name=('Fig1_surroundingH_BareGlass_allComps'), 
+                  sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['ctFieldThickness'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1.2, orientation = 'v', stressBoxPlot= 1, 
+                          returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('Fig 1 - Thickness - Bare Glass')
+
+ufun.archiveFig(fig, name=('Fig1_ctFieldH_BareGlass_cellAvg'), figDir = 'HoxB8_Paper', dpi = 100)
+ufun.archiveData(dfexport, name=('Fig1_ctFieldH_BareGlass_cellAvg'), 
+                  sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
+
+
+
+plt.show()
+
+
 # %%%%% Stiffness
 
 data_main = GlobalTable_meca_HoxB8_new
 fitType = 'stressRegion'
 fitId = '250_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
 
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
@@ -4114,7 +4135,7 @@ Filters = [(data['validatedThickness'] == True),
 """
 
 
-co_order = []
+co_order = ['ctrl', 'tko']
 box_pairs=[]
 
 fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['fit_K'],Filters=Filters,
@@ -4123,11 +4144,11 @@ fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=
                           returnData = 1, returnCount = 1)
 # ax[0].set_ylim([1e2,1.2e4])
 renameAxes(ax,renameDict1)
-# fig.suptitle('Fig 1 - Stiffness - A11\n' + StressRegion[1:] + ' Pa')
+fig.suptitle('Fig 1 - Stiffness - Bare Glass\n' + fitStr)
 
-# ufun.archiveFig(fig, name=('Fig1_K' + srs + '_A11_allComps'), figDir = 'MCA_Paper'+extDir, dpi = 100)
-# ufun.archiveData(dfexport, name=('Fig1_K' + srs + '_A11_allComps'), 
-#                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
+ufun.archiveFig(fig, name=('Fig1_K_' + fitId + '_BareGlass_allComps'), figDir = 'HoxB8_Paper', dpi = 100)
+ufun.archiveData(dfexport, name=('Fig1_K_' + fitId + '_BareGlass_allComps'), 
+                  sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
 print(dfcount[['cellCount', 'compCount']])
 
 fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['fit_K'],Filters=Filters,
@@ -4136,11 +4157,11 @@ fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=
                           returnData = 1, returnCount = 1)
 # ax[0].set_ylim([3e2,1.2e4])
 renameAxes(ax,renameDict1)
-# fig.suptitle('Fig 1 - Stiffness - A11\n' + StressRegion[1:] + ' Pa')
+fig.suptitle('Fig 1 - Stiffness - Bare Glass\n' + fitStr)
 
-# ufun.archiveFig(fig, name=('Fig1_K' + srs + '_A11_cellAvg'), figDir = 'MCA_Paper'+extDir, dpi = 100)
-# ufun.archiveData(dfexport, name=('Fig1_K' + srs + '_A11_cellAvg'), 
-#                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
+ufun.archiveFig(fig, name=('Fig1_K_' + fitId + '_BareGlass_cellAvg'), figDir = 'HoxB8_Paper', dpi = 100)
+ufun.archiveData(dfexport, name=('Fig1_K_' + fitId + '_BareGlass_cellAvg'), 
+                  sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
 
 
 
