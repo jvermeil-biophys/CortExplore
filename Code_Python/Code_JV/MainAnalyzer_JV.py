@@ -178,9 +178,9 @@ taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName =
 
 # %%%% HoxB8
 
-HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8_2', 
-                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05' '22-05-03 & 22-05-04 & 22-05-05'
+res = taka2.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8_3', 
+                                    save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 

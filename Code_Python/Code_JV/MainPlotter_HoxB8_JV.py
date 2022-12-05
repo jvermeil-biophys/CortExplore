@@ -42,6 +42,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
+import TrackAnalyser_dev3_AJJV as taka2
 # import TrackAnalyser_dev_AJ as taka
 
 #### Potentially useful lines of code
@@ -442,11 +443,22 @@ GlobalTable_meca_MCA123['round'] = GlobalTable_meca_MCA123['tags'].apply(lambda 
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
 GlobalTable_meca_HoxB8 = taka.getMergedTable('Global_MecaData_HoxB8_2', mergeUMS = True)
+GlobalTable_meca_HoxB8_new = taka.getMergedTable('Global_MecaData_HoxB8_3', mergeUMS = True)
 
 #### Global_MecaData_MCA-HoxB8_2
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
 GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', mergeUMS = True)
+
+# %%%
+
+tic = time.time()
+data_main = GlobalTable_meca_HoxB8_new
+data = taka2.getFitsInTable(data_main, fitType = 'stressGaussian', 
+                            filter_fitID = '200_')
+toc = time.time()
+
+print(toc-tic)
 
 
 # %%% Custom data export
@@ -563,11 +575,14 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
 # %%% Main functions
 
 
-def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[], 
+
+
+def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[], 
            Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
            stats=True, statMethod='Mann-Whitney', box_pairs=[], 
-           figSizeFactor = 1, markersizeFactor=1, orientation = 'h', useHue = False, 
-           stressBoxPlot = False, bypassLog = False, returnCount = 0):
+           figSizeFactor = 1, markersizeFactor = 1, orientation = 'h', # useHue = False, 
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0):
     
     data_filtered = data
     # for fltr in Filters:
@@ -578,27 +593,29 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
         globalFilter = globalFilter & Filters[kk]
     data_filtered = data_filtered[globalFilter]
     
-    NCond = len(CondCol)
+    NCond = len(CondCols)
     
     if NCond == 1:
-        CondCol = CondCol[0]
+        CondCol = CondCols[0]
         
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += CondCols[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] += data_filtered[CondCols[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
         CondCol = newColName
         
-    # print(data_filtered.shape)
-    small_df = data_filtered[[CondCol, 'cellID', 'compNum', 'date', 'manipID']]
-    
+    # define the count df
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', CondCol]
+    count_df = data_filtered[cols_count_df]
+
+    # average per cell if necessary
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
         dictAggMean = getDictAggMean(data_filtered)
@@ -606,6 +623,13 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
         data_filtered = group.agg(dictAggMean)
         
     data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+    
+    # define the export df
+    cols_export_df = ['date', 'manipID', 'cellID']
+    if not AvgPerCell: 
+        cols_export_df.append('compNum')
+    cols_export_df += ([CondCol] + Parameters)
+    export_df = data_filtered[cols_export_df]
     
     NPlots = len(Parameters)
     Conditions = list(data_filtered[CondCol].unique())     
@@ -637,7 +661,7 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
     
     for k in range(NPlots):
 
-        if not bypassLog and (('EChadwick' in Parameters[k]) or ('KChadwick' in Parameters[k])):
+        if (not bypassLog) and (('EChadwick' in Parameters[k]) or ('K_' in Parameters[k]) or ('fit_K' in Parameters[k])):
             ax[k].set_yscale('log')
 
         if Boxplot:
@@ -678,15 +702,15 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
             addStat_df(ax[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
             # add_stat_annotation(ax[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
         
-        if not useHue:
-            sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
-        else:
-            sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
-                          hue = 'manipID')
-            legend = ax[k].legend()
-            legend.remove()
+
+        sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
+                      size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
+        # else:
+        #     sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
+        #                   size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
+        #                   hue = 'manipID')
+        #     legend = ax[k].legend()
+        #     legend.remove()
 
         ax[k].set_xlabel('')
         ax[k].set_ylabel(Parameters[k])
@@ -697,9 +721,13 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
         
     plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
         
+    output = (fig, ax)
+    
+    if returnData > 0:
+        output += (export_df, )
     
     if returnCount > 0:
-        groupByCell = small_df.groupby(cellID)
+        groupByCell = count_df.groupby(cellID)
         d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
         df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
 
@@ -710,13 +738,11 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
         df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
         
         if returnCount == 1:
-            return(fig, ax, df_CountByCond)
+            output += (df_CountByCond, )
         elif returnCount == 2:
-            return(fig, ax, df_CountByCond, df_CountByCell)
-    
-    else:
-        return(fig, ax)
-    
+            output += (df_CountByCond, df_CountByCell)
+
+    return(output)
     
     
     
@@ -4009,6 +4035,113 @@ ufun.archiveFig(fig, name='4PV_HoxB8_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf
 
 
 
+# %%%% Typical constant field force
+
+data = GlobalTable_meca_HoxB8_new
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['UI_Valid'] == True),
+           (data['ctFieldForce'] < 600),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+
+fltr = Filters[0]
+for i in range(1, len(Filters)):
+    fltr = fltr & Filters[i]
+print(np.median(data[fltr]['ctFieldForce']))
+print(np.median(data[fltr]['minForce']))
+print(np.median(data[fltr]['maxForce']))
+print(np.std(data[fltr]['ctFieldForce']))
+
+co_order = []
+box_pairs=[]
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['ctFieldForce'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=False, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'v', stressBoxPlot= False, 
+                          returnData = 1, returnCount = 1)
+
+
+plt.show()
+
+# %%%% Figures for the paper
+
+# %%%%% Thickness
+
+# %%%%% Stiffness
+
+data_main = GlobalTable_meca_HoxB8_new
+fitType = 'stressRegion'
+fitId = '250_100'
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['fit_valid'] == True),
+           # (data['fit_K'] > 1000),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+descText = """
+data_main = GlobalTable_meca_HoxB8_new
+fitType = 'stressRegion'
+fitId = '250_100'
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['fit_valid'] == True),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+"""
+
+
+co_order = []
+box_pairs=[]
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['fit_K'],Filters=Filters,
+                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1, orientation = 'v', stressBoxPlot=2,
+                          returnData = 1, returnCount = 1)
+# ax[0].set_ylim([1e2,1.2e4])
+renameAxes(ax,renameDict1)
+# fig.suptitle('Fig 1 - Stiffness - A11\n' + StressRegion[1:] + ' Pa')
+
+# ufun.archiveFig(fig, name=('Fig1_K' + srs + '_A11_allComps'), figDir = 'MCA_Paper'+extDir, dpi = 100)
+# ufun.archiveData(dfexport, name=('Fig1_K' + srs + '_A11_allComps'), 
+#                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
+print(dfcount[['cellCount', 'compCount']])
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['fit_K'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1.2, orientation = 'v', stressBoxPlot= 1, 
+                          returnData = 1, returnCount = 1)
+# ax[0].set_ylim([3e2,1.2e4])
+renameAxes(ax,renameDict1)
+# fig.suptitle('Fig 1 - Stiffness - A11\n' + StressRegion[1:] + ' Pa')
+
+# ufun.archiveFig(fig, name=('Fig1_K' + srs + '_A11_cellAvg'), figDir = 'MCA_Paper'+extDir, dpi = 100)
+# ufun.archiveData(dfexport, name=('Fig1_K' + srs + '_A11_cellAvg'), 
+#                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
 
 
 
+plt.show()
