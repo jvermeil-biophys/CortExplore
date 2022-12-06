@@ -27,8 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
-import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
 
 import os
 import re
@@ -50,6 +50,7 @@ from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
+from PyQt5 import QtWidgets as Qtw
 
 #### Local Imports
 
@@ -1129,3 +1130,104 @@ def lighten_color(color, amount=0.5):
         c = color
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return(colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2]))
+
+# %%% User Input
+
+class ChoicesBox(Qtw.QMainWindow):
+    def __init__(self, choicesDict, title = 'Multiple choice box'):
+        super().__init__()
+        
+        
+        self.choicesDict = choicesDict
+        self.questions = [k for k in choicesDict.keys()]
+        self.nQ = len(self.questions)
+        
+        self.res = {}
+        self.list_rbg = [] # rbg = radio button group
+
+        self.setWindowTitle(title)
+        
+        layout = Qtw.QVBoxLayout()  # layout for the central widget
+        main_widget = Qtw.QWidget(self)  # central widget
+        main_widget.setLayout(layout)
+        
+        for q in self.questions:
+            choices = self.choicesDict[q]
+            label = Qtw.QLabel(q)
+            layout.addWidget(label)
+            rbg = Qtw.QButtonGroup(main_widget)
+            for c in choices:
+                rb = Qtw.QRadioButton(c)
+                rbg.addButton(rb)
+                layout.addWidget(rb)
+                
+            self.list_rbg.append(rbg)
+            layout.addSpacing(20)
+        
+        valid_button = Qtw.QPushButton('OK', main_widget)
+        layout.addWidget(valid_button)
+        
+        self.setCentralWidget(main_widget)
+        
+        valid_button.clicked.connect(self.validate_button)
+
+
+    def validate_button(self):
+        array_err = np.array([rbg.checkedButton() == None for rbg in self.list_rbg])
+        Err = np.any(array_err)
+        if Err:
+            self.error_dialog()
+        else:
+            for i in range(self.nQ):
+                q = self.questions[i]
+                rbg = self.list_rbg[i]
+                self.res[q] = rbg.checkedButton().text()
+                
+            self.quit_button()
+            
+    def error_dialog(self):
+        dlg = Qtw.QMessageBox(self)
+        dlg.setWindowTitle("Error")
+        dlg.setText("Please make a choice in each category.")
+        dlg.exec()
+        
+    def quit_button(self):
+        Qtw.QApplication.quit()
+        self.close()
+
+
+def makeChoicesBox(choicesDict):
+    """
+    Create and show a dialog box with multiple choices.
+    
+
+    Parameters
+    ----------
+    choicesDict : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    app = Qtw.QApplication(sys.argv)
+    
+    box = ChoicesBox(choicesDict)
+    box.show()
+        
+    app.exec()
+    res = box.res
+    return(res)
+
+
+
+
+
+
+
+
+
+
+
+
