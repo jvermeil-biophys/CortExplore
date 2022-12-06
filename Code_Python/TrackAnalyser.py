@@ -1,8 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 19 13:07:45 2022
+@author: Joseph Vermeil & Anumita Jawahar
 
-@author: JosephVermeil & AnumitaJawahar
+UtilityFunctions.py - import with "import TrackAnalyser as taka"
+Joseph Vermeil, Anumita Jawahar, 2022
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # %% (0) Imports and settings
@@ -57,6 +72,7 @@ for i in range(5,105,5):
                     
 # %% (1) TimeSeries functions
 
+
 def getCellTimeSeriesData(cellID, fromPython = True):
     if fromPython:
         allTimeSeriesDataFiles = [f for f in os.listdir(cp.DirDataTimeseries) 
@@ -83,6 +99,7 @@ def getCellTimeSeriesData(cellID, fromPython = True):
                 if 'Unnamed' in c:
                     timeSeriesDataFrame = timeSeriesDataFrame.drop([c], axis=1)
     return(timeSeriesDataFrame)
+
 
 def plotCellTimeSeriesData(cellID, fromPython = True):
     X = 'T'
@@ -409,12 +426,16 @@ dictColumnsMeca = {'date':'',
                    'jumpD3':np.nan,
                    'minForce':np.nan, 
                    'maxForce':np.nan, 
+                   'ctFieldForce':np.nan,
                    'minStress':np.nan, 
                    'maxStress':np.nan, 
                    'minStrain':np.nan, 
                    'maxStrain':np.nan,
                    'ctFieldThickness':np.nan,
                    'ctFieldFluctuAmpli':np.nan,
+                   'ctFieldMinThickness':np.nan,
+                   'ctFieldMaxThickness':np.nan,
+                   'ctFieldVarThickness':np.nan,
                    'ctFieldDX':np.nan,
                    'ctFieldDZ':np.nan,
                    'bestH0':np.nan,
@@ -740,6 +761,7 @@ def fitH0_allMethods(hCompr, fCompr, DIAMETER):
 
 
 
+
 def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnalysedTs = False):
     
     print(gs.BLUE + f + gs.NORMAL)
@@ -795,10 +817,16 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     # These values are computed once for the whole cell D3 time series, but since the table has 1 line per compression, 
     # that same value will be put in the table for each line corresponding to that cell
     ctFieldH = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'D3'].values - DIAMETER)
+    ctFieldF = (tsDF.loc[tsDF['idxAnalysis'] == 0, 'F'].values)
     ctFieldDX = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dx'].values - DIAMETER)
     ctFieldDZ = np.median(tsDF.loc[tsDF['idxAnalysis'] == 0, 'dz'].values)
-    ctFieldThickness   = np.median(ctFieldH)
-    ctFieldFluctuAmpli = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
+    ctFieldThickness    = np.median(ctFieldH)
+    ctFieldMinThickness = np.min(ctFieldH)
+    ctFieldMaxThickness = np.max(ctFieldH)
+    ctFieldVarThickness = np.var(ctFieldH)
+    ctFieldFluctuAmpli  = np.percentile(ctFieldH, 90) - np.percentile(ctFieldH,10)
+
+    ctFieldForce   = np.median(ctFieldF)
     
     #### Save stress-strain [1/3] 
     # Export a file "Timeseries_stress-strain"
@@ -976,6 +1004,9 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
             results['ctFieldDZ'][i] = ctFieldDZ
             results['ctFieldThickness'][i] = ctFieldThickness
             results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
+            results['ctFieldMinThickness'][i] = ctFieldMinThickness
+            results['ctFieldMaxThickness'][i] = ctFieldMaxThickness
+            results['ctFieldVarThickness'][i] = ctFieldVarThickness
             results['jumpD3'][i] = jumpD3
 
             validatedThickness = np.min([results['initialThickness'][i],results['minThickness'][i],
@@ -985,6 +1016,7 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
             results['validatedThickness'][i] = validatedThickness
             results['minForce'][i] = np.min(fCompr)
             results['maxForce'][i] = np.max(fCompr)
+            results['ctFieldForce'][i] = ctFieldForce
 
             
     
@@ -1658,6 +1690,8 @@ def analyseTimeSeries_meca(f, tsDF, expDf, dictColumnsMeca, task, PLOT, saveAnal
     for k in results.keys():
         results[k] = np.array(results[k])
     result_df = pd.DataFrame(results)
+
+    
     return(result_df)
 
 
@@ -2093,7 +2127,7 @@ def createDataDict_sinus(listFiles, listColumns, PLOT):
 
 
 
-# %% (5) General import functions
+# %% (3) General import functions
     
 # %%% Main functions
 
@@ -2147,24 +2181,16 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
     
     df = getAnalysisTable(fileName)
     
-    if mergeExpDf:
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
-        df = pd.merge(expDf, df, how="inner", on='manipID', suffixes=("_x", "_y"),
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     copy=True,indicator=False,validate=None,
-        )
-        
-    df = ufun.removeColumnsDuplicate(df)
-        
+    
     if mergeFluo:
         fluoDf = getFluoData()
-        df = pd.merge(df, fluoDf, how="left", on='cellID', suffixes=("_x", "_y"),
+        df = pd.merge(fluoDf, df, how="right", on='cellID', suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,
         )
-        
     df = ufun.removeColumnsDuplicate(df)
         
+    
     if mergeUMS:
         if 'ExpDay' in df.columns:
             dateColumn = 'ExpDay'
@@ -2187,10 +2213,21 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         umsDf = pd.concat(listDF_UMS_matching)
         # f_filterCol = lambda x : x not in ['date', 'cellName', 'manipID']
         # umsCols = umsDf.columns[np.array([f_filterCol(c) for c in umsDf.columns])]   
-        
-        df = pd.merge(df, umsDf, how="left", on=['cellID', 'compNum'], suffixes=("_x", "_y"),
+    
+        df = pd.merge(umsDf, df, how="right", on=['cellID', 'compNum'], suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,[umsCols]
+        )
+        
+    df = ufun.removeColumnsDuplicate(df)
+    
+    
+    
+    if mergeExpDf:
+        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
+        df = pd.merge(expDf, df, how="inner", on='manipID', suffixes=("_x", "_y"),
+        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
+        #     copy=True,indicator=False,validate=None,
         )
         
     df = ufun.removeColumnsDuplicate(df)

@@ -5,7 +5,7 @@ Created on Tue Nov 23 17:50:53 2021
 @author: Joseph Vermeil
 """
 
-# %% General imports
+# %% > General imports
 
 # 1. Imports
 import numpy as np

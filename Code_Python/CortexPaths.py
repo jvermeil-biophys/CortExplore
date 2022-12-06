@@ -1,8 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jul 19 11:51:13 2022
-
 @authors: Joseph Vermeil, Anumita Jawahar
+
+CortexPaths.py - state all the paths to folders and files used by CortExplore programs, 
+to be imported with "import CortexPaths as cp" and call the constants with "cp".my_path".
+Joseph Vermeil, Anumita Jawahar, 2022
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 # %% 0. Imports
@@ -68,6 +84,7 @@ DirDataRawDepthoInter = os.path.join(DirDataRawDeptho, 'IntermediateSteps')
 # DirDataExp = os.path.join(DirData, "Data_Experimental")
 
 DirDataAnalysis = os.path.join(DirData, "Data_Analysis")
+DirDataAnalysisFits = os.path.join(DirDataAnalysis, "Fits")
 DirDataAnalysisUMS = os.path.join(DirDataAnalysis, "UserManualSelection")
 DirDataTimeseries = os.path.join(DirData, "Data_Timeseries")
 DirDataTimeseriesRawtraj = os.path.join(DirDataTimeseries, "Trajectories_raw")
@@ -80,13 +97,14 @@ DirDataFigToday = os.path.join(DirDataFig, "Historique", str(date.today()))
 if not CloudSaving == '':
     DirCloudExp = os.path.join(DirCloud, "Data_Experimental")
     DirCloudAnalysis = os.path.join(DirCloud, "Data_Analysis")
+    DirCloudAnalysisFits = os.path.join(DirCloudAnalysis, "Fits")
     DirCloudAnalysisUMS = os.path.join(DirCloudAnalysis, "UserManualSelection")
     DirCloudTimeseries = os.path.join(DirCloud, "Data_Timeseries")
     DirCloudTimeseriesStressStrain = os.path.join(DirCloudTimeseries, "Timeseries_stress-strain")
     DirCloudFig = os.path.join(DirCloud, "Figures")
     DirCloudFigToday = os.path.join(DirCloudFig, "Historique", str(date.today()))
 else:
-    DirCloudExp, DirCloudAnalysis, DirCloudAnalysisUMS = "", "", "" 
+    DirCloudExp, DirCloudAnalysis, DirCloudAnalysisFits, DirCloudAnalysisUMS = "", "", "", ""
     DirCloudTimeseries, DirCloudTimeseriesStressStrain = "", ""
     DirCloudFig, DirCloudFigToday = "", ""
 
@@ -182,7 +200,7 @@ def makeDirArchi():
 
                 
                 
-# %% Final Architecture
+# %% Final Architecture - august 2022
 
 # Notes:
 # > ## is the user's suffix (AJ: Anumita Jawahar, JV: Joseph Vermeil, DB: Dulamkhuu Bujaa).
