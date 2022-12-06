@@ -112,7 +112,7 @@ class PincherTimeLapse:
     - ptl.makeFramesList() : Initialize the frame list.
     - ptl.detectBeads() : Detect all the beads or load their positions from a pre-existing '_Results.txt' file.
     - ptl.buildTrajectories() : Do the tracking of the beads of interest, with the user help, or load pre-existing trajectories.
-    [In the meantime, Z computations and neighbours detections are performed on the Trajectory objects]
+      [In the meantime, Z computations and neighbours detections are performed on the Trajectory objects]
     - ptl.computeForces() : when the Trajectory objects are complete (with Z and neighbours), compute the forces.
                             Include recent corrections to the formula [October 2021].
     """
