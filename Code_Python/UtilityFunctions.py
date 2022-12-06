@@ -60,6 +60,88 @@ dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
 # %% (1) Utility functions
 
+
+# %%% Image management - nomeclature and creating stacks
+
+def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
+    """
+    Used for metamorph created files.
+    Metamoprh does not save images in stacks but individual triplets. These individual triplets take time
+    to open in FIJI.
+    This function takes images of a sepcific channel and creates .tif stacks from them.
+       
+    """
+    
+    allCells = os.listdir(DirExt)
+    excludedCells = []
+    for currentCell in allCells:
+        dirPath = os.path.join(DirExt, currentCell)
+        allFiles = os.listdir(dirPath)
+        date = findInfosInFileName(currentCell, 'date')
+        
+        # date = date.replace('-', '.')
+        filename = currentCell+'_'+channel
+
+        try:
+            os.mkdir(DirSave+'/'+currentCell)
+        except:
+            pass
+        
+        allFiles = [dirPath+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        #+4 at the end corrosponds to the '_t' part to sort the array well
+        limiter = len(dirPath)+len(prefix)+len(channel)+4
+        
+        try:
+            allFiles.sort(key=lambda x: int(x[limiter:-4]))
+        except:
+            print('Error in sorting files')
+        
+        try:
+            ic = io.ImageCollection(allFiles, conserve_memory = True)
+            stack = io.concatenate_images(ic)
+            io.imsave(DirSave+'/'+currentCell+'/'+filename+'.tif', stack)
+        except:
+            excludedCells.append(currentCell)
+            print(gs.ORANGE + "Unknown error in saving "+currentCell + gs.NORMAL)
+            
+    return excludedCells
+        
+def renamePrefix(DirExt, currentCell, newPrefix):
+    """
+    Used for metamorph created files.
+    Metamorph creates a new folder for each timelapse, within which all images contain a predefined 
+    'prefix' and 'channel' name which can differ between microscopes. Eg.: 'w1TIRF_DIC' or 'w2TIRF_561'
+    
+    If you forget to create a new folder for a new timelapse, Metamorph automatically changes the prefix
+    to distinguish between the old and new timelapse triplets. This can get annoying when it comes to processing 
+    many cells.
+    
+    This function allows you to rename the prefix of all individual triplets in a specific folder. 
+    
+    """
+    
+    path = os.path.join(DirExt, currentCell)
+    allImages = os.listdir(path)
+    for i in allImages:
+        if i.endswith('.TIF'):
+            split = i.split('_')
+            if split[0] != newPrefix:
+                split[0] = newPrefix
+                newName = '_'.join(split)
+                try:
+                    os.rename(os.path.join(path,i), os.path.join(path, newName))
+                except:
+                    print(currentCell)
+                    print(gs.ORANGE + "Error! There may be other files with the new prefix you can trying to incorporate" + gs.NORMAL)
+        
+        if i.endswith('.nd'):
+            newName = newPrefix+'.nd'
+            try:
+                os.rename(os.path.join(path,i), os.path.join(path, newName))
+            except:
+                print(currentCell)
+                print(gs.YELLOW + "Error! There may be other .nd files with the new prefix you can trying to incorporate" + gs.NORMAL)
+            
 # %%% Data management
 
 def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix):

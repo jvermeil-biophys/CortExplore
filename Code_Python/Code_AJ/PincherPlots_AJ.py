@@ -1055,8 +1055,8 @@ plotDf2 = {'cellID': [],
 KChadwickLim = 50000
 
 fitC =  np.array([S for S in range(100, 1150, 50)])
-# fitW = [100,150,200] # [150] # [200, 250, 300]
-fitW = [150] #, 150, 200]
+fitW = [100,150,200] # [150] # [200, 250, 300]
+# fitW = [150] #, 150, 200]
 
 fitCenters = np.array([[int(S) for S in fitC] for w in fitW]).flatten()
 fitWidth = np.array([[int(w) for S in fitC] for w in fitW]).flatten()
@@ -1070,10 +1070,14 @@ fitMin, fitMax = fitMin[fitMin>0], fitMax[fitMin>0]
 stressRanges = ['S='  + str(fitCenters[ii]) + '+/-' + str(int(fitWidth[ii]//2)) for ii in range(len(fitCenters))]
 
 plotDf2['cellID'] = GlobalTable_meca['cellID']
+plotDf2['date'] = GlobalTable_meca['date']
 plotDf2['minStress'] = GlobalTable_meca['minStress']
 plotDf2['maxStress'] = GlobalTable_meca['maxStress']
 plotDf2['compNum'] = GlobalTable_meca['compNum']
 plotDf2['activationTag'] = GlobalTable_meca['manip']
+plotDf2['bestH0'] = GlobalTable_meca['bestH0']
+plotDf2['surroundingThickness'] = GlobalTable_meca['surroundingThickness']
+
 plotDf2 = pd.DataFrame(plotDf2)
 
 
@@ -1339,21 +1343,37 @@ plotDf2 = GlobalTable_meca
 #%%
 plt.style.use('dark_background')
 
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+
+GlobalTable_meca = GlobalTable_meca[(GlobalTable_meca['manipID'].str.contains('M1')) | (GlobalTable_meca['manipID'].str.contains('M5'))]
+
+excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9', '22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
+                        '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
+                        '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
+    
+
+
+for i in excluded:
+    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
 
 # conditions = ['M1', 'M3', 'M5']
 # conditions = ['M2', 'M6']
 conditions = ['M5', 'M6']
+# conditions = ['M1', 'M5']
 # conditions = ['M1', 'M2', 'M5', 'M6']
 # conditions = ['22-10-06']
 # conditions = ['M1', 'M2']
+# conditions = ['M1']
+
 plotDf = plotDf2
 
-cD = { #'M1':[gs.colorList40[8], gs.colorList40[8]],
-       # 'M2':[gs.colorList40[28], gs.colorList40[28]], #,
-      # 'M3':[gs.colorList40[10], gs.colorList40[10]],
-        # 'M4':[gs.colorList40[30], gs.colorList40[30]],
-        'M5':[gs.colorList40[12], gs.colorList40[12]],
-        'M6':[gs.colorList40[32], gs.colorList40[32]]}
+cD = {#'M1':[gs.colorList40[8], gs.colorList40[8]],
+#         # 'M2':[gs.colorList40[28], gs.colorList40[28]]} #, #,
+#       # 'M1':[gs.colorList40[10], gs.colorList40[10]]}#,
+#        # 'M1':[gs.colorList40[30], gs.colorList40[30]]} #,
+          'M5':[gs.colorList40[12], gs.colorList40[12]],
+          'M6':[gs.colorList40[32], gs.colorList40[32]]}
 
 # cD = {'22-10-06':[gs.colorList40[32], gs.colorList40[32]]}
 
@@ -1496,7 +1516,7 @@ ufun.archiveFig(fig, name='Pooled_K(s)'+width, figDir = todayFigDir+'/Mechanics_
 #%%
 #### Local zoom
 
-Sinf, Ssup = 200, 450
+Sinf, Ssup = 250, 400
 extraFilters = [plotDf2['minStress'] <= Sinf, plotDf2['maxStress'] >= Ssup] # >= 800
 fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
 fitWidth = np.array([[int(w) for S in fitCenters] for w in fitW]).flatten()
@@ -1742,6 +1762,95 @@ for selectedStressRange in stressRanges:
 plt.show()
 plt.close('all')
 
+
+#%%%% H0 vs. Compression No
+
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+
+excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9']
+
+# excluded = ['22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
+#             '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
+#             '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
+
+ctrl = 'M5'
+active = 'M6'
+
+for i in excluded:
+    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
+
+df = plotDf2[(plotDf2['activationTag'] == ctrl) | (plotDf2['activationTag'] == active)]
+
+noCells = len(np.unique(plotDf2['cellID'][plotDf2['activationTag'] == 'M5']))
+
+
+# ch1 = 'M1'
+# ch3 = 'M5'
+
+# df = plotDf2[(plotDf2['activationTag'] == ch1)| (plotDf2['activationTag'] == ch3)]
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+
+x = df['compNum']*20
+sns.lineplot(x = x, y = 'bestH0', data = df, hue = 'activationTag')
+
+fig1.suptitle(' [15mT = 500pN] bestH0 (nm) vs. Compression No. | n = '+str(noCells))
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('Best H0 (nm)', fontsize = 25)
+
+plt.savefig(todayFigDir + '/22-10-06_15mT_BestH0vsCompr.png')
+
+plt.show()
+
+#%%%% surroundingThickness vs. Compression No
+
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+
+
+excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9']
+
+# excluded = ['22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
+#             '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
+#             '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
+
+ctrl = 'M5'
+active = 'M6'
+
+
+
+for i in excluded:
+    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
+
+df = plotDf2[(plotDf2['activationTag'] == ctrl) | (plotDf2['activationTag'] == active)]
+
+
+# ch1 = 'M1'
+# ch3 = 'M5'
+
+# df = plotDf2[(plotDf2['activationTag'] == ch1)| (plotDf2['activationTag'] == ch3)]
+
+
+noCells = len(np.unique(plotDf2['cellID'][plotDf2['activationTag'] == 'M5']))
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = df['compNum']*20
+
+sns.lineplot(x = x, y = 'surroundingThickness', data = df, hue = 'activationTag')
+
+fig1.suptitle('[15mT = 500pN] Surrounding thickness (nm) vs. Compression No. | n = '+str(noCells))
+
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('Surrounding Thickness (nm)', fontsize = 25)
+plt.savefig(todayFigDir + '/22-10-06_5mT_SurroundingThicknessvsCompr.png')
+plt.show()
 #%%%%
 # # %%% Tests
 

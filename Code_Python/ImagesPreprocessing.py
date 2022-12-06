@@ -23,7 +23,7 @@ from skimage import io
 
 import sys
 import CortexPaths as cp
-sys.path.append(cp.DirRepoPython)
+os.chdir(cp.DirRepoPython)
 
 import GraphicStyles as gs
 import GlobalConstants as gc
@@ -31,9 +31,9 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '22.10.06'
+date = '22.11.16'
 DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'F:/20221006_3t3optorhoa_100x_4.5StreptBeads_Mechanics/22.10.06'
+DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'
@@ -374,8 +374,6 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             count = count + 1
 
 
-
-
 # preprocess(DirExt, DirSave, microscope, reset = 0)    
 
 #%% Main function 1/2
@@ -440,7 +438,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 24
+limiter = 40
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 
@@ -486,7 +484,7 @@ for i in range(min(len(allZimg), limiter)):
         if key == ord("r"):
             img = np.copy(img_backup)  
              
-    # if the 'a' key is pressed, break from the loop and move on to the next file
+    # if the 'a' key is pressed, break from the loop and move on to t/he next file
         elif key == ord("a"):
             allRefPoints.append(np.asarray(ref_point)*scaleFactor)
             allCellsToCrop.append(currentCell)
