@@ -50,6 +50,8 @@ from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
+from collections.abc import Collection
+from copy import deepcopy
 
 #### Local Imports
 
@@ -72,7 +74,6 @@ gs.set_default_options_jv()
 dateFormatExcel = re.compile(r'[1-2]\d{1}/\d{2}/(?:19|20)\d{2}') # matches X#/##/YY## where X in {1, 2} and YY in {19, 20}
 dateFormatExcel2 = re.compile(r'[1-2]\d-\d{2}-(?:19|20)\d{2}') # matches X#-##-YY## where X in {1, 2} and YY in {19, 20}
 dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
-
 
 
 # %% (1) Utility functions
@@ -558,7 +559,49 @@ def archiveData(df, name = '', sep = ';', descText = '',
             f.close()
         
     
+def updateDefaultSettingsDict(settingsDict, defaultSettingsDict):
+    """
+    Update defaultSettingDict with new values contained in settingDict.
 
+    Parameters
+    ----------
+    settingDict : dict
+        Contains new {SettingName (string) : SettingValue (object)} pairs.
+    defaultSettingDict : dict
+        Contains all default {SettingName (string) : SettingValue (object)} pairs.
+
+    Returns
+    -------
+    newSettingDict : dict
+        Contains all default {SettingName (string) : SettingValue (object)} pairs, 
+        but updated where new setting values were inputed from settingDict.
+        
+    Example
+    -------
+    >>> defaultSettingsDict = {'A':1, 'B': 10, 'C': True}
+    >>> settingsDict = {'A':1000, 'D': False}
+    >>> newSettingsDict = updateDefaultSettingsDict(settingDict, 
+                                                  defaultSettingDict)
+    >>> newSettingsDict
+    Out[1]: {'A': 1000, 'B': 10, 'C': True, 'D': False}
+    
+    >>> defaultSettingsDict = {'A':1, 'B': 10, 'C': True}
+    >>> settingsDict = {} # We don't want to modify the default settings
+    >>> newSettingsDict = updateDefaultSettingsDict(settingsDict, 
+                                                    defaultSettingsDict)
+    >>> newSettingsDict
+    Out[2]: {'A':1, 'B': 10, 'C': True}
+    
+    IMPORTANT NOTE
+    --------------
+    I'M GUTTED !!!! This is exactly what the method dict1.update(dict2) does !!!
+    At least it shows that my way of proceeding isn't totally weird.
+    """
+    
+    newSettingsDict = deepcopy(defaultSettingsDict)
+    for k in settingsDict.keys():
+        newSettingsDict[k] = settingsDict[k]
+    return(newSettingsDict)
 
 
 # %%% File manipulation
@@ -993,16 +1036,37 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
+
 def toList(x):
     """
     if x is a list, return x
-    if x is a number, return [x]
+    if x is not a list, return [x]
+    
+    Reference
+    ---------
+    https://docs.python.org/3/library/collections.abc.html
     """
-    try:
-        x = list(x)
-        return(x)
-    except:
-        return([x])
+    t1 = isinstance(x, str) # Test if x is a string
+    if t1: # x = 'my_string'
+        return([x]) # return : ['my_string']
+    else:
+        t2 = isinstance(x, Collection) # Test if x is a Collection
+        if t2: # x = [1,2,3] or x = array([1, 2, 3]) or x = {'k1' : v1}
+            return(x) # return : x itself
+        else: # x is not a Collection : probably a number or a boolean
+            return([x]) # return : [x]
+        
+# def toList_V0(x):
+#     """
+#     if x is a list, return x
+#     if x is not a list, return [x]
+#     """
+#     try:
+#         x = list(x)
+#         return(x)
+#     except:
+#         return([x])
+
     
 def drop_duplicates_in_array(A):
     val, idx = np.unique(A, return_index = True)
