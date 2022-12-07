@@ -51,7 +51,7 @@ sys.path.append(cp.DirRepoPython)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 
-# %%% Warniong setting
+# %%% Warning setting
 
 
 
