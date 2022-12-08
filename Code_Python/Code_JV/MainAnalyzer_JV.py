@@ -277,19 +277,19 @@ df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
 
 # %%%%% Plot a precise date
 
-# plotSettings = {# ON/OFF switchs plot by plot
-#                 'FH(t)':False,
-#                 'F(H)':True,
-#                 'S(e)_stressRegion':False,
-#                 'K(S)_stressRegion':False,
-#                 'S(e)_stressGaussian':False,
-#                 'K(S)_stressGaussian':False,
-#                 'S(e)_nPoints':True,
-#                 'K(S)_nPoints':True,
-#                 # Fits plotting parameters
-#                 'plotCenters': [ii for ii in range(100, 1550, 50)],
-#                 'plotHW': 50
-#                 }
+plotSettings = {# ON/OFF switchs plot by plot
+                'FH(t)':False,
+                'F(H)':True,
+                'S(e)_stressRegion':False,
+                'K(S)_stressRegion':False,
+                'S(e)_stressGaussian':False,
+                'K(S)_stressGaussian':False,
+                'S(e)_nPoints':True,
+                'K(S)_nPoints':True,
+                # Fits plotting parameters
+                'plotCenters': [ii for ii in range(100, 1550, 50)],
+                'plotHW': 50
+                }
 
 plotSettings = {}
 

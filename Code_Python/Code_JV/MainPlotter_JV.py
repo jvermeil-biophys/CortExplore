@@ -376,6 +376,14 @@ MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 #### MecaData_HoxB8
 # MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8')
 
+# %%
+
+data_main = MecaData_Drugs
+
+fitType = 'stressRegion'
+fitId = '_75'
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
 
 # %% > Plotting Functions
 
@@ -2112,9 +2120,9 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
             for kk in range(len(N)):
                 ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
     
-    # plt.plot()
-    # return(data_ff, data_agg)
-    return(fig, ax)
+    plt.plot()
+    return(data_ff, data_agg)
+    # return(fig, ax)
     
 
 
@@ -2135,14 +2143,19 @@ Filters = [(data['validatedThickness'] == True),
 
 
 
-fig1, ax1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+data_ff1, data_agg1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
-fig2, ax2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+data_ff2, data_agg2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
 
-fig1.suptitle('3T3 vs. HoxB8 - stiffness')
-fig2.suptitle('3T3 vs. HoxB8 - stiffness')
-plt.show()
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+# plt.show()
 
 
 
