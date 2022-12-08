@@ -1190,5 +1190,11 @@ def lighten_color(color, amount=0.5):
 # %%
 
 def new_fun():
+    """
+    
+    :return: DESCRIPTION
+    :rtype: TYPE
+
+    """
     pass
 
