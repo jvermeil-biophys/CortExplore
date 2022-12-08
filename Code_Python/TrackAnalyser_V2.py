@@ -51,9 +51,6 @@ sys.path.append(cp.DirRepoPython)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 
-# %%% Warniong setting
-
-
 
 # %%% Smaller settings
 
@@ -844,8 +841,14 @@ def makeDictFit_hf(params, ses, error,
     
     Note
     -------
-    The inputs params, ses, error should be taken from the output of the functions 
-    **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+    1. The inputs params, ses, error should be taken from the output of the functions 
+       **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+    
+    2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
+        i) from scipy import stats
+        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
+        iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
+        iv) ConfInt = [params - q*se, params + q*se]
 
     """
     if not error:
@@ -946,8 +949,14 @@ def makeDictFit_ss(params, ses, error,
     
     Note
     -------
-    The inputs params, ses, error should be taken from the output of the function
-    **fitLinear_ss()**.
+    1. The inputs params, ses, error should be taken from the output of the function
+       **fitLinear_ss()**.
+    
+    2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
+        i) from scipy import stats
+        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
+        iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
+        iv) ConfInt = [params - q*se, params + q*se]
     """
     
     nbPts = len(y)

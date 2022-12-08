@@ -196,12 +196,12 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
 # %%%% Create a table from scratch
 
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'MecaData_All_JV', 
-                                    save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Refresh an entire table
 
 res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'MecaData_All_JV', 
-                                    save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Drugs
 
@@ -213,7 +213,7 @@ res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileN
 
 nonLinTask = '21-12-08 & 22-01-12 & 22-02-09'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = nonLinTask, fileName = 'MecaData_NonLin', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% MCA
 
@@ -243,7 +243,7 @@ for d in all_dates[:-1]:
 all_MCAtask += all_dates[-1]
 
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = all_MCAtask, fileName = 'MecaData_MCA', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% HoxB8
 
@@ -251,7 +251,7 @@ res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = all_MCAtask, fi
 
 HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05' '22-05-03 & 22-05-04 & 22-05-05'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = HoxB8task, fileName = 'MecaData_HoxB8', 
-                                    save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
