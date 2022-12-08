@@ -359,22 +359,22 @@ testTraj(1.5)
 #### Data import
 
 #### GlobalTable_ctField
-GlobalTable_ctField = taka.getMergedTable('CtFieldData_All_JV')
+CtFieldData_All_JV = taka2.getMergedTable('CtFieldData_All_JV', mergeUMS = False)
 
-#### GlobalTable_meca
-GlobalTable_meca = taka.getMergedTable('MecaData_All_JV')
+#### MecaData_All
+MecaData_All = taka2.getMergedTable('MecaData_All_JV')
 
-#### GlobalTable_meca_NonLin
-GlobalTable_meca_NonLin = taka.getMergedTable('MecaData_NonLin')
+#### MecaData_NonLin
+MecaData_NonLin = taka2.getMergedTable('MecaData_NonLin')
 
-#### Global_MecaData_Drugs
-Global_MecaData_Drugs = taka.getMergedTable('MecaData_Drugs')
+#### MecaData_Drugs
+MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 
-#### GlobalTable_meca_MCA
-# GlobalTable_meca_MCA = taka.getMergedTable('MecaData_MCA')
+#### MecaData_MCA
+# MecaData_MCA = taka2.getMergedTable('MecaData_MCA')
 
-#### Global_MecaData_HoxB8
-# Global_MecaData_HoxB8 = taka.getMergedTable('MecaData_HoxB8')
+#### MecaData_HoxB8
+# MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8')
 
 
 # %% > Plotting Functions
@@ -402,7 +402,10 @@ styleDict1 =  {# Drugs
                'none':{'color': gs.colorList40[10],'marker':'o'},
                'dmso':{'color': gs.colorList40[11],'marker':'o'},
                'blebbistatin':{'color': gs.colorList40[12],'marker':'o'},
-               'latrunculinA':{'color': gs.colorList40[13],'marker':'o'}
+               'latrunculinA':{'color': gs.colorList40[13],'marker':'o'},
+               # Cell types
+               '3T3':{'color': gs.colorList40[31],'marker':'o'},
+               'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
                }
 
 splitterStyleDict_MCA = {'high':'^',
@@ -1493,7 +1496,7 @@ def getAggDf(df, cellID, CondCol, Variables):
     return(dfAgg)
 
 
-def getAggDf_weightedAvg(df, cellID, CondCol, Variables, WeightCols):
+def getAggDf_weightedAvg(df, cellID, CondCol, Variables, weightCols):
     
     def w_std(x, w):
         m = np.average(x, weights=w)
@@ -1507,20 +1510,20 @@ def getAggDf_weightedAvg(df, cellID, CondCol, Variables, WeightCols):
         else:
             return(x)
     
-    dictWeights = {}
+    dictweights = {}
     for i in range(len(Variables)):
         v = Variables[i]
-        w = WeightCols[i]
-        dictWeights[v] = w
+        w = weightCols[i]
+        dictweights[v] = w
 
     for v in Variables:
         df[v] = df[v].apply(nan2zero)
-        df[dictWeights[v]] = df[dictWeights[v]].apply(nan2zero)
+        df[dictweights[v]] = df[dictweights[v]].apply(nan2zero)
     cellIDvals = df['cellID'].unique()
     for v in Variables:
         for c in cellIDvals:
             if np.sum(df.loc[df['cellID'] == c, v].values) == 0:
-                df.loc[df['cellID'] == c, dictWeights[v]].apply(lambda x: 0)
+                df.loc[df['cellID'] == c, dictweights[v]].apply(lambda x: 0)
     
     
     
@@ -1550,19 +1553,19 @@ def getAggDf_weightedAvg(df, cellID, CondCol, Variables, WeightCols):
     renameDict = {}
     for i in range(len(Variables)):
         v = Variables[i]
-        w = WeightCols[i]
+        w = weightCols[i]
         df_i = df[[cellID, v, w]]
         group_i = df_i.groupby(cellID)
 
         def WMfun(x):
             try:
-                return(np.average(x, weights=df.loc[x.index, dictWeights[v]]))
+                return(np.average(x, weights=df.loc[x.index, dictweights[v]]))
             except:
                 return(np.nan)
             
         def WSfun(x):
             try:
-                return(w_std(x, df.loc[x.index, dictWeights[v]].values))
+                return(w_std(x, df.loc[x.index, dictweights[v]].values))
             except:
                 return(np.nan)
         
@@ -1812,9 +1815,9 @@ def buildStyleDictMCA():
 # %%% Tests of plotting functions
 
 
-#### Test getAggDf_weightedAvg(df, cellID, CondCol, Variables, WeightCols)
+#### Test getAggDf_weightedAvg(df, cellID, CondCol, Variables, weightCols)
 
-# data = GlobalTable_meca_NonLin
+# data = MecaData_NonLin
 
 # dates = ['22-02-09'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
@@ -1837,7 +1840,7 @@ def buildStyleDictMCA():
 # listColumnsMeca = []
 
 # KChadwick_Cols = []
-# KWeight_Cols = []
+# Kweight_Cols = []
 
 # for rFN in regionFitsNames:
 #     listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
@@ -1845,19 +1848,19 @@ def buildStyleDictMCA():
 #     KChadwick_Cols += [('KChadwick_'+rFN)]
 
 #     K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
-#     KWeight = (data_f['KChadwick_'+rFN]/K_CIWidth) # **2
-#     data_f['K_Weight_'+rFN] = KWeight
-#     data_f['K_Weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
-#     data_f['K_Weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
-#     data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
-#     KWeight_Cols += [('K_Weight_'+rFN)]
+#     Kweight = (data_f['KChadwick_'+rFN]/K_CIWidth) # **2
+#     data_f['K_weight_'+rFN] = Kweight
+#     data_f['K_weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
+#     data_f['K_weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
+#     data_f['K_weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+#     Kweight_Cols += [('K_weight_'+rFN)]
     
 
-# # dictWeights = {}
+# # dictweights = {}
 # # for i in range(len(Variables)):
 # #     v = Variables[i]
-# #     w = WeightCols[i]
-# #     dictWeights[v] = w
+# #     w = weightCols[i]
+# #     dictweights[v] = w
 # # def nan2zero(x):
 # #     if np.isnan(x):
 # #         return(0)
@@ -1866,25 +1869,25 @@ def buildStyleDictMCA():
 
 # # for v in Variables:
 # #     df[v] = df[v].apply(nan2zero)
-# #     df[dictWeights[v]] = df[dictWeights[v]].apply(nan2zero)
+# #     df[dictweights[v]] = df[dictweights[v]].apply(nan2zero)
 # # cellIDvals = df['cellID'].unique()
 # # for v in Variables:
 # #     for c in cellIDvals:
 # #         if np.sum(df.loc[df['cellID'] == c, v].values) == 0:
-# #             df.loc[df['cellID'] == c, dictWeights[v]].apply(lambda x: 1)
+# #             df.loc[df['cellID'] == c, dictweights[v]].apply(lambda x: 1)
             
 # # df
 
 # CondCol = 'date'
 # Variables = KChadwick_Cols
-# WeightCols = KWeight_Cols
-# data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, WeightCols)
+# weightCols = Kweight_Cols
+# data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, weightCols)
 # data_f_agg
 
 
 #### Test getAggDf(df, cellID, CondCol, Variables)
 
-# data = GlobalTable_meca
+# data = MecaData_All
 
 # Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True)]
 
@@ -1898,7 +1901,7 @@ def buildStyleDictMCA():
 
 
 #### Test the D2Plot_wFit
-# data = GlobalTable_meca
+# data = MecaData_All
 
 # Filters = [(data['validatedFit'] == True), 
 #            (data['validatedThickness'] == True), 
@@ -1920,10 +1923,10 @@ def buildStyleDictMCA():
 
 #### Test of the averaging per cell routine
 
-# data = GlobalTable_meca
+# data = MecaData_All
 # CondCol='drug'
 # Parameters=['SurroundingThickness','EChadwick']
-# Filters = [(GlobalTable_meca['Validated'] == 1)]
+# Filters = [(MecaData_All['Validated'] == 1)]
 # AvgPerCell=True
 # cellID='CellName'
 
@@ -1990,146 +1993,109 @@ def buildStyleDictMCA():
 # %%%% K(s) - as a function
 
 
-
-def plotPopKS(data, width, centers, Filters = [], condCol = '', 
+def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
               mode = 'wholeCurve', scale = 'lin', printText = True):
-
-    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-    for k in range(0, len(filterList)):
-        globalFilter = globalFilter & filterList[k]
     
-    data_f = data[globalFilter]
-
-    # regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
-    regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(centers[ii], width//2) for ii in range(len(centers))]
-
     fig, ax = plt.subplots(1,1, figsize = (9,6))
 
-    ListDfWhole = []
-
-    conditions = np.array(data_f[condCol].unique())
-
-    valStr = 'KChadwick_'
-    weightStr = 'K_Weight_'
-    
-    listColumnsMeca = []
-    KChadwick_Cols = []
-    KWeight_Cols = []
-    
-    for rFN in regionFitsNames:
-        listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
-                            'H0Chadwick_'+rFN, 'Npts_'+rFN, 'validatedFit_'+rFN]
-        KChadwick_Cols += [('KChadwick_'+rFN)]
-    
-        K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
-        KWeight = (data_f['KChadwick_'+rFN]/K_CIWidth)**2
-        data_f['K_Weight_'+rFN] = KWeight
-        data_f['K_Weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
-        data_f['K_Weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
-        data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
-        KWeight_Cols += [('K_Weight_'+rFN)]
-    
-
-    #### Useful functions
-    
-    def w_std(x, w):
-        m = np.average(x, weights=w)
-        v = np.average((x-m)**2, weights=w)
-        std = v**0.5
-        return(std)
-    
-    def nan2zero(x):
-        if np.isnan(x):
-            return(0)
-        else:
-            return(x)
-    
-    
-    #### Whole curve / local part
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
     
     if mode == 'wholeCurve':
-        data2_f = data_f
-        ax.set_xlim([0, np.max(centers)+50])  
+        Sinf, Ssup = 0, np.Inf
+        ax.set_xlim([0, 1050])  
         
     else:
         bounds = mode.split('_')
         Sinf, Ssup = int(bounds[0]), int(bounds[1])
         extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
-        centers = centers[(centers>=(Sinf)) & (centers<=Ssup)] # <800
     
-        data2_f = data_f
         globalExtraFilter = extraFilters[0]
         for k in range(1, len(extraFilters)):
             globalExtraFilter = globalExtraFilter & extraFilters[k]
-        data2_f = data2_f[globalExtraFilter]
+        data_f = data_f[globalExtraFilter]
             
-        ax.set_xlim([np.min(centers)-50, np.max(centers)+50])        
+        ax.set_xlim([Sinf-50, Ssup+50])     
     
+    fitId = '_' + str(fitWidth)
+    data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    
+    conditions = np.array(data_ff[condCol].unique())
+    centers = np.array(data_ff['fit_center'].unique())
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    # Compute the weighted mean
+    data_ff['KxWeight'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg = grouped1.agg({'compNum' : 'count',
+                            'KxWeight': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg['weightedAvg'] = data_agg['KxWeight']/data_agg['weight']
+    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
+    
+    # Compute the weighted std
+    data_ff['(K-weightedAvg)**2'] = data_ff['fit_K']
     for co in conditions:
-        Kavg = []
-        Kstd = []
-        D10 = []
-        D90 = []
-        N = []
-        
-        data_ff = data2_f[data2_f['cell type'] == co]
+        for ce in centers:
+            weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'weightedAvg'].values[0]
+            
+            index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
+            col_loc = '(K-weightedAvg)**2'
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    data_ff['(K-weightedAvg)**2_xWeight'] = data_ff['(K-weightedAvg)**2'] * data_ff['weight']
+    grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg2 = grouped2.agg({'compNum' : 'count',
+                              '(K-weightedAvg)**2_xWeight': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg2['weightedVar'] = data_agg2['(K-weightedAvg)**2_xWeight']/data_agg2['weight']
+    data_agg2['weightedStd'] = data_agg2['weightedVar']**0.5
+    
+    
+    # Combine all in data_agg
+    data_agg['weightedVar'] = data_agg2['weightedVar']
+    data_agg['weightedStd'] = data_agg2['weightedStd']
+    data_agg['weightedSte'] = data_agg['weightedStd'] / data_agg['compCount']**0.5
+    
+    
+    # Plot
+    for co in conditions:
+        df = data_agg[data_agg[condCol] == co]
         color = styleDict1[co]['color']
+        centers = df['fit_center'].values
+        Kavg = df['weightedAvg'].values
+        Kste = df['weightedSte'].values
+        N = df['compCount'].values
         
-        for ii in range(len(centers)):
-            S = centers[ii]
-            rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
-            variable = valStr+rFN
-            weight = weightStr+rFN
-            
-            x = data_ff[variable].apply(nan2zero).values
-            w = data_ff[weight].apply(nan2zero).values
-            
-            m = np.average(x, weights=w)
-            v = np.average((x-m)**2, weights=w)
-            std = v**0.5
-            
-            d10, d90 = np.percentile(x[x != 0], (10, 90))
-            n = len(x[x != 0])
-            
-            Kavg.append(m)
-            Kstd.append(std)
-            D10.append(d10)
-            D90.append(d90)
-            N.append(n)
-        
-        Kavg = np.array(Kavg)
-        Kstd = np.array(Kstd)
-        D10 = np.array(D10)
-        D90 = np.array(D90)
-        N = np.array(N)
-        Kste = Kstd / (N**0.5)
-        
-        alpha = 0.975
         dof = N
+        alpha = 0.975
         q = st.t.ppf(alpha, dof) # Student coefficient
-        
-        d_val = {'S' : centers, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
-        
+    
         if scale == 'lin':
             if co == conditions[0]:
                 texty = Kavg + 1500
             else:
                 texty = texty + 300
-            
             ax.set_yscale('linear')
-            # ax.set_ylim([0,1.2e1])
-            # ax.set_ylim([0,0.8e1])
+            ax.set_ylim([0, 10])
                 
         elif scale == 'log':
             if co == conditions[0]:
                 texty = Kavg**0.95
             else:
                 texty = texty**0.98
-            
             ax.set_yscale('log')
-            # ax.set_ylim([0.5,2e1])
             
-        # Weighted means -- Weighted ste 95% as error
+        # weighted means -- weighted ste 95% as error
         ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
                     color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
                     ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
@@ -2145,19 +2111,18 @@ def plotPopKS(data, width, centers, Filters = [], condCol = '',
         if printText:
             for kk in range(len(N)):
                 ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
-        
-        df_val = pd.DataFrame(d_val)
-        ListDfWhole.append(df_val)
-        
-    fig.suptitle('K(s)'+' - fits width: {:.0f}Pa'.format(width))  
+    
+    # plt.plot()
+    # return(data_ff, data_agg)
     return(fig, ax)
+    
 
 
 #### Making the Dataframe 
 
-data = GlobalTable_meca_MCAHoxB8
+data = MecaData_All
 
-dates = ['22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+dates = ['21-12-08', '22-01-12', '22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
 Filters = [(data['validatedThickness'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
@@ -2168,14 +2133,12 @@ Filters = [(data['validatedThickness'] == True),
             (data['date'].apply(lambda x : x in dates)),
             (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]  # (data['validatedFit'] == True),
 
-width = 150 # 200
-centers =  np.array([S for S in range(100, 900, 50)])
 
 
-fig1, ax1 = plotPopKS(data, width, centers, Filters = Filters, 
-                    condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
-fig2, ax2 = plotPopKS(data, width, centers, Filters = Filters, 
-                    condCol = 'cell type', mode = '150_450', scale = 'lin', printText = False)
+fig1, ax1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+                                condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+fig2, ax2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+                                condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
 
 fig1.suptitle('3T3 vs. HoxB8 - stiffness')
 fig2.suptitle('3T3 vs. HoxB8 - stiffness')
@@ -2204,7 +2167,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 
 Filters = [(data['validatedFit'] == True), 
            (data['validatedThickness'] == True),
@@ -2224,7 +2187,7 @@ print(data_f[data_f['validatedFit_s<500Pa'] & data_f['validatedFit_500<s<1000Pa'
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fits = ['s<500Pa', '250<s<750Pa', '500<s<1000Pa']
 
@@ -2248,7 +2211,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fits = ['s<500Pa', '250<s<750Pa', '500<s<1000Pa']
 
@@ -2272,7 +2235,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fits = ['s<400Pa', '300<s<700Pa', '600<s<1000Pa']
 
@@ -2296,7 +2259,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-12-08', '22-01-12']
 fits = ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -2321,7 +2284,7 @@ plt.show()
 
 
 # ['21-12-08', '21-12-16', '22-01-12']
-data = GlobalTable_meca
+data = MecaData_All
 
 dates = ['22-02-09'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
@@ -2373,7 +2336,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = 's<200Pa_included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2397,7 +2360,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = '100<s<300Pa_200included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2424,7 +2387,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2451,7 +2414,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['22-01-12']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2478,7 +2441,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21', '22-01-12']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2505,7 +2468,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = 's<300Pa_included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2529,7 +2492,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = '200<s<500Pa_350included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2553,7 +2516,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = 's<200Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2577,7 +2540,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = '250<s<750Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2601,7 +2564,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-01-18', '21-01-21']
 fit = '500<s<1000Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -2625,7 +2588,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-12-08', '21-12-16', '22-01-12']
 fit = '' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -2649,14 +2612,14 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['22-01-12']
 fit = '_s<400Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
-Filters = [(GlobalTable_meca['validatedFit'] == True), 
-           (GlobalTable_meca['validatedThickness'] == True), 
-           (GlobalTable_meca['substrate'] == '20um fibronectin discs'),
-           (GlobalTable_meca['date'].apply(lambda x : x in dates))]
+Filters = [(MecaData_All['validatedFit'] == True), 
+           (MecaData_All['validatedThickness'] == True), 
+           (MecaData_All['substrate'] == '20um fibronectin discs'),
+           (MecaData_All['date'].apply(lambda x : x in dates))]
 
 fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,CondCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
@@ -2672,14 +2635,14 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['22-01-12']
 fit = '_s<300Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
-Filters = [(GlobalTable_meca['validatedFit'] == True), 
-           (GlobalTable_meca['validatedThickness'] == True), 
-           (GlobalTable_meca['substrate'] == '20um fibronectin discs'),
-           (GlobalTable_meca['date'].apply(lambda x : x in dates))]
+Filters = [(MecaData_All['validatedFit'] == True), 
+           (MecaData_All['validatedThickness'] == True), 
+           (MecaData_All['substrate'] == '20um fibronectin discs'),
+           (MecaData_All['date'].apply(lambda x : x in dates))]
 
 fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,CondCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
@@ -2695,7 +2658,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-12-08', '21-12-16', '22-01-12']
 fit = '' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -2704,7 +2667,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(GlobalTable_meca, XCol='ctFieldThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_All, XCol='ctFieldThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2718,7 +2681,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca
+data = MecaData_All
 dates = ['21-12-08', '22-01-12']
 fit = '_s<400Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -2738,7 +2701,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(GlobalTable_meca, XCol='surroundingThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_All, XCol='surroundingThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2753,7 +2716,7 @@ plt.show()
 
 
 # plt.close('all')
-data = GlobalTable_meca
+data = MecaData_All
 
 Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True),
           (data['date'].apply(lambda x : x in ['21-12-08', '22-01-12']))] #, '21-12-16'
@@ -2769,7 +2732,7 @@ plt.show()
 
 
 plt.close('all')
-data = GlobalTable_meca
+data = MecaData_All
 
 Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True),
           (data['date'].apply(lambda x : x in ['21-12-08', '21-12-16', '22-01-12']))] #, '21-12-16'
@@ -2790,7 +2753,7 @@ plt.show()
 # %%%%%
 
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 data
 
 
@@ -2798,7 +2761,7 @@ data
 
 
 # ['21-12-08', '21-12-16', '22-01-12']
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 
 dates = ['22-02-09'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
@@ -2856,7 +2819,7 @@ plt.show()
 
 # Make the dataframe
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 
 dates = ['22-02-09'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
@@ -2879,7 +2842,7 @@ regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len
 listColumnsMeca = []
 
 KChadwick_Cols = []
-KWeight_Cols = []
+Kweight_Cols = []
 
 for rFN in regionFitsNames:
     listColumnsMeca += ['KChadwick_'+rFN, 'K_CIW_'+rFN, 'R2Chadwick_'+rFN, 'K2Chadwick_'+rFN, 
@@ -2887,12 +2850,12 @@ for rFN in regionFitsNames:
     KChadwick_Cols += [('KChadwick_'+rFN)]
 
     K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
-    KWeight = (data_f['KChadwick_'+rFN]/K_CIWidth)**2
-    data_f['K_Weight_'+rFN] = KWeight
-    data_f['K_Weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
-    data_f['K_Weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
-    data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
-    KWeight_Cols += [('K_Weight_'+rFN)]
+    Kweight = (data_f['KChadwick_'+rFN]/K_CIWidth)**2
+    data_f['K_weight_'+rFN] = Kweight
+    data_f['K_weight_'+rFN] *= data_f['KChadwick_'+rFN].apply(lambda x : (x<1e6))
+    data_f['K_weight_'+rFN] *= data_f['R2Chadwick_'+rFN].apply(lambda x : (x>1e-2))
+    data_f['K_weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+    Kweight_Cols += [('K_weight_'+rFN)]
     
 data_f.tail()
 
@@ -2902,8 +2865,8 @@ data_f.tail()
 
 CondCol = 'date'
 Variables = KChadwick_Cols
-WeightCols = KWeight_Cols
-data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, WeightCols)
+weightCols = Kweight_Cols
+data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, weightCols)
 data_f_agg.T
 dictPlot = {'cellID' : [], 'Kavg' : [], 'Kstd' : [], 'Kcount' : []}
 meanCols = []
@@ -2972,7 +2935,7 @@ def nan2zero(x):
         return(x)
 
 valStr = 'KChadwick_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 Kavg = []
 Kstd = []
@@ -3020,11 +2983,11 @@ d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D9
 fig, ax = plt.subplots(2,1, figsize = (9,12))
 
 ax[0].errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = gs.my_default_color_list[0], 
-               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nWeighted ste 95% as error')
+               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nweighted ste 95% as error')
 ax[0].set_ylim([50,1e5])
 
 ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = gs.my_default_color_list[3], 
-               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nD9-D1 as error')
+               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nD9-D1 as error')
 ax[1].set_ylim([500,1e6])
 
 for k in range(2):
@@ -3065,7 +3028,7 @@ def nan2zero(x):
         return(x)
 
 valStr = 'KChadwick_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 Kavg = []
 Kstd = []
@@ -3131,7 +3094,7 @@ ax.errorbar(fitCenters, Kavg/1000, yerr = q*Kste/1000,
             marker = 'o', color = gs.my_default_color_list[0],
             markersize = 7.5, lw = 2,
             ecolor = 'k', elinewidth = 1.5, capsize = 5, 
-            label = 'Weighted means\nWeighted ste 95% as error')
+            label = 'weighted means\nweighted ste 95% as error')
 ax.set_ylim([0,1.6e4/1000])
 ax.set_xlim([0,1150])
 
@@ -3139,7 +3102,7 @@ ax.plot([X[imin],X[imax]], [fitY[imin]/1000,fitY[imax]/1000],
         ls = '--', lw = '1', color = 'darkorange', zorder = 1, label = eqnText)
 
 # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = gs.my_default_color_list[3], 
-#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nD9-D1 as error')
+#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nD9-D1 as error')
 # ax[1].set_ylim([500,1e6])
 
 # for k in range(1): #2
@@ -3198,7 +3161,7 @@ def nan2zero(x):
         return(x)
 
 valStr = 'KChadwick_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 Kavg = []
 Kstd = []
@@ -3247,11 +3210,11 @@ fig, ax = plt.subplots(1,1, figsize = (9,6)) # (2,1, figsize = (9,12))
 
 # ax[0]
 ax.errorbar(fitCenters2, Kavg, yerr = q*Kste, marker = 'o', color = gs.my_default_color_list[0], 
-               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nWeighted ste 95% as error')
+               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nweighted ste 95% as error')
 ax.set_ylim([0,1.4e4])
 
 # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = gs.my_default_color_list[3], 
-#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nD9-D1 as error')
+#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nD9-D1 as error')
 # ax[1].set_ylim([500,1e6])
 
 # for k in range(1): #2
@@ -3309,7 +3272,7 @@ def nan2zero(x):
         return(x)
 
 valStr = 'KChadwick_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 Kavg = []
 Kstd = []
@@ -3358,11 +3321,11 @@ fig, ax = plt.subplots(1,1, figsize = (9,6)) # (2,1, figsize = (9,12))
 
 # ax[0]
 ax.errorbar(fitCenters2, Kavg, yerr = q*Kste, marker = 'o', color = gs.my_default_color_list[0], 
-               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nWeighted ste 95% as error')
+               ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nweighted ste 95% as error')
 ax.set_ylim([0,1.4e4])
 
 # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = gs.my_default_color_list[3], 
-#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nD9-D1 as error')
+#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nD9-D1 as error')
 # ax[1].set_ylim([500,1e6])
 
 # for k in range(1): #2
@@ -3425,7 +3388,7 @@ def nan2zero(x):
         return(x)
 
 valStr = 'KChadwick_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 Kavg = []
 Kstd = []
@@ -3477,11 +3440,11 @@ ax.errorbar(fitCenters2, Kavg/1000, yerr = q*Kste/1000,
             marker = 'o', color = gs.my_default_color_list[0],
             markersize = 10, lw = 2,
             ecolor = 'k', elinewidth = 1.5, capsize = 5, 
-            label = 'Weighted means\nWeighted ste 95% as error')
+            label = 'weighted means\nweighted ste 95% as error')
 ax.set_ylim([0,1.0e4/1000])
 
 # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = gs.my_default_color_list[3], 
-#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'Weighted means\nD9-D1 as error')
+#                ecolor = 'k', elinewidth = 0.8, capsize = 3, label = 'weighted means\nD9-D1 as error')
 # ax[1].set_ylim([500,1e6])
 
 # for k in range(1): #2
@@ -3563,7 +3526,7 @@ ufun.archiveFig(fig, ax, name='3T3aSFL_Feb22_nonLinK_multipleIntervals', figSubD
 
 
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 
 listeS = [100, 150, 200, 250, 300, 400, 500, 600, 700, 800]
 
@@ -3608,7 +3571,7 @@ plt.show()
 
 
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 
 listeS = [200]
 
@@ -3674,7 +3637,7 @@ plt.show()
 # %%%%% All stress ranges - K(stress) -- With bestH0 distributions and E(h)
 
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 dates = ['22-02-09']
 
 fitC =  np.array([S for S in range(100, 1000, 100)])
@@ -3783,7 +3746,7 @@ for ii in range(len(fitW)):
 
 #### Creation of data_new, with the different width piled on top of each other
 
-data = GlobalTable_meca_NonLin
+data = MecaData_NonLin
 dates = ['22-02-09']
 
 fitC =  np.array([S for S in range(100, 1000, 100)])
@@ -3910,7 +3873,7 @@ plt.show()
 # %%%%% 3T3 aSFL - March 22 - Compression experiments
 
 
-data_main = Global_MecaData_Drugs
+data_main = MecaData_Drugs
 
 fitType = 'stressRegion'
 fitId = '250_100'
@@ -3955,7 +3918,7 @@ plt.show()
 
 #### Making the Dataframe 
 
-data = Global_MecaData_Drugs
+data = MecaData_Drugs
 
 dates = ['22-03-30']
 
@@ -3988,7 +3951,7 @@ regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii i
 listColumnsMeca = []
 
 KChadwick_Cols = []
-KWeight_Cols = []
+Kweight_Cols = []
 
 for rFN in regionFitsNames:
     listColumnsMeca += ['K_'+rFN, 'K_CIW_'+rFN, 'R2_'+rFN, 
@@ -3996,12 +3959,12 @@ for rFN in regionFitsNames:
     KChadwick_Cols += [('K_'+rFN)]
 
     K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
-    KWeight = (data_f['K_'+rFN]/K_CIWidth)**2
-    data_f['K_Weight_'+rFN] = KWeight
-    data_f['K_Weight_'+rFN] *= data_f['K_'+rFN].apply(lambda x : (x<1e6))
-    data_f['K_Weight_'+rFN] *= data_f['R2_'+rFN].apply(lambda x : (x>1e-2))
-    data_f['K_Weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
-    KWeight_Cols += [('K_Weight_'+rFN)]
+    Kweight = (data_f['K_'+rFN]/K_CIWidth)**2
+    data_f['K_weight_'+rFN] = Kweight
+    data_f['K_weight_'+rFN] *= data_f['K_'+rFN].apply(lambda x : (x<1e6))
+    data_f['K_weight_'+rFN] *= data_f['R2_'+rFN].apply(lambda x : (x>1e-2))
+    data_f['K_weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
+    Kweight_Cols += [('K_weight_'+rFN)]
     
 
 #### Useful functions
@@ -4023,7 +3986,7 @@ def nan2zero(x):
 
 
 valStr = 'K_'
-weightStr = 'K_Weight_'
+weightStr = 'K_weight_'
 
 
 
@@ -4094,7 +4057,7 @@ for co in conditions:
     d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
     
     for ax in axes:
-        # Weighted means -- Weighted ste 95% as error
+        # weighted means -- weighted ste 95% as error
         ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
                        ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
         ax.set_ylim([500,2e4])
@@ -4204,14 +4167,14 @@ for co in conditions:
     d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
     
     for ax in axes:
-        # Weighted means -- Weighted ste 95% as error
+        # weighted means -- weighted ste 95% as error
         ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
                         ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
         
         ax.set_xlim([Sinf-50, Ssup+50])
         ax.set_title('K(s)\nOnly compressions including the [{:.0f},{:.0f}]Pa range'.format(Sinf, Ssup))
         
-        # Weighted means -- D9-D1 as error
+        # weighted means -- D9-D1 as error
         # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = cD[co][1], 
         #                 ecolor = 'k', elinewidth = 0.8, capsize = 3, label = lD[co]) 
         # ax[1].set_ylim([500,2e4])

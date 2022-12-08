@@ -398,18 +398,9 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 # - Write the polynomial fit.
 
 
-# class ResultsCompression:
-#     def __init__(self, dictColumns, CC):
-#         Ncomp = CC.Ncomp
-        
-#         main = {}
-#         for k in dictColumnsMeca.keys():
-#             main[k] = [dictColumnsMeca[k] for m in range(Ncomp)]
-#         self.main = main
-#         self.dictColumns = dictColumns
-#         self.Ncomp = CC.Ncomp
 
-# %%%% mechanical models
+
+# %%%% Mechanical models
 
 def chadwickModel(h, E, H0, DIAMETER):
     """
@@ -571,7 +562,7 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
     
 
-# %%%% general fitting functions
+# %%%% General fitting functions
 
 
 def fitChadwick_hf(h, f, D):
@@ -798,7 +789,7 @@ def fitLinear_ss(stress, strain, weights = []):
     return(res)
 
 
-# %%%% functions to store the results of fits
+# %%%% Functions to store the results of fits
 
 def makeDictFit_hf(params, ses, error, 
                    x, y, yPredict, 
@@ -1071,7 +1062,7 @@ def nestedDict_to_DataFrame(D):
 
         
 
-# %%%% classes
+# %%%% Classes
         
 
 class CellCompression:
@@ -2058,6 +2049,7 @@ class IndentCompression:
             - self.zone_bestH0
 
         """
+        
         self.bestH0 = self.dictH0['H0_' + method + '_' + zone]
         self.error_bestH0 = self.dictH0['error_' + method + '_' + zone]
         self.method_bestH0 = method
@@ -2065,6 +2057,15 @@ class IndentCompression:
         
         
     def getH0Df(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
+        
         d = {'CompNum':[],
              'method':[],
              'zone':[],
@@ -3013,7 +3014,7 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
                         }
         
-# %%%% main 
+# %%%% Main 
 
         
 def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False,
@@ -3141,8 +3142,6 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain curves
             # IC.fitSS_polynomial()
             # IC.fitSS_smooth()
-            
-    
     
     #### Plots
     
@@ -3175,7 +3174,6 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     
     CC.make_mainResults(fitSettings)
     CC.make_localFitsResults(fitSettings)
-    
     df_H0 = CC.getH0Df()
     
     res = {'results_main' : CC.df_mainResults,
@@ -3190,7 +3188,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     
     return(res)
 
-# %%%% simple wrapper
+
+# %%%% Simple wrapper
 # Simple script to call just the analysis on 1 timeseries file
 
 # path = cp.DirDataTimeseries
@@ -3208,8 +3207,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     
 # res = simpleWrapper(f, expDf)
 
-# %%%% complex wrapper
 
+# %%%% Complex wrapper
 
 def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs):
     """
