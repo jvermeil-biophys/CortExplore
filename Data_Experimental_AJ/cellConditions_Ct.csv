@@ -14,7 +14,7 @@ cellID,blebCondition,phenotype,excluded,comments
 22-05-09_M5_P1_C6,dynamic,blebby,no,
 22-05-09_M6_P1_C4,none,polarised rear,yes,
 22-05-09_M6_P2_C6,dynamic,blebby,no,
-22-03-01_M3_P1_C6,dynamic,polarised rear,no,
+22-03-01_M3_P1_C6,dynamic,polarised rear,yes,
 22-06-09_M3_P3_C7,dynamic,none,no,Two beads inside
 22-03-22_M3_P1_C5,none,none,no,
 22-05-09_M3_P2_C5,none,polarised rear,no,its beautiful
@@ -28,12 +28,12 @@ cellID,blebCondition,phenotype,excluded,comments
 22-06-09_M1_P1_C7,none,polarised rear,yes,Other neighbouring bead affecting some bead movement maybe
 22-03-22_M4_P1_C5,none,none,no,
 22-05-09_M2_P1_C2,none,oscillating,yes,
-22-05-09_M2_P1_C7,none,none,no,
+22-05-09_M2_P1_C7,none,none,yes,
 22-05-09_M4_P1_C3,dynamic,blebby,yes,a bit unhealthy looking
-22-05-09_M4_P1_C4,dynamic,blebby,no,
+22-05-09_M4_P1_C4,dynamic,blebby,yes,
 22-05-09_M4_P1_C5,dynamic,blebby,no,
 22-05-09_M4_P2_C2,dynamic,blebby,yes,
-22-06-09_M2_P1_C7,none,polarised front,no,
+22-06-09_M2_P1_C7,none,polarised front,yes,
 22-06-09_M2_P1_C8,none,none,no,Cell is super good but the lamellipodia seem to affect the bead movements
 22-06-09_M2_P2_C2,none,polarised front,no,
 22-06-09_M2_P2_C6,dynamic,blebby,no,

@@ -317,6 +317,8 @@ def ctFieldThicknessAll(experimentalDataDir, todayFigDir, date, param_type = 'no
     plt.axvline(x = 5.0, color = 'r')
     plt.title('Thickness (um) vs Time : '+tag+' | On '+param_type)
     plt.legend(loc = 2, prop={'size': 10})
+    plt.xticks(fontsize = 30)
+    plt.yticks(fontsize = 30)
     plt.xlim(0,18)
     plt.ylim(0, 0.85)
     plt.show()
@@ -1173,7 +1175,7 @@ ctFieldThicknessIndividual(experimentalDataDir, todayFigDir, date, save = True, 
 
 #%%% Plotting 3D trajectories of all cells
 
-tag = 'global'
+tag = 'at beads'
 param_type = 'none'
 background = 'dark'
 # param = 'phenotype'

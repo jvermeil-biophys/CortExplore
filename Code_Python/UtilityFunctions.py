@@ -27,8 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndi
-import matplotlib.pyplot as plt
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
 
 import os
 import re
@@ -50,6 +50,7 @@ from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
+from PyQt5 import QtWidgets as Qtw
 from collections.abc import Collection
 from copy import deepcopy
 
@@ -78,6 +79,88 @@ dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
 # %% (1) Utility functions
 
+
+# %%% Image management - nomeclature and creating stacks
+
+def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
+    """
+    Used for metamorph created files.
+    Metamoprh does not save images in stacks but individual triplets. These individual triplets take time
+    to open in FIJI.
+    This function takes images of a sepcific channel and creates .tif stacks from them.
+       
+    """
+    
+    allCells = os.listdir(DirExt)
+    excludedCells = []
+    for currentCell in allCells:
+        dirPath = os.path.join(DirExt, currentCell)
+        allFiles = os.listdir(dirPath)
+        date = findInfosInFileName(currentCell, 'date')
+        
+        # date = date.replace('-', '.')
+        filename = currentCell+'_'+channel
+
+        try:
+            os.mkdir(DirSave+'/'+currentCell)
+        except:
+            pass
+        
+        allFiles = [dirPath+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        #+4 at the end corrosponds to the '_t' part to sort the array well
+        limiter = len(dirPath)+len(prefix)+len(channel)+4
+        
+        try:
+            allFiles.sort(key=lambda x: int(x[limiter:-4]))
+        except:
+            print('Error in sorting files')
+        
+        try:
+            ic = io.ImageCollection(allFiles, conserve_memory = True)
+            stack = io.concatenate_images(ic)
+            io.imsave(DirSave+'/'+currentCell+'/'+filename+'.tif', stack)
+        except:
+            excludedCells.append(currentCell)
+            print(gs.ORANGE + "Unknown error in saving "+currentCell + gs.NORMAL)
+            
+    return excludedCells
+        
+def renamePrefix(DirExt, currentCell, newPrefix):
+    """
+    Used for metamorph created files.
+    Metamorph creates a new folder for each timelapse, within which all images contain a predefined 
+    'prefix' and 'channel' name which can differ between microscopes. Eg.: 'w1TIRF_DIC' or 'w2TIRF_561'
+    
+    If you forget to create a new folder for a new timelapse, Metamorph automatically changes the prefix
+    to distinguish between the old and new timelapse triplets. This can get annoying when it comes to processing 
+    many cells.
+    
+    This function allows you to rename the prefix of all individual triplets in a specific folder. 
+    
+    """
+    
+    path = os.path.join(DirExt, currentCell)
+    allImages = os.listdir(path)
+    for i in allImages:
+        if i.endswith('.TIF'):
+            split = i.split('_')
+            if split[0] != newPrefix:
+                split[0] = newPrefix
+                newName = '_'.join(split)
+                try:
+                    os.rename(os.path.join(path,i), os.path.join(path, newName))
+                except:
+                    print(currentCell)
+                    print(gs.ORANGE + "Error! There may be other files with the new prefix you can trying to incorporate" + gs.NORMAL)
+        
+        if i.endswith('.nd'):
+            newName = newPrefix+'.nd'
+            try:
+                os.rename(os.path.join(path,i), os.path.join(path, newName))
+            except:
+                print(currentCell)
+                print(gs.YELLOW + "Error! There may be other .nd files with the new prefix you can trying to incorporate" + gs.NORMAL)
+            
 # %%% Data management
 
 def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix):
@@ -1187,14 +1270,103 @@ def lighten_color(color, amount=0.5):
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return(colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2]))
 
-# %%
+# %%% User Input
 
-def new_fun():
+class ChoicesBox(Qtw.QMainWindow):
+    def __init__(self, choicesDict, title = 'Multiple choice box'):
+        super().__init__()
+        
+        
+        self.choicesDict = choicesDict
+        self.questions = [k for k in choicesDict.keys()]
+        self.nQ = len(self.questions)
+        
+        self.res = {}
+        self.list_rbg = [] # rbg = radio button group
+
+        self.setWindowTitle(title)
+        
+        layout = Qtw.QVBoxLayout()  # layout for the central widget
+        main_widget = Qtw.QWidget(self)  # central widget
+        main_widget.setLayout(layout)
+        
+        for q in self.questions:
+            choices = self.choicesDict[q]
+            label = Qtw.QLabel(q)
+            layout.addWidget(label)
+            rbg = Qtw.QButtonGroup(main_widget)
+            for c in choices:
+                rb = Qtw.QRadioButton(c)
+                rbg.addButton(rb)
+                layout.addWidget(rb)
+                
+            self.list_rbg.append(rbg)
+            layout.addSpacing(20)
+        
+        valid_button = Qtw.QPushButton('OK', main_widget)
+        layout.addWidget(valid_button)
+        
+        self.setCentralWidget(main_widget)
+        
+        valid_button.clicked.connect(self.validate_button)
+
+
+    def validate_button(self):
+        array_err = np.array([rbg.checkedButton() == None for rbg in self.list_rbg])
+        Err = np.any(array_err)
+        if Err:
+            self.error_dialog()
+        else:
+            for i in range(self.nQ):
+                q = self.questions[i]
+                rbg = self.list_rbg[i]
+                self.res[q] = rbg.checkedButton().text()
+                
+            self.quit_button()
+            
+    def error_dialog(self):
+        dlg = Qtw.QMessageBox(self)
+        dlg.setWindowTitle("Error")
+        dlg.setText("Please make a choice in each category.")
+        dlg.exec()
+        
+    def quit_button(self):
+        Qtw.QApplication.quit()
+        self.close()
+
+
+def makeChoicesBox(choicesDict):
     """
+    Create and show a dialog box with multiple choices.
     
-    :return: DESCRIPTION
-    :rtype: TYPE
+
+    Parameters
+    ----------
+    choicesDict : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
 
     """
-    pass
+    app = Qtw.QApplication(sys.argv)
+    
+    box = ChoicesBox(choicesDict)
+    box.show()
+        
+    app.exec()
+    res = box.res
+    return(res)
+
+
+
+
+
+
+
+
+
+
+
 
