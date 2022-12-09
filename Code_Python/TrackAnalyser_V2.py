@@ -140,6 +140,8 @@ def plotCellTimeSeriesData(cellID, fromPython = True):
         If True, import a file ending with 'PY.csv'.
         If False, import a file ending with '.csv' and NOT 'PY.csv'.
         The default is True
+        
+    
     """
     
     X = 'T'
@@ -1068,6 +1070,82 @@ def nestedDict_to_DataFrame(D):
 class CellCompression:
     """
     This class deals with all that requires the whole array of compressions.
+    
+    ==========
+    Attributes
+    ==========
+    
+    Parameters of the constructor
+    -----------------------------
+    
+    cellID : string
+        Id of the analysed cell, in the format 'yy-mm-dd_M#_P#_C#'
+    tsDf : pandas DataFrame
+        TimeSeries DataFrame containing the data for the given cell
+    expDf : pandas DataFrame
+        TimeSeries DataFrame containing the experimental conditions
+    fileName : string
+        Name of the .csv file imported to make tsDf
+    
+    Attributes filled during construction
+    -------------------------------------
+    
+    Ncomp : int
+        Number of compressions in tsDf.
+    DIAMETER : float
+        Diameter of the beads used, in nm. Imported from expDf.
+    EXPTYPE : string
+        Type of experiment. Imported from expDf.
+    normalField : float
+        Magnetic field applied between compressions. Imported from expDf.
+    minCompField : float
+        Min magnetic field applied during compressions. Imported from expDf.
+    maxCompField : float
+        Max magnetic field applied during compressions. Imported from expDf.
+    loopStruct : string
+        Text describing the loop structure, in the format 'N1_N2', 
+        where N1 is the total number of images per loop, 
+        and N2 is the number of compression images per loop. Imported from expDf.
+    nUplet : int
+        Number of images within the Z-stacks outside of compressions.
+    loop_totalSize : int
+        Value of N1 from loopStruct, ie the total number of images per loop.
+    loop_rampSize : int
+        Value of N2 from loopStruct, ie the number of compression images per loop.
+    loop_ctSize : int
+        Value of N1-N2 from loopStruct, ie the number of non-compression images per loop
+    
+    Attributes filled by other methods
+    ----------------------------------
+    
+    listIndent : list
+        List that will contains pointers toward all the IndentCompressions objects
+        created in the main function. Filled in the main function analyseTimeSeries_meca().
+    listJumpsD3 : (N x 1) numpy array of floats
+        
+    df_mainResults : pandas DataFrame
+        
+    df_stressRegions : pandas DataFrame
+        
+    df_stressGaussian : pandas DataFrame
+        
+    df_nPoints : pandas DataFrame
+            
+    
+    =======
+    Methods
+    =======
+    
+    
+    
+    =============
+    In development
+    ==============
+    
+    
+	
+    
+    
     """
     
     def __init__(self, cellID, timeseriesDf, thisExpDf, fileName):
@@ -3019,6 +3097,35 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
         
 def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False,
                            fitSettings = {}, fitValidationSettings = {}, plotSettings = {}):
+    """
+    
+
+    Parameters
+    ----------
+    f : TYPE
+        DESCRIPTION.
+    tsDf : TYPE
+        DESCRIPTION.
+    expDf : TYPE
+        DESCRIPTION.
+    taskName : TYPE, optional
+        DESCRIPTION. The default is ''.
+    PLOT : TYPE, optional
+        DESCRIPTION. The default is False.
+    SHOW : TYPE, optional
+        DESCRIPTION. The default is False.
+    fitSettings : TYPE, optional
+        DESCRIPTION. The default is {}.
+    fitValidationSettings : TYPE, optional
+        DESCRIPTION. The default is {}.
+    plotSettings : TYPE, optional
+        DESCRIPTION. The default is {}.
+
+    Returns
+    -------
+    None.
+
+    """
     top = time.time()
     
     print(gs.BLUE + f + gs.NORMAL, end = ' ... ')
@@ -3265,7 +3372,21 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
 
 def updateUiDf_meca(ui_fileSuffix, mecaDf):
     """
+    
+
+    Parameters
+    ----------
+    ui_fileSuffix : TYPE
+        DESCRIPTION.
+    mecaDf : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
     """
+
     listColumnsUI = ['date','cellName','cellID','manipID','compNum',
                      'UI_Valid','UI_Comments']
     

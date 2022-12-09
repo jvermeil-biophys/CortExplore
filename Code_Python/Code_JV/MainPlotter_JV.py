@@ -376,12 +376,12 @@ MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 #### MecaData_HoxB8
 # MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8')
 
-# %%
+# %%% Test of adding fits
 
 data_main = MecaData_Drugs
-
 fitType = 'stressRegion'
 fitId = '_75'
+
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
 
@@ -424,27 +424,186 @@ splitterStyleDict_MCA = {'high':'^',
 # %%% Main functions
 # These functions use matplotlib.pyplot and seaborn libraries to display 1D categorical or 2D plots
 
+# %%%% Main plots
 
-def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[], 
+def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[], 
            Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
            stats=True, statMethod='Mann-Whitney', box_pairs=[], 
-           figSizeFactor = 1, markersizeFactor=1, orientation = 'h', useHue = False, 
-           stressBoxPlot = False, bypassLog = False, returnCount = 0):
+           figSizeFactor = 1, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0):
     
+    # Filter
     data_filtered = data
-    # for fltr in Filters:
-    #     data_filtered = data_filtered.loc[fltr]
-
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
     for kk in range(len(Filters)):
         globalFilter = globalFilter & Filters[kk]
     data_filtered = data_filtered[globalFilter]
     
-    NCond = len(CondCol)
+    # Make cond col
+    NCond = len(CondCols)
+    if NCond == 1:
+        CondCol = CondCols[0]
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += CondCols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_filtered[newColName] = ''
+        for i in range(NCond):
+            data_filtered[newColName] += data_filtered[CondCols[i]].astype(str)
+            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
+        data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
+        CondCol = newColName
+        
+    # Define the count df
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', CondCol]
+    count_df = data_filtered[cols_count_df]
+
+    # Average per cell if necessary
+    if AvgPerCell:
+        group = data_filtered.groupby(cellID)
+        dictAggMean = getDictAggMean(data_filtered)
+#         dictAggMean['EChadwick'] = 'median'
+        data_filtered = group.agg(dictAggMean)
     
+    # Sort data
+    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+        
+    # Define the export df
+    cols_export_df = ['date', 'manipID', 'cellID']
+    if not AvgPerCell: 
+        cols_export_df.append('compNum')
+    cols_export_df += ([CondCol] + Parameters)
+    export_df = data_filtered[cols_export_df]
+    
+    # Select style
+    NPlots = len(Parameters)
+    Conditions = list(data_filtered[CondCol].unique()) 
+    if len(co_order) > 0:
+        if len(co_order) != len(Conditions):
+            delCo = [co for co in co_order if co not in Conditions]
+            for co in delCo:
+                co_order.remove(co)
+        p = getStyleLists_Sns(co_order, styleDict1)
+    else: # len(co_order) == 0
+        p = sns.color_palette()
+        co_order = Conditions
+
+    # Create fig if necessary
+    if fig == None:
+        if orientation == 'h':
+            fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
+        elif orientation == 'v':
+            fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
+    else:
+        pass
+        
+    markersize = 5*markersizeFactor
+    axes = ufun.toList(ax)
+    
+    for k in range(NPlots):
+
+        if (not bypassLog) and (('EChadwick' in Parameters[k]) or ('K_' in Parameters[k])):
+            axes[k].set_yscale('log')
+
+        if Boxplot:
+            if stressBoxPlot:
+                if stressBoxPlot == 2:
+                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                                width = 0.5, showfliers = False, order= co_order, 
+                                medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
+                                boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+            #                   boxprops={"color": color, "linewidth": 0.5},
+                                whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+                                capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
+                                # scaley = scaley)
+                                
+                elif stressBoxPlot == 1:
+                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                                width = 0.5, showfliers = False, order= co_order, 
+                                medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+                                boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            #                   boxprops={"color": color, "linewidth": 0.5},
+                                whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+                                capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2})
+                                # scaley = scaley)
+            else:
+                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                            width = 0.5, showfliers = False, order= co_order, 
+                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+        #                   boxprops={"color": color, "linewidth": 0.5},
+                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2})
+                            # scaley = scaley)
+            
+            # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=axes[k],showfliers = False) # linewidth = 2, width = 0.5
+
+        if stats:
+            if len(box_pairs) == 0:
+                box_pairs = makeBoxPairs(co_order)
+            addStat_df(axes[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
+            # add_stat_annotation(axes[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
+        
+
+        sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], order = co_order,
+                      size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
+
+        axes[k].set_xlabel('')
+        axes[k].set_ylabel(Parameters[k])
+        axes[k].tick_params(axis='x', labelrotation = 10)
+        axes[k].yaxis.grid(True)
+        if axes[k].get_yscale() == 'linear':
+            axes[k].set_ylim([0, axes[k].get_ylim()[1]])
+        
+    plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
+        
+    
+    # Make output
+    
+    output = (fig, axes)
+    
+    if returnData > 0:
+        output += (export_df, )
+    
+    if returnCount > 0:
+        groupByCell = count_df.groupby(cellID)
+        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
+        d_agg = {cellID: 'count', 'compCount': 'sum', 
+                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+        d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+        if returnCount == 1:
+            output += (df_CountByCond, )
+        elif returnCount == 2:
+            output += (df_CountByCond, df_CountByCell)
+
+    return(output)
+
+
+
+
+def D2Plot_wFit(data, fig = None, ax = None, 
+                XCol='', YCol='', CondCol='', 
+                Filters=[], cellID='cellID', co_order = [],
+                AvgPerCell=False, showManips = True,
+                modelFit=False, modelType='y=ax+b', writeEqn = True,
+                xscale = 'lin', yscale = 'lin', 
+                figSizeFactor = 1, markersizeFactor = 1):
+    
+    data_filtered = data
+    for fltr in Filters:
+        data_filtered = data_filtered.loc[fltr]
+    
+    NCond = len(CondCol)    
     if NCond == 1:
         CondCol = CondCol[0]
-        
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
@@ -457,20 +616,14 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
         CondCol = newColName
-        
-    # print(data_filtered.shape)
-    small_df = data_filtered[[CondCol, 'cellID', 'compNum', 'date', 'manipID']]
     
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
         dictAggMean = getDictAggMean(data_filtered)
-#         dictAggMean['EChadwick'] = 'median'
-        data_filtered = group.agg(dictAggMean)
+        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
+        data_filtered.reset_index(level=0, inplace=True)
         
-    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
-    
-    NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())     
+    Conditions = list(data_filtered[CondCol].unique())
     
     if len(co_order) > 0:
         if len(co_order) != len(Conditions):
@@ -478,98 +631,145 @@ def D1Plot(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[],
             for co in delCo:
                 co_order.remove(co)
                 
-        p = getStyleLists_Sns(co_order, styleDict1) # styleDict_MCA3
-        
-    else: # len(co_order) == 0
-        p = sns.color_palette()
+        print(co_order)
+        try:
+            colorList, markerList = getStyleLists(co_order, styleDict1)
+        except:
+            colorList, markerList = gs.colorList30, gs.markerList10
+    else:
         co_order = Conditions
-
+        colorList, markerList = gs.colorList30, gs.markerList10
+        
+    
     if fig == None:
-        if orientation == 'h':
-            fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
-        elif orientation == 'v':
-            fig, ax = plt.subplots(NPlots, 1, figsize = (5*NCond*figSizeFactor, 5*NPlots))
+        fig, ax = plt.subplots(1, 1, figsize = (8*figSizeFactor,5))
     else:
         pass
-        
-    markersize = 5*markersizeFactor
     
-    if NPlots == 1:
-        ax = np.array([ax])
+    markersize = 5 * markersizeFactor
     
-    for k in range(NPlots):
+    if xscale == 'log':
+        ax.set_xscale('log')
+    if yscale == 'log':
+        ax.set_yscale('log')
+    
+    for i in range(len(co_order)):
+        c = co_order[i]
+        color = colorList[i]
+#         marker = my_default_marker_list[i]
+        Xraw = data_filtered[data_filtered[CondCol] == c][XCol].values
+        Yraw = data_filtered[data_filtered[CondCol] == c][YCol].values
+        Mraw = data_filtered[data_filtered[CondCol] == c]['manipID'].values
+        XYraw = np.array([Xraw,Yraw]).T
+        XY = XYraw[~np.isnan(XYraw).any(axis=1), :]
+        X, Y = XY[:,0], XY[:,1]
+        M = Mraw[~np.isnan(XYraw).any(axis=1)]
+        if len(X) == 0:
+            ax.plot([], [])
+            if modelFit:
+                ax.plot([], [])
+                
+        elif len(X) > 0:
+            eqnText = ''
 
-        if not bypassLog and (('EChadwick' in Parameters[k]) or ('KChadwick' in Parameters[k])):
-            ax[k].set_yscale('log')
+            if modelFit:
+                print('Fitting condition ' + c + ' with model ' + modelType)
+                if modelType == 'y=ax+b':
+                    params, results = ufun.fitLine(X, Y) # Y=a*X+b ; params[0] = b,  params[1] = a
+                    pval = results.pvalues[1] # pvalue on the param 'a'
+                    eqnText += " ; Y = {:.1f} X + {:.1f}".format(params[1], params[0])
+                    eqnText += " ; p-val = {:.3f}".format(pval)
+                    print("Y = {:.5} X + {:.5}".format(params[1], params[0]))
+                    print("p-value on the 'a' coefficient: {:.4e}".format(pval))
+                    # fitY = params[1]*X + params[0]
+                    # imin = np.argmin(X)
+                    # imax = np.argmax(X)
+                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1',
+                    #         color = color, zorder = 4)
+                    fitX = np.linspace(np.min(X), np.max(X), 100)
+                    fitY = params[1]*fitX + params[0]
+                    ax.plot(fitX, fitY, '--', lw = '1', 
+                            color = color, zorder = 4)
 
-        if Boxplot:
-            if stressBoxPlot:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
-                            width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-        #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
-                            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
-                            # scaley = scaley)
-            else:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
-                            width = 0.5, showfliers = False, order= co_order, 
-                            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
-                            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
-        #                   boxprops={"color": color, "linewidth": 0.5},
-                            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
-                            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1})
-                            # scaley = scaley)
+                elif modelType == 'y=A*exp(kx)':
+                    params, results = ufun.fitLine(X, np.log(Y)) # Y=a*X+b ; params[0] = b,  params[1] = a
+                    pval = results.pvalues[1] # pvalue on the param 'k'
+                    eqnText += " ; Y = {:.1f}*exp({:.1f}*X)".format(params[0], params[1])
+                    eqnText += " ; p-val = {:.3f}".format(pval)
+                    print("Y = {:.5}*exp({:.5}*X)".format(np.exp(params[0]), params[1]))
+                    print("p-value on the 'k' coefficient: {:.4e}".format(pval))
+                    # fitY = np.exp(params[0])*np.exp(params[1]*X)
+                    # imin = np.argmin(X)
+                    # imax = np.argmax(X)
+                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1',
+                    #         color = color, zorder = 4)
+                    fitX = np.linspace(np.min(X), np.max(X), 100)
+                    fitY = np.exp(params[0])*np.exp(params[1]*fitX)
+                    ax.plot(fitX, fitY, '--', lw = '1', 
+                            color = color, zorder = 4)
+                    
+                elif modelType == 'y=k*x^a':
+                    posValues = ((X > 0) & (Y > 0))
+                    X, Y = X[posValues], Y[posValues]
+                    params, results = ufun.fitLine(np.log(X), np.log(Y)) # Y=a*X+b ; params[0] = b,  params[1] = a
+                    k = np.exp(params[0])
+                    a = params[1]
+                    R2 = results.rsquared
+                    pval = results.pvalues[1] # pvalue on the param 'a'
+                    eqnText += " ; Y = {:.1e} * X^{:.1f}".format(k, a)
+                    eqnText += " ; p-val = {:.3f}".format(pval)
+                    eqnText += " ; R2 = {:.2f}".format(R2)
+                    print("Y = {:.4e} * X^{:.4f}".format(k, a))
+                    print("p-value on the 'a' coefficient: {:.4e}".format(pval))
+                    print("R2 of the fit: {:.4f}".format(R2))
+                    # fitY = k * X**a
+                    # imin = np.argmin(X)
+                    # imax = np.argmax(X)
+                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1', 
+                    #         color = color, zorder = 4)
+                    fitX = np.linspace(np.min(X), np.max(X), 100)
+                    fitY = k * fitX**a
+                    ax.plot(fitX, fitY, '--', lw = '1', 
+                            color = color, zorder = 4)
+                
+                print('Number of values : {:.0f}'.format(len(Y)))
+                print('\n')
             
-            # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
+#                 if showManips:
+#                     allManipID = list(data_filtered[data_filtered[CondCol] == c]['manipID'].unique())
+#                     dictMarker = {}
+#                     markers = []
+#                     for mi in range(len(allManipID)):
+#                         dictMarker[allManipID[mi]] = my_default_marker_list[mi]
+#                     for k in range(len(M)):
+#                         thisManipID = M[k]
+#                         markers = dictMarker[thisManipID]
+#                 else:
+#                     markers = ['o' for i in range(len(M))]
+#                 markers = np.array(markers)
+                
+            labelText = c
+            if writeEqn:
+                labelText += eqnText
 
-        if stats:
-            if len(box_pairs) == 0:
-                box_pairs = makeBoxPairs(co_order)
-            addStat_df(ax[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
-            # add_stat_annotation(ax[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
-        
-        if not useHue:
-            sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
-        else:
-            sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
-                          size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
-                          hue = 'manipID')
-            legend = ax[k].legend()
-            legend.remove()
+            ax.plot(X, Y, 
+                    color = color, ls = '',
+                    marker = 'o', markersize = markersize, markeredgecolor='k', markeredgewidth = 1, 
+                    label = labelText)
+            
+            
+    ax.set_xlabel(XCol)
+    ax.set_xlim([0.9*np.min(data_filtered[XCol]), 1.1*np.max(data_filtered[XCol])])
+    ax.set_ylabel(YCol)
+    if not yscale == 'log':
+        ax.set_ylim([0.9*np.min(data_filtered[YCol]), 1.1*np.max(data_filtered[YCol])])
+    ax.legend(loc='upper left')
+    
+    
+    return(fig, ax)
 
-        ax[k].set_xlabel('')
-        ax[k].set_ylabel(Parameters[k])
-        ax[k].tick_params(axis='x', labelrotation = 10)
-        ax[k].yaxis.grid(True)
-        if ax[k].get_yscale() == 'linear':
-            ax[k].set_ylim([0, ax[k].get_ylim()[1]])
-        
-    plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
-        
-    
-    if returnCount > 0:
-        groupByCell = small_df.groupby(cellID)
-        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
-        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+# %%%% Special Plots
 
-        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
-        d_agg = {cellID: 'count', 'compCount': 'sum', 
-                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
-        d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
-        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
-        
-        if returnCount == 1:
-            return(fig, ax, df_CountByCond)
-        elif returnCount == 2:
-            return(fig, ax, df_CountByCond, df_CountByCell)
-    
-    else:
-        return(fig, ax)
-    
-    
     
 def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = [], 
                        Parameters=[], Filters=[], 
@@ -1228,197 +1428,174 @@ def D2Plot(data, fig = None, ax = None, XCol='', YCol='', CondCol='', Filters=[]
 
 
 
-def D2Plot_wFit(data, fig = None, ax = None, 
-                XCol='', YCol='', CondCol='', 
-                Filters=[], cellID='cellID', co_order = [],
-                AvgPerCell=False, showManips = True,
-                modelFit=False, modelType='y=ax+b', writeEqn = True,
-                xscale = 'lin', yscale = 'lin', 
-                figSizeFactor = 1, markersizeFactor = 1):
+def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
+              mode = 'wholeCurve', scale = 'lin', printText = True,
+              returnData = 0, returnCount = 0):
     
-    data_filtered = data
-    for fltr in Filters:
-        data_filtered = data_filtered.loc[fltr]
+    fig, ax = plt.subplots(1,1, figsize = (9,6))
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
     
-    NCond = len(CondCol)    
-    if NCond == 1:
-        CondCol = CondCol[0]
-    elif NCond > 1:
-        newColName = ''
-        for i in range(NCond):
-            newColName += CondCol[i]
-            newColName += ' & '
-        newColName = newColName[:-3]
-        data_filtered[newColName] = ''
-        for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
-            data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
-        data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
-    
-    if AvgPerCell:
-        group = data_filtered.groupby(cellID)
-        dictAggMean = getDictAggMean(data_filtered)
-        data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
-        data_filtered.reset_index(level=0, inplace=True)
+    if mode == 'wholeCurve':
+        Sinf, Ssup = 0, np.Inf
+        ax.set_xlim([0, 1050])  
         
-    Conditions = list(data_filtered[CondCol].unique())
-    
-    if len(co_order) > 0:
-        if len(co_order) != len(Conditions):
-            delCo = [co for co in co_order if co not in Conditions]
-            for co in delCo:
-                co_order.remove(co)
-                
-        print(co_order)
-        try:
-            colorList, markerList = getStyleLists(co_order, styleDict1)
-        except:
-            colorList, markerList = gs.colorList30, gs.markerList10
     else:
-        co_order = Conditions
-        colorList, markerList = gs.colorList30, gs.markerList10
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+    
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data_f = data_f[globalExtraFilter]
+            
+        ax.set_xlim([Sinf-50, Ssup+50])     
+    
+    fitId = '_' + str(fitWidth)
+    data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    
+    conditions = np.array(data_ff[condCol].unique())
+    centers = np.array(data_ff['fit_center'].unique())
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    #### NOTE
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    data_ff['A'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg = grouped1.agg({'compNum' : 'count',
+                            'A': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg['K_wAvg'] = data_agg['A']/data_agg['weight']
+    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
+    
+    # Compute the weighted std
+    data_ff['B'] = data_ff['fit_K']
+    for co in conditions:
+        for ce in centers:
+            weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
+            
+            index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
+            col_loc = 'B'
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    data_ff['C'] = data_ff['B'] * data_ff['weight']
+    grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg2 = grouped2.agg({'compNum' : 'count',
+                              'C': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
+    data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
+    
+    
+    # Combine all in data_agg
+    data_agg['K_wVar'] = data_agg2['K_wVar']
+    data_agg['K_wStd'] = data_agg2['K_wStd']
+    data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
+    
+    
+    # Plot
+    for co in conditions:
+        df = data_agg[data_agg[condCol] == co]
+        color = styleDict1[co]['color']
+        centers = df['fit_center'].values
+        Kavg = df['K_wAvg'].values
+        Kste = df['K_wSte'].values
+        N = df['compCount'].values
         
+        dof = N
+        alpha = 0.975
+        q = st.t.ppf(alpha, dof) # Student coefficient
     
-    if fig == None:
-        fig, ax = plt.subplots(1, 1, figsize = (8*figSizeFactor,5))
-    else:
-        pass
-    
-    markersize = 5 * markersizeFactor
-    
-    if xscale == 'log':
-        ax.set_xscale('log')
-    if yscale == 'log':
-        ax.set_yscale('log')
-    
-#     current_color_list = getStyleLists(Conditions, styleDict1).as_hex()
-#     cc = cycler(color=current_color_list)
-#     ax.set_prop_cycle(cc)
-    
-#     if modelFit:
-#         # Tweak the style cycle to plot for each condition: the points ('o') and then the fit ('-') with the same color.
-# #         current_prop_cycle = plt.rcParams['axes.prop_cycle']
-# #         current_color_list = prop_cycle.by_key()['color']
-#         ncustom_color_list = list(np.array([current_color_list, current_color_list]).flatten(order='F'))
-#         # if new_color_list was ['red', 'green', blue'], custom_color_list is now ['red', 'red', 'green', 'green', blue', blue']
-#         cc = cycler(color=ncustom_color_list)
-#         ax.set_prop_cycle(cc)
-    
-    for i in range(len(co_order)):
-        c = co_order[i]
-        color = colorList[i]
-#         marker = my_default_marker_list[i]
-        Xraw = data_filtered[data_filtered[CondCol] == c][XCol].values
-        Yraw = data_filtered[data_filtered[CondCol] == c][YCol].values
-        Mraw = data_filtered[data_filtered[CondCol] == c]['manipID'].values
-        XYraw = np.array([Xraw,Yraw]).T
-        XY = XYraw[~np.isnan(XYraw).any(axis=1), :]
-        X, Y = XY[:,0], XY[:,1]
-        M = Mraw[~np.isnan(XYraw).any(axis=1)]
-        if len(X) == 0:
-            ax.plot([], [])
-            if modelFit:
-                ax.plot([], [])
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            ax.set_yscale('linear')
+            ax.set_ylim([0, 10])
                 
-        elif len(X) > 0:
-            eqnText = ''
-
-            if modelFit:
-                print('Fitting condition ' + c + ' with model ' + modelType)
-                if modelType == 'y=ax+b':
-                    params, results = ufun.fitLine(X, Y) # Y=a*X+b ; params[0] = b,  params[1] = a
-                    pval = results.pvalues[1] # pvalue on the param 'a'
-                    eqnText += " ; Y = {:.1f} X + {:.1f}".format(params[1], params[0])
-                    eqnText += " ; p-val = {:.3f}".format(pval)
-                    print("Y = {:.5} X + {:.5}".format(params[1], params[0]))
-                    print("p-value on the 'a' coefficient: {:.4e}".format(pval))
-                    # fitY = params[1]*X + params[0]
-                    # imin = np.argmin(X)
-                    # imax = np.argmax(X)
-                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1',
-                    #         color = color, zorder = 4)
-                    fitX = np.linspace(np.min(X), np.max(X), 100)
-                    fitY = params[1]*fitX + params[0]
-                    ax.plot(fitX, fitY, '--', lw = '1', 
-                            color = color, zorder = 4)
-
-                elif modelType == 'y=A*exp(kx)':
-                    params, results = ufun.fitLine(X, np.log(Y)) # Y=a*X+b ; params[0] = b,  params[1] = a
-                    pval = results.pvalues[1] # pvalue on the param 'k'
-                    eqnText += " ; Y = {:.1f}*exp({:.1f}*X)".format(params[0], params[1])
-                    eqnText += " ; p-val = {:.3f}".format(pval)
-                    print("Y = {:.5}*exp({:.5}*X)".format(np.exp(params[0]), params[1]))
-                    print("p-value on the 'k' coefficient: {:.4e}".format(pval))
-                    # fitY = np.exp(params[0])*np.exp(params[1]*X)
-                    # imin = np.argmin(X)
-                    # imax = np.argmax(X)
-                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1',
-                    #         color = color, zorder = 4)
-                    fitX = np.linspace(np.min(X), np.max(X), 100)
-                    fitY = np.exp(params[0])*np.exp(params[1]*fitX)
-                    ax.plot(fitX, fitY, '--', lw = '1', 
-                            color = color, zorder = 4)
-                    
-                elif modelType == 'y=k*x^a':
-                    posValues = ((X > 0) & (Y > 0))
-                    X, Y = X[posValues], Y[posValues]
-                    params, results = ufun.fitLine(np.log(X), np.log(Y)) # Y=a*X+b ; params[0] = b,  params[1] = a
-                    k = np.exp(params[0])
-                    a = params[1]
-                    R2 = results.rsquared
-                    pval = results.pvalues[1] # pvalue on the param 'a'
-                    eqnText += " ; Y = {:.1e} * X^{:.1f}".format(k, a)
-                    eqnText += " ; p-val = {:.3f}".format(pval)
-                    eqnText += " ; R2 = {:.2f}".format(R2)
-                    print("Y = {:.4e} * X^{:.4f}".format(k, a))
-                    print("p-value on the 'a' coefficient: {:.4e}".format(pval))
-                    print("R2 of the fit: {:.4f}".format(R2))
-                    # fitY = k * X**a
-                    # imin = np.argmin(X)
-                    # imax = np.argmax(X)
-                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1', 
-                    #         color = color, zorder = 4)
-                    fitX = np.linspace(np.min(X), np.max(X), 100)
-                    fitY = k * fitX**a
-                    ax.plot(fitX, fitY, '--', lw = '1', 
-                            color = color, zorder = 4)
-                
-                print('Number of values : {:.0f}'.format(len(Y)))
-                print('\n')
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            ax.set_yscale('log')
             
-#                 if showManips:
-#                     allManipID = list(data_filtered[data_filtered[CondCol] == c]['manipID'].unique())
-#                     dictMarker = {}
-#                     markers = []
-#                     for mi in range(len(allManipID)):
-#                         dictMarker[allManipID[mi]] = my_default_marker_list[mi]
-#                     for k in range(len(M)):
-#                         thisManipID = M[k]
-#                         markers = dictMarker[thisManipID]
-#                 else:
-#                     markers = ['o' for i in range(len(M))]
-#                 markers = np.array(markers)
-                
-            labelText = c
-            if writeEqn:
-                labelText += eqnText
-
-            ax.plot(X, Y, 
-                    color = color, ls = '',
-                    marker = 'o', markersize = markersize, markeredgecolor='k', markeredgewidth = 1, 
-                    label = labelText)
-            
-            
-    ax.set_xlabel(XCol)
-    ax.set_xlim([0.9*np.min(data_filtered[XCol]), 1.1*np.max(data_filtered[XCol])])
-    ax.set_ylabel(YCol)
-    if not yscale == 'log':
-        ax.set_ylim([0.9*np.min(data_filtered[YCol]), 1.1*np.max(data_filtered[YCol])])
-    ax.legend(loc='upper left')
+        # weighted means -- weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
+                    label = co)
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left', fontsize = 11)
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (kPa)')
+        ax.grid(visible=True, which='major', axis='y')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
     
     
-    return(fig, ax)
+    # Define the count df
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condCol]
+    count_df = data_ff[cols_count_df]
+    
+    # Define the export df
+    # cols_export_df = ['date', 'manipID', 'cellID', 'compNum', condCol]
+    # export_df = data_ff[cols_export_df]
+    cols_export_df = [c for c in data_agg.columns if c not in ['weights', 'A', 'B', 'C']]
+    export_df = data_agg[cols_export_df]
+    
+    # Make output
+    
+    output = (fig, axes)
+    
+    if returnData > 0:
+        output += (export_df, )
+    
+    #### NOT FINISHED
+    if returnCount > 0:
+        groupByCell = count_df.groupby('cellID')
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
+        d_agg = {'cellID': 'count', 'compCount': 'sum', 
+                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+        d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+        if returnCount == 1:
+            output += (df_CountByCond, )
+        elif returnCount == 2:
+            output += (df_CountByCond, df_CountByCell)
+
+
+    return(output)
 
 
 
@@ -1504,7 +1681,7 @@ def getAggDf(df, cellID, CondCol, Variables):
     return(dfAgg)
 
 
-def getAggDf_weightedAvg(df, cellID, CondCol, Variables, weightCols):
+def getAggDf_K_wAvg(df, cellID, CondCol, Variables, weightCols):
     
     def w_std(x, w):
         m = np.average(x, weights=w)
@@ -1823,7 +2000,7 @@ def buildStyleDictMCA():
 # %%% Tests of plotting functions
 
 
-#### Test getAggDf_weightedAvg(df, cellID, CondCol, Variables, weightCols)
+#### Test getAggDf_K_wAvg(df, cellID, CondCol, Variables, weightCols)
 
 # data = MecaData_NonLin
 
@@ -1889,7 +2066,7 @@ def buildStyleDictMCA():
 # CondCol = 'date'
 # Variables = KChadwick_Cols
 # weightCols = Kweight_Cols
-# data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, weightCols)
+# data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', CondCol, Variables, weightCols)
 # data_f_agg
 
 
@@ -2001,128 +2178,6 @@ def buildStyleDictMCA():
 # %%%% K(s) - as a function
 
 
-def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
-              mode = 'wholeCurve', scale = 'lin', printText = True):
-    
-    fig, ax = plt.subplots(1,1, figsize = (9,6))
-
-    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-    for k in range(0, len(Filters)):
-        globalFilter = globalFilter & Filters[k]
-    data_f = data[globalFilter]
-    
-    if mode == 'wholeCurve':
-        Sinf, Ssup = 0, np.Inf
-        ax.set_xlim([0, 1050])  
-        
-    else:
-        bounds = mode.split('_')
-        Sinf, Ssup = int(bounds[0]), int(bounds[1])
-        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
-    
-        globalExtraFilter = extraFilters[0]
-        for k in range(1, len(extraFilters)):
-            globalExtraFilter = globalExtraFilter & extraFilters[k]
-        data_f = data_f[globalExtraFilter]
-            
-        ax.set_xlim([Sinf-50, Ssup+50])     
-    
-    fitId = '_' + str(fitWidth)
-    data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
-    
-    # Filter the table
-    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
-    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
-    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
-    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
-    
-    conditions = np.array(data_ff[condCol].unique())
-    centers = np.array(data_ff['fit_center'].unique())
-    
-    # Compute the weights
-    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
-    
-    # Compute the weighted mean
-    data_ff['KxWeight'] = data_ff['fit_K'] * data_ff['weight']
-    grouped1 = data_ff.groupby(by=[condCol, 'fit_center'])
-    data_agg = grouped1.agg({'compNum' : 'count',
-                            'KxWeight': 'sum', 'weight': 'sum'}).reset_index()
-    data_agg['weightedAvg'] = data_agg['KxWeight']/data_agg['weight']
-    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
-    
-    # Compute the weighted std
-    data_ff['(K-weightedAvg)**2'] = data_ff['fit_K']
-    for co in conditions:
-        for ce in centers:
-            weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'weightedAvg'].values[0]
-            
-            index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
-            col_loc = '(K-weightedAvg)**2'
-            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
-            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
-            
-    data_ff['(K-weightedAvg)**2_xWeight'] = data_ff['(K-weightedAvg)**2'] * data_ff['weight']
-    grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
-    data_agg2 = grouped2.agg({'compNum' : 'count',
-                              '(K-weightedAvg)**2_xWeight': 'sum', 'weight': 'sum'}).reset_index()
-    data_agg2['weightedVar'] = data_agg2['(K-weightedAvg)**2_xWeight']/data_agg2['weight']
-    data_agg2['weightedStd'] = data_agg2['weightedVar']**0.5
-    
-    
-    # Combine all in data_agg
-    data_agg['weightedVar'] = data_agg2['weightedVar']
-    data_agg['weightedStd'] = data_agg2['weightedStd']
-    data_agg['weightedSte'] = data_agg['weightedStd'] / data_agg['compCount']**0.5
-    
-    
-    # Plot
-    for co in conditions:
-        df = data_agg[data_agg[condCol] == co]
-        color = styleDict1[co]['color']
-        centers = df['fit_center'].values
-        Kavg = df['weightedAvg'].values
-        Kste = df['weightedSte'].values
-        N = df['compCount'].values
-        
-        dof = N
-        alpha = 0.975
-        q = st.t.ppf(alpha, dof) # Student coefficient
-    
-        if scale == 'lin':
-            if co == conditions[0]:
-                texty = Kavg + 1500
-            else:
-                texty = texty + 300
-            ax.set_yscale('linear')
-            ax.set_ylim([0, 10])
-                
-        elif scale == 'log':
-            if co == conditions[0]:
-                texty = Kavg**0.95
-            else:
-                texty = texty**0.98
-            ax.set_yscale('log')
-            
-        # weighted means -- weighted ste 95% as error
-        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
-                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
-                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
-                    label = co)
-        
-        # ax.set_title('K(s) - All compressions pooled')
-        
-        ax.legend(loc = 'upper left', fontsize = 11)
-        ax.set_xlabel('Stress (Pa)')
-        ax.set_ylabel('K (kPa)')
-        ax.grid(visible=True, which='major', axis='y')
-        
-        if printText:
-            for kk in range(len(N)):
-                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
-    
-    plt.plot()
-    return(data_ff, data_agg)
-    # return(fig, ax)
     
 
 
@@ -2130,7 +2185,7 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
 
 data = MecaData_All
 
-dates = ['21-12-08', '22-01-12', '22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+dates = ['21-01-18', '21-01-21', '21-12-08', '22-01-12', '22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
 Filters = [(data['validatedThickness'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
@@ -2139,23 +2194,28 @@ Filters = [(data['validatedThickness'] == True),
             (data['UI_Valid'] == True),
             (data['bestH0'] <= 800),
             (data['date'].apply(lambda x : x in dates)),
-            (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]  # (data['validatedFit'] == True),
+            (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'ctrl']))]
 
 
 
-data_ff1, data_agg1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
-                                condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
-data_ff2, data_agg2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
-                                condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+                                condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1, exportDf1, countDf1 = out1
+
+out2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+                                condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2, exportDf2, countDf2 = out2
 
 # data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
 #                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
 # data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
 #                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
 
-# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
-# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
-# plt.show()
+fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
 
 
 
@@ -2879,7 +2939,7 @@ data_f.tail()
 CondCol = 'date'
 Variables = KChadwick_Cols
 weightCols = Kweight_Cols
-data_f_agg = getAggDf_weightedAvg(data_f, 'cellID', CondCol, Variables, weightCols)
+data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', CondCol, Variables, weightCols)
 data_f_agg.T
 dictPlot = {'cellID' : [], 'Kavg' : [], 'Kstd' : [], 'Kcount' : []}
 meanCols = []
