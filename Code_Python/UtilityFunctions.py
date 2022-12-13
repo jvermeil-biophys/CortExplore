@@ -81,7 +81,7 @@ dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
 # %%% Image management - nomeclature and creating stacks
 
-def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
+def AllMMTriplets2Stack(DirExt, DirSave, expt, prefix, channel, subDir = None):
     """
     Used for metamorph created files.
     Metamoprh does not save images in stacks but individual triplets. These individual triplets take time
@@ -89,35 +89,60 @@ def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
     This function takes images of a sepcific channel and creates .tif stacks from them.
        
     """
+    if subDir == None:
+        DirCells = os.path.join(DirExt, expt)
+    else:
+        DirCells = os.path.join(DirExt, expt, subDir)
     
-    allCells = os.listdir(DirExt)
+    allCells = os.listdir(DirCells)
     excludedCells = []
     for currentCell in allCells:
-        dirPath = os.path.join(DirExt, currentCell)
-        allFiles = os.listdir(dirPath)
+        dirImages = os.path.join(DirCells, currentCell)
         date = findInfosInFileName(currentCell, 'date')
-        
-        # date = date.replace('-', '.')
+        date = date.replace('-', '.')
         filename = currentCell+'_'+channel
-
-        try:
-            os.mkdir(DirSave+'/'+currentCell)
-        except:
-            pass
+        exptPath = DirSave+'/'+date
         
-        allFiles = [dirPath+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        if not os.path.exists(exptPath):
+            os.mkdir(exptPath)
+        
+        if subDir == None:
+            dirSave = os.path.join(exptPath, currentCell)
+            if not os.path.exists(dirSave):
+                os.mkdir(dirSave)
+        else:
+            dirSave = os.path.join(exptPath, subDir, currentCell)
+            dirSaveSubdir = os.path.join(exptPath, subDir)
+            if not os.path.exists(dirSaveSubdir):
+                os.mkdir(dirSaveSubdir)
+            
+            if not os.path.exists(dirSave):
+                os.mkdir(os.path.join(dirSaveSubdir, currentCell))
+                
+        allFiles = os.listdir(dirImages)
+    
+        date = findInfosInFileName(currentCell, 'date')
+        # print(gs.YELLOW + currentCell + gs.NORMAL)
+        
+        allFiles = [dirImages+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        
+        if len(allFiles) == 0:
+            print(gs.ORANGE + 'Error in loading files' + gs.NORMAL)
+            break
+        
         #+4 at the end corrosponds to the '_t' part to sort the array well
-        limiter = len(dirPath)+len(prefix)+len(channel)+4
+        limiter = len(dirImages)+len(prefix)+len(channel)+4
         
         try:
             allFiles.sort(key=lambda x: int(x[limiter:-4]))
         except:
-            print('Error in sorting files')
+            print(gs.ORANGE + 'Error in sorting files for ' + currentCell + gs.NORMAL)
         
         try:
             ic = io.ImageCollection(allFiles, conserve_memory = True)
             stack = io.concatenate_images(ic)
-            io.imsave(DirSave+'/'+currentCell+'/'+filename+'.tif', stack)
+            io.imsave(dirSave+'/'+filename+'.tif', stack, check_contrast=False)
+            print(gs.GREEN + "Successfully saved "+currentCell + gs.NORMAL)
         except:
             excludedCells.append(currentCell)
             print(gs.ORANGE + "Unknown error in saving "+currentCell + gs.NORMAL)

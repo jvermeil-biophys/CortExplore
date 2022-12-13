@@ -267,7 +267,7 @@ df = tka.getFluoData().head()
 
 #### GlobalTable_meca_Py
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
 GlobalTable_meca.head()
 
 

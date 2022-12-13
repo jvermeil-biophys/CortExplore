@@ -997,3 +997,46 @@ depthoNames = '22.10.06_P3_M450_step20_100X'
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
+
+# %% 07/12/22 : Experiment in PMMH Mechanics - 3T3 OptoRhoA with Y27 to check if they are stress-stiffening
+
+# %%%% M1 : 
+
+dates = '22.12.07'
+manips, wells, cells = 1, 2, 'all'
+depthoNames = '22.12.07_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+
+# %%%% M2 : 
+
+dates = '22.12.07'
+manips, wells, cells = 2, 2, 'all'
+depthoNames = '22.12.07_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+dates = '22.12.07'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '22.12.07_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 :
+
+dates = '22.12.07'
+manips, wells, cells = 4, 3, 'all'
+depthoNames = '22.12.07_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
