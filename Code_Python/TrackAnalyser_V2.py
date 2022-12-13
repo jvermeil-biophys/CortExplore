@@ -2063,6 +2063,11 @@ class IndentCompression:
             pseudoForce = self.fCompr - np.min(self.fCompr)
             thresh = (int(zoneVal)/100.) * np.max(pseudoForce)
             mask = (pseudoForce < thresh)
+        elif zoneType == '%Fs15':
+            pseudoForce = self.fCompr - np.min(self.fCompr)
+            thresh1 = (15./100.) * np.max(pseudoForce)
+            thresh2 = (int(zoneVal)/100.) * np.max(pseudoForce)
+            mask = (pseudoForce > thresh1) & (pseudoForce < thresh2)
         elif zoneType == '%h':
             pseudoDelta = np.max(self.hCompr) - self.hCompr
             thresh = (int(zoneVal)/100.) * np.max(pseudoDelta)
@@ -3041,8 +3046,8 @@ DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
 DEFAULT_halfWidths = [50, 75, 100]
 
 DEFAULT_fitSettings = {# H0
-                       'methods_H0':['Dimitriadis'],
-                       'zones_H0':['%f_20'],
+                       'methods_H0':['Chadwick', 'Dimitriadis'],
+                       'zones_H0':['%f_10', '%f_20'],
                        'method_bestH0':'Dimitriadis',
                        'zone_bestH0':'%f_20',
                        # Global fits

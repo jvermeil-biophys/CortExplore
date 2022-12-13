@@ -277,26 +277,34 @@ df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
 
 # %%%%% Plot a precise date
 
-plotSettings = {# ON/OFF switchs plot by plot
-                'FH(t)':False,
-                'F(H)':True,
-                'S(e)_stressRegion':False,
-                'K(S)_stressRegion':False,
-                'S(e)_stressGaussian':False,
-                'K(S)_stressGaussian':False,
-                'S(e)_nPoints':True,
-                'K(S)_nPoints':True,
-                # Fits plotting parameters
-                'plotCenters': [ii for ii in range(100, 1550, 50)],
-                'plotHW': 50
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['%f_20', '%f_40', '%Fs15_40'],
+                'method_bestH0':'Dimitriadis',
+                'zone_bestH0':'%f_20',
                 }
+
+# plotSettings = {# ON/OFF switchs plot by plot
+#                 'FH(t)':False,
+#                 'F(H)':True,
+#                 'S(e)_stressRegion':False,
+#                 'K(S)_stressRegion':False,
+#                 'S(e)_stressGaussian':False,
+#                 'K(S)_stressGaussian':False,
+#                 'S(e)_nPoints':True,
+#                 'K(S)_nPoints':True,
+#                 # Fits plotting parameters
+#                 'plotCenters': [ii for ii in range(100, 1550, 50)],
+#                 'plotHW': 50
+#                 }
 
 plotSettings = {}
 
-PlotTask = '21-01-18_M2_P1_C2'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'None', 
-                                   save = False, PLOT = True, source = 'Python', 
-                                   plotSettings = plotSettings)
+PlotTask = '21-01-18_M2_P1_C1'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
+                                   save = False, PLOT = False, source = 'Python', 
+                                   plotSettings = plotSettings, fitSettings = fitSettings)
+
 
 # %%%%% Concat dataframes
 

@@ -376,6 +376,9 @@ MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 #### MecaData_HoxB8
 # MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8')
 
+#### Test
+MecaData_Test = taka2.getMergedTable('Test')
+
 # %%% Test of adding fits
 
 data_main = MecaData_Drugs
@@ -1572,7 +1575,7 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     
     # Make output
     
-    output = (fig, axes)
+    output = (fig, ax)
     
     if returnData > 0:
         output += (export_df, )
@@ -2185,7 +2188,9 @@ def buildStyleDictMCA():
 
 data = MecaData_All
 
-dates = ['21-01-18', '21-01-21', '21-12-08', '22-01-12', '22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+# dates = ['21-01-18', '21-01-21', '21-12-08', '22-01-12', '22-02-09', '22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+
+dates = ['22-02-09']
 
 Filters = [(data['validatedThickness'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
