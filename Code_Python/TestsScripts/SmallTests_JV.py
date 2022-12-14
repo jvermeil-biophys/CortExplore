@@ -10,6 +10,35 @@ Created on Thu Nov 25 13:37:51 2021
 # 1. Imports
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
+# 2. Test
+
+def wrapper1(x, **kwargs):
+    wrapper2(x, **kwargs)
+
+def wrapper2(x, **kwargs):
+    multi, add = 1, 0
+    if 'multi' in kwargs:
+        multi = kwargs['multi']
+    if 'add' in kwargs:
+        add = kwargs['add']
+    effector(x, multi, add)
+    
+    
+
+def effector(x, multi = 1, add = 0):
+    print(x * multi + add)
+
+
+wrapper1(2, multi = 34, add = 3)
+
+
+# %%
+
+# 1. Imports
+import numpy as np
+import pandas as pd
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 
@@ -243,11 +272,17 @@ b = np.ones((N,N))
 A = np.repeat(np.arange(1,N+1), N, axis = 0).reshape(N,N)
 
 T0 = time.time()
+
 m = A / np.mean(A,axis=1)[:,None]
+
 T1 = time.time()
+
 m2 = (A.T / np.mean(A,axis=1)).T
+
 T2 = time.time()
+
 m3 = np.divide(A.T,np.mean(A,axis=1)).T
+
 T3 = time.time()
 
 print(T1-T0)

@@ -30,7 +30,9 @@ import sys
 import time
 import random
 import numbers
+import warnings
 import itertools
+
 
 from copy import copy
 from cycler import cycler
@@ -48,6 +50,10 @@ sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
 import UtilityFunctions as ufun
+
+# %%% Warning setting
+
+
 
 # %%% Smaller settings
 
@@ -70,6 +76,30 @@ for i in range(5,105,5):
 # %% (1) TimeSeries functions
 
 def getCellTimeSeriesData(cellID, fromPython = True, fromCloud = False):
+    """
+    Import a time series file given its cellID from cp.DirDataTimeseries or cp.DirCloudTimeseries.
+
+    Parameters
+    ----------
+    cellID : string
+        A cell Id with the format 'yy-mm-dd_M#_P#_C#'.
+        
+    fromPython : bool
+        If True, import a file ending with 'PY.csv'.
+        If False, import a file ending with '.csv' and NOT 'PY.csv'.
+        The default is True
+        
+    fromCloud : bool
+        If True, import a file from cp.DirDataTimeseries.
+        If False, import a file from cp.DirCloudTimeseries. 
+        The default is False
+    
+    Returns
+    -------
+    timeSeriesDataFrame
+        The pandas DataFrame containing the time series.
+    """
+    
     if not fromCloud:
         mainPath = cp.DirDataTimeseries
     else:
@@ -101,6 +131,20 @@ def getCellTimeSeriesData(cellID, fromPython = True, fromCloud = False):
     return(timeSeriesDataFrame)
 
 def plotCellTimeSeriesData(cellID, fromPython = True):
+    """
+    Plot a time series file given its cellID from cp.DirDataTimeseries.
+
+    Parameters
+    ----------
+    cellID : string
+        A cell Id with the format 'yy-mm-dd_M#_P#_C#'.
+        
+    fromPython : bool
+        If True, import a file ending with 'PY.csv'.
+        If False, import a file ending with '.csv' and NOT 'PY.csv'.
+        The default is True
+    """
+    
     X = 'T'
     Y = np.array(['B', 'F', 'dx', 'dy', 'dz', 'D2', 'D3'])
     units = np.array([' (mT)', ' (pN)', ' (µm)', ' (µm)', ' (µm)', ' (µm)', ' (µm)'])
@@ -124,6 +168,7 @@ def plotCellTimeSeriesData(cellID, fromPython = True):
         print('cell not found')
     # plt.rcParams['axes.prop_cycle'] = my_default_color_cycle
         
+    
 def getCellTrajData(cellID, Ntraj = 2):
     trajDir = os.path.join(cp.DirDataTimeseries, 'Trajectories')
     allTrajFiles = [f for f in os.listdir(trajDir) 
@@ -159,50 +204,19 @@ def getCellTrajData(cellID, Ntraj = 2):
         iFile += 1
 
     return(listTraj)
-        
-def addExcludedCell(cellID, motive):
-    f = open(os.path.join(cp.DirRepoExp, 'ExcludedCells.txt'), 'r')
-    lines = f.readlines()
-    nLines = len(lines)
-    excludedCellsList = []
-    for iLine in range(nLines):
-        line = lines[iLine]
-        splitLine = line[:-1].split(',')
-        excludedCellsList.append(splitLine[0])
-    if cellID in excludedCellsList:
-        newlines = copy(lines)
-        iLineOfInterest = excludedCellsList.index(cellID)
-        if motive not in newlines[iLineOfInterest][:-1].split(','):
-            newlines[iLineOfInterest] = newlines[iLineOfInterest][:-1] + ',' + motive + '\n'            
-    else:
-        newlines = copy(lines)
-        newlines.append('' + cellID + ',' + motive + '\n')
-    f.close()
-    f = open(os.path.join(cp.DirRepoExp, 'ExcludedCells.txt'), 'w')
-    f.writelines(newlines)
-    
-def getExcludedCells():
-    f = open(os.path.join(cp.DirRepoExp, 'ExcludedCells.txt'), 'r')
-    lines = f.readlines()
-    nLines = len(lines)
-    excludedCellsDict = {}
-    for iLine in range(nLines):
-        line = lines[iLine]
-        splitLine = line[:-1].split(',')
-        excludedCellsDict[splitLine[0]] = splitLine[1:]
-    return(excludedCellsDict)
+
 
 # %% (2) GlobalTables functions
 
 # %%% (2.1) Exp conditions
 
-# See UtilityFunctions.py
+#### See UtilityFunctions.py
 
 # %%% (2.2) Constant Field experiments
 
-listColumnsCtField = ['date','cellName','cellID','manipID',\
-                      'duration','medianRawB','medianThickness',\
-                      '1stDThickness','9thDThickness','fluctuAmpli',\
+listColumnsCtField = ['date','cellName','cellID','manipID',
+                      'duration','medianRawB','medianThickness',
+                      '1stDThickness','9thDThickness','fluctuAmpli',
                       'R2_polyFit','validated']
 
 def analyseTimeSeries_ctField(f, tsDf, expDf):
@@ -259,31 +273,6 @@ def createDataDict_ctField(list_ctFieldFiles):
             tableDict[k].append(current_resultDict[k])
     return(tableDict)
 
-# def computeGlobalTable_meca(task = 'fromScratch', fileName = 'Global_MecaData', save = False, PLOT = False, \
-#                             source = 'Matlab', listColumnsMeca=listColumnsMeca):
-#     """
-#     Compute the GlobalTable_meca from the time series data files.
-#     Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
-#     Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
-#     listColumnsMeca have to contain all the fields of the table that will be constructed.
-#     """
-#     top = time.time()
-    
-# #     list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-# #                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-# #                       and ('R40' in f))] # Change to allow different formats in the future
-    
-#     suffixPython = '_PY'
-#     if source == 'Matlab':
-#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and ('R40' in f) and not (suffixPython in f))]
-        
-#     elif source == 'Python':
-#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
-#         # print(list_mecaFiles)
 
 def computeGlobalTable_ctField(task = 'fromScratch', fileName = 'Global_CtFieldData', save = False,
                                source = 'Matlab'):
@@ -426,16 +415,107 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 # %%%% mechanical models
 
 def chadwickModel(h, E, H0, DIAMETER):
+    """
+    Implement the Chadwick formula with force as a function of thickness.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    E : float
+        Elastic modulus of the cortex, in Pa.
+    H0 : float
+        Thickness of the cortex in the non-deformed configuration, in µm.
+    DIAMETER : float
+        Diameter of the beads indenting the cortex, in µm.
+
+    Returns
+    -------
+    f : numpy array
+        Array of pinching forces in pN.
+    
+    Reference
+    -------
+    Axisymmetric Indentation of a Thin Incompressible Elastic Layer, 
+    R. S. Chadwick, 2002, https://doi.org/10.1137/S0036139901388222
+
+    Note
+    -------
+    Compatible units: µm, pN, Pa ; or nm, pN, µPa.
+    """
+    
     R = DIAMETER/2
     f = (np.pi*E*R*((H0-h)**2))/(3*H0)
     return(f)
 
+
 def inversedChadwickModel(f, E, H0, DIAMETER):
+    """
+    Implement the Chadwick formula with thickness as a function of force.
+
+    Parameters
+    ----------
+    f : numpy array
+        Array of pinching forces in pN.
+    E : float
+        Elastic modulus of the cortex, in Pa.
+    H0 : float
+        Thickness of the cortex in the non-deformed configuration, in µm.
+    DIAMETER : float
+        Diameter of the beads indenting the cortex, in µm.
+
+    Returns
+    -------
+    h : numpy array
+        Array of cortical thickness in µm.
+        
+    Reference
+    -------
+    Axisymmetric Indentation of a Thin Incompressible Elastic Layer, 
+    R. S. Chadwick, 2002, https://doi.org/10.1137/S0036139901388222
+
+    Note
+    -------
+    Compatible units: µm, pN, Pa ; or nm, pN, µPa.
+    """
     R = DIAMETER/2
     h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
     return(h)
 
+
 def dimitriadisModel(h, E, H0, DIAMETER, v = 0, order = 2):
+    """
+    Implement the Chadwick formula with force as a function of thickness.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    E : float
+        Elastic modulus of the cortex, in Pa.
+    H0 : float
+        Thickness of the cortex in the non-deformed configuration, in µm.
+    DIAMETER : float
+        Diameter of the beads indenting the cortex, in µm.
+    v : float, optional
+        Poisson modulus of the cortex.
+    order : int, optional
+        Order of the polynomia used in the model. The default is 2.
+
+    Returns
+    -------
+    f : numpy array
+        Array of pinching forces in pN.
+    
+    Reference
+    -------
+    Determination of Elastic Moduli of Thin Layers of Soft Material Using the Atomic Force Microscope, 
+    E. K. Dimitriadis et al., 2002, https://doi.org/10.1016/S0006-3495(02)75620-8
+    
+    Note
+    -------
+    Compatible units: µm, pN, Pa ; or nm, pN, µPa.
+    """
     R = DIAMETER/2
     delta = H0-h
     X = np.sqrt(R*delta)/h
@@ -446,11 +526,49 @@ def dimitriadisModel(h, E, H0, DIAMETER, v = 0, order = 2):
     f = ((4 * E * R**0.5 * delta**1.5)/(3 * (1 - v**2))) * poly
     return(f)
 
+
 def constitutiveRelation(strain, K, stress0):
+    """
+    Implement the stress-strain locally affine function: stress = (K * strain) + stress0
+
+    Parameters
+    ----------
+    strain : numpy array
+        Array of strain.
+    K : float
+        Tangeantial modulus of the cortex, in Pa.
+    stress0 : float
+        Y-intercept for the stress.
+
+    Returns
+    -------
+    stress : numpy array
+        Array of stress in Pa.
+    """
+    
     stress = (K * strain) + stress0
     return(stress)
 
+
 def inversedConstitutiveRelation(stress, K, strain0):
+    """
+    Implement the strain-stress locally affine function: strain = (stress / K) + strain0
+
+    Parameters
+    ----------
+    stress : numpy array
+        Array of stress in Pa.
+    K : float
+        Tangeantial modulus of the cortex, in Pa.
+    strain0 : float
+        Y-intercept for the strain.
+
+    Returns
+    -------
+    strain : numpy array
+        Array of strain.
+    """
+    
     strain = (stress / K) + strain0
     return(strain)
 
@@ -460,7 +578,31 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
 
 def fitChadwick_hf(h, f, D):
-    # f in pN, h & D in nm.
+    """
+    Fit the Chadwick model on a force-thickness curve.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    f : numpy array
+        Array of pinching forces in pN.
+    D : float
+        Diameter of the beads indenting the cortex, in µm.
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
     
     R = D/2
     Npts = len(h)
@@ -503,10 +645,35 @@ def fitChadwick_hf(h, f, D):
 
 
 def fitDimitriadis_hf(h, f, D, order = 2):
-    # f in pN, h & D in nm.
+    """
+    Fit the Dimitriadis model on a force-thickness curve.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    f : numpy array
+        Array of pinching forces in pN.
+    D : float
+        Diameter of the beads indenting the cortex, in µm.
+    order : int, optional
+        Order of the polynomia used in the model. The default is 2.
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
     
     R = D/2
-    Npts = len(h)
     error = False
     v = 0 # Poisson
     
@@ -556,35 +723,59 @@ def fitDimitriadis_hf(h, f, D, order = 2):
 
 
 
-def fitLinear_ss(stress, strain, weights = []):
+def fitLinear_ss(stress, strain, weights = None):
+    """
+    Linear fit on a stress-strain curve, with stress as the x- and strain as the y-variable.
+
+    Parameters
+    ----------
+    stress : (N x 1) numpy array
+        Array of stress in Pa.
+    strain : (N x 1) numpy array
+        Array of strain.
+    weights : (N x 1) numpy array, optional
+        Array of weights. Can be interpreted in two ways, which condition how this function will work.
+        
+        * If weigths is an array of boolean-like values, it is interpreted as a mask, 
+          to select only a part of the stress-strain curve.
+        * If weigths is an array of float-like values, it is interpreted as weigths, 
+          that apply to the stress-strain curve during the fit. This is typically used with gaussian weights.
+        * If weigths = None, it is set as an array of True, 
+          and the whole stress-strain curve is fitted without mask or weights.
+        The default is None.
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [K, strain0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(strain0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: Pa.
+    """
     
     error = False
     
-    if len(weights) == 0:
+    if weights == None:
         weights = np.ones_like(stress, dtype = bool)
     
-    masked = (np.all(weights.astype(bool) == weights)) # Are all the weights equal to 0 or 1 ? If so it is a mask
-    weighted = not masked # The other case
-
-    def constitutiveRelation(strain, K, stress0):
-        stress = (K * strain) + stress0
-        return(stress)
-    
-    def inversedConstitutiveRelation(stress, K, strain0):
-        strain = (stress / K) + strain0
-        return(strain)
+    # Are all the weights equal to 0 or 1 ? 
+    # If so it is a mask.
+    masked = (np.all(weights.astype(bool) == weights))
+    # If not they are interpreted as weigths.
+    weighted = not masked 
     
     try:
     # if np.sum(weights) > 0:
         if masked:
             ols_model = sm.OLS(strain[weights], sm.add_constant(stress[weights]))
             results_ols = ols_model.fit()
-            # try:
             S0, K = results_ols.params[0], 1/results_ols.params[1]
             seS0, seK = results_ols.HC3_se[0], results_ols.HC3_se[1]*K**2 # See note below
-            # except:
-            #     print(strain[weights])
-            #     print(results_ols.params)
         
         if weighted:
             wls_model = sm.WLS(strain, sm.add_constant(stress), weights=weights)
@@ -592,7 +783,7 @@ def fitLinear_ss(stress, strain, weights = []):
             S0, K = results_wls.params[0], 1/results_wls.params[1]
             seS0, seK = results_wls.HC3_se[0], results_wls.HC3_se[1]*K**2 # See note below
             
-            # NB : Here we fit strain = L * stress + S0 ; L = 1/K
+            # NB : Here we fit strain = L * stress + S0 ; Let's write: L = 1/K
             # To find K, we just take 1/params[1] = 1/L
             # To find seK, there is a trick : se(K) / K = relative error = se(L) / L ; so se(K) = se(L) * K**2
             
@@ -615,6 +806,48 @@ def fitLinear_ss(stress, strain, weights = []):
 def makeDictFit_hf(params, ses, error, 
                    x, y, yPredict, 
                    err_chi2, dictFitValidation):
+    """
+    Take multiple inputs related to the fit of a **force-thickness** curve, 
+    and compute detailed results contained in a dict.
+
+    Parameters
+    ----------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0]. 
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit. From the function fitChadwick_hf().
+    x : (N x 1) numpy array
+        The x-variable values array used for the fit.
+    y : (N x 1) numpy array
+        The y-variable values array used for the fit.
+    yPredict : (N x 1) numpy array
+        The x-variable values array predicted from the fit.
+    err_chi2 : float
+        The typical error on the y-variable used to compute the chi2.
+        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+    dictFitValidation : dict
+        Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
+
+    Returns
+    -------
+    res : dict, contains the following fields : 
+        * 'error' : bool, error of the fit as given in input.
+        * 'nbPts' : int, number of points fitted.
+        * 'E', 'seE', 'H0', 'seH0' : float, params and ses as given in input.
+        * 'R2', 'Chi2' : float, R2 and Chi2 as computed using inputs x, y, and yPredict.
+        * 'ciwE', 'ciwH0' : float, Confidence Interval Width for the parameters.
+        * 'x', 'y', 'yPredict' : numpy array, the arrays given as input.
+        * 'valid': bool, wether or not the fit is validated with respect to the criteria in dictFitValidation.
+        * 'issue': string, a text describing the reasons why a fit was not validated if it is the case.
+    
+    Note
+    -------
+    The inputs params, ses, error should be taken from the output of the functions 
+    **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+
+    """
     if not error:
         E, H0 = params
         seE, seH0 = ses
@@ -674,6 +907,48 @@ def makeDictFit_hf(params, ses, error,
 def makeDictFit_ss(params, ses, error, 
                    center, halfWidth, x, y, yPredict, 
                    err_chi2, dictFitValidation):
+    """
+    Take multiple inputs related to the fit of a **stress-strain** curve, 
+    and compute detailed results contained in a dict.
+
+    Parameters
+    ----------
+    params : (2 x 1) numpy array
+        Parameters values as: [K, s0]. 
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(s0)].
+    error : bool
+        Error during the fit. From the function fitChadwick_hf().
+    x : (N x 1) numpy array
+        The x-variable values array used for the fit.
+    y : (N x 1) numpy array
+        The y-variable values array used for the fit.
+    yPredict : (N x 1) numpy array
+        The x-variable values array predicted from the fit.
+    err_chi2 : float
+        The typical error on the y-variable used to compute the chi2.
+        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+    dictFitValidation : dict
+        Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
+
+    Returns
+    -------
+    res : dict, contains the following fields : 
+        * 'error' : bool, error of the fit as given in input.
+        * 'nbPts' : int, number of points fitted.
+        * 'K', 'seK' : float, params and ses as given in input.
+        * 'R2', 'Chi2' : float, R2 and Chi2 as computed using inputs x, y, and yPredict.
+        * 'ciwK' : float, Confidence Interval Width for the parameters.
+        * 'center_x', 'halfWidth_x', 'center_y' : float, centers and half-width of the arrays given as input.
+        * 'x', 'y', 'yPredict' : numpy array, the arrays given as input.
+        * 'valid': bool, wether or not the fit is validated with respect to the criteria in dictFitValidation.
+        * 'issue': string, a text describing the reasons why a fit was not validated if it is the case.
+    
+    Note
+    -------
+    The inputs params, ses, error should be taken from the output of the function
+    **fitLinear_ss()**.
+    """
     
     nbPts = len(y)
 
@@ -735,6 +1010,7 @@ def makeDictFit_ss(params, ses, error,
     
     return(res)
 
+
 def nestedDict_to_DataFrame(D):
     """
     Convert D, a dict of dicts, into a pandas DataFrame, after removing non-numeric values.
@@ -744,7 +1020,7 @@ def nestedDict_to_DataFrame(D):
     
     In the resulting DataFrame, k1 ... kn will be the columns, and d1 ... dn the rows.
     
-    This function remove any couple 'ki':vali where vali is not a number (e.g. a numy array).
+    This function remove any couple 'ki':val_i where val_i is not a number (e.g. a numy array).
     """
     if len(D) > 0:
         fits =  list(D.keys())
@@ -877,6 +1153,7 @@ class CellCompression:
         return(mask)
         
         
+        
     def correctJumpForCompression(self, i):
         colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
         mask = self.getMaskForCompression(i, task = 'compression & precompression')
@@ -888,8 +1165,6 @@ class CellCompression:
                 D3corrected = True
                 jumpD3 = jump
         self.listJumpsD3[i] = jumpD3
-        
-    
 
     
         
@@ -1226,9 +1501,12 @@ class CellCompression:
             results['compNum'][i] = i+1
             
             # Time-related
+            date_T0 = self.expDf.at[self.expDf.index.values[0], 'date_T0']
             results['compDuration'][i] = self.expDf.at[self.expDf.index.values[0], 'compression duration']
             results['compStartTime'][i] = IC.rawDf['T'].values[0]
             results['compAbsStartTime'][i] = IC.rawDf['Tabs'].values[0]
+            results['compStartTimeThisDay'][i] = IC.rawDf['Tabs'].values[0] - date_T0
+            
             
             # Thickness-related ( = D3-DIAMETER)
             previousMask = self.getMaskForCompression(i, task = 'previous')
@@ -1248,6 +1526,9 @@ class CellCompression:
             results['ctFieldDY'][i] = ctFieldDY
             results['ctFieldDZ'][i] = ctFieldDZ
             results['ctFieldThickness'][i] = ctFieldThickness
+            results['ctFieldMinThickness'][i] = ctFieldMinThickness
+            results['ctFieldMaxThickness'][i] = ctFieldMaxThickness
+            results['ctFieldVarThickness'][i] = ctFieldVarThickness
             results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
             results['jumpD3'][i] = self.listJumpsD3[i]
             
@@ -1276,18 +1557,21 @@ class CellCompression:
             results['maxStrain'][i] = np.max(IC.strainCompr)
             
             # Whole curve fits related
-            if fitSettings['doChadwickFit']:
-                method = 'Chadwick'
-                results['error_'+ method][i] = IC.dictFitFH_Chadwick['error']
-                results['nbPts_'+ method][i] = IC.dictFitFH_Chadwick['nbPts']
-                results['E_'+ method][i] = IC.dictFitFH_Chadwick['E']
-                results['ciwE_'+ method][i] = IC.dictFitFH_Chadwick['ciwE']
-                results['H0_'+ method][i] = IC.dictFitFH_Chadwick['H0']
-                results['R2_'+ method][i] = IC.dictFitFH_Chadwick['R2']
-                results['valid_'+ method][i] = IC.dictFitFH_Chadwick['valid']
+            if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
+                try:
+                    method = 'Chadwick'
+                    results['error_'+ method][i] = IC.dictFitFH_Chadwick['error']
+                    results['nbPts_'+ method][i] = IC.dictFitFH_Chadwick['nbPts']
+                    results['E_'+ method][i] = IC.dictFitFH_Chadwick['E']
+                    results['ciwE_'+ method][i] = IC.dictFitFH_Chadwick['ciwE']
+                    results['H0_'+ method][i] = IC.dictFitFH_Chadwick['H0']
+                    results['R2_'+ method][i] = IC.dictFitFH_Chadwick['R2']
+                    results['valid_'+ method][i] = IC.dictFitFH_Chadwick['valid']
+                except:
+                    print(IC.dictFitFH_Chadwick)
 
                     
-            if fitSettings['doDimitriadisFit']:
+            if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
                 method = 'Dimitriadis'
                 results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
                 results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
@@ -1457,6 +1741,14 @@ class IndentCompression:
     
         
     def validateForAnalysis(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
         listB = self.rawDf.B.values
         
         # Test to check if most of the compression have not been deleted due to bad image quality 
@@ -1480,6 +1772,14 @@ class IndentCompression:
     
     
     def refineStartStop(self):
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
         listB = self.rawDf.B.values
         NbPtsRaw = len(listB)
         
@@ -1546,6 +1846,21 @@ class IndentCompression:
         
         
     def computeH0(self, method = 'Chadwick', zone = 'pts_15'):
+        """
+        
+
+        Parameters
+        ----------
+        method : TYPE, optional
+            DESCRIPTION. The default is 'Chadwick'.
+        zone : TYPE, optional
+            DESCRIPTION. The default is 'pts_15'.
+
+        Returns
+        -------
+        None.
+
+        """
         listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
         listAllZones = ['pts_15', 'pts_30', 
                         '%f_10', '%f_20', '%f_30', '%f_40', 
@@ -1584,25 +1899,15 @@ class IndentCompression:
                 mask = (pseudoDelta < thresh)
             
             if method == 'Chadwick':
-                try:
-                    h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
-                    params, covM, error = fitChadwick_hf(h, f, D)
-                    H0, E = params[1], params[0]
-                    self.dictH0['H0_' + method + '_' + zone] = H0
-                    self.dictH0['E_' + method + '_' + zone] = E
-                    self.dictH0['error_' + method + '_' + zone] = error
-                    self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
-                    self.dictH0['fArray_' + method + '_' + zone] = f
-                    self.dictH0['hArray_' + method + '_' + zone] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
-                except:
-                    print(zoneType)
-                    print(thresh)
-                    print(self.i_indent)
-                    print(self.fCompr)
-                    print(self.hCompr)
-                    print(mask)
-                    
-                    
+                h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+                params, covM, error = fitChadwick_hf(h, f, D)
+                H0, E = params[1], params[0]
+                self.dictH0['H0_' + method + '_' + zone] = H0
+                self.dictH0['E_' + method + '_' + zone] = E
+                self.dictH0['error_' + method + '_' + zone] = error
+                self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+                self.dictH0['fArray_' + method + '_' + zone] = f
+                self.dictH0['hArray_' + method + '_' + zone] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
                 
             elif method == 'Dimitriadis':
                 h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
@@ -1625,6 +1930,21 @@ class IndentCompression:
         
             
     def setBestH0(self, method, zone):
+        """
+        
+
+        Parameters
+        ----------
+        method : TYPE
+            DESCRIPTION.
+        zone : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         self.bestH0 = self.dictH0['H0_' + method + '_' + zone]
         self.error_bestH0 = self.dictH0['error_' + method + '_' + zone]
         self.method_bestH0 = method
@@ -1639,16 +1959,17 @@ class IndentCompression:
              'nbPts':[],
              'error':[],
              }
+        
         for k in self.dictH0.keys():
             if k.startswith('H0'):
-                infos = k.split('_')
+                infos = k.split('_') # k = method_zoneType_zoneVal
                 if infos[1] in ['Chadwick', 'Dimitriadis']:
                     CompNum = self.i_indent
                     method = infos[1]
                     zone = infos[2] + '_' + infos[3]
                     H0 = self.dictH0[k]
-                    nbPts = self.dictH0['nbPts_' + method + '_' + zone]
-                    error = self.dictH0['error_' + method + '_' + zone]
+                    nbPts = int(self.dictH0['nbPts_' + method + '_' + zone])
+                    error = bool(self.dictH0['error_' + method + '_' + zone])
                     d['CompNum'].append(CompNum)
                     d['method'].append(method)
                     d['zone'].append(zone)
@@ -1656,11 +1977,27 @@ class IndentCompression:
                     d['nbPts'].append(nbPts)
                     d['error'].append(error)
                     
+        for k in d.keys():
+            d[k] = np.array(d[k])
+                    
         df = pd.DataFrame(d)
         return(df)
     
     
     def computeStressStrain(self, method = 'Chadwick'):
+        """
+        
+
+        Parameters
+        ----------
+        method : TYPE, optional
+            DESCRIPTION. The default is 'Chadwick'.
+
+        Returns
+        -------
+        None.
+
+        """
         if not self.error_bestH0:
             deltaCompr = (self.bestH0 - self.hCompr)
             
@@ -1675,6 +2012,21 @@ class IndentCompression:
         
     
     def fitFH_Chadwick(self, dictFitValidation, mask = []):
+        """
+        
+
+        Parameters
+        ----------
+        dictFitValidation : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
         if len(mask) == 0:
             mask = np.ones_like(self.hCompr, dtype = bool)
         h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
@@ -1692,6 +2044,21 @@ class IndentCompression:
 
                 
     def fitFH_Dimitriadis(self, dictFitValidation, mask = []):
+        """
+        
+
+        Parameters
+        ----------
+        dictFitValidation : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
         if len(mask) == 0:
             mask = np.ones_like(self.hCompr, dtype = bool)
         h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
@@ -1709,6 +2076,23 @@ class IndentCompression:
                 
     
     def fitSS_stressRegion(self, center, halfWidth, dictFitValidation):
+        """
+        
+
+        Parameters
+        ----------
+        center : TYPE
+            DESCRIPTION.
+        halfWidth : TYPE
+            DESCRIPTION.
+        dictFitValidation : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
         
@@ -1732,6 +2116,23 @@ class IndentCompression:
                 
     
     def fitSS_stressGaussian(self, center, halfWidth, dictFitValidation):
+        """
+        
+
+        Parameters
+        ----------
+        center : TYPE
+            DESCRIPTION.
+        halfWidth : TYPE
+            DESCRIPTION.
+        dictFitValidation : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         id_range = str(center) + '_' + str(halfWidth)
         stress, strain = self.stressCompr, self.strainCompr
         
@@ -1757,6 +2158,21 @@ class IndentCompression:
     
     
     def fitSS_nPoints(self, mask, dictFitValidation):
+        """
+        
+
+        Parameters
+        ----------
+        mask : TYPE
+            DESCRIPTION.
+        dictFitValidation : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         iStart = ufun.findFirst(1, mask)
         iStop = iStart + np.sum(mask)
         id_range = str(iStart) + '_' +str(iStop)
@@ -1780,6 +2196,19 @@ class IndentCompression:
     
     
     def dictFits_To_DataFrame(self, fitSettings):
+        """
+        
+
+        Parameters
+        ----------
+        fitSettings : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         if fitSettings['doStressRegionFits']:
             df = nestedDict_to_DataFrame(self.dictFitsSS_stressRegions)
             nRows = df.shape[0]
@@ -1804,6 +2233,27 @@ class IndentCompression:
     
     
     def plot_FH(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotH0 : TYPE, optional
+            DESCRIPTION. The default is True.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
         if self.isValidForAnalysis:
             ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
             ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
@@ -1856,6 +2306,27 @@ class IndentCompression:
             
         
     def plot_SS(self, fig, ax, plotSettings, plotFit = True, fitType = 'stressRegion'):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+        fitType : TYPE, optional
+            DESCRIPTION. The default is 'stressRegion'.
+
+        Returns
+        -------
+        None.
+
+        """
         if self.isValidForAnalysis and not self.error_bestH0:
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             ax.title.set_text(titleText)
@@ -1865,71 +2336,89 @@ class IndentCompression:
             ls = '-'
             lw = 1.8
             
-            if not self.error_bestH0:
-                ax.plot(self.strainCompr, self.stressCompr, 
-                        color = main_color, marker = 'o', 
-                        markersize = 2, ls = '', alpha = 0.8)
-                
-                if plotFit:
-                    if fitType == 'stressRegion':
-                        # Read settings
-                        HW = plotSettings['plotHW']
-                        centers = plotSettings['plotCenters']
-                        dictFit = self.dictFitsSS_stressRegions
-                        id_ranges = [str(C) + '_' + str(HW) for C in centers]
-                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
-                        for k in range(len(id_ranges)):
-                            idr = id_ranges[k]
-                            d = dictFit[idr]
-                            if not d['error']:
-                                if not d['valid']:
-                                    ls = '--'
-                                x = d['x']
-                                y = d['yPredict']
-                                color = gs.colorList30[k]
-                                ax.plot(y, x, color = color, ls = ls, lw = lw)
-                                
-                    if fitType == 'stressGaussian':
-                        # Read settings
-                        HW = plotSettings['plotHW']
-                        centers = plotSettings['plotCenters']
-                        dictFit = self.dictFitsSS_stressGaussian
-                        id_ranges = [str(C) + '_' + str(HW) for C in centers]
-                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
-                        for k in range(len(id_ranges)):
-                            idr = id_ranges[k]
-                            d = dictFit[idr]
-                            if not d['error']:
-                                if not d['valid']:
-                                    ls = '--'
-                                x = d['x']
-                                y = d['yPredict']
-                                color = gs.colorList30[k]
-                                ax.plot(y, x, color = color, ls = ls, lw = lw)
-                                
-                    if fitType == 'nPoints':
-                        dictFit = self.dictFitsSS_nPoints
-                        id_ranges = list(dictFit.keys())
-                        # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
-                        for k in range(len(id_ranges)):
-                            idr = id_ranges[k]
-                            d = dictFit[idr]
-                            if not d['error']:
-                                if not d['valid']:
-                                    ls = '--'
-                                x = d['x']
-                                y = d['yPredict']
-                                color = gs.colorList30[k]
-                                ax.plot(y, x, color = color, ls = ls, lw = lw)
+            ax.plot(self.strainCompr, self.stressCompr, 
+                    color = main_color, marker = 'o', 
+                    markersize = 2, ls = '', alpha = 0.8)
+            
+            if plotFit:
+                if fitType == 'stressRegion':
+                    # Read settings
+                    HW = plotSettings['plotHW']
+                    centers = plotSettings['plotCenters']
+                    dictFit = self.dictFitsSS_stressRegions
+                    id_ranges = [str(C) + '_' + str(HW) for C in centers]
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        d = dictFit[idr]
+                        if not d['error']:
+                            if not d['valid']:
+                                ls = '--'
+                            x = d['x']
+                            y = d['yPredict']
+                            color = gs.colorList30[k]
+                            ax.plot(y, x, color = color, ls = ls, lw = lw)
+                            
+                if fitType == 'stressGaussian':
+                    # Read settings
+                    HW = plotSettings['plotHW']
+                    centers = plotSettings['plotCenters']
+                    dictFit = self.dictFitsSS_stressGaussian
+                    id_ranges = [str(C) + '_' + str(HW) for C in centers]
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        d = dictFit[idr]
+                        if not d['error']:
+                            if not d['valid']:
+                                ls = '--'
+                            x = d['x']
+                            y = d['yPredict']
+                            color = gs.colorList30[k]
+                            ax.plot(y, x, color = color, ls = ls, lw = lw)
+                            
+                if fitType == 'nPoints':
+                    dictFit = self.dictFitsSS_nPoints
+                    id_ranges = list(dictFit.keys())
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        d = dictFit[idr]
+                        if not d['error']:
+                            if not d['valid']:
+                                ls = '--'
+                            x = d['x']
+                            y = d['yPredict']
+                            color = gs.colorList30[k]
+                            ax.plot(y, x, color = color, ls = ls, lw = lw)
                     
     
                 
-                for item in ([ax.title, ax.xaxis.label, \
-                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                    item.set_fontsize(9)
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
     
         
     def plot_KS(self, fig, ax, plotSettings, fitType = 'stressRegion'):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        fitType : TYPE, optional
+            DESCRIPTION. The default is 'stressRegion'.
+
+        Returns
+        -------
+        None.
+
+        """
         if self.isValidForAnalysis and not self.error_bestH0:
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             ax.title.set_text(titleText)
@@ -2344,15 +2833,16 @@ class IndentCompression:
 def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False):
     top = time.time()
     
-    print(gs.BLUE + f + gs.NORMAL)
+    print(gs.BLUE + f + gs.NORMAL, end = ' ... ')
     plt.ioff()
+    warnings.filterwarnings('ignore')
     
     #### 0. Settings
     #### 0.1 BestH0
     # listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
     # listAllZones = ['pts_15', 'pts_30', '%f_15', '%f_30', '%h_15', '%h_30']
     method_bestH0 = 'Dimitriadis'
-    zone_bestH0 = '%f_30'
+    zone_bestH0 = '%f_20'
     
     #### 0.2 Fits settings
     fitSettings = {'doChadwickFit' : True,
@@ -2431,12 +2921,10 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             
             #### 3.7 Fit with Chadwick model of the force-thickness curve     
             IC.fitFH_Chadwick(dictFitValidation)
-            # dictFit = IC.fitFH_Chadwick()
-            # IC.dictFitFH_Chadwick = dictFit
                 
             #### 3.8 Find the best H0
-            IC.computeH0(method = 'all', zone = 'all')
-            # IC.computeH0(method = 'all', zone = '%f_10')
+            IC.computeH0(method = method_bestH0, zone = zone_bestH0)
+            # IC.computeH0(method = 'all', zone = 'all')
             # print(IC.dictH0)
             
             IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
@@ -2522,13 +3010,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     df_H0 = CC.getH0Df()
     
     res = {'results_main' : CC.df_mainResults,
-           'results_stressRegions' : CC.df_stressRegions,
-           'results_stressGaussian' : CC.df_stressGaussian,
-           'results_nPoints' : CC.df_nPoints,
-           'results_H0' : df_H0
-           }
+            'results_stressRegions' : CC.df_stressRegions,
+            'results_stressGaussian' : CC.df_stressGaussian,
+            'results_nPoints' : CC.df_nPoints,
+            'results_H0' : df_H0
+            }
 
     print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
+    warnings.filterwarnings('default')
     
     return(res)
 
@@ -2640,20 +3129,44 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all',
                             save = False, PLOT = False, \
                             source = 'Python'):
     """
-    Compute the GlobalTable_meca from the time series data files. \n
-    > mode = 'fromScratch' or 'updateExisting':\n
-    - 'fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.\n
-    - 'updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new files.\n
-    > task = 'all' or a string containing a file prefix, or several prefixes separated by ' & '.\n
-    
-    - 'all' will include in the analysis all the files that correspond to the chosen 'mode'.\n
-    - giving file prefixes will include in the analysis all the files that start with this prefix and correspond to the chosen 'mode'. Examples: task = '22-05-03' or task = '22-05-03_M1 & 22-05-04_M2 & 22-05-05'.\n
-    > fileName: the name of the table that will be created. If mode='updateExisting', it is this table that will be updated.\n
-    > save: save the final table or not.\n
-    > PLOT: save the plots or not.\n
-    > source: 'Matlab' or 'Python', default is 'Python'.\n
-    > dictColumnsMeca: dict that has to contain all the fields of the table that will be constructed AND their default values: dictColumnsMeca = {col1: defaultVal1, col2: defaultVal2, etc}.
+    Main function of the complex wrapper of the mechanics analysis.
+
+    Parameters
+    ----------
+    * mode : 'fromScratch' or 'updateExisting', default is 'fromScratch'.
+        - 'fromScratch' will analyse all the time series data files and construct 
+          a new GlobalTable from them regardless of the existing GlobalTable.
+        - 'updateExisting' will open the existing GlobalTable and determine which 
+          of the time series data files are new ones, and will append 
+          the existing GlobalTable with the data analysed from those new files.
+          
+    * task : 'all' (default) or a string containing a file prefix, or several prefixes separated by ' & '.
+        - 'all' will include in the analysis all the files that correspond to the chosen 'mode'.
+        - giving file prefixes will include in the analysis all the files that start with this prefix 
+          and correspond to the chosen 'mode'. Examples: task = '22-05-03' or task = '22-05-03_M1 & 22-05-04_M2 & 22-05-05'.
+          
+    * fileName : string
+        The name of the table that will be created. If mode='updateExisting', it is this table that will be updated.
+    * save : bool
+        Save the final table or not.
+    * PLOT : bool
+        Make and save the plots or not.
+    * source : string
+        'Matlab' or 'Python', default is 'Python'.
+
+    Returns
+    -------
+    mecaDf : pd.DataFrame
+        The table containing all the analysis results
+        
+    Note
+    -------
+    Running this function will result in many sub-tables (local fits) and/or plots
+    to be created and saved without being explicitly returned. Check the directories:
+    cp.DirDataAnalysis, cp.DirDataAnalysisFits, cp.DirDataFig, cp.DirDataAnalysisUMS, cp.DirDataTimeseriesStressStrain.
+
     """
+
     top = time.time()
     
     ui_fileSuffix = 'UserManualSelection_MecaData'
@@ -2845,157 +3358,7 @@ def getFluoData(save = False):
 
 # %%% (2.5) Oscillations
 
-def analyseTimeSeries_sinus(f, tsDf, expDf, listColumns, PLOT, PLOT_SHOW):
-    
-    plotSmallElements = True
-    
-    #### (0) Import experimental infos
-    split_f = f.split('_')
-    tsDf.dx, tsDf.dy, tsDf.dz, tsDf.D2, tsDf.D3 = tsDf.dx*1000, tsDf.dy*1000, tsDf.dz*1000, tsDf.D2*1000, tsDf.D3*1000
-    thisManipID = ufun.findInfosInFileName(f, 'manipID')
-    thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
 
-    # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
-    
-    EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
-
-    results = {}
-    for c in listColumnsMeca:
-        results[c] = []
-
-    nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
-    
-    if 'sinus' in EXPTYPE:
-        pass
-
-
-def createDataDict_sinus(listFiles, listColumns, PLOT):
-    """
-    Subfunction of computeGlobalTable_meca
-    Create the dictionnary that will be converted in a pandas table in the end.
-    """
-    expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
-    tableDict = {}
-    Nfiles = len(listFiles)
-    PLOT_SHOW = (Nfiles==1)
-    PLOT_SHOW = 0
-    if not PLOT_SHOW:
-        plt.ioff()
-    for c in listColumns:
-        tableDict[c] = []
-    for f in listFiles: #[:10]:
-        tS_DataFilePath = os.path.join(cp.DirDataTimeseries, f)
-        current_tsDf = pd.read_csv(tS_DataFilePath, sep = ';')
-         # MAIN SUBFUNCTION
-        current_resultDict = analyseTimeSeries_sinus(f, current_tsDf, expDf, 
-                                                    listColumns, PLOT, PLOT_SHOW)
-        for k in current_resultDict.keys():
-            tableDict[k] += current_resultDict[k]
-#     for k in tableDict.keys():
-#         print(k, len(tableDict[k]))
-    return(tableDict)
-
-# def computeGlobalTable_sinus(task = 'fromScratch', fileName = 'Global_Sinus', save = False, PLOT = False, \
-#                             source = 'Matlab', listColumns=listColumnsMeca):
-#     """
-#     Compute the GlobalTable_Sinus from the time series data files.
-#     Option task='fromScratch' will analyse all the time series data files and construct a new GlobalTable from them regardless of the existing GlobalTable.
-#     Option task='updateExisting' will open the existing GlobalTable and determine which of the time series data files are new ones, and will append the existing GlobalTable with the data analysed from those new fils.
-#     listColumns have to contain all the fields of the table that will be constructed.
-#     """
-#     top = time.time()
-    
-# #     list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-# #                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-# #                       and ('R40' in f))] # Change to allow different formats in the future
-    
-#     suffixPython = '_PY'
-#     if source == 'Matlab':
-#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and ('R40' in f) and not (suffixPython in f))]
-        
-#     elif source == 'Python':
-#         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
-#                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-#                       and ('sin' in f) and (suffixPython in f))]
-#         # print(list_mecaFiles)
-    
-# #     print(list_mecaFiles)
-    
-#     if task == 'fromScratch':
-#         # create a dict containing the data
-#         tableDict = createDataDict_sinus(list_mecaFiles, listColumns, PLOT) # MAIN SUBFUNCTION
-#         # create the dataframe from it
-#         DF = pd.DataFrame(tableDict)
-        
-#         # last step: now that the dataFrame is complete, one can use "compStartTimeThisDay" col to compute the start time of each compression relative to the first one done this day.
-#         allDates = list(DF['date'].unique())
-#         for d in allDates:
-#             subDf = DF.loc[DF['date'] == d]
-#             experimentStartTime = np.min(subDf['compStartTimeThisDay'])
-#             DF['compStartTimeThisDay'].loc[DF['date'] == d] = DF['compStartTimeThisDay'] - experimentStartTime
-        
-#     elif task == 'updateExisting':
-#         # get existing table
-#         try:
-#             savePath = os.path.join(cp.DirDataAnalysis, (fileName + '.csv'))
-#             existing_mecaDf = pd.read_csv(savePath, sep=';')
-#         except:
-#             print('No existing table found')
-            
-#         # find which of the time series files are new
-#         new_list_mecaFiles = []
-#         for f in list_mecaFiles:
-#             split_f = f.split('_')
-#             currentCellID = split_f[0] + '_' + split_f[1] + '_' + split_f[2] + '_' + split_f[3]
-#             if currentCellID not in existing_mecaDf.cellID.values:
-#                 new_list_mecaFiles.append(f)
-                
-#         # create the dict with new data
-#         new_tableDict = createDataDict_meca(new_list_mecaFiles, listColumnsMeca, PLOT) # MAIN SUBFUNCTION
-#         # create the dataframe from it
-#         new_mecaDf = pd.DataFrame(new_tableDict)
-#         # fuse the existing table with the new one
-#         DF = pd.concat([existing_mecaDf, new_mecaDf])
-        
-#     else: # If task is neither 'fromScratch' nor 'updateExisting'
-#     # Then task can be a substring that can be in some timeSeries file !
-#     # It will create a table with only these files, WITHOUT SAVING IT !
-#     # But it can plot figs from it.
-#         # save = False
-#         task_list = task.split(' & ')
-#         new_list_mecaFiles = []
-#         for f in list_mecaFiles:
-#             split_f = f.split('_')
-#             currentCellID = split_f[0] + '_' + split_f[1] + '_' + split_f[2] + '_' + split_f[3]
-#             for t in task_list:
-#                 if t in currentCellID:
-#                     new_list_mecaFiles.append(f)
-#                     break
-#         # create the dict with new data
-#         new_tableDict = createDataDict_meca(new_list_mecaFiles, listColumnsMeca, PLOT) # MAIN SUBFUNCTION
-#         # create the dataframe from it
-#         DF = pd.DataFrame(new_tableDict)
-    
-#     for c in DF.columns:
-#             if 'Unnamed' in c:
-#                 DF = DF.drop([c], axis=1)
-    
-#     if save:
-#         saveName = fileName + '.csv'
-#         savePath = os.path.join(cp.DirDataAnalysis, saveName)
-#         DF.to_csv(savePath, sep=';')
-    
-#     delta = time.time() - top
-#     print(delta)
-    
-#     return(DF)
 
 
 
@@ -3004,6 +3367,19 @@ def createDataDict_sinus(listFiles, listColumns, PLOT):
 # %%% Main functions
 
 def getAnalysisTable(fileName):
+    """
+    
+
+    Parameters
+    ----------
+    fileName : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    df : TYPE
+
+    """
     if not fileName[-4:] == '.csv':
         ext = '.csv'
     else:
@@ -3049,7 +3425,33 @@ def getAnalysisTable(fileName):
 
 
 def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
-                   mergeExpDf = True, mergFluo = False, mergeUMS = False):
+                   mergeExpDf = True, mergFluo = False, mergeUMS = True,
+                   findSubstrates = True):
+    """
+    
+
+    Parameters
+    ----------
+    fileName : TYPE
+        DESCRIPTION.
+    DirDataExp : TYPE, optional
+        DESCRIPTION. The default is cp.DirRepoExp.
+    suffix : TYPE, optional
+        DESCRIPTION. The default is cp.suffix.
+    mergeExpDf : TYPE, optional
+        DESCRIPTION. The default is True.
+    mergFluo : TYPE, optional
+        DESCRIPTION. The default is False.
+    mergeUMS : TYPE, optional
+        DESCRIPTION. The default is True.
+    findSubstrates : TYPE, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    df : TYPE
+
+    """
     
     df = getAnalysisTable(fileName)
     
@@ -3101,189 +3503,11 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         
     df = ufun.removeColumnsDuplicate(df)
     
-    print(gs.CYAN + 'Merged table has ' + str(df.shape[0]) + ' lines and ' \
-          + str(df.shape[1]) + ' columns.' + gs.NORMAL)
-        
-    return(df)
-
-
-
-def getGlobalTable(kind, DirDataExp = cp.DirRepoExp):
-    if kind == 'ctField':
-        GlobalTable = getGlobalTable_ctField()
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(expDf, GlobalTable, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-        
-        # print(GlobalTable_ctField.head())
-    
-    elif kind == 'ctField_py':
-        GlobalTable = getGlobalTable_ctField('Global_CtFieldData_Py')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(expDf, GlobalTable, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-        
-        # print(GlobalTable_ctField.head())
-        
-        # return(GlobalTable_ctField)
-
-    elif kind == 'meca_matlab':
-        GlobalTable = getGlobalTable_meca('Global_MecaData')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='CellName', right_on='cellID'
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-        
-        # print(GlobalTable.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # return(GlobalTable_meca_Matlab)
-
-
-    elif kind == 'meca_py':
-        GlobalTable = getGlobalTable_meca('Global_MecaData_Py')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID'
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-        
-        # print(GlobalTable_meca_Py.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # return(GlobalTable_meca_Py)
-
-
-    elif kind == 'meca_py2':
-        GlobalTable = getGlobalTable_meca('Global_MecaData_Py2')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-
-        # print(GlobalTable_meca_Py2.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # return(GlobalTable_meca_Py2)
-    
-    elif kind == 'meca_nonLin':
-        GlobalTable = getGlobalTable_meca('Global_MecaData_NonLin_Py')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-
-        # print(GlobalTable_meca_nonLin.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # return(GlobalTable_meca_nonLin)
-    
-    elif kind == 'meca_MCA':
-        GlobalTable = getGlobalTable_meca('Global_MecaData_MCA')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-
-        # print(GlobalTable_meca_nonLin.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # return(GlobalTable)
-        
-    elif kind == 'meca_HoxB8':
-        GlobalTable = getGlobalTable_meca('Global_MecaData_HoxB8')
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        ui_fileName = 'UserManualSelection_MecaData'
-        # uiDf, success = get_uiDf(ui_fileName)
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        # GlobalTable = pd.merge(GlobalTable, uiDf, 
-        #                        how="left", left_on=['cellID', 'compNum'], right_on=['cellID', 'compNum'],
-        # #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        # #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        # )
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-
-        # return(GlobalTable)
-    
-    else:
-        GlobalTable = getGlobalTable_meca(kind)
-        expDf = ufun.getExperimentalConditions(DirDataExp, suffix = cp.suffix)
-        fluoDf = getFluoData()
-        GlobalTable = pd.merge(GlobalTable, expDf, how="inner", on='manipID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        GlobalTable = pd.merge(GlobalTable, fluoDf, how="left", left_on='cellID', right_on='cellID',
-        #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
-        #     suffixes=("_x", "_y"),copy=True,indicator=False,validate=None,
-        )
-        print('Merged table has ' + str(GlobalTable.shape[0]) + ' lines and ' + str(GlobalTable.shape[1]) + ' columns.')
-    
-        # print(GlobalTable_meca_nonLin.tail())
-        GlobalTable = ufun.removeColumnsDuplicate(GlobalTable)
-    
-    if 'substrate' in GlobalTable.columns:
-        vals_substrate = GlobalTable['substrate'].values
+    if findSubstrates and 'substrate' in df.columns:
+        vals_substrate = df['substrate'].values
         if 'diverse fibronectin discs' in vals_substrate:
             try:
-                cellIDs = GlobalTable[GlobalTable['substrate'] == 'diverse fibronectin discs']['cellID'].values
+                cellIDs = df[df['substrate'] == 'diverse fibronectin discs']['cellID'].values
                 listFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                               if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv"))]
                 for Id in cellIDs:
@@ -3292,10 +3516,174 @@ def getGlobalTable(kind, DirDataExp = cp.DirRepoExp):
                             thisCellSubstrate = ufun.findInfosInFileName(f, 'substrate')
                             thisCellSubstrate = dictSubstrates[thisCellSubstrate]
                             if not thisCellSubstrate == '':
-                                GlobalTable.loc[GlobalTable['cellID'] == Id, 'substrate'] = thisCellSubstrate
-                print('Automatic determination of substrate type SUCCEDED !')
+                                df.loc[df['cellID'] == Id, 'substrate'] = thisCellSubstrate
+                print(gs.GREEN  + 'Automatic determination of substrate type SUCCEDED !' + gs.NORMAL)
                 
             except:
-                print('Automatic determination of substrate type FAILED !')
+                print(gs.RED  + 'Automatic determination of substrate type FAILED !' + gs.NORMAL)
+        
+    df = ufun.removeColumnsDuplicate(df)
     
-    return(GlobalTable)
+    print(gs.CYAN + 'Merged table has ' + str(df.shape[0]) + ' lines and ' \
+          + str(df.shape[1]) + ' columns.' + gs.NORMAL)
+        
+    return(df)
+
+
+
+def getMatchingFits(mecaDf, fitType = 'stressGaussian', output = 'df',
+                    filter_fitID = None):
+    """
+    Browse the fits tables in 'cp.DirDataAnalysisFits'
+    and return all those that corresponds to cells inside 'mecaDf'.
+    
+    Parameters
+    ----------
+    mecaDf : pandas.DataFrame
+        A table returned by getMergedTable
+    
+    fitType = 'stressRegion' | 'stressGaussian' | 'nPoints'
+        The type of fit wanted
+    
+    output = 'list' | 'dict' | 'df'
+        The type of output returned
+            'list' : list of dataframes
+            'dict' : dict of {'cellId:dataframe'} 
+            'df' : one concatenated dataframe.
+    
+    filter_fitID : string, optionnal
+        Filter the imported data according to the 'id' column of the tables.
+        
+    NB: Other filter_### inputs should be added in this function if needed.
+      
+    Returns
+    -------
+    res : list, dict or pandas.DataFrame
+        The required data in the specified format.
+
+    Examples
+    --------
+    >>> mecaDf = getMergedTable('Global_MecaData_Py')
+    >>> fitsDf = getMatchingFits(mecaDf, fitType = 'nPoints', output = 'df',
+                        filter_fitID = None)
+    >>> # Return all fits obtained with a specified number of points, in one df.
+    >>> fitsDf = getMatchingFits(mecaDf, fitType = 'gaussianStress', output = 'df',
+                        filter_fitID = '200_75')
+    >>> # Return only fits in the region 200+/-75 Pa obtained with 
+    >>> # gaussian stress window and in one df.
+    >>> fitsDf = getMatchingFits(mecaDf, fitType = 'regionStress', output = 'df',
+                        filter_fitID = '_75')
+    >>> # Return only fits in regions of half width 75 Pa, obtained with 
+    >>> # discrete stress window, and in one df.
+    """
+    
+    src_path = cp.DirDataAnalysisFits
+    listCellIDs = mecaDf['cellID'].unique()
+    listFitResults = os.listdir(src_path)
+    
+    if filter_fitID != None:
+        if filter_fitID.startswith('_'):
+            filter_fitID = r'\d{2,4}' + filter_fitID
+        elif filter_fitID.endswith('_'):
+            filter_fitID = filter_fitID + r'\d{2,4}'
+        
+    
+    if output == 'df' or output == 'list':
+        L = []
+        for f in listFitResults:
+            if fitType in f:
+                cellID = ufun.findInfosInFileName(f, 'cellID')
+                if cellID in listCellIDs:
+                    f_path = os.path.join(src_path, f)
+                    df = pd.read_csv(f_path, sep=None, engine='python')
+                    if filter_fitID != None:
+                        fltr = df['id'].apply(lambda x : re.match(filter_fitID, x) != None)
+                        df = df[fltr]
+                    L.append(df)
+                    
+        if output == 'list':
+            res = L
+        elif output == 'df':
+            res = pd.concat(L, ignore_index=True)
+                    
+    
+    elif output == 'dict':
+        res = {}
+        for f in listFitResults:
+            if fitType in f:
+                cellID = ufun.findInfosInFileName(f, 'cellID')
+                if cellID in listCellIDs:
+                    f_path = os.path.join(src_path, f)
+                    df = pd.read_csv(f_path, sep=None, engine='python')
+                    if filter_fitID != None:
+                        fltr = df['id'].apply(lambda x : re.match(filter_fitID, x) != None)
+                        df = df[fltr]
+                    res[cellID] = df
+                    
+    return(res)
+    
+    
+
+
+def getFitsInTable(mecaDf, fitType = 'stressGaussian', filter_fitID = None):
+    """
+    Merge a mecaDf with the required kind of fit data, by calling getMatchingFits().
+    
+    Parameters
+    ----------
+    mecaDf : pandas.DataFrame
+        A table returned by getMergedTable
+    
+    fitType = 'stressRegion' | 'stressGaussian' | 'nPoints'
+        The type of fit wanted
+    
+    filter_fitID : string, optionnal
+        Filter the imported data according to the 'id' column of the tables.
+      
+    Returns
+    -------
+    mergedDf
+        The resulting merged DataFrame
+    
+    Examples
+    --------
+    >>> import TrackAnalyser as taka
+    >>> data_main = taka.getMergedTable('Global_MecaData_Py')
+    >>> # Ex1.
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'nPoints', filter_fitID = None)
+    >>> # Merge with all fits obtained with 
+    >>> # the nPoints method (specified number of points).
+    
+    >>> # Ex2.
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'gaussianStress', filter_fitID = '200_75')
+    >>> # Return only fits in the region 200+/-75 Pa obtained with 
+    >>> # the gaussianStress method (gaussian stress window).
+    
+    >>> # Ex3.
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'regionStress', filter_fitID = '_75')
+    >>> # Return only fits in regions of half width 75 Pa, obtained with 
+    >>> # the regionStress method (discrete stress window).
+
+    """
+    
+    fitsDf = getMatchingFits(mecaDf, fitType = fitType, filter_fitID = filter_fitID,
+                             output = 'df')
+    mergeCols = ['cellID', 'compNum']
+    rd = {c : 'fit_' + c for c in fitsDf.columns if c not in mergeCols}
+    fitsDf = fitsDf.rename(columns = rd) 
+    mergedDf = pd.merge(mecaDf, fitsDf, how="left", on=mergeCols, suffixes=("_x", "_y"),
+    #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
+    #     copy=True,indicator=False,validate=None,
+    )
+        
+    mergedDf = ufun.removeColumnsDuplicate(mergedDf)
+    
+    return(mergedDf)
+        
+        
+
+  
+  
+  
+  
+  

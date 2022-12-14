@@ -38,8 +38,8 @@ if COMPUTERNAME == 'ORDI-JOSEPH':
     suffix = '_JV'
     DirRepo = "C://Users//JosephVermeil//Desktop//CortExplore"
     DirData = "D://MagneticPincherData"
-    DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     DirTempPlots = "C://Users//JosephVermeil//Desktop//TempPlots"
+    DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     CloudSaving = 'OwnCloud'
     
     

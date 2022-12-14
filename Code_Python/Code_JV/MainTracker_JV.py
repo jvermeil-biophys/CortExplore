@@ -855,7 +855,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% 21.04.21_M2
 
 dates = '21.04.21'
-manips, wells, cells = 2, 1, [1, 3, 6, 8]
+manips, wells, cells = 2, 1, 2
 depthoNames = '21.04.21_M2_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
