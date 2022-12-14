@@ -45,6 +45,23 @@ pd.set_option('mode.chained_assignment', None)
 # 3. Plot settings
 gs.set_smallText_options_jv()
 
+# %% Tests
+
+# thresh_otsu = filters.threshold_otsu(fake_I_inner)
+# print('otsu : ', thresh_otsu)
+# thresh_li = filters.threshold_li(fake_I_inner)
+# print('li : ', thresh_li)
+# thresh_yen = filters.threshold_yen(fake_I_inner)
+# print('yen : ', thresh_yen)
+# thresh_min = filters.threshold_minimum(fake_I_inner)
+# print('min : ', thresh_min)
+# thresh_mean = filters.threshold_mean(fake_I_inner)
+# print('mean : ', thresh_mean)
+# thresh_iso = filters.threshold_isodata(fake_I_inner)
+# print('iso : ', thresh_iso)
+# print('')
+
+
 # %% Stacks based analysis
 
 SCALE_63X = 8.08 # pix/um
@@ -137,7 +154,7 @@ def findZRegion(I, list_background):
     return(Z_start, Z_stop)
     
 
-def quantifCortexRatio(I):
+def quantifCortexRatio(I, background):
     ny, nx = I.shape
     thresh = filters.threshold_otsu(I)
     I_bin1 = (I > thresh)
@@ -199,34 +216,68 @@ def quantifCortexRatio(I):
     cellContour_inner = measure.find_contours(mask_cell_inner)[0]
     mask_cell_outer = (mask_cell_whole - mask_cell_inner).astype(np.int64)
     
+    # Ask UI
+    Q1 = 'Is the cell ok?'
+    Q2 = 'Is the nucleus visible?'
+    Choices = ['Yes', 'No']
+    choicesDict = {Q1 : Choices,
+                   Q2 : Choices}
+    
+    fig_ui, ax_ui = plt.subplots(1, 1, figsize = (5,5))
+    ax = ax_ui
+    ax.imshow(I, cmap = 'viridis', vmin = 0, vmax = 2500)
+    ax.plot(cellContour_outer[:,1], cellContour_outer[:,0], 'r-')
+    ax.plot(cellContour_inner[:,1], cellContour_inner[:,0], 'b-')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    plt.tight_layout()
+    plt.show()
+    
+    answersDict = ufun.makeMultiChoiceBox(choicesDict)
+    A1, A2 = answersDict[Q1], answersDict[Q2]
+    plt.close(fig_ui)
+    # End of UI
+    
+    ValidCell = (A1 == 'Yes')
+    VisibleNucleus = (A2 == 'Yes')
+    
+    # Deal with the nucleus    
     fake_I_inner = (I * mask_cell_inner).flatten()
     p20, p80 = np.percentile(fake_I_inner, 20), np.percentile(fake_I_inner, 80)
     m = (fake_I_inner > 0)
     fake_I_inner = fake_I_inner[m]
     p20, p80 = np.percentile(fake_I_inner, 20), np.percentile(fake_I_inner, 80)
-    if p20 < 0.5*p80:
+    if VisibleNucleus or (p20 < 0.4*p80):
         thresh_nucleus = 0.8*filters.threshold_li(fake_I_inner)
     else:
         thresh_nucleus = 0
     
-    # thresh_otsu = filters.threshold_otsu(fake_I_inner)
-    # print('otsu : ', thresh_otsu)
-    # thresh_li = filters.threshold_li(fake_I_inner)
-    # print('li : ', thresh_li)
-    # thresh_yen = filters.threshold_yen(fake_I_inner)
-    # print('yen : ', thresh_yen)
-    # thresh_min = filters.threshold_minimum(fake_I_inner)
-    # print('min : ', thresh_min)
-    # thresh_mean = filters.threshold_mean(fake_I_inner)
-    # print('mean : ', thresh_mean)
-    # thresh_iso = filters.threshold_isodata(fake_I_inner)
-    # print('iso : ', thresh_iso)
-    # print('')
+    mask_cell_nucleus = (I < thresh_nucleus) & mask_cell_whole
     
-    mask_cell_nucleus = (I < thresh_nucleus)
+    # Compute the ratio if valid
+    if ValidCell:
+        props_cortex = measure.regionprops(mask_cell_outer & np.logical_not(mask_cell_nucleus), 
+                                           intensity_image = I, cache=True, coordinates=None)
+        props_cyto = measure.regionprops(mask_cell_inner & np.logical_not(mask_cell_nucleus), 
+                                           intensity_image = I, cache=True, coordinates=None)
+        
+        int_cortex = props_cortex[0].intensity_mean
+        int_cyto = props_cyto[0].intensity_mean
+        ratio = (int_cortex - background) / max((int_cyto - background), 1)
+        
+    else:
+        ratio = np.nan
+    
 
     ## PLOT
+    if ValidCell:
+        title = 'Valid - Ratio = ' + str(ratio)
+    else:
+        title = 'Not Valid'
     fig, axes = plt.subplots(1, 4, figsize = (4*4,5))
+    fig.suptitle(title)
     ax = axes[0]
     ax.imshow(I, cmap = 'viridis', vmin = 0, vmax = 2500)
     ax.plot(cellContour[:,1], cellContour[:,0], 'r-')
@@ -235,11 +286,6 @@ def quantifCortexRatio(I):
         ax.set_title('nb_it = {:.0f}'.format(nb_it))
     except:
         pass
-    
-    # ax = axes[1]
-    # ax.imshow(I_bin2, cmap = 'viridis')
-    # ax = axes[2]
-    # ax.imshow(I_labeled + 20*(I_labeled>0), cmap = 'viridis')        
     ax = axes[1]
     ax.imshow(mask_cell, cmap = 'viridis')  
     ax = axes[2]
@@ -255,14 +301,18 @@ def quantifCortexRatio(I):
         ax.set_yticks([])
         ax.set_xticklabels([])
         ax.set_yticklabels([])
+
     plt.tight_layout()
     plt.show()
+    
+    return(ratio)
     
 
 def main_CortexIntensity_Stacks(srcDir, wavelenght_str, scale = SCALE):
     files = os.listdir(srcDir)
     valid_files = [f for f in files if (wavelenght_str in f and f.endswith('.TIF'))]
-    for f in valid_files:
+    L_ratio = []
+    for f in valid_files[:]:
         f_path = os.path.join(srcDir, f)
         Iraw_allCells = io.imread(f_path)
         list_ROIs = getCellsROI(Iraw_allCells)
@@ -276,17 +326,63 @@ def main_CortexIntensity_Stacks(srcDir, wavelenght_str, scale = SCALE):
             list_background = ROI['list_background']
             
             Z_start, Z_stop = findZRegion(Iraw_cell, list_background)
+            zProj_background = np.mean(list_background[Z_start:Z_stop])
             I_zProj = np.mean(Iraw_cell[Z_start:Z_stop,:,:], axis=0)
             
-            quantifCortexRatio(I_zProj)
+            try:
+                ratio = quantifCortexRatio(I_zProj, zProj_background)
+            except:
+                ratio = np.nan
+                fig_err, ax_err = plt.subplots(1,1, figsize = (5, 5))
+                ax_err.imshow(I_zProj, cmap = 'viridis', vmin = 0, vmax = 2500)
+                fig_err.suptitle('Major Error')
+            
+            if not pd.isnull(ratio):
+                L_ratio.append(ratio)
+                
+    A_ratio = np.array(L_ratio)
+    
+    return(np.mean(A_ratio), np.std(A_ratio), len(A_ratio))
+                
         
 # %%% Test
-srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//C1_ctrl//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
+
+srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//C2_10x//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
 # srcDir = 'C://Users//Joseph//Desktop//2022-11-22_DrugAssay_PNB_Hela-MyoGFP_6co//C1_ctrl//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
 
-main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
+res_tuple = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
 
+print(res_tuple)
 
+# %%% All conditions
+
+SCALE = SCALE_63X
+wavelenght_str_GFP = 'CSU-488'
+conditions = ['C1_ctrl', 'C2_10x', 'C3_2x', 'C4_1x', 'C5_0.5x', 'C6_0.1x']
+resDict = {}
+
+for co in conditions[4:5]:
+    srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//' + co + '//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
+    
+    mean, std, N = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
+    
+    print(mean, std, N)
+    
+    resDict[co] = {'mean':mean,
+                   'std':std,
+                   'N':N,
+                   }
+    
+    plt.close('all')
+    
+print(resDict)
+
+# 2.08523557045183 0.7301587376320711 26
+# 1.1873310436634326 0.08971089388322508 13
+# 1.231296926984714 0.08424758557312431 24
+# 1.1838146104663536 0.07113410830698895 16
+# 1.3071447892798849 0.09304603253986346 6 Many shitty cells here
+# 1.2541316319380513 0.1477964749760986 13
 
 # %% Snapshot based analysis
 
@@ -303,7 +399,7 @@ fig, ax = plt.subplots(nRowsPlot, nColsPlot)
 listRatioOutIn = []
 listDf = []
 listCellId = []
-for i in range(1,2):
+for i in range(N):
     ip, jp = i//nColsPlot, i%nColsPlot
     f = files[i]
     filePath = os.path.join(dirPath, f)

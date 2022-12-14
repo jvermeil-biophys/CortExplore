@@ -1030,17 +1030,18 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
 def archiveFig(fig, name = '', ext = '.png', dpi = 100,
                figDir = '', figSubDir = '', cloudSave = 'flexible'):
     """
-    This is supposed to be a "smart" figure saver. \n
-    (1) \n
-    - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100). \n
-    - If you give a name, it will be used to save your file; if not, a name will be generated based on the date. \n
-    - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday. \n
-    - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir. \n
-    (2) \n
-    cloudSave can have 3 values : 'strict', 'flexible', or 'none'. \n
-    - If 'strict', this function will attempt to do a cloud save not matter what. \n
-    - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save. \n
-    - If 'none', this function will not do a cloud save. \n
+    This is supposed to be a "smart" figure saver.
+    
+    1. Main save
+        - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100).
+        - If you give a name, it will be used to save your file; if not, a name will be generated based on the date.
+        - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday.
+        - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir.
+    
+    2. Backup save (optionnal). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
+        - If 'strict', this function will attempt to do a cloud save not matter what.
+        - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save.
+        - If 'none', this function will not do a cloud save.
     """
     # Generate unique name if needed
     if name == '':
@@ -1112,6 +1113,8 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
 #                     name = 'figure ' + str(figNum) 
 #                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
 
+
+
 def lighten_color(color, amount=0.5):
     """
     Lightens the given color by multiplying (1-luminosity) by the given amount.
@@ -1133,16 +1136,18 @@ def lighten_color(color, amount=0.5):
 
 # %%% User Input
 
-class ChoicesBox(Qtw.QMainWindow):
+class MultiChoiceBox(Qtw.QMainWindow):
+    """
+    A class to display a dialog box with multiple choices. Inherited from Qtw.QMainWindow.
+    """
     def __init__(self, choicesDict, title = 'Multiple choice box'):
         super().__init__()
-        
         
         self.choicesDict = choicesDict
         self.questions = [k for k in choicesDict.keys()]
         self.nQ = len(self.questions)
         
-        self.res = {}
+        self.answersDict = {}
         self.list_rbg = [] # rbg = radio button group
 
         self.setWindowTitle(title)
@@ -1160,6 +1165,8 @@ class ChoicesBox(Qtw.QMainWindow):
                 rb = Qtw.QRadioButton(c)
                 rbg.addButton(rb)
                 layout.addWidget(rb)
+                if c == choices[0]:
+                    rb.click()
                 
             self.list_rbg.append(rbg)
             layout.addSpacing(20)
@@ -1181,7 +1188,7 @@ class ChoicesBox(Qtw.QMainWindow):
             for i in range(self.nQ):
                 q = self.questions[i]
                 rbg = self.list_rbg[i]
-                self.res[q] = rbg.checkedButton().text()
+                self.answersDict[q] = rbg.checkedButton().text()
                 
             self.quit_button()
             
@@ -1196,33 +1203,46 @@ class ChoicesBox(Qtw.QMainWindow):
         self.close()
 
 
-def makeChoicesBox(choicesDict):
+def makeMultiChoiceBox(choicesDict):
     """
     Create and show a dialog box with multiple choices.
     
 
     Parameters
     ----------
-    choicesDict : TYPE
-        DESCRIPTION.
+    choicesDict : dict
+        Contains question and possible answers in the form : {Q1 : [A11, A12,...], Q2 : [A21, A22,...], ...},
+        where Qi and Aij are strings.
 
     Returns
     -------
-    None.
+    answersDict : dict
+        Contains question and chosen answers in the form : {Q1 : A12, Q2 : A25, ...},
+        where Qi and Aij are strings.
+
+    Example
+    -------
+    >>> choicesDict = {'Is the cell ok?' : ['Yes', 'No'],
+    >>>                'Is the nucleus visible?' : ['Yes', 'No'],}
+    >>> answersDict = makeMultiChoiceBox(choicesDict)
+    >>> print(res)
+    >>> Out: {'Is the cell ok?': 'Yes', 'Is the nucleus visible?': 'No'}
 
     """
-    app = Qtw.QApplication(sys.argv)
     
-    box = ChoicesBox(choicesDict)
-    box.show()
-        
+    app = Qtw.QApplication(sys.argv)
+    MCBox = MultiChoiceBox(choicesDict)
+    MCBox.show()
     app.exec()
-    res = box.res
-    return(res)
+    
+    answersDict = MCBox.answersDict
+    return(answersDict)
 
 
 
-
+# choicesDict = {'Is the cell ok?' : ['Yes', 'No'],
+#                'Is the nucleus visible?' : ['Yes', 'No'],}
+# answersDict = makeMultiChoiceBox(choicesDict)
 
 
 
