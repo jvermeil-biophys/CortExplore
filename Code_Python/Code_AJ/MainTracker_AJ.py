@@ -1035,8 +1035,31 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 
 dates = '22.12.07'
 manips, wells, cells = 4, 3, 'all'
-depthoNames = '22.12.07_P1_M450_step20_100X'
+depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
+
+# %%%% M5 :
+
+dates = '22.12.07'
+manips, wells, cells = 5, 3, 'all'
+depthoNames = '22.12.07_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 21-04-21. Experiments from Filipe
+
+# %%%% M1 : 
+
+dates = '21.04.21'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '21.04.21_M1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+

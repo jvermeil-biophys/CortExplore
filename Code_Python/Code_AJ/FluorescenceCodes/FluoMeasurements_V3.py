@@ -47,12 +47,13 @@ import GraphicStyles as gs
 # os.environ["CELLPOSE_LOCAL_MODELS_PATH"] = "D:/Anumita/MagneticPincherData/DataFluorescence/CellposeModels"
 
 #Font size for plots
-font_ticks = 25
-
 ylabel = 25
 xlabel = 25
-figtitle = 30
 axtitle = 25
+figtitle = 30
+font_ticks = 25
+
+
 #%% Setting directories
 
 date = '22.12.02'
@@ -135,7 +136,7 @@ for currentCell in allCells:
     
     
     allKymo = []
-    allKymo_norm = []
+    allMaxVals = []    
     
     R_in = 40 #in px
     cortexThickness = 10

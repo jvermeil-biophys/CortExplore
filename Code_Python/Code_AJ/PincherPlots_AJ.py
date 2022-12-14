@@ -8,6 +8,7 @@ Created on Wed Apr  6 21:27:55 2022
 #!/usr/bin/env python
 # coding: utf-8
 
+
 # %% > Imports and constants
 
 #### Main imports
@@ -34,60 +35,22 @@ from datetime import date
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 
-# from statannot import add_stat_annotation
-# pd.set_option('mode.chained_assignment',None)
-# pd.set_option('display.max_columns', None)
+#### Local Imports
 
-
-#### Paths
-
-COMPUTERNAME = os.environ['COMPUTERNAME']
-if COMPUTERNAME == 'ORDI-JOSEPH':
-    mainDir = "C://Users//JosephVermeil//Desktop//ActinCortexAnalysis"
-    rawDir = "D://MagneticPincherData"
-    ownCloudDir = "C://Users//JosephVermeil//ownCloud//ActinCortexAnalysis"
-elif COMPUTERNAME == 'LARISA':
-    mainDir = "C://Users//Joseph//Desktop//ActinCortexAnalysis"
-    rawDir = "F:\JosephVermeil\MagneticPincherData"    
-    ownCloudDir = "C://Users//Joseph//ownCloud//ActinCortexAnalysis"
-elif COMPUTERNAME == 'DESKTOP-K9KOJR2':
-    mainDir = "C://Users//anumi//OneDrive//Desktop//CortExplore"
-    rawDir = "D:/Anumita/MagneticPincherData"    
-elif COMPUTERNAME == '':
-    mainDir = "C://Users//josep//Desktop//ActinCortexAnalysis"
-    ownCloudDir = "C://Users//josep//ownCloud//ActinCortexAnalysis"
-
-
-experimentalDataDir = os.path.join(mainDir, "Data_Experimental_AJ")
-dataDir = os.path.join(rawDir, "Data_Analysis")
-timeSeriesDataDir = os.path.join(rawDir, "Data_TimeSeries")
-
-
-figDir = os.path.join(rawDir, "Figures")
-todayFigDir = os.path.join(figDir, "Historique//" + str(date.today()))
-
-
-figDirLocal = os.path.join(rawDir, "Figures")
-todayFigDirLocal = os.path.join(figDirLocal, "Historique//" + str(date.today()))
-
-try:
-    ownCloudFigDir = os.path.join(ownCloudDir, "Data_Analysis", "Figures")
-    ownCloudTodayFigDir = os.path.join(ownCloudFigDir, "Historique//" + str(date.today()))
-except:
-    ownCloudFigDir, ownCloudTodayFigDir = '', ''
-
-#### Local imports
-sys.path.append(mainDir + "//Code_Python")
+import sys
+import CortexPaths as cp
+sys.path.append(cp.DirRepoPython)
+sys.path.append(cp.DirRepoPythonUser)
 
 import GraphicStyles as gs
-# import MechanicsAnalysis_AJ as aja
-import TrackAnalyser_dev2_AJ as tka
 import UtilityFunctions as ufun
+import TrackAnalyser as taka
+import TrackAnalyser_dev_AJ as tka
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
 # get_ipython().run_line_magic('autoreload', '2')
-# todayFigDirLocal
+# cp.DirDataFigToday
 
 #### Pandas
 pd.set_option('display.max_columns', None)
@@ -95,13 +58,12 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.reset_option('display.max_rows')
 
-#### Graphic options
-gs.set_default_options_jv()
 
 ####  Matplotlib
 matplotlib.rcParams.update({'figure.autolayout': True})
-# plt.style.use('default') #Dark layout
 
+#### Graphic options
+gs.set_default_options_jv()
 
 #### Bokeh
 from bokeh.io import output_notebook, show
@@ -115,6 +77,9 @@ output_notebook()
 #### Markers
 my_default_marker_list = ['o', 's', 'D', '>', '^', 'P', 'X', '<', 'v', 'p']
 markerList10 = ['o', 's', 'D', '>', '^', 'P', 'X', '<', 'v', 'p']
+
+todayFigDir = cp.DirDataFigToday
+experimentalDataDir = cp.DirRepoExp
 
 # %% Reminders
 
@@ -215,8 +180,8 @@ tka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ1',
 
  # %%%% Precise dates (to plot)
 
-date = '22-10-06' # For instance '22-03-30 & '22-03-31'
-tka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ_22-10-06', 
+date = '22-08-26' # For instance '22-03-30 & '22-03-31'
+taka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ_22-08-26', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
 # %%%% Display
@@ -1043,7 +1008,7 @@ for (cell, i) in zip(allCellsDf, plotDf.index):
 #%%
 
 K = 'K2'
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
 GlobalTable_meca.head()
 
 plotDf2 = {'cellID': [],
@@ -1341,39 +1306,42 @@ dfValid = GlobalTable_meca
 plotDf2 = GlobalTable_meca
 
 #%%
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
 
 GlobalTable_meca = GlobalTable_meca[(GlobalTable_meca['manipID'].str.contains('M1')) | (GlobalTable_meca['manipID'].str.contains('M5'))]
 
-excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
-            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9', '22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
-                        '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
-                        '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
+# excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+#             '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9', '22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
+#                         '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
+#                         '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
     
 
 
-for i in excluded:
-    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
+# for i in excluded:
+#     plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
 
 # conditions = ['M1', 'M3', 'M5']
 # conditions = ['M2', 'M6']
-conditions = ['M5', 'M6']
+# conditions = ['M5', 'M6']
 # conditions = ['M1', 'M5']
 # conditions = ['M1', 'M2', 'M5', 'M6']
 # conditions = ['22-10-06']
 # conditions = ['M1', 'M2']
 # conditions = ['M1']
 
+# conditions = ['M1', 'M2', 'M3', 'M4', 'M5']
+conditions = ['M4', 'M5']
+
 plotDf = plotDf2
 
-cD = {#'M1':[gs.colorList40[8], gs.colorList40[8]],
-#         # 'M2':[gs.colorList40[28], gs.colorList40[28]]} #, #,
-#       # 'M1':[gs.colorList40[10], gs.colorList40[10]]}#,
-#        # 'M1':[gs.colorList40[30], gs.colorList40[30]]} #,
-          'M5':[gs.colorList40[12], gs.colorList40[12]],
-          'M6':[gs.colorList40[32], gs.colorList40[32]]}
+cD = {'M4':[gs.colorList40[8], gs.colorList40[8]],
+         #'M2':[gs.colorList40[28], gs.colorList40[28]],
+       # 'M7':[gs.colorList40[10], gs.colorList40[10]],
+        #'M8':[gs.colorList40[30], gs.colorList40[30]],
+         #  'M9':[gs.colorList40[12], gs.colorList40[12]],
+            'M5':[gs.colorList40[32], gs.colorList40[32]]}
 
 # cD = {'22-10-06':[gs.colorList40[32], gs.colorList40[32]]}
 
@@ -1511,12 +1479,12 @@ for co in conditions:
 
 plt.show()
 
-ufun.archiveFig(fig, name='Pooled_K(s)'+width, figDir = todayFigDir+'/Mechanics_PopulationSummaryPlots', dpi = 100)
+# ufun.archiveFig(fig, name='Pooled_K(s)'+width, figDir = todayFigDir+'/Mechanics_PopulationSummaryPlots', dpi = 100)
 
 #%%
 #### Local zoom
 
-Sinf, Ssup = 250, 400
+Sinf, Ssup = 150, 400
 extraFilters = [plotDf2['minStress'] <= Sinf, plotDf2['maxStress'] >= Ssup] # >= 800
 fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
 fitWidth = np.array([[int(w) for S in fitCenters] for w in fitW]).flatten()
@@ -1642,25 +1610,26 @@ for co in conditions:
 
 plt.show()
 
-ufun.archiveFig(fig, name='Zoomed_Pooled_K(s)_'+width, figDir = todayFigDir+'/Mechanics_PopulationSummaryPlots', dpi = 100)
+# ufun.archiveFig(fig, name='Zoomed_Pooled_K(s)_'+width, figDir = todayFigDir+'/Mechanics_PopulationSummaryPlots', dpi = 100)
 
 #%%
 
 selectedStressRange = 'all'
 dates = 'all'
-activationType = 'all'
+activationType = 'at beads'
 save = True
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
 GlobalTable_meca.head()
 
 
 sns.set_style('white')
+fitC =  np.array([S for S in range(150, 1150, 50)])
+fitW = [100]
+fitCenters = np.array([[int(S) for S in fitC] for w in fitW]).flatten()
+fitWidth = np.array([[int(w) for S in fitC] for w in fitW]).flatten()
+stressRanges = [str(fitCenters[ii]) + '+/-' + str(int(fitWidth[ii]//2)) for ii in range(len(fitCenters))]
 
-stressRanges = ['150+/-50', '200+/-50', '250+/-50', '300+/-50', '350+/-50', '400+/-50', '450+/-50', \
-                '500+/-50', '550+/-50', '600+/-50', '650+/-50']
-               # '700+/-100', '750+/-50', '800+/-50', '850+/-50', \
-               # '950+/-50', '1000+/-50', '1050+/-50', '1100+/-50']
 try:
     os.mkdir(todayFigDir+'/Mechanics_PopulationSummaryPlots')
 except:
@@ -1765,24 +1734,24 @@ plt.close('all')
 
 #%%%% H0 vs. Compression No
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
 
-excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
-            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9']
+# excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+#             '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9']
 
 # excluded = ['22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
 #             '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
 #             '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
 
 ctrl = 'M5'
-active = 'M6'
+active = 'M4'
 
-for i in excluded:
-    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
+# for i in excluded:
+#     plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
 
 df = plotDf2[(plotDf2['activationTag'] == ctrl) | (plotDf2['activationTag'] == active)]
 
-noCells = len(np.unique(plotDf2['cellID'][plotDf2['activationTag'] == 'M5']))
+noCells = len(np.unique(plotDf2['cellID'][plotDf2['activationTag'] == 'M4']))
 
 
 # ch1 = 'M1'

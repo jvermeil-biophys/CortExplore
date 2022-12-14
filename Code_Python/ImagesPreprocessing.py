@@ -453,7 +453,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 12
+limiter = 11
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

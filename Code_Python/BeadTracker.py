@@ -302,7 +302,7 @@ class PincherTimeLapse:
         if self.microscope == 'labview':
             offsets = np.array([np.sum(self.LoopActivations <= kk) 
                                 for kk in range(self.nLoop)])
-            
+            print(offsets)
             for i in range(self.nLoop):
                 j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
                 checkSum = np.sum(self.I[j])
