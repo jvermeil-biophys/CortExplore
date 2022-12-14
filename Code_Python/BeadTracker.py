@@ -454,6 +454,7 @@ class PincherTimeLapse:
                     self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
                     self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
                 i_nUp = max(self.dictLog['status_nUp']) + 1
+                
 
     def determineFramesStatus_L40(self):
         #### Exp type dependance here

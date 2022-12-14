@@ -23,6 +23,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """
 
+#### Docstring template
+
+"""
+General description.
+
+Parameters
+----------
+In1
+    Description
+  
+Returns
+-------
+Out1
+    Description
+
+Examples
+--------
+>>> Ex1
+
+"""
+
+
 #### Scales
 
 SCALE_100X = 15.8 # pix/µm
