@@ -53,6 +53,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
+import TrackAnalyser_dev3_AJJV as taka2
 # import TrackAnalyser_dev_AJ as taka
 
 #### Potentially useful lines of code
@@ -516,6 +517,7 @@ GlobalTable_meca_HoxB8 = taka.getMergedTable('Global_MecaData_HoxB8', mergeUMS =
 GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', mergeUMS = True)
 
 
+
 # %%% Custom data export
 
 # %%%% 21-06-28 Export of E - h data for Julien
@@ -537,8 +539,8 @@ GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', m
 
 Styles = {''} # Project of automatic formatting according to the type of data
 
-renameDict1 = {'SurroundingThickness':'Thickness (nm) [b&a]',
-                'surroundingThickness':'Thickness (nm) [b&a]',
+renameDict1 = {'SurroundingThickness':'Thickness at low force (nm)',
+                'surroundingThickness':'Thickness at low force (nm)',
                 'ctFieldThickness':'Thickness at low force (nm)',
                 'bestH0':'Thickness from fit (nm)',
                 'EChadwick': 'E Chadwick (Pa)',
@@ -611,8 +613,8 @@ styleDict1 =  {'none & BSA coated glass':{'color':'#ff9896','marker':'^'},
 
 # %%%% MCA specific
 
-renameDict_MCA3 = {'SurroundingThickness':'Thickness (nm) [b&a]',
-               'surroundingThickness':'Thickness (nm) [b&a]',
+renameDict_MCA3 = {'SurroundingThickness':'Thickness at low force (nm)',
+               'surroundingThickness':'Thickness at low force (nm)',
                'ctFieldThickness':'Thickness at low force (nm)',
                'ctFieldThickness_normalized':'Thickness at low force (nm) [Ratio]',
                'bestH0':'Thickness from fit (nm)',
@@ -9318,8 +9320,9 @@ Filters = [(data['validatedThickness'] == True),
 fig, ax = D2Plot_wFit(data, XCol='surroundingThickness', YCol='EChadwick', CondCol=['cell type'], Filters=Filters, 
            cellID='cellID', AvgPerCell=True, co_order=['3T3'], modelFit=True, modelType='y=k*x^a', writeEqn = True,
            xscale = 'log', yscale = 'log', 
-           figSizeFactor = 1, markersizeFactor = 1.4)
+           figSizeFactor = 1, markersizeFactor = 1.5)
+ax.legend(fontsize = 11)
 ax.set_xlim([95, 1800])
 renameAxes(ax,renameDict_MCA3)
 
-
+plt.show()

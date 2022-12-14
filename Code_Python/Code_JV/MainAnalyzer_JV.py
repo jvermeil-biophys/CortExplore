@@ -42,7 +42,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
-import TrackAnalyser_dev3_AJJV as taka2
+import TrackAnalyser_V2 as taka2
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -84,7 +84,21 @@ df = taka.getCellTimeSeriesData('22-02-09_M1_P1_C7')
 taka.plotCellTimeSeriesData('22-03-21_M3_P1_C1_sin5-3_1Hz')
 
 
-# #############################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %% GlobalTables functions
 
 
@@ -94,9 +108,6 @@ taka.plotCellTimeSeriesData('22-03-21_M3_P1_C1_sin5-3_1Hz')
 expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True)
 
 
-
-
-# =============================================================================
 # %%% Constant Field
 
 # %%%% Update the table
@@ -113,120 +124,197 @@ df = taka.getGlobalTable_ctField().head()
 
 
 
-# =============================================================================
+
+
+
+
+
 # %%% Mechanics
 
-# %%%% Update the table
 
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'Global_MecaData_Py2', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+# %%%% Default settings for mechanics analysis
+
+#### HOW TO USE    
+# Example : I don't want to do a whole curve Chawick Fit anymore, but I want a Dimitriadis one.
+# I can create a dict fitSettings = {'doChadwickFit' : False, 'doDimitriadisFit' : True}
+# And pass it as an argument in computeGlobalTable_meca
+
+#### DETAILS
+# See ufun.updateDefaultSettingsDict(settingsDict, defaultSettingsDict)
+# And the 'Settings' flag in analyseTimeSeries_meca() 
+
+#### AS REFERENCE ONLY, here is a copy of the default settings.
+
+#### 1. For Fits
+DEFAULT_fitSettings = {# H0
+                       'methods_H0':['Dimitriadis'],
+                       'zones_H0':['%f_20'],
+                       'method_bestH0':'Dimitriadis',
+                       'zone_bestH0':'%f_20',
+                       # Global fits
+                       'doChadwickFit' : True,
+                       'doDimitriadisFit' : False,
+                       # Local fits
+                       'doStressRegionFits' : True,
+                       'doStressGaussianFits' : True,
+                       'centers_StressFits' : [ii for ii in range(100, 1550, 50)],
+                       'halfWidths_StressFits' : [50, 75, 100],
+                       'doNPointsFits' : True,
+                       'nbPtsFit' : 13,
+                       'overlapFit' : 3,
+                       }
+
+#### 2. For Validation
+
+DEFAULT_fitValidationSettings = {'crit_nbPts': 8, # sup or equal to
+                                 'crit_R2': 0.6, # sup or equal to
+                                 'crit_Chi2': 1, # inf or equal to
+                                 'str': 'nbPts>{:.0f} - R2>{:.2f} - Chi2<{:.1f}'.format(8, 0.6, 1),
+                                 }
 
 
-# %%%% Refresh the whole table
+#### 3. For Plots
 
-# taka.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Global_MecaData_Py2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':True,
+                        'K(S)_stressRegion':True,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        
+                        # Fits plotting parameters
+                        'plotCenters': [ii for ii in range(100, 1550, 50)],
+                        'plotHW': 75,
+                        'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFit']),
+                        }
+
+
+# %%%% Create a table from scratch
+
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'MecaData_All_JV', 
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+# %%%% Refresh an entire table
+
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'MecaData_All_JV', 
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Drugs
 
 drugTask = '22-03-30'
-taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'Global_MecaData_Drugs_Py', 
-                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
-
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs', 
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Non-Lin
 
 nonLinTask = '21-12-08 & 22-01-12 & 22-02-09'
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = nonLinTask, fileName = 'Global_MecaData_NonLin_Py', 
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = nonLinTask, fileName = 'MecaData_NonLin', 
                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% MCA
 
-MCAtask = '21-01-18 & 21-01-21'
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCAtask, fileName = 'Global_MecaData_MCA', 
-                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
+# %%%%% 2021
+
+# MCAtask = '21-01-18 & 21-01-21'
+# res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = MCAtask, fileName = 'Global_MecaData_MCA', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
+# %%%%% 2022
 
-# %%%% New MCA 2022
+# MCAtask = '22-07-15 & 22-07-20 & 22-07-27' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
+# taka2.computeGlobalTable_meca(mode = 'fromScratch', task = MCAtask, fileName = 'Global_MecaData_MCA', 
+#                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-MCA2task = '22-07-15 & 22-07-20 & 22-07-27' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA2task, fileName = 'Global_MecaData_MCA3', 
-                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-# %%%% All MCA 2021 - 2022
+# %%%%% All MCA 2021 - 2022
 
 dates_r1 = ['21-01-18', '21-01-21']
 dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
 dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
 all_dates = dates_r1 + dates_r2 + dates_r3
 
-MCA123task = ''
+all_MCAtask = ''
 for d in all_dates[:-1]:
-    MCA123task += d
-    MCA123task += ' & '
-MCA123task += all_dates[-1]
+    all_MCAtask += d
+    all_MCAtask += ' & '
+all_MCAtask += all_dates[-1]
 
-taka.computeGlobalTable_meca(mode = 'fromScratch', task = MCA123task, fileName = 'Global_MecaData_MCA123-new', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = all_MCAtask, fileName = 'MecaData_MCA', 
+                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% HoxB8
 
-HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(task = HoxB8task, fileName = 'Global_MecaData_HoxB8_2', 
-                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+# %%%%% HoxB8 only
+
+HoxB8task = '22-05-03 & 22-05-04 & 22-05-05' #' & 22-05-04 & 22-05-05' '22-05-03 & 22-05-04 & 22-05-05'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = HoxB8task, fileName = 'MecaData_HoxB8', 
+                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 # taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
 #                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-# %%%% MCA & HoxB8
+# %%%%% MCA & HoxB8
 
-MCA_and_HoxB8_task = MCAtask + ' & ' + HoxB8task
-taka.computeGlobalTable_meca(mode = 'updateExisting', task = MCA_and_HoxB8_task, fileName = 'Global_MecaData_MCA-HoxB8', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-
-
-
-# %%%% Tests
-
-Test = '21-04-28' # '22-05-03_M3'#' & 22-05-04_M2' #' & 22-05-04 & 22-05-05'
-taka.computeGlobalTable_meca(mode = 'fromScratch', task = Test, fileName = 'Global_MecaData_TEST', 
-                            save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-# taka.computeGlobalTable_meca(task = MCAtask, fileName = 'Global_MecaData_MCA2', 
-#                             save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
-
-
-# %%%% Precise dates (to plot)
-
-
-PlotTask = '21-01-18_M2_P1_C3' # ' & 22-07-20 & 22-07-27' #' & 22-05-04 & 22-05-05'
-gdf = taka.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'aaa', 
-                                   save = False, PLOT = True, source = 'Python')
-
-
-# %%%% Display
-
-df = taka.getGlobalTable_meca('Global_MecaData_Py2').tail()
-
-# %%%% Test of Numi's CRAZY GOOD NEW STUFF :D
-
-taka.computeGlobalTable_meca(task = '22-02-09_M1_P1_C3', fileName = 'aaa', 
+MCA_and_HoxB8_task = all_MCAtask + ' & ' + HoxB8task
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = MCA_and_HoxB8_task, fileName = 'MecaData_MCA-HoxB8', 
                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
-# %%%% Concat dataframes
+# %%%% Next job !
+
+
+
+
+
+
+
+# %%%% Tools
+
+# %%%%% Display
+
+df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
+
+# %%%%% Plot a precise date
+
+plotSettings = {# ON/OFF switchs plot by plot
+                'FH(t)':False,
+                'F(H)':True,
+                'S(e)_stressRegion':False,
+                'K(S)_stressRegion':False,
+                'S(e)_stressGaussian':False,
+                'K(S)_stressGaussian':False,
+                'S(e)_nPoints':True,
+                'K(S)_nPoints':True,
+                # Fits plotting parameters
+                'plotCenters': [ii for ii in range(100, 1550, 50)],
+                'plotHW': 50
+                }
+
+plotSettings = {}
+
+PlotTask = '21-01-18_M2_P1_C2'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'None', 
+                                   save = False, PLOT = True, source = 'Python', 
+                                   plotSettings = plotSettings)
+
+# %%%%% Concat dataframes
 
 fileNames = ['Global_MecaData_NonLin_Py', 'Global_MecaData_MCA-HoxB8']
 cdf = taka.concatAnalysisTables(fileNames, save = True, saveName = 'Global_MecaData_MCA-HoxB8_2')
 
 
-# =============================================================================
+
+
+
+
+
+
+
+
+
+
+
 # %%% Fluorescence
 
 # %%%% Display
