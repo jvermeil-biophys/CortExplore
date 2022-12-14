@@ -18,8 +18,7 @@ import pyautogui
 import matplotlib
 import traceback
 
-from scipy import interpolate
-from scipy import signal
+from scipy import interpolate, signal
 
 from skimage import io, filters, exposure, measure, transform, util, color, draw
 from scipy.signal import find_peaks, savgol_filter
@@ -73,8 +72,16 @@ def getCellsROI(I):
     nz, ny, nx = I.shape
     
     ZProfile_totalIntensity = np.sum(I, axis = (1,2))
-    maxIntensity = np.max(ZProfile_totalIntensity)
-    A = ZProfile_totalIntensity[::-1] < 0.975*maxIntensity
+    # maxIntensity = np.max(ZProfile_totalIntensity)
+    peaks, peaks_prop = signal.find_peaks(ZProfile_totalIntensity, distance = 15)
+    if 0 in peaks:
+        peaks = peaks[1:]
+        peaks_prop = peaks_prop[1:]
+    heights = np.array([ZProfile_totalIntensity[p] for p in peaks])
+    idx_max = peaks[np.argmax(heights)]
+    Int_max = ZProfile_totalIntensity[idx_max]
+    
+    A = ZProfile_totalIntensity[::-1] < 0.975*Int_max
     Z_target = nz - ufun.findFirst(False, A)
     I_target = I[Z_target,:,:]
     
@@ -132,12 +139,22 @@ def getCellsROI(I):
 
 def findZRegion(I, list_background):
     nz, ny, nx = I.shape
+    ZProfile_totalIntensity_raw = np.mean(I, axis = (1,2))
+    ZProfile_totalIntensity_1 = ZProfile_totalIntensity_raw - ZProfile_totalIntensity_raw[-1]
+    ZProfile_totalIntensity = ZProfile_totalIntensity_raw - list_background
     
-    ZProfile_totalIntensity = np.mean(I, axis = (1,2)) - list_background
-    maxIntensity = np.max(ZProfile_totalIntensity)
-    A = ZProfile_totalIntensity[::-1] < 0.975*maxIntensity
+    # maxIntensity = np.max(ZProfile_totalIntensity)
+    peaks, peaks_prop = signal.find_peaks(ZProfile_totalIntensity, distance = 15)
+    if 0 in peaks:
+        peaks = peaks[1:]
+        peaks_prop = peaks_prop[1:]
+    heights = np.array([ZProfile_totalIntensity[p] for p in peaks])
+    idx_max = peaks[np.argmax(heights)]
+    Int_max = ZProfile_totalIntensity[idx_max]
+    
+    A = ZProfile_totalIntensity[::-1] < 1*Int_max
     Z_start = nz - ufun.findFirst(False, A)
-    B = ZProfile_totalIntensity[::-1] < 0.65*maxIntensity
+    B = ZProfile_totalIntensity[::-1] < 0.8*Int_max
     Z_stop = nz - ufun.findFirst(False, B)
     
     I_zProj = np.mean(I[Z_start:Z_stop,:,:], axis=0)
@@ -145,6 +162,8 @@ def findZRegion(I, list_background):
     # fig, axes = plt.subplots(1,2, figsize = (8,4))
     # ax = axes[0]
     # Z_plot = np.arange(nz)
+    # # ax.plot(Z_plot, ZProfile_totalIntensity_raw, 'r--')
+    # # ax.plot(Z_plot, ZProfile_totalIntensity_1, 'g--')
     # ax.plot(Z_plot, ZProfile_totalIntensity)
     # ax.axvline(Z_start, c='k', ls='--', lw=1)
     # ax.axvline(Z_stop, c='k', ls='--', lw=1)
@@ -173,13 +192,13 @@ def quantifCortexRatio(I, background):
     mask_cell_smooth = mask_cell[:,:]
     
     nb_it = 0
-    if cellSolidity < 0.975:
-        nb_it += 1
     if cellSolidity < 0.95:
         nb_it += 1
-    if cellSolidity < 0.925:
-        nb_it += 1
     if cellSolidity < 0.9:
+        nb_it += 1
+    if cellSolidity < 0.85:
+        nb_it += 1
+    if cellSolidity < 0.8:
         nb_it += 1
     
     ## PLOT
@@ -243,14 +262,14 @@ def quantifCortexRatio(I, background):
     ValidCell = (A1 == 'Yes')
     VisibleNucleus = (A2 == 'Yes')
     
-    # Deal with the nucleus    
-    fake_I_inner = (I * mask_cell_inner).flatten()
-    p20, p80 = np.percentile(fake_I_inner, 20), np.percentile(fake_I_inner, 80)
+    # Deal with the nucleus
+    mask_cell_inner_2 = ndi.binary_erosion(mask_cell_inner, iterations = 5).astype(np.int64)
+    fake_I_inner = (I * mask_cell_inner_2).flatten()
     m = (fake_I_inner > 0)
     fake_I_inner = fake_I_inner[m]
-    p20, p80 = np.percentile(fake_I_inner, 20), np.percentile(fake_I_inner, 80)
-    if VisibleNucleus or (p20 < 0.4*p80):
-        thresh_nucleus = 0.8*filters.threshold_li(fake_I_inner)
+    # p20, p80 = np.percentile(fake_I_inner, 20), np.percentile(fake_I_inner, 80)
+    if VisibleNucleus: # or (p20 < 0.4*p80):
+        thresh_nucleus = 0.9*filters.threshold_li(fake_I_inner)
     else:
         thresh_nucleus = 0
     
@@ -342,47 +361,144 @@ def main_CortexIntensity_Stacks(srcDir, wavelenght_str, scale = SCALE):
                 
     A_ratio = np.array(L_ratio)
     
-    return(np.mean(A_ratio), np.std(A_ratio), len(A_ratio))
+    mean, std, N = np.mean(A_ratio), np.std(A_ratio), len(A_ratio)
+    
+    summaryDict = {'mean':mean,
+                    'std':std,
+                    'N':N,
+                    }
+    
+    return(A_ratio, summaryDict)
                 
         
-# %%% Test
+# # %%% Test
 
-srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//C2_10x//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
-# srcDir = 'C://Users//Joseph//Desktop//2022-11-22_DrugAssay_PNB_Hela-MyoGFP_6co//C1_ctrl//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
+# srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//C2_10x//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
+# # srcDir = 'C://Users//Joseph//Desktop//2022-11-22_DrugAssay_PNB_Hela-MyoGFP_6co//C1_ctrl//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
 
-res_tuple = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
+# res_tuple = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
 
-print(res_tuple)
+# print(res_tuple)
 
 # %%% All conditions
 
 SCALE = SCALE_63X
 wavelenght_str_GFP = 'CSU-488'
 conditions = ['C1_ctrl', 'C2_10x', 'C3_2x', 'C4_1x', 'C5_0.5x', 'C6_0.1x']
+conditions = ['C5_0.5x']
 resDict = {}
+summaryDict = {}
 
-for co in conditions[4:5]:
+for co in conditions:
     srcDir = 'C://Users//Joseph//Desktop//2022-11-24_DrugAssay_Y27_Hela-MyoGFP_6co//' + co + '//Stack1_63x_488_500ms_stack250nmX101imgs_laser10p'
     
-    mean, std, N = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
+    # main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
+    A_ratio, sD = main_CortexIntensity_Stacks(srcDir, wavelenght_str_GFP, scale = SCALE)
     
-    print(mean, std, N)
+    resDict[co] = A_ratio
     
-    resDict[co] = {'mean':mean,
-                   'std':std,
-                   'N':N,
-                   }
+    summaryDict[co] = {'mean':sD['mean'],
+                        'std':sD['std'],
+                        'N':sD['N'],
+                        }
+    
+    print(summaryDict[co])
     
     plt.close('all')
-    
+
+print(summaryDict)
 print(resDict)
 
-# 2.08523557045183 0.7301587376320711 26
-# 1.1873310436634326 0.08971089388322508 13
-# 1.231296926984714 0.08424758557312431 24
-# 1.1838146104663536 0.07113410830698895 16
-# 1.3071447892798849 0.09304603253986346 6 Many shitty cells here
-# 1.2541316319380513 0.1477964749760986 13
+
+# %%%% Results Y27
+
+# %%%%% Raw
+
+A_ratio = np.array([3.23683413, 3.13146958, 2.63819555, 2.69039732, 1.39740912,
+        1.07066333, 1.3147351 , 2.92050174, 3.26253924, 2.42681703,
+        2.81725977, 2.29895761, 2.13645476, 3.08746338, 2.27516426,
+        1.87860776, 1.74865955, 2.16190069, 1.74812156,
+        2.64292656, 2.05856366, 1.55661962, 1.46598205, 1.07848548,
+        1.47946137])
+          
+mean, std, N = np.mean(A_ratio), np.std(A_ratio), len(A_ratio)
+
+# C1
+# {'C1_ctrl': {'mean': 2.1809676088, 'std': 0.675737315250374, 'N': 25}}
+# {'C1_ctrl': array([3.23683413, 3.13146958, 2.63819555, 2.69039732, 1.39740912,
+#        1.07066333, 1.3147351 , 2.92050174, 3.26253924, 2.42681703,
+#        2.81725977, 2.29895761, 2.13645476, 3.08746338, 2.27516426,
+#        1.87860776, 1.74865955, 2.16190069, 1.74812156,
+#        2.64292656, 2.05856366, 1.55661962, 1.46598205, 1.07848548,
+#        1.47946137])}
+
+# 4.47610907, 
+
+# C2
+# {'C2_10x': {'mean': 1.1504738982137706, 'std': 0.07706920613434011, 'N': 13}}
+# {'C2_10x': array([1.18528329, 1.18142398, 1.23721024, 1.25836515, 1.02576929,
+#        1.15602254, 1.13931083, 1.04267435, 1.19837782, 1.08196677,
+#        1.09937366, 1.08102726, 1.26935549])}
+
+# C3
+# {'C3_2x': {'mean': 1.2346581126149598, 'std': 0.05463472858717262, 'N': 24}}
+# {'C3_2x': array([1.23792763, 1.26650248, 1.30504833, 1.32473531, 1.26383796,
+#        1.27921931, 1.24355993, 1.13074372, 1.18924433, 1.24569422,
+#        1.29192879, 1.1933749 , 1.18057645, 1.29391318, 1.19989459,
+#        1.2853424 , 1.20199902, 1.16103473, 1.28171618, 1.15308795,
+#        1.28837453, 1.25994693, 1.1554759 , 1.19861595])}
+
+# C4
+# {'C4_1x': {'mean': 1.1734189803955142, 'std': 0.07904788243336819, 'N': 14}}
+# {'C4_1x': array([0.98279757, 1.11206443, 1.10601043, 1.15840632, 1.19878053,
+#        1.2665215 , 1.27535678, 1.17116013, 1.23026342, 1.2586848 ,
+#        1.12370546, 1.26165763, 1.13528979, 1.14716694])}
+
+# C5
+# {'C5_0.5x': {'mean': 1.2075531230942547, 'std': 0.07823196133748052, 'N': 19}}
+# {'C5_0.5x': array([0.99812369, 1.30317142, 1.21857554, 1.24029143, 1.32973095,
+#        1.23556649, 1.29757038, 1.32373535, 1.13420473, 1.2291747 ,
+#        1.14789419, 1.18987663, 1.17815803, 1.22504529, 1.18454485,
+#        1.15744863, 1.25906017, 1.12934795, 1.16198892])}
+
+
+# C6
+# {'C6_0.1x': {'mean': 1.358150332864929, 'std': 0.11524630181105491, 'N': 15}}
+# {'C6_0.1x': array([1.47223653, 1.53994367, 1.33303321, 1.22742962, 1.40657092,
+#        1.30616066, 1.39737098, 1.4915153 , 1.49719887, 1.31580211,
+#        1.19192314, 1.1174486 , 1.3135526 , 1.40689419, 1.35517459])}
+
+# %%%%% Plot
+
+gs.set_default_options_jv()
+
+listCond = ['ctrl', '0.1x', '0.5x', '1x', '2x', '10x']
+listConc = np.array([0, 0.05, 0.25, 0.5, 1.0, 5.0])*100 # µM
+listMean = [2.1809, 1.3581, 1.2075, 1.1734, 1.2346, 1.1504]
+listSte = [0.6757, 0.1152, 0.078, 0.0790, 0.0546, 0.0770]
+    
+df = pd.DataFrame({'co name':listCond, 
+                   'concentration':listConc, 
+                   'mean':listMean, 
+                   'ste':listSte})
+
+fig, ax = plt.subplots(1,1, figsize = (12,6))
+ax.errorbar(df['concentration'], df['mean'], yerr=df['ste'],
+            lw = 1, color = 'k',
+            marker = 'o', markerfacecolor = gs.colorList40[30], mec = 'None',
+            ecolor = gs.colorList40[30], elinewidth = 1, capsize = 5)
+
+# ax.text(df['concentration'].values, df['mean'].values, df['co name'].values)
+for k in range(df.shape[0]):
+    ax.text(df['concentration'].values[k]+5, df['mean'].values[k]+0.05, df['co name'].values[k], fontsize = 10)
+
+# ax.set_xscale('log')
+# ax.plot(ax.get_xlim(), [1,1], 'k--', lw=0.8)
+ax.grid(axis='y')
+# ax.set_xlim([-0.2, 5.2])
+ax.set_ylim([0, 3])
+ax.set_xlabel('Concentration of Y27 (µM)')
+ax.set_ylabel('Ratio Fluo Cortex/Cytoplasm')
 
 # %% Snapshot based analysis
 
