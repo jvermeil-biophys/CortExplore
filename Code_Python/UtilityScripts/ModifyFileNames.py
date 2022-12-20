@@ -83,10 +83,95 @@ def inverseDateInsideFile(path, test = True):
         f.write(data)
         f.close()
 
-# %% Script
+def findAndRename(path, target_string, new_string, target='file', test = True, recursiveAction = False, exceptStrings = []):
+    listAll = os.listdir(path)
+    listFiles = []
+    listDir = []
+    listTarget = []
+    for f in listAll:
+        if os.path.isfile(os.path.join(path,f)):
+            listFiles.append(f)
+        elif os.path.isdir(os.path.join(path,f)):
+            listDir.append(f)
+    if target == 'file':
+        listTarget = listFiles
+    elif target == 'dir':
+        listTarget = listDir
+    elif target == 'all':
+        listTarget = listAll
+    renamedListTarget = []
+    for f in listTarget:
+        searchString = re.search(target_string, f)
+        if searchString:
+            doExcept = False
+            for s in exceptStrings:
+                if s in f:
+                    doExcept = True
+                    print('Exception for ' + os.path.join(path,f))
+            if not doExcept:
+                foundString = f[searchString.start():searchString.end()]
+                newFileName = f[:searchString.start()] + new_string + f[searchString.end():]
+                renamedListTarget.append(newFileName)
+                if not test:
+                    new_path = os.path.join(path,newFileName)
+                    if not os.path.isfile(new_path):
+                        os.rename(r''+os.path.join(path,f),r''+os.path.join(path,newFileName))
+                    
+    if recursiveAction:
+        # Update ListDir after potential renaming
+        listAll = os.listdir(path)
+        listDir = []
+        for f in listAll:
+            if os.path.isdir(os.path.join(path,f)):
+                listDir.append(f)
+        # Start going recursive
+        for d in listDir:
+            print("Let's go into " + os.path.join(path,d))
+            inverseDate(os.path.join(path,d), target, test = test, recursiveAction = True, exceptStrings = exceptStrings)
+    print(renamedListTarget)
+
+# %% Script Dates
         
 inverseDate('D://MagneticPincherData//Raw_DC//Raw_DC_JV//', target = 'all', 
             test = True, recursiveAction = True, exceptStrings = ['Deptho'])
+
+path0 = 'D://MagneticPincherData//Raw//'
+
+# %% Script Other renaming
+
+date = '18.09.24'
+path = path0 + date
+
+findAndRename(path, 'M2_P1', 'M3_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+findAndRename(path, 'M1_P2', 'M2_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+
+
+
+date = '18.09.25'
+path = path0 + date
+
+findAndRename(path, 'M2_P2', 'M4_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+findAndRename(path, 'M2_P1', 'M3_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+findAndRename(path, 'M1_P2', 'M2_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+
+
+
+
+date = '18.10.30'
+path = path0 + date
+
+findAndRename(path, 'M2_P2', 'M4_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+findAndRename(path, 'M2_P1', 'M3_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+findAndRename(path, 'M1_P2', 'M2_P1', 
+              target='file', test = False, recursiveAction = False, exceptStrings = [])
+
 
 
 

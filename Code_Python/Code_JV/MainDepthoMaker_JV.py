@@ -47,6 +47,58 @@ gs.set_default_options_jv()
 
 # %% Next depthos !
 
+
+# %% Depthos from 22-11-23 LatA expt
+
+# %%% 18.18.28 -> Valid also for 18-09-24 and 18-09-25
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '22.11.23'
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'M3'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M3_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+
+
+
+
 # %% All depthos from old DC experiments by Valentin
 
 # %%% 18.18.28 -> Valid also for 18-09-24 and 18-09-25
@@ -511,6 +563,55 @@ scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
             specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+# %% All depthos from 22.03.38 3T3 experiments
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '22.03.28'
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'M3'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M3_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+
 
 # %% Depthos of new M450 for calibration - 22.04.29
 

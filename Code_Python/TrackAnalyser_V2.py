@@ -3488,12 +3488,12 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     if source == 'Matlab':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-                      and (('R40' in f) or ('L40' in f)) and not (suffixPython in f))]
+                      and (('R40' in f) or ('R80' in f) or ('L40' in f)) and not (suffixPython in f))]
         
     elif source == 'Python':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-                      and (('R40' in f) or ('L40' in f)) and (suffixPython in f))]
+                      and (('R40' in f) or ('R80' in f) or ('L40' in f)) and (suffixPython in f))]
     
     #### 2. Get the existing table if necessary
     imported_mecaDf = False
@@ -3557,13 +3557,16 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
         list_selectedMecaFiles.remove(f)
             
     if len(listExcluded) > 0:
-        textExcluded = 'The following files were excluded from analysis\nbecause no matching experimental data was found:'
+        textExcluded = 'The following files were excluded from analysis\n'
+        textExcluded += 'because no matching experimental data was found:'
         print(gs.ORANGE + textExcluded)
         for f in listExcluded:
             print(f)
         print(gs.NORMAL)
-            
-                
+    
+    # print(list_mecaFiles)
+    # print(list_taskMecaFiles)
+    # print(list_selectedMecaFiles)
                 
     #### 4. Run the analysis on the files, by blocks of 10
     listMecaDf = []

@@ -205,8 +205,8 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileN
 
 # %%%% Drugs
 
-drugTask = '22-03-30'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs', 
+drugTask = '22-03-28 & 22-03-30 & 22-11-23'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs', 
                                     save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
 # %%%% Non-Lin
@@ -261,6 +261,13 @@ MCA_and_HoxB8_task = all_MCAtask + ' & ' + HoxB8task
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = MCA_and_HoxB8_task, fileName = 'MecaData_MCA-HoxB8', 
                             save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
 
+
+# %%%%% Old Expts
+
+DC_task = '18-08-28 & 18-09-24 & 18-09-24 & 18-10-30 & 18-12-12'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = DC_task, fileName = 'MecaData_DC', 
+                            save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
+
 # %%%% Next job !
 
 
@@ -279,7 +286,7 @@ df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['%f_20', '%f_40', '%Fs15_40'],
+                'zones_H0':['%f_20'],
                 'method_bestH0':'Dimitriadis',
                 'zone_bestH0':'%f_20',
                 }
@@ -298,11 +305,12 @@ fitSettings = {# H0
 #                 'plotHW': 50
 #                 }
 
+fitSettings = {}
 plotSettings = {}
 
-PlotTask = '21-01-18_M2_P1_C1'
+PlotTask = '22-03-28'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
-                                   save = False, PLOT = False, source = 'Python', 
+                                   save = False, PLOT = True, source = 'Python', 
                                    plotSettings = plotSettings, fitSettings = fitSettings)
 
 

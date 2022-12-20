@@ -55,8 +55,8 @@ microscope = 'labview'
 
 #%% Define parameters # Jojo
 
-date = '22.03.28'
-DirExt = 'E:/22.03.28_Patterns3T3_drugs' #'/M4_patterns_ctrl'
+date = '22.11.23'
+DirExt = 'G:/2022-11-23_3t3aSFL-LaGFP+++_LatA' #'/M4_patterns_ctrl'
 DirSave = os.path.join(cp.DirDataRaw, date)
 
 prefix = ''

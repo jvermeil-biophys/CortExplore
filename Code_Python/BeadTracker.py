@@ -299,7 +299,7 @@ class PincherTimeLapse:
         To detect them, compute the checkSum = np.sum(self.I[j]).
         Then modify the 'status_frame' & 'status_nUp' fields to '-1' in the dictLog.
         """
-        if self.microscope == 'labview':
+        if self.microscope == 'labview' or self.microscope == 'old-labview':
             offsets = np.array([np.sum(self.LoopActivations <= kk) 
                                 for kk in range(self.nLoop)])
             
@@ -327,7 +327,7 @@ class PincherTimeLapse:
         find and save all of the fluo images there.
         """
         
-        if self.microscope == 'labview':
+        if self.microscope == 'labview' or self.microscope == 'old-labview':
             # print(self.excludedFrames_black)
             try:
                 if self.activationFirst > 0:
@@ -432,9 +432,7 @@ class PincherTimeLapse:
         # N = N0 - Nexclu
         Nct = N0 - Nramp0 # N
         i_nUp = 1
-        
-
-        # print(N0,Nramp0,Nexclu,nUp)
+        # print(N0,Nramp0,nUp)
 
         for i in range(self.nLoop):
             totalExcludedOutward = np.sum(self.excludedFrames_outward[i])
@@ -529,7 +527,7 @@ class PincherTimeLapse:
                     self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
                 i_nUp = max(self.dictLog['status_nUp']) + 1
                 
-        elif self.microscope == 'labview':
+        elif self.microscope == 'labview' or self.microscope == 'old-labview':
             for i in range(self.nLoop):
                 totalExcludedOutward = (self.excludedFrames_outward[i])
                 jstart = int(i*N0 + totalExcludedOutward)
@@ -553,7 +551,7 @@ class PincherTimeLapse:
         actExp = self.activationExp
         actType = [self.activationType]
         microscope = self.microscope
-        if microscope == 'labview':
+        if microscope == 'labview' or microscope == 'old-labview':
             idxActivation = ufun.findActivation(fieldDf)[0]
             actFirst = idxActivation//self.loop_mainSize
             timeScaleFactor = 1000
@@ -1481,8 +1479,8 @@ class Trajectory:
             
             while iF <= max(self.dict['iF']):
             #### Enable plots of Z detection  here
-                # plot = 0
-                # if (iF >= 705 and iF <= 750):# or (iF > 400 and iF <= 440):
+                plot = 0
+                # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
                 #     plot = 1
                     
             # ###################################################################
@@ -1647,7 +1645,33 @@ class Trajectory:
 
 
 
-
+        #### Fit quality
+        # Ddz, Ddx = depthoHD.shape[0], depthoHD.shape[1]
+        # print(Ddz, Ddx)
+        # dz_fitPoly = int(Ddz/32)
+        
+        # def f_sq(x, k):
+        #     return(k * x**2)
+        
+        # listDistances = np.zeros((Ddz, Ddz))
+        # listZQuality = np.zeros(Ddz)
+        
+        # for z in range(Ddz):
+            
+        #     profile_z = depthoHD[z, :]
+        #     listDistances[z] = ufun.squareDistance(depthoHD, profile_z, normalize = True) # Utility functions
+        #     z_start = max(0, z - dz_fitPoly)
+        #     z_stop = min(Ddz - 1, z + dz_fitPoly)
+        #     # print(z, z_start, z_stop)
+        #     Cost_fitPoly = listDistances[z][z_start : z_stop + 1]
+        #     X_fitPoly = np.arange(z_start - z, z_stop - z + 1, dtype=int)
+        #     popt, pcov = curve_fit(f_sq, X_fitPoly, Cost_fitPoly - listDistances[z][z], 
+        #                            p0=[1], bounds=(-np.inf, np.inf))
+        #     z_quality = popt[0]*1e3
+        #     listZQuality[z] = z_quality
+        
+        # Z = np.array([i for i in range(Ddz)]) - depthoZFocusHD
+        # plt.plot(Z, listZQuality)
 
 
 
@@ -1727,7 +1751,11 @@ class Trajectory:
                                     fontsize = 11)
                 
                 # Show the distance map to the deptho
+                listDistances = np.array(listDistances)
+                inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
+                peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
                 axes[3,i].plot(zPos, listDistances[i])
+                axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
                 axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
                 axes[3,i].set_xlabel('Position along the depthograph\n(Z-axis)', 
@@ -1740,6 +1768,11 @@ class Trajectory:
                 limy3 = axes[3,i].get_ylim()
                 min_i = zPos[np.argmin(listDistances[i])]
                 axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
+                for p in peaks:
+                    p_i = zPos[int(p)]
+                    axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
+                                  marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
+                    axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
                 axes[3,i].set_xlim([0, depthoDepth])
                 
                 #
@@ -1756,6 +1789,7 @@ class Trajectory:
                 limy4 = axes[4,i].get_ylim()
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
+                axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
                 axes[4,i].set_xlim([0, depthoDepth])
 
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
@@ -1800,7 +1834,7 @@ class Trajectory:
             
             fig.suptitle('Frames '+str(iFNuplet)+' - Slices '+str(iSNuplet)+' ; '+\
                          'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
-                         '{:.1f} nm'.format(Z*(self.depthoStep/self.HDZfactor)),
+                         '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
                          y=0.98)
             
             if not os.path.isdir(cp.DirTempPlots):
@@ -2046,10 +2080,19 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 0.8 - Sort slices
         #### ! Exp type dependance here !
         if not logFileImported:
-            if 'R40' in f or 'thickness' in f:
+            if ('R40' in f) or ('R80' in f):
                 PTL.determineFramesStatus_R40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'compressions'
+            if ('thickness' in f):
+                PTL.determineFramesStatus_R40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'constant field'
             elif 'L40' in f:
                 PTL.determineFramesStatus_L40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'compressions'
+                    
             elif 'sin' in f:
                 PTL.determineFramesStatus_Sinus()
             elif 'brokenRamp' in f:
@@ -2281,7 +2324,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         if PTL.microscope == 'metamorph':
             matchingDirection = 'downward' # Change when needed !!
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
-        elif PTL.microscope == 'labview':
+        elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
             matchingDirection = 'upward'
             print(gs.ORANGE + "Deptho detection 'upward' mode" + gs.NORMAL)
             
