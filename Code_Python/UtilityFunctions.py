@@ -1360,13 +1360,3 @@ def makeChoicesBox(choicesDict):
     return(res)
 
 
-
-
-
-
-
-
-
-
-
-
