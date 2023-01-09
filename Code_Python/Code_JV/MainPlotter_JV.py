@@ -377,7 +377,7 @@ MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 # MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8')
 
 #### Test
-MecaData_Test = taka2.getMergedTable('Test')
+# MecaData_Test = taka2.getMergedTable('Test')
 
 # %%% Test of adding fits
 
@@ -1510,12 +1510,10 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
     data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
     
-    
     # Combine all in data_agg
     data_agg['K_wVar'] = data_agg2['K_wVar']
     data_agg['K_wStd'] = data_agg2['K_wStd']
     data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
-    
     
     # Plot
     for co in conditions:
@@ -1597,14 +1595,172 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
         elif returnCount == 2:
             output += (df_CountByCond, df_CountByCell)
 
-
     return(output)
 
 
 
+def plotAllH0(data, Filters = [], condCols = [], 
+              co_order = [], box_pairs = [], AvgPerCell = True,
+              stats = False, statMethod = 'Mann-Whitney', stressBoxPlot = 1):
+    """
+    
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+    Filters : TYPE, optional
+        DESCRIPTION. The default is [].
+    condCols : TYPE, optional
+        DESCRIPTION. The default is [].
+    co_order : TYPE, optional
+        DESCRIPTION. The default is [].
+    box_pairs : TYPE, optional
+        DESCRIPTION. The default is [].
+    AvgPerCell : TYPE, optional
+        DESCRIPTION. The default is True.
+    stats : TYPE, optional
+        DESCRIPTION. The default is False.
+    statMethod : TYPE, optional
+        DESCRIPTION. The default is 'Mann-Whitney'.
+    stressBoxPlot : TYPE, optional
+        DESCRIPTION. The default is 1.
+
+    Returns
+    -------
+    fig, ax
+    
+    Example
+    -------
+    
+    >>> data_main = MecaData_Drugs
+    >>> dates = ['22-03-28', '22-03-30']
+    >>> Filters = [(data_main['validatedThickness'] == True),
+    >>>            (data_main['bestH0'] <= 1200),
+    >>>            (data_main['drug'].apply(lambda x : x in ['dmso'])),
+    >>>            (data_main['date'].apply(lambda x : x in dates))]
+    >>> fig, ax = plotAllH0(data_main, Filters = Filters, condCols = [], 
+    >>>         co_order = [], box_pairs = [], AvgPerCell = True,
+    >>>         stats = False, statMethod = 'Mann-Whitney', stressBoxPlot = 2)
+    >>> plt.show()
+
+    """
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+
+    data_ff = taka2.getAllH0InTable(data_f)
+    
+    # Filter the table   
+    data_ff = data_ff.drop(data_ff[data_ff['allH0_error'] == True].index)
+    
+    # Make cond col
+    condCols = condCols + ['allH0_method', 'allH0_zone']
+    NCond = len(condCols)
+    newColName = ''
+    for i in range(NCond):
+        newColName += condCols[i]
+        newColName += ' & '
+    newColName = newColName[:-3]
+    data_ff[newColName] = ''
+    for i in range(NCond):
+        data_ff[newColName] += data_ff[condCols[i]].astype(str)
+        data_ff[newColName] = data_ff[newColName].apply(lambda x : x + ' & ')
+    data_ff[newColName] = data_ff[newColName].apply(lambda x : x[:-3])
+    condCol = newColName
+        
+    conditions = np.array(data_ff[condCol].unique())
+    
+    if len(co_order) > 0:
+        if len(co_order) != len(conditions):
+            delCo = [co for co in co_order if co not in conditions]
+            for co in delCo:
+                co_order.remove(co)
+    else:
+        co_order = conditions
+    
+    # Average per cell if necessary
+    if AvgPerCell:
+        dictAggMean = {}
+        for c in data_ff.columns:
+            try :
+                if np.array_equal(data_ff[c], data_ff[c].astype(bool)):
+                    dictAggMean[c] = 'min'
+                else:
+                    try:
+                        if not c.isnull().all():
+                            np.mean(data_ff[c])
+                            dictAggMean[c] = 'mean'
+                    except:
+                        dictAggMean[c] = 'first'
+            except:
+                    dictAggMean[c] = 'first'
+        
+        group = data_ff.groupby(by = ['cellID', 'allH0_method', 'allH0_zone'])
+        data_ff = group.agg(dictAggMean)
+    
+        
+    # Sort data
+    data_ff.sort_values(condCol, axis=0, ascending=True, inplace=True)
+
+    # output = data_ff
+    
+    # Create fig
+    fig, ax = plt.subplots(1, 1, figsize = (5*NCond, 5))
+
+    if stressBoxPlot == 0:
+        sns.boxplot(x=condCol, y='allH0_H0', data=data_ff, ax=ax,
+                    width = 0.5, showfliers = False, order= co_order, 
+                    medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+                    boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+#                   boxprops={"color": color, "linewidth": 0.5},
+                    whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+                    capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2})
+                    # scaley = scaley)
+                        
+    elif stressBoxPlot == 1:
+        sns.boxplot(x=condCol, y='allH0_H0', data=data_ff, ax=ax, 
+                    width = 0.5, showfliers = False, order= co_order, 
+                    medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+                    boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+#                   boxprops={"color": color, "linewidth": 0.5},
+                    whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+                    capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2})
+                    # scaley = scaley)
+                    
+    if stressBoxPlot == 2:
+        sns.boxplot(x=condCol, y='allH0_H0', data=data_ff, ax=ax, 
+                    width = 0.5, showfliers = False, order= co_order, 
+                    medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
+                    boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+#                   boxprops={"color": color, "linewidth": 0.5},
+                    whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
+                    capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
+                    # scaley = scaley)
+                
+    if stats:
+        if len(box_pairs) == 0:
+            box_pairs = makeBoxPairs(co_order)
+        addStat_df(ax, data_ff, box_pairs, Parameters[k], CondCol, test = statMethod)
+    
+    sns.swarmplot(x=condCol, y='allH0_H0', data=data_ff, ax=ax, order = co_order)
+
+    ax.set_xlabel('')
+    ax.set_ylabel('H0 (nm)')
+    ax.tick_params(axis='x', labelrotation = 10)
+    ax.yaxis.grid(True)
+    if ax.get_yscale() == 'linear':
+        ax.set_ylim([0, ax.get_ylim()[1]])
+
+    # Make output    
+    output = (fig, ax)
+
+    return(output)
+
+
 # %%% Subfunctions
-
-
 
 def getDictAggMean(df):
     dictAggMean = {}
@@ -2890,7 +3046,7 @@ print(Ncomp)
 plt.show()
 
 
-# %%%% >>> OPTION 3 - OLIVIA'S IDEA
+# %%%% First K(s) curves
 
 # %%%%% Make the dataframe
 
@@ -3952,6 +4108,7 @@ plt.show()
 
 
 data_main = MecaData_Drugs
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
 
 fitType = 'stressRegion'
 fitId = '250_100'
@@ -3972,7 +4129,7 @@ Filters = [(data['validatedThickness'] == True),
 
 co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
 
-fig, ax = D1Plot(data, CondCol=['drug'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
+fig, ax = D1Plot(data, CondCols=['drug'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=co_order, 
                 AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
                 figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
@@ -3990,6 +4147,49 @@ renameAxes(ax, renameDict1)
 fig.suptitle('3T3aSFL & drugs\nPreliminary data')
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
+
+# %%%% Test
+
+data_main = MecaData_Drugs
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+fitType = 'stressRegion'
+fitId = '250_100'
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+valCol = 'fit_K'
+weightCol = 'fit_ciwK'
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+data_agg = taka2.computeWeightedAverage(data, valCol, weightCol, groupCol = 'cellID', Filters = Filters, weight_method = 'ciw')
+
+
+# %%%% Test_2
+
+data_main = MecaData_Drugs
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+dfH0 = taka2.getMatchingFits(data_main, fitType = 'H0', output = 'df')
+
+# %%%% Test_3
+
+data_main = MecaData_Drugs
+dates = ['22-03-28', '22-03-30'] # ['22-03-28', '22-03-30']
+data_wH0 = taka2.getAllH0InTable(data_main)
+
+Filters = [(data_main['validatedThickness'] == True),
+           (data_main['bestH0'] <= 1200),
+           (data_main['drug'].apply(lambda x : x in ['dmso'])),
+           (data_main['date'].apply(lambda x : x in dates))]
+
+fig, ax = plotAllH0(data_main, Filters = Filters, condCols = [], 
+        co_order = [], box_pairs = [], AvgPerCell = True,
+        stats = False, statMethod = 'Mann-Whitney', stressBoxPlot = 2)
+
+plt.show()
+
 
 
 # %%%% K(s) for MCA3
