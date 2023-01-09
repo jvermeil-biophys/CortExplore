@@ -39,7 +39,6 @@ from cycler import cycler
 from datetime import date
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
-from sklearn.linear_model import LinearRegression
 
 
 #### Local Imports
@@ -2149,7 +2148,8 @@ class IndentCompression:
 
         """
         
-        d = {'CompNum':[],
+        d = {'cellID':[],
+             'compNum':[],
              'method':[],
              'zone':[],
              'H0':[],
@@ -2161,13 +2161,15 @@ class IndentCompression:
             if k.startswith('H0'):
                 infos = k.split('_') # k = method_zoneType_zoneVal
                 if infos[1] in ['Chadwick', 'Dimitriadis']:
-                    CompNum = self.i_indent
+                    cellID  = self.cellID
+                    compNum = self.i_indent + 1
                     method = infos[1]
                     zone = infos[2] + '_' + infos[3]
                     H0 = self.dictH0[k]
                     nbPts = int(self.dictH0['nbPts_' + method + '_' + zone])
                     error = bool(self.dictH0['error_' + method + '_' + zone])
-                    d['CompNum'].append(CompNum)
+                    d['cellID'].append(cellID)
+                    d['compNum'].append(compNum)
                     d['method'].append(method)
                     d['zone'].append(zone)
                     d['H0'].append(H0)
@@ -3913,7 +3915,7 @@ def getMatchingFits(mecaDf, fitType = 'stressGaussian', output = 'df',
                 cellID = ufun.findInfosInFileName(f, 'cellID')
                 if cellID in listCellIDs:
                     f_path = os.path.join(src_path, f)
-                    df = pd.read_csv(f_path, sep=None, engine='python')
+                    df = pd.read_csv(f_path, sep=';')
                     if filter_fitID != None:
                         fltr = df['id'].apply(lambda x : re.match(filter_fitID, x) != None)
                         df = df[fltr]
@@ -3997,6 +3999,133 @@ def getFitsInTable(mecaDf, fitType = 'stressGaussian', filter_fitID = None):
     mergedDf = ufun.removeColumnsDuplicate(mergedDf)
     
     return(mergedDf)
+
+
+def getAllH0InTable(mecaDf):
+    """
+    Merge a mecaDf with the H0 table, by calling getMatchingFits().
+    
+    Parameters
+    ----------
+    mecaDf : pandas.DataFrame
+        A table returned by getMergedTable
+      
+    Returns
+    -------
+    mergedDf
+        The resulting merged DataFrame
+    """
+    
+    fitsDf = getMatchingFits(mecaDf, fitType = 'H0', filter_fitID = None, output = 'df')
+    mergeCols = ['cellID', 'compNum']
+    rd = {c : 'allH0_' + c for c in fitsDf.columns if c not in mergeCols}
+    fitsDf = fitsDf.rename(columns = rd) 
+    mergedDf = pd.merge(mecaDf, fitsDf, how="left", on=mergeCols, suffixes=("_x", "_y"),
+    #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
+    #     copy=True,indicator=False,validate=None,
+    )
+        
+    mergedDf = ufun.removeColumnsDuplicate(mergedDf)
+    
+    return(mergedDf)
+
+
+def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filters = [], weight_method = 'ciw'):
+    """
+    
+    
+    Parameters
+    ----------
+    mecaDf : pandas.DataFrame
+        A table returned by 
+        
+    valCol
+    
+    
+    weightCol
+    
+    
+    groupCol
+    
+    
+    method = 'ciw' | 'weight'
+        
+    
+      
+    Returns
+    -------
+    mecaDf
+        The resulting DataFrame
+    """
+    
+    wAvgCol = valCol + '_wAvg'
+    wVarCol = valCol + '_wVar'
+    wStdCol = valCol + '_wStd'
+    wSteCol = valCol + '_wSte'
+    
+    if len(Filters) > 0:
+        global_filter = Filters[0]
+        for fltr in Filters[1:]:
+            global_filter = global_filter & fltr
+        mecaDf = mecaDf[global_filter]
+    
+    # 1. Compute the weights if necessary
+    if weight_method == 'ciw':
+        ciwCol = weightCol
+        weightCol = valCol + '_weight'
+        mecaDf[weightCol] = (mecaDf[valCol]/mecaDf[ciwCol])**2
+    
+    mecaDf = mecaDf.dropna(subset = [weightCol])
+    
+    # 2. Group and average
+    
+    groupColVals = mecaDf[groupCol].unique()
+    
+    #### NOTE
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    mecaDf['A'] = mecaDf[valCol] * mecaDf[weightCol]
+    grouped1 = mecaDf.groupby(by=[groupCol])
+    data_agg = grouped1.agg({'A': ['count', 'sum'], weightCol: 'sum'}).reset_index()
+    data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
+    data_agg[wAvgCol] = data_agg['A_sum']/data_agg[weightCol + '_sum']
+    data_agg = data_agg.rename(columns = {groupCol + '_' : groupCol, 'A_count' : 'count'})
+    
+    # Compute the weighted std
+    mecaDf['B'] = mecaDf[valCol]
+    for co in groupColVals:
+        weighted_avg_val = data_agg.loc[(data_agg[groupCol] == co), wAvgCol].values[0]
+        index_loc = (mecaDf[groupCol] == co)
+        col_loc = 'B'
+        
+        mecaDf.loc[index_loc, col_loc] = mecaDf.loc[index_loc, valCol] - weighted_avg_val
+        mecaDf.loc[index_loc, col_loc] = mecaDf.loc[index_loc, col_loc] ** 2
+            
+    mecaDf['C'] = mecaDf['B'] * mecaDf[weightCol]
+    grouped2 = mecaDf.groupby(by=[groupCol])
+    data_agg2 = grouped2.agg({'C': 'sum', weightCol: 'sum'}).reset_index()
+    data_agg2[wVarCol] = data_agg2['C']/data_agg2[weightCol]
+    data_agg2[wStdCol] = data_agg2[wVarCol]**0.5
+    
+    
+    # Combine all in data_agg
+    data_agg[wVarCol] = data_agg2[wVarCol]
+    data_agg[wStdCol] = data_agg2[wStdCol]
+    data_agg[wSteCol] = data_agg[wStdCol] / data_agg['count']**0.5
+    
+    data_agg = data_agg.drop(columns = ['A_sum', weightCol + '_sum'])
+    
+    return(data_agg)
+    
         
         
 
