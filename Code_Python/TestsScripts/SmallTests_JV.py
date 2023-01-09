@@ -7,6 +7,30 @@ Created on Thu Nov 25 13:37:51 2021
 
 # %%
 
+import numpy as np
+import pandas as pd
+import UtilityFunctions as ufun
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l']}
+
+df = pd.DataFrame(d)
+
+valCol = 'grade'
+weightCol = 'coeff'
+groupCols = ufun.toList('course')
+wAvgCol = valCol + '_wAvg'
+
+df['A'] = df[valCol] * df[weightCol]
+grouped1 = df.groupby(by=groupCols)
+data_agg = grouped1.agg({'A': ['count', 'sum'], 
+                         weightCol: 'sum'}).reset_index()
+data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
+
+
+# %%
+
 # 1. Imports
 import numpy as np
 import pandas as pd
