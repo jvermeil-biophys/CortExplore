@@ -205,9 +205,16 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileN
 
 # %%%% Drugs
 
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_15', 'pts_20', '%f_5', '%f_10', '%f_15', '%f_20', '%f_25'],
+                'method_bestH0':'Dimitriadis',
+                'zone_bestH0':'%f_15',
+                }
+
 drugTask = '22-03-28 & 22-03-30 & 22-11-23'
-res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs', 
-                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs', 
+                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
 
 # %%%% Non-Lin
 
