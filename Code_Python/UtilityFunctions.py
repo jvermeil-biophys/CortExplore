@@ -1331,6 +1331,17 @@ class MultiChoiceBox(Qtw.QMainWindow):
                 
             self.quit_button()
             
+    def location_on_the_screen(self):
+        ag = Qtw.QDesktopWidget().availableGeometry()
+        # sg = Qtw.QDesktopWidget().screenGeometry()
+
+        widget = self.geometry()
+        # x = ag.width() - widget.width()
+        # y = 2 * ag.height() - sg.height() - widget.height()
+        x = int(0.15*ag.width())
+        y = int(0.4*ag.height())
+        self.move(x, y)
+            
     def error_dialog(self):
         dlg = Qtw.QMessageBox(self)
         dlg.setWindowTitle("Error")
@@ -1340,6 +1351,9 @@ class MultiChoiceBox(Qtw.QMainWindow):
     def quit_button(self):
         Qtw.QApplication.quit()
         self.close()
+        
+    def closeEvent(self, event):
+        Qtw.QApplication.quit()
 
 
 def makeMultiChoiceBox(choicesDict):
@@ -1371,6 +1385,7 @@ def makeMultiChoiceBox(choicesDict):
     
     app = Qtw.QApplication(sys.argv)
     MCBox = MultiChoiceBox(choicesDict)
+    MCBox.location_on_the_screen()
     MCBox.show()
     app.exec()
     
@@ -1379,8 +1394,8 @@ def makeMultiChoiceBox(choicesDict):
 
 
 
-# choicesDict = {'Is the cell ok?' : ['Yes', 'No'],
-#                'Is the nucleus visible?' : ['Yes', 'No'],}
+# choicesDict = {'Is the cell ok?' : ['Yes', 'No', 'peanut butter jelly!'],
+#                 'Is the nucleus visible?' : ['Yes', 'No', 'banana!'],}
 # answersDict = makeMultiChoiceBox(choicesDict)
 
 

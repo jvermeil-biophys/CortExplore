@@ -39,7 +39,6 @@ from cycler import cycler
 from datetime import date
 from scipy.optimize import curve_fit
 from scipy.signal import savgol_filter
-from sklearn.linear_model import LinearRegression
 
 
 #### Local Imports
