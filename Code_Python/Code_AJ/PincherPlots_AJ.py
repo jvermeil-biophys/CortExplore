@@ -45,7 +45,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
-import TrackAnalyser_dev_AJ as tka
+import TrackAnalyser_dev2_AJ as tka
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -174,17 +174,17 @@ tka.computeGlobalTable_meca(task = Task, fileName = 'Global_MecaData_AJ2',
 
  # %%%% Precise dates (to plot)
 
-date = '22-05-31 & 22-06-21' # For instance '22-03-30 & '22-03-31'
-tka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ1', 
+date = '22-10-06' # For instance '22-03-30 & '22-03-31'
+tka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ_22-10-06_V2', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
  # %%%% Precise dates (to plot)
 
 date = '22-08-26' # For instance '22-03-30 & '22-03-31'
-taka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_AJ_22-08-26', 
+taka.computeGlobalTable_meca(task = date, fileName = 'Global_MecaData_'+date, 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
-# %%%% Display
+  # %%%% Display
 
 # df = aja.getGlobalTable_meca('Global_MecaData_Py2').tail()
 
@@ -232,7 +232,7 @@ df = tka.getFluoData().head()
 
 #### GlobalTable_meca_Py
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06')
 GlobalTable_meca.head()
 
 
@@ -1008,7 +1008,7 @@ for (cell, i) in zip(allCellsDf, plotDf.index):
 #%%
 
 K = 'K2'
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06_V2')
 GlobalTable_meca.head()
 
 plotDf2 = {'cellID': [],
@@ -1300,27 +1300,25 @@ cD = {'atBeadsBefore':[gs.colorList40[12], gs.colorList40[12]],
       'globalBefore': [gs.colorList40[14], gs.colorList40[14]],
       'globalActivated': [gs.colorList40[34], gs.colorList40[34]]}
 
-
-
 dfValid = GlobalTable_meca
 plotDf2 = GlobalTable_meca
 
 #%%
 # plt.style.use('dark_background')
 
-GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-12-07')
+GlobalTable_meca = tka.getGlobalTable(kind = 'Global_MecaData_AJ_22-10-06_V2')
 
 GlobalTable_meca = GlobalTable_meca[(GlobalTable_meca['manipID'].str.contains('M1')) | (GlobalTable_meca['manipID'].str.contains('M5'))]
 
-# excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
-#             '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9', '22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
-#                         '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
-#                         '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
+excluded = ['22-10-06_M6_P3_C5','22-10-06_M6_P3_C7', '22-10-06_M5_P3_C5', '22-10-06_M5_P3_C7', \
+            '22-10-06_M5_P3_C9', '22-10-06_M6_P3_C9', '22-10-06_M2_P1_C4', '22-10-06_M1_P1_C4', '22-10-06_M2_P1_C5', '22-10-06_M1_P1_C5', \
+                        '22-10-06_M2_P2_C5', '22-10-06_M1_P2_C5', '22-10-06_M1_P2_C7', '22-10-06_M1_P2_C8'\
+                        '22-10-06_M2_P2_C7', '22-10-06_M2_P2_C8']
     
 
 
-# for i in excluded:
-#     plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
+for i in excluded:
+    plotDf2 = plotDf2[plotDf2['cellID'].str.contains(i) == False]
 
 # conditions = ['M1', 'M3', 'M5']
 # conditions = ['M2', 'M6']
@@ -1332,11 +1330,11 @@ GlobalTable_meca = GlobalTable_meca[(GlobalTable_meca['manipID'].str.contains('M
 # conditions = ['M1']
 
 # conditions = ['M1', 'M2', 'M3', 'M4', 'M5']
-conditions = ['M4', 'M5']
+conditions = ['M5', 'M6']
 
 plotDf = plotDf2
 
-cD = {'M4':[gs.colorList40[8], gs.colorList40[8]],
+cD = {'M6':[gs.colorList40[8], gs.colorList40[8]],
          #'M2':[gs.colorList40[28], gs.colorList40[28]],
        # 'M7':[gs.colorList40[10], gs.colorList40[10]],
         #'M8':[gs.colorList40[30], gs.colorList40[30]],
@@ -1484,7 +1482,7 @@ plt.show()
 #%%
 #### Local zoom
 
-Sinf, Ssup = 150, 400
+Sinf, Ssup = 250, 400
 extraFilters = [plotDf2['minStress'] <= Sinf, plotDf2['maxStress'] >= Ssup] # >= 800
 fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
 fitWidth = np.array([[int(w) for S in fitCenters] for w in fitW]).flatten()

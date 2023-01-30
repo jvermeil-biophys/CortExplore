@@ -288,6 +288,8 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     #### 3.1 Make 'manipID'
     expDf['manipID'] = expDf['date'] + '_' + expDf['manip']
     
+    
+    
     #### 3.2 Make 'first time point'
     dict_firstTimePoint = {}
     unique_dates = expDf.date.unique()
@@ -1202,7 +1204,7 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
         - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday.
         - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir.
     
-    2. Backup save (optionnal). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
+    2. Backup save (optional). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
         - If 'strict', this function will attempt to do a cloud save not matter what.
         - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save.
         - If 'none', this function will not do a cloud save.

@@ -1529,7 +1529,6 @@ class CellCompression:
         dictColumnsMeca = {'date':'',
                            'cellName':'',
                            'cellID':'',
-                           'cellCode':'',
                            'manipID':'',
                            'compNum':np.nan,
                            'compDuration':'',
@@ -1618,7 +1617,6 @@ class CellCompression:
             results['manipID'][i] = ufun.findInfosInFileName(self.cellID, 'manipID')
             results['cellName'][i] = ufun.findInfosInFileName(self.cellID, 'cellName')
             results['cellID'][i] = self.cellID
-            results['cellCode'][i] = '_'.join(self.cellID.split('_')[-2:])
             results['compNum'][i] = i+1
             
             # Time-related
@@ -1955,7 +1953,8 @@ class IndentCompression:
             k += 1
         offsetStart = k
         
-        jStart = offsetStart # Beginning of compression
+        #### HARD WRITTEN OFFSET ??
+        jStart = offsetStart + 0 # Beginning of compression
         jStop = self.rawDf.shape[0] - offsetStop # End of relaxation
         
         # Better compressions arrays
@@ -2070,6 +2069,7 @@ class IndentCompression:
             thresh = (int(zoneVal)/100.) * np.max(pseudoDelta)
             mask = (pseudoDelta < thresh)
         else:
+            print(gs.ORANGE + 'Chosen H0 computation mode was not recognised!' + gs.NORMAL)
             mask = np.ones_like(self.hCompr, dtype = bool)
         
         if method == 'Chadwick':
@@ -2146,7 +2146,8 @@ class IndentCompression:
 
         """
         
-        d = {'CompNum':[],
+        d = {'cellID':[],
+             'compNum':[],
              'method':[],
              'zone':[],
              'H0':[],
@@ -2158,13 +2159,15 @@ class IndentCompression:
             if k.startswith('H0'):
                 infos = k.split('_') # k = method_zoneType_zoneVal
                 if infos[1] in ['Chadwick', 'Dimitriadis']:
-                    CompNum = self.i_indent
+                    cellID  = self.cellID
+                    compNum = self.i_indent + 1
                     method = infos[1]
                     zone = infos[2] + '_' + infos[3]
                     H0 = self.dictH0[k]
                     nbPts = int(self.dictH0['nbPts_' + method + '_' + zone])
                     error = bool(self.dictH0['error_' + method + '_' + zone])
-                    d['CompNum'].append(CompNum)
+                    d['cellID'].append(cellID)
+                    d['compNum'].append(compNum)
                     d['method'].append(method)
                     d['zone'].append(zone)
                     d['H0'].append(H0)
@@ -3162,7 +3165,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     #### 0.3 Plots
     plotSettings = ufun.updateDefaultSettingsDict(plotSettings, 
                                                   DEFAULT_plotSettings)
+
     plotSettings['subfolder_suffix'] = taskName
+
 
 
     
@@ -4034,7 +4039,6 @@ def getAllH0InTable(mecaDf, fitsSubDir = ''):
     
     return(mergedDf)
 
-  
   
   
   

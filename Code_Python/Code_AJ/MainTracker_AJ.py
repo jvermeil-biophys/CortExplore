@@ -556,7 +556,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : Global activation, 60s frequency
 
 dates = '22.06.21'
-manips, wells, cells = 3, 1, 'all'
+manips, wells, cells = 3, 3, 'all'
 depthoNames = '22.06.21_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -1024,31 +1024,31 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 
 # %%%% M3 : 
 dates = '22.12.07'
-manips, wells, cells = 3, 2, 'all'
+manips, wells, cells = 3, 2, 2
 depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M4 :
 
 dates = '22.12.07'
-manips, wells, cells = 4, 3, 'all'
+manips, wells, cells = 4, 3, 3
 depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M5 :
 
 dates = '22.12.07'
-manips, wells, cells = 5, 3, 'all'
+manips, wells, cells = 5, 3, 17
 depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 #%% Deptho from experiment 21-04-21. Experiments from Filipe
@@ -1063,3 +1063,46 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
+#%% Deptho from experiment 23-01-23. Mechanics experiment with low expressing cells
+# to see if there's a different between normal population cells, even without activation.
+#Using Strep beads + 10X mPEG-Biot
+
+# %%%% M1 : 
+
+dates = '23.01.23'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.01.23_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.01.23'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.01.23_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.01.23'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '23.01.23_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : 
+
+dates = '23.01.23'
+manips, wells, cells = 4, 3, 6
+depthoNames = '23.01.23_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')

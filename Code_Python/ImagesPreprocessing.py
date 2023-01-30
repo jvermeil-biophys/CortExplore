@@ -46,12 +46,13 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '22.12.07'
+date = '23.01.18'
 DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'E:/CortexExperiments/20221207_3t3optorhoa-Y27_100x_4.5StreptBeads_Mechanics/' + date
+DirExt = 'E:/CortexExperiments/20230118_3t3optorhoa-lowExpressing_100x_4.5StreptBeads_Mechanics/' + date
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'
+
 
 #%% Define parameters # Jojo
 
@@ -453,7 +454,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 11
+limiter = 24
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

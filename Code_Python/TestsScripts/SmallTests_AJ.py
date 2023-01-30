@@ -21,8 +21,17 @@ D = {'subject': ['physics', 'hindi', 'english', 'sport',
      'coefficient':[1,1,1,1,2,3,2,3,6,5,7,6,8,7,9,10]}
 
 df = pd.DataFrame(D)
+df['A'] = df['grades']*df['coefficient']
 
 group_by_subject = df.groupby(by = 'subject')
 
-df_average = group_by_subject.agg({'grades':['mean', 'std', 'count', 'sum'], 
-                                   'teacher':'first'})
+df_step1 = group_by_subject.agg({'grades':'mean',
+                                 'A':'sum', 
+                                 'coefficient':'sum', 
+                                 'teacher':'first'})
+df_step1 = df_step1.rename(columns = {'A':'A_sum', 
+                                 'coefficient':'coefficient_sum',
+                                 'grades':'normal_mean'})
+
+df_step1['weighted_mean'] = df_step1['A_sum'] / df_step1['coefficient_sum']
+
