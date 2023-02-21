@@ -125,6 +125,7 @@ def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
             
     return excludedCells
         
+
 def renamePrefix(DirExt, currentCell, newPrefix):
     """
     Used for metamorph created files.
@@ -418,6 +419,18 @@ def findInfosInFileName(f, infoType):
                 i += 1
                 infoString += f[i]
                 
+        elif infoType in ['M_float', 'P_float', 'C_float']:
+            acceptedChar = [str(i) for i in range(10)] + ['-']
+            string = '_' + infoType[0]
+            iStart = re.search(string, f).end()
+            i = iStart
+            infoString = '' + f[i]
+            while f[i+1] in acceptedChar and i < len(f)-1:
+                i += 1
+                infoString += f[i]
+            infoString = infoString.replace('-', '.')
+            infoString = float(infoString)
+                
         elif infoType == 'date':
             datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
             date = f[datePos.start():datePos.end()]
@@ -526,6 +539,9 @@ def isFileOfInterest(f, manips, wells, cells):
     * manips = [1, 2], wells = 'all', cells = 'all' -> the function return True.
     * manips = [1, 2], wells = 2, cells = 'all' -> the function return False.
     * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return True.
+    Example2 : if f = '21-01-18_M2_P1_C8-1.tif'
+    * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return False.
+    * manips = [1, 2], wells = 1, cells = [5, 6, 7, '8-1'] -> the function return True.
     Note : if manips = 'all', the code will consider that wells = 'all', cells = 'all'.
            if wells = 'all', the code will consider that cells = 'all'.
            This means you can add filters only in this order : manips > wells > cells.
@@ -533,10 +549,15 @@ def isFileOfInterest(f, manips, wells, cells):
     test = False
     testM, testP, testC = False, False, False
     
+    listManips, listWells, listCells = toListOfStrings(manips), toListOfStrings(wells), toListOfStrings(cells)
+    
     try:
-        fM = int(findInfosInFileName(f, 'M'))
-        fP = int(findInfosInFileName(f, 'P'))
-        fC = int(findInfosInFileName(f, 'C'))
+        # fM = int(findInfosInFileName(f, 'M'))
+        # fP = int(findInfosInFileName(f, 'P'))
+        # fC = int(findInfosInFileName(f, 'C'))
+        fM = (findInfosInFileName(f, 'M'))
+        fP = (findInfosInFileName(f, 'P'))
+        fC = (findInfosInFileName(f, 'C'))
     except:
         return(False)
         
@@ -544,11 +565,11 @@ def isFileOfInterest(f, manips, wells, cells):
     # print(manips, wells, cells)
     # print(toList(manips), toList(wells), toList(cells))
     
-    if (manips == 'all') or (fM in toList(manips)):
+    if (manips == 'all') or (fM in listManips):
         testM = True
-    if (wells == 'all') or (fP in toList(wells)):
+    if (wells == 'all') or (fP in listWells):
         testP = True
-    if (cells == 'all') or (fC in toList(cells)):
+    if (cells == 'all') or (fC in listCells):
         testC = True
         
     if testM and testP and testC:
@@ -685,6 +706,43 @@ def updateDefaultSettingsDict(settingsDict, defaultSettingsDict):
     for k in settingsDict.keys():
         newSettingsDict[k] = settingsDict[k]
     return(newSettingsDict)
+
+
+
+def flattenPandasIndex(pandasIndex):
+    """
+    Flatten a multi-leveled pandas index.
+
+    Parameters
+    ----------
+    pandasIndex : pandas MultiIndex
+        Example: MultiIndex([('course', ''),('A', 'count'),('A', 'sum'),( 'coeff', 'sum')])
+
+    Returns
+    -------
+    new_pandasIndex : list that can be reasigned as a flatten index.
+        In the former example: new_pandasIndex = ['course', 'A_count', 'A_sum', 'coeff_sum']
+        
+    Example
+    -------
+    >>> data_agg.columns
+    >>> Out: MultiIndex([('course',      ''),
+    >>>                 (     'A', 'count'),
+    >>>                 (     'A',   'sum'),
+    >>>                 ( 'coeff',   'sum')],
+    >>>                )
+    >>> data_agg.columns = flattenPandasIndex(data_agg.columns)
+    >>> data_agg.columns
+    >>> Out: Index(['course', 'A_count', 'A_sum', 'coeff_sum'], dtype='object')
+
+    """
+    new_pandasIndex = []
+    for idx in pandasIndex:
+        new_idx = '_'.join(idx)
+        while new_idx[-1] == '_':
+            new_idx = new_idx[:-1]
+        new_pandasIndex.append(new_idx)
+    return(new_pandasIndex)
 
 
 # %%% File manipulation
@@ -1138,6 +1196,26 @@ def toList(x):
             return(x) # return : x itself
         else: # x is not a Collection : probably a number or a boolean
             return([x]) # return : [x]
+        
+def toListOfStrings(x):
+    """
+    if x is a list, return x with all elements converted to string
+    if x is not a list, return ['x']
+    
+    Reference
+    ---------
+    https://docs.python.org/3/library/collections.abc.html
+    """
+    t1 = isinstance(x, str) # Test if x is a string
+    if t1: # x = 'my_string'
+        return([x]) # return : ['my_string']
+    else:
+        t2 = isinstance(x, Collection) # Test if x is a Collection
+        if t2: # x = [1,2,3] or x = array([1, 2, 3]) or x = {'k1' : v1}
+            xx = [str(xi) for xi in x]
+            return(xx) # return : x itself
+        else: # x is not a Collection : probably a number or a boolean
+            return([str(x)]) # return : [x]
         
 # def toList_V0(x):
 #     """
