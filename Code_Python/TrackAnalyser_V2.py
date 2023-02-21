@@ -1531,6 +1531,7 @@ class CellCompression:
                            'manipID':'',
                            'compNum':np.nan,
                            'compDuration':'',
+                           'totalDuration':np.nan,
                            'compStartTime':np.nan,
                            'compAbsStartTime':np.nan,
                            'compStartTimeThisDay':np.nan,
@@ -1596,6 +1597,7 @@ class CellCompression:
             results[k] = [dictColumnsMeca[k] for i in range(N)]
         
         # currentCellID = self.cellID
+        totalDuration = np.max(self.tsDf['T'].values)
         ctFieldH = (self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'D3'].values - self.DIAMETER)
         ctFieldThickness   = np.median(ctFieldH)
         ctFieldMinThickness = np.min(ctFieldH)
@@ -1621,6 +1623,7 @@ class CellCompression:
             # Time-related
             date_T0 = self.expDf.at[self.expDf.index.values[0], 'date_T0']
             results['compDuration'][i] = self.expDf.at[self.expDf.index.values[0], 'compression duration']
+            results['totalDuration'][i] = totalDuration
             results['compStartTime'][i] = IC.rawDf['T'].values[0]
             results['compAbsStartTime'][i] = IC.rawDf['Tabs'].values[0]
             results['compStartTimeThisDay'][i] = IC.rawDf['Tabs'].values[0] - date_T0
@@ -2486,7 +2489,13 @@ class IndentCompression:
                 if (not self.error_bestH0) and (method not in ['NaiveMax']):
                     max_h = np.max(self.hCompr)
                     high_h = np.linspace(max_h, bestH0, 20)
-                    low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    if self.method_bestH0 == 'Dimitriadis':
+                        low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    elif self.method_bestH0 == 'Chadwick':
+                        # chadwickModel(h, E, H0, DIAMETER)
+                        low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    else:
+                        low_f = np.ones_like(high_h) * bestH0
                     
                     legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
                     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
@@ -3051,7 +3060,7 @@ DEFAULT_fitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
                        'zones_H0':['%f_10', '%f_20'],
                        'method_bestH0':'Dimitriadis',
-                       'zone_bestH0':'%f_20',
+                       'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
                        'doDimitriadisFit' : False,
@@ -4030,13 +4039,13 @@ def getAllH0InTable(mecaDf):
     return(mergedDf)
 
 
-def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filters = [], weight_method = 'ciw'):
+def computeWeightedAverage(df, valCol, weightCol, groupCol = 'cellId', Filters = [], weight_method = 'ciw'):
     """
     
     
     Parameters
     ----------
-    mecaDf : pandas.DataFrame
+    df : pandas.DataFrame
         A table returned by 
         
     valCol
@@ -4054,7 +4063,7 @@ def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filte
       
     Returns
     -------
-    mecaDf
+    df
         The resulting DataFrame
     """
     
@@ -4067,21 +4076,20 @@ def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filte
         global_filter = Filters[0]
         for fltr in Filters[1:]:
             global_filter = global_filter & fltr
-        mecaDf = mecaDf[global_filter]
+        df = df[global_filter]
     
     # 1. Compute the weights if necessary
     if weight_method == 'ciw':
         ciwCol = weightCol
         weightCol = valCol + '_weight'
-        mecaDf[weightCol] = (mecaDf[valCol]/mecaDf[ciwCol])**2
+        df[weightCol] = (df[valCol]/df[ciwCol])**2
     
-    mecaDf = mecaDf.dropna(subset = [weightCol])
+    df = df.dropna(subset = [weightCol])
     
     # 2. Group and average
     
-    groupColVals = mecaDf[groupCol].unique()
-    
-    #### NOTE
+    groupColVals = df[groupCol].unique()
+
     # In the following lines, the weighted average and weighted variance are computed
     # using new columns as intermediates in the computation.
     #
@@ -4093,25 +4101,25 @@ def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filte
     # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
     
     # Compute the weighted mean
-    mecaDf['A'] = mecaDf[valCol] * mecaDf[weightCol]
-    grouped1 = mecaDf.groupby(by=[groupCol])
+    df['A'] = df[valCol] * df[weightCol]
+    grouped1 = df.groupby(by=[groupCol])
     data_agg = grouped1.agg({'A': ['count', 'sum'], weightCol: 'sum'}).reset_index()
-    data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
+    data_agg.columns = ufun.flattenPandasIndex(data_agg.columns)
     data_agg[wAvgCol] = data_agg['A_sum']/data_agg[weightCol + '_sum']
-    data_agg = data_agg.rename(columns = {groupCol + '_' : groupCol, 'A_count' : 'count'})
+    data_agg = data_agg.rename(columns = {'A_count' : 'count_wAvg'})
     
     # Compute the weighted std
-    mecaDf['B'] = mecaDf[valCol]
+    df['B'] = df[valCol]
     for co in groupColVals:
         weighted_avg_val = data_agg.loc[(data_agg[groupCol] == co), wAvgCol].values[0]
-        index_loc = (mecaDf[groupCol] == co)
+        index_loc = (df[groupCol] == co)
         col_loc = 'B'
         
-        mecaDf.loc[index_loc, col_loc] = mecaDf.loc[index_loc, valCol] - weighted_avg_val
-        mecaDf.loc[index_loc, col_loc] = mecaDf.loc[index_loc, col_loc] ** 2
+        df.loc[index_loc, col_loc] = df.loc[index_loc, valCol] - weighted_avg_val
+        df.loc[index_loc, col_loc] = df.loc[index_loc, col_loc] ** 2
             
-    mecaDf['C'] = mecaDf['B'] * mecaDf[weightCol]
-    grouped2 = mecaDf.groupby(by=[groupCol])
+    df['C'] = df['B'] * df[weightCol]
+    grouped2 = df.groupby(by=[groupCol])
     data_agg2 = grouped2.agg({'C': 'sum', weightCol: 'sum'}).reset_index()
     data_agg2[wVarCol] = data_agg2['C']/data_agg2[weightCol]
     data_agg2[wStdCol] = data_agg2[wVarCol]**0.5
@@ -4120,7 +4128,7 @@ def computeWeightedAverage(mecaDf, valCol, weightCol, groupCol = 'cellId', Filte
     # Combine all in data_agg
     data_agg[wVarCol] = data_agg2[wVarCol]
     data_agg[wStdCol] = data_agg2[wStdCol]
-    data_agg[wSteCol] = data_agg[wStdCol] / data_agg['count']**0.5
+    data_agg[wSteCol] = data_agg[wStdCol] / data_agg['count_wAvg']**0.5
     
     data_agg = data_agg.drop(columns = ['A_sum', weightCol + '_sum'])
     

@@ -24,6 +24,7 @@ import os
 import sys
 import time
 import random
+import numbers
 import warnings
 import itertools
 import matplotlib
@@ -164,11 +165,11 @@ plt.rcParams['axes.prop_cycle'] = defaultColorCycle
 
 # cellID = '22-01-12_M2_P1_C3'
 # cellID = '22-01-12_M1_P1_C6'
-cellID = '22-03-21_M3_P1_C1_sin5-3_1Hz'
+cellID = '22-03-21_M3_P1_C1_sin5-3_2Hz'
 fromPython = True
 
 X = 'T'
-Y = np.array(['B', 'F'])
+
 units = np.array([' (mT)', ' (pN)'])
 tSDF = taka.getCellTimeSeriesData(cellID, fromPython)
 
@@ -181,21 +182,18 @@ fig, ax = plt.subplots(1,1, figsize = (10,5))
 if not tSDF.size == 0:
 #         plt.tight_layout()
 #         fig.show() # figsize=(20,20)
-    tsDFplot = tSDF #[(tSDF['T']>=3.04) & (tSDF['T']<=6.05)]
+    tsDFplot = tSDF[(tSDF['T']>=3.0) & (tSDF['T']<=6)]
     
     ax.plot(tsDFplot['T'], 1000*(tsDFplot['D3']-4.503), color = gs.colorList40[30], label = 'Thickness')
     ax.set_ylabel('Thickness (nm)', color = gs.colorList40[30])
-    # ax.set_ylim([0, 350])
+    ax.set_ylim([700, 980])
     ax.set_xlabel('Time (s)')
 
     axR = ax.twinx()
     axR.plot(tsDFplot['T'], tsDFplot['F'], color = gs.colorList40[23], label = 'Force')
     axR.set_ylabel('Force (pN)', color = gs.colorList40[23])
-    # axR.set_ylim([0, 150])
-
-    # axes = tSDF[(tSDF['T']>=20) & (tSDF['T']<=60)].plot(x=X, y=Y, kind='line', 
-    #                 subplots=True, sharex=True, sharey=False,
-    #                 figsize=(4,4), use_index=True)
+    axR.set_ylim([0, 150])
+    
     
     # plt.gcf().tight_layout()
     # for i in range(len(Y)):
@@ -211,9 +209,13 @@ if not tSDF.size == 0:
     # axes[1].legend().set_visible(False)
     # axes[1].set_xticks([0,10,20,30,40])
     # axes[1].tick_params(axis='x', labelrotation = 0, labelsize = 10)
+    
+    fig.suptitle('2Hz oscillations')
     plt.gcf().show()
 else:
     print('cell not found')
+    
+
 # plt.rcParams['axes.prop_cycle'] = defaultColorCycle
 
 # %%% Variation on the plotCellTimeSeriesData -> Broken Ramp
@@ -412,11 +414,16 @@ renameDict1 = {# Variables
 styleDict1 =  {# Drugs
                'none':{'color': gs.colorList40[10],'marker':'o'},
                'dmso':{'color': gs.colorList40[11],'marker':'o'},
-               'blebbistatin':{'color': gs.colorList40[12],'marker':'o'},
+               'blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
                'latrunculinA':{'color': gs.colorList40[13],'marker':'o'},
+               'dmso & 0.0':{'color': gs.colorList40[11],'marker':'o'},
+               'blebbistatin & 50.0':{'color': gs.colorList40[22],'marker':'o'},
+               'latrunculinA & 0.5':{'color': gs.colorList40[13],'marker':'o'},
+               'latrunculinA & 2.5':{'color': gs.colorList40[33],'marker':'o'},
                # Cell types
-               '3T3':{'color': gs.colorList40[31],'marker':'o'},
+               '3T3':{'color': gs.colorList40[30],'marker':'o'},
                'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
+               'DC':{'color': gs.colorList40[33],'marker':'o'},
                }
 
 splitterStyleDict_MCA = {'high':'^',
@@ -429,7 +436,7 @@ splitterStyleDict_MCA = {'high':'^',
 
 # %%%% Main plots
 
-def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[], 
+def D1Plot(data, fig = None, ax = None, condCols=[], Parameters=[], Filters=[], 
            Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
            stats=True, statMethod='Mann-Whitney', box_pairs=[], 
            figSizeFactor = 1, markersizeFactor = 1, orientation = 'h',
@@ -444,24 +451,24 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
     data_filtered = data_filtered[globalFilter]
     
     # Make cond col
-    NCond = len(CondCols)
+    NCond = len(condCols)
     if NCond == 1:
-        CondCol = CondCols[0]
+        condCol = condCols[0]
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCols[i]
+            newColName += condCols[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCols[i]].astype(str)
+            data_filtered[newColName] += data_filtered[condCols[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
         
     # Define the count df
-    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', CondCol]
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condCol]
     count_df = data_filtered[cols_count_df]
 
     # Average per cell if necessary
@@ -472,18 +479,18 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
         data_filtered = group.agg(dictAggMean)
     
     # Sort data
-    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+    data_filtered.sort_values(condCol, axis=0, ascending=True, inplace=True)
         
     # Define the export df
     cols_export_df = ['date', 'manipID', 'cellID']
     if not AvgPerCell: 
         cols_export_df.append('compNum')
-    cols_export_df += ([CondCol] + Parameters)
+    cols_export_df += ([condCol] + Parameters)
     export_df = data_filtered[cols_export_df]
     
     # Select style
     NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique()) 
+    Conditions = list(data_filtered[condCol].unique()) 
     if len(co_order) > 0:
         if len(co_order) != len(Conditions):
             delCo = [co for co in co_order if co not in Conditions]
@@ -514,7 +521,7 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
         if Boxplot:
             if stressBoxPlot:
                 if stressBoxPlot == 2:
-                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                    sns.boxplot(x=condCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
                                 width = 0.5, showfliers = False, order= co_order, 
                                 medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
                                 boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
@@ -524,7 +531,7 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
                                 # scaley = scaley)
                                 
                 elif stressBoxPlot == 1:
-                    sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                    sns.boxplot(x=condCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
                                 width = 0.5, showfliers = False, order= co_order, 
                                 medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
                                 boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
@@ -533,7 +540,7 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
                                 capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2})
                                 # scaley = scaley)
             else:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
+                sns.boxplot(x=condCol, y=Parameters[k], data=data_filtered, ax=axes[k], 
                             width = 0.5, showfliers = False, order= co_order, 
                             medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
                             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
@@ -542,16 +549,16 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
                             capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2})
                             # scaley = scaley)
             
-            # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=axes[k],showfliers = False) # linewidth = 2, width = 0.5
+            # data_filtered.boxplot(column=Parameters[k], by = condCol, ax=axes[k],showfliers = False) # linewidth = 2, width = 0.5
 
         if stats:
             if len(box_pairs) == 0:
                 box_pairs = makeBoxPairs(co_order)
-            addStat_df(axes[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
-            # add_stat_annotation(axes[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
+            addStat_df(axes[k], data_filtered, box_pairs, Parameters[k], condCol, test = statMethod)
+            # add_stat_annotation(axes[k], x=condCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
         
 
-        sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=axes[k], order = co_order,
+        sns.swarmplot(x=condCol, y=Parameters[k], data=data_filtered, ax=axes[k], order = co_order,
                       size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
 
         axes[k].set_xlabel('')
@@ -573,10 +580,161 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
     
     if returnCount > 0:
         groupByCell = count_df.groupby(cellID)
-        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
         df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
 
-        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
+        d_agg = {cellID: 'count', 'compCount': 'sum', 
+                 'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+        d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+        if returnCount == 1:
+            output += (df_CountByCond, )
+        elif returnCount == 2:
+            output += (df_CountByCond, df_CountByCell)
+
+    return(output)
+
+
+
+def D1Plot_K(data, fig = None, ax = None, condCols=[], Filters=[], AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=[], box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'log',
+            returnData = 0, returnCount = 0):
+    
+    # Filter
+    data_f = data
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for kk in range(len(Filters)):
+        globalFilter = globalFilter & Filters[kk]
+    data_f = data_f[globalFilter]
+    
+    # Make cond col
+    NCond = len(condCols)
+    if NCond == 1:
+        condCol = condCols[0]
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += condCols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_f[newColName] = ''
+        for i in range(NCond):
+            data_f[newColName] += data_f[condCols[i]].astype(str)
+            data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
+        data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
+        condCol = newColName
+        
+    # Define the id df
+    cols_data_id = ['compNum', 'cellID', 'manipID', 'date', condCol]
+    data_id = data_f[cols_data_id]
+
+    # Average per cell
+    if AvgPerCell:
+        valCol, weightCol = parm, weightParm
+        data_wAvg = taka2.computeWeightedAverage(data_f, valCol, weightCol, 
+                                     groupCol = 'cellID', weight_method = 'ciw')
+        data_id2 = data_id.groupby('cellID').agg('first')
+        data_f = pd.merge(data_id2, data_wAvg, how="inner", on='cellID', suffixes=("_x", "_y"))
+        data_f = ufun.removeColumnsDuplicate(data_f)
+        data_f = data_f.rename(columns={parm + '_wAvg' : parm})
+    
+    # Sort data
+    data_f.sort_values(condCol, axis=0, ascending=True, inplace=True)
+    print(data_f.columns)
+    # Define the export df
+    cols_export_df = ['date', 'manipID', 'cellID']
+    if not AvgPerCell: 
+        cols_export_df.append('compNum')
+    cols_export_df += ([condCol, parm])
+    export_df = data_f[cols_export_df]
+    
+    # Style & Co_order
+    conditions = list(data_f[condCol].unique()) 
+    if len(co_order) > 0:
+        if len(co_order) != len(conditions):
+            delCo = [co for co in co_order if co not in conditions]
+            for co in delCo:
+                co_order.remove(co) 
+        p = getStyleLists_Sns(co_order, styleDict)
+    else: # len(co_order) == 0
+        p = sns.color_palette()
+        co_order = conditions
+
+    # Create fig if necessary
+    if fig == None:
+        fig, ax = plt.subplots(1, 1, figsize = (3*NCond*figSizeFactor, 5))
+    else:
+        pass
+        
+    markersize = 5*markersizeFactor
+    
+    if Boxplot:
+        if stressBoxPlot == 0:
+            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2}
+            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2}
+            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2}
+            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2}
+            
+        elif stressBoxPlot == 1:
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2}
+            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 2}
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2}
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2}
+            
+        elif stressBoxPlot == 2:
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4}
+            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4}
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4}
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4}   
+            
+        sns.boxplot(x=condCol, y=parm, data=data_f, ax=ax, 
+                    width = 0.5, showfliers = False, order= co_order, 
+                    medianprops = medianprops,
+                    boxprops = boxprops,
+                    whiskerprops = whiskerprops,
+                    capprops = capprops)
+        # sns.boxplot(x=condCol, y=parm, data=data_f, ax=ax, 
+        #             width = 0.5, showfliers = False, order= co_order, 
+        #             medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+        #             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+        #             whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+        #             capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2})
+            
+    if stats:
+        if len(box_pairs) == 0:
+            box_pairs = makeBoxPairs(co_order)
+        addStat_df(ax, data_f, box_pairs, parm, condCol, test = statMethod)        
+
+    sns.swarmplot(x=condCol, y=parm, data=data_f, ax=ax, order = co_order,
+                  size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
+
+    ax.set_xlabel('')
+    ax.set_ylabel(parm)
+    ax.tick_params(axis='x', labelrotation = 10)
+    ax.yaxis.grid(True)
+    if scale == 'log':
+        ax.set_yscale('log')
+    if scale == 'lin':
+        ax.set_yscale('linear')       
+    
+    # Make output
+    
+    output = (fig, ax)
+    
+    if returnData > 0:
+        output += (export_df, )
+    
+    if returnCount > 0:
+        groupByCell = data_id.groupby(cellID)
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
         d_agg = {cellID: 'count', 'compCount': 'sum', 
                  'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
         d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
@@ -593,32 +751,33 @@ def D1Plot(data, fig = None, ax = None, CondCols=[], Parameters=[], Filters=[],
 
 
 def D2Plot_wFit(data, fig = None, ax = None, 
-                XCol='', YCol='', CondCol='', 
+                XCol='', YCol='', condCol='', 
                 Filters=[], cellID='cellID', co_order = [],
                 AvgPerCell=False, showManips = True,
                 modelFit=False, modelType='y=ax+b', writeEqn = True,
                 xscale = 'lin', yscale = 'lin', 
-                figSizeFactor = 1, markersizeFactor = 1):
+                figSizeFactor = 1, markersizeFactor = 1,
+                returnData = False):
     
     data_filtered = data
     for fltr in Filters:
         data_filtered = data_filtered.loc[fltr]
     
-    NCond = len(CondCol)    
+    NCond = len(condCol)    
     if NCond == 1:
-        CondCol = CondCol[0]
+        condCol = condCol[0]
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += condCol[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] += data_filtered[condCol[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
     
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
@@ -626,11 +785,11 @@ def D2Plot_wFit(data, fig = None, ax = None,
         data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
         data_filtered.reset_index(level=0, inplace=True)
         
-    Conditions = list(data_filtered[CondCol].unique())
+    conditions = list(data_filtered[condCol].unique())
     
     if len(co_order) > 0:
-        if len(co_order) != len(Conditions):
-            delCo = [co for co in co_order if co not in Conditions]
+        if len(co_order) != len(conditions):
+            delCo = [co for co in co_order if co not in conditions]
             for co in delCo:
                 co_order.remove(co)
                 
@@ -640,7 +799,7 @@ def D2Plot_wFit(data, fig = None, ax = None,
         except:
             colorList, markerList = gs.colorList30, gs.markerList10
     else:
-        co_order = Conditions
+        co_order = conditions
         colorList, markerList = gs.colorList30, gs.markerList10
         
     
@@ -660,9 +819,9 @@ def D2Plot_wFit(data, fig = None, ax = None,
         c = co_order[i]
         color = colorList[i]
 #         marker = my_default_marker_list[i]
-        Xraw = data_filtered[data_filtered[CondCol] == c][XCol].values
-        Yraw = data_filtered[data_filtered[CondCol] == c][YCol].values
-        Mraw = data_filtered[data_filtered[CondCol] == c]['manipID'].values
+        Xraw = data_filtered[data_filtered[condCol] == c][XCol].values
+        Yraw = data_filtered[data_filtered[condCol] == c][YCol].values
+        Mraw = data_filtered[data_filtered[condCol] == c]['manipID'].values
         XYraw = np.array([Xraw,Yraw]).T
         XY = XYraw[~np.isnan(XYraw).any(axis=1), :]
         X, Y = XY[:,0], XY[:,1]
@@ -691,7 +850,7 @@ def D2Plot_wFit(data, fig = None, ax = None,
                     #         color = color, zorder = 4)
                     fitX = np.linspace(np.min(X), np.max(X), 100)
                     fitY = params[1]*fitX + params[0]
-                    ax.plot(fitX, fitY, '--', lw = '1', 
+                    ax.plot(fitX, fitY, '--', lw = '2', 
                             color = color, zorder = 4)
 
                 elif modelType == 'y=A*exp(kx)':
@@ -708,7 +867,7 @@ def D2Plot_wFit(data, fig = None, ax = None,
                     #         color = color, zorder = 4)
                     fitX = np.linspace(np.min(X), np.max(X), 100)
                     fitY = np.exp(params[0])*np.exp(params[1]*fitX)
-                    ax.plot(fitX, fitY, '--', lw = '1', 
+                    ax.plot(fitX, fitY, '--', lw = '2', 
                             color = color, zorder = 4)
                     
                 elif modelType == 'y=k*x^a':
@@ -732,14 +891,14 @@ def D2Plot_wFit(data, fig = None, ax = None,
                     #         color = color, zorder = 4)
                     fitX = np.linspace(np.min(X), np.max(X), 100)
                     fitY = k * fitX**a
-                    ax.plot(fitX, fitY, '--', lw = '1', 
+                    ax.plot(fitX, fitY, '--', lw = '2', 
                             color = color, zorder = 4)
                 
                 print('Number of values : {:.0f}'.format(len(Y)))
                 print('\n')
             
 #                 if showManips:
-#                     allManipID = list(data_filtered[data_filtered[CondCol] == c]['manipID'].unique())
+#                     allManipID = list(data_filtered[data_filtered[condCol] == c]['manipID'].unique())
 #                     dictMarker = {}
 #                     markers = []
 #                     for mi in range(len(allManipID)):
@@ -768,13 +927,17 @@ def D2Plot_wFit(data, fig = None, ax = None,
         ax.set_ylim([0.9*np.min(data_filtered[YCol]), 1.1*np.max(data_filtered[YCol])])
     ax.legend(loc='upper left')
     
+    output = (fig, ax)
     
-    return(fig, ax)
+    if returnData:
+        output += (data_filtered, )
+    
+    return(output)
 
 # %%%% Special Plots
 
     
-def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = [], 
+def D1Plot_wInnerSplit(data, fig = None, ax = None, condCol=[], InnerSplitCol = [], 
                        Parameters=[], Filters=[], 
                        Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
                        stats=True, statMethod='Mann-Whitney', box_pairs=[], 
@@ -790,21 +953,21 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
         globalFilter = globalFilter & Filters[kk]
     data_filtered = data_filtered[globalFilter]
     
-    NCond = len(CondCol)
+    NCond = len(condCol)
     if NCond == 1:
-        CondCol = CondCol[0]
+        condCol = condCol[0]
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += condCol[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] += data_filtered[condCol[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
         
     NSplits = len(InnerSplitCol)
     if NSplits == 1:
@@ -822,7 +985,7 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
         InnerSplitCol = newColName
         
-    small_df = data_filtered[['cellID', 'compNum', 'date', 'manipID', CondCol, InnerSplitCol]]
+    small_df = data_filtered[['cellID', 'compNum', 'date', 'manipID', condCol, InnerSplitCol]]
     
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
@@ -830,10 +993,10 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
 #         dictAggMean['EChadwick'] = 'median'
         data_filtered = group.agg(dictAggMean)
         
-    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+    data_filtered.sort_values(condCol, axis=0, ascending=True, inplace=True)
     
     NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())  
+    Conditions = list(data_filtered[condCol].unique())  
     Splitters = list(data_filtered[InnerSplitCol].unique())  
     print(Splitters)
     
@@ -869,7 +1032,7 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
 
         if Boxplot:
             if stressBoxPlot:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
+                sns.boxplot(x=condCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
                             width = 0.5, showfliers = False, order= co_order, 
                             medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
                             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
@@ -878,7 +1041,7 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
                             capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
                             # scaley = scaley)
             else:
-                sns.boxplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
+                sns.boxplot(x=condCol, y=Parameters[k], data=data_filtered, ax=ax[k], 
                             width = 0.5, showfliers = False, order= co_order, 
                             medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
                             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
@@ -890,24 +1053,24 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
         for split in Splitters:
             marker = splitterStyleDict_MCA[split]
             data_filtered_split = data_filtered[data_filtered[InnerSplitCol] == split]
-            sns.stripplot(x=CondCol, y=Parameters[k], data=data_filtered_split, ax=ax[k], order = co_order,
+            sns.stripplot(x=condCol, y=Parameters[k], data=data_filtered_split, ax=ax[k], order = co_order,
                           jitter = True, marker=marker, 
                           size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, 
                           palette = p)
             
-            # data_filtered.boxplot(column=Parameters[k], by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
+            # data_filtered.boxplot(column=Parameters[k], by = condCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
 
         if stats:
             if len(box_pairs) == 0:
                 box_pairs = makeBoxPairs(co_order)
-            addStat_df(ax[k], data_filtered, box_pairs, Parameters[k], CondCol, test = statMethod)
-            # add_stat_annotation(ax[k], x=CondCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
+            addStat_df(ax[k], data_filtered, box_pairs, Parameters[k], condCol, test = statMethod)
+            # add_stat_annotation(ax[k], x=condCol, y=Parameters[k], data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
         
         # if not useHue:
-        #     sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
+        #     sns.swarmplot(x=condCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
         #                   size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
         # else:
-        #     sns.swarmplot(x=CondCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
+        #     sns.swarmplot(x=condCol, y=Parameters[k], data=data_filtered, ax=ax[k], order = co_order,
         #                   size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
         #                   hue = 'manipID')
         #     legend = ax[k].legend()
@@ -925,10 +1088,10 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
     
     if returnCount > 0:
         groupByCell = small_df.groupby(cellID)
-        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
         df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
 
-        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
         d_agg = {cellID: 'count', 'compCount': 'sum', 
                  'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
         d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
@@ -946,7 +1109,7 @@ def D1Plot_wInnerSplit(data, fig = None, ax = None, CondCol=[], InnerSplitCol = 
     
     
     
-def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Filters=[], 
+def D1Plot_wNormalize(data, fig = None, ax = None, condCol=[], Parameters=[], Filters=[], 
                       Boxplot=True, AvgPerCell=False, cellID='cellID', co_order=[],
                       stats=True, statMethod='Mann-Whitney', box_pairs=[], 
                       normalizeCol = [], normalizeGroups=[],
@@ -964,26 +1127,26 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
     data_filtered = data_filtered[globalFilter]
 
     
-    NCond = len(CondCol)
+    NCond = len(condCol)
     
     if NCond == 1:
-        CondCol = CondCol[0]
+        condCol = condCol[0]
         
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += condCol[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] += data_filtered[condCol[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
         
     # print(data_filtered.shape)
-    small_df = data_filtered[[CondCol, 'cellID', 'compNum', 'date', 'manipID']]
+    small_df = data_filtered[[condCol, 'cellID', 'compNum', 'date', 'manipID']]
     
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
@@ -991,10 +1154,10 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
 #         dictAggMean['EChadwick'] = 'median'
         data_filtered = group.agg(dictAggMean)
         
-    data_filtered.sort_values(CondCol, axis=0, ascending=True, inplace=True)
+    data_filtered.sort_values(condCol, axis=0, ascending=True, inplace=True)
     
     NPlots = len(Parameters)
-    Conditions = list(data_filtered[CondCol].unique())     
+    Conditions = list(data_filtered[condCol].unique())     
     
     if len(co_order) > 0:
         if len(co_order) != len(Conditions):
@@ -1027,7 +1190,7 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
         #### Normalisation
         
         if normalizeCol == []:
-            normalizeCol = CondCol
+            normalizeCol = condCol
             
         else:
             N_normalizeCols = len(normalizeCol)
@@ -1066,7 +1229,7 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
 
         if Boxplot:
             if stressBoxPlot:
-                sns.boxplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], 
+                sns.boxplot(x=condCol, y=Parm, data=data_filtered, ax=ax[k], 
                             width = 0.5, showfliers = False, order= co_order, 
                             medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 4},
                             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.7, 'zorder' : 4},
@@ -1075,7 +1238,7 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
                             capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 4})
                             # scaley = scaley)
             else:
-                sns.boxplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], 
+                sns.boxplot(x=condCol, y=Parm, data=data_filtered, ax=ax[k], 
                             width = 0.5, showfliers = False, order= co_order, 
                             medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 1},
                             boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 1},
@@ -1084,19 +1247,19 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
                             capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 1})
                             # scaley = scaley)
             
-            # data_filtered.boxplot(column=Parm, by = CondCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
+            # data_filtered.boxplot(column=Parm, by = condCol, ax=ax[k],showfliers = False) # linewidth = 2, width = 0.5
 
         if stats:
             if len(box_pairs) == 0:
                 box_pairs = makeBoxPairs(co_order)
-            addStat_df(ax[k], data_filtered, box_pairs, Parm, CondCol, test = statMethod)
-            # add_stat_annotation(ax[k], x=CondCol, y=Parm, data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
+            addStat_df(ax[k], data_filtered, box_pairs, Parm, condCol, test = statMethod)
+            # add_stat_annotation(ax[k], x=condCol, y=Parm, data=data_filtered,box_pairs = box_pairs,test=statMethod, text_format='star',loc='inside', verbose=2)
         
         if not useHue:
-            sns.swarmplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
+            sns.swarmplot(x=condCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
                           size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p)
         else:
-            sns.swarmplot(x=CondCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
+            sns.swarmplot(x=condCol, y=Parm, data=data_filtered, ax=ax[k], order = co_order,
                           size=markersize, edgecolor='k', linewidth = 1*markersizeFactor, palette = p, 
                           hue = 'manipID')
             legend = ax[k].legend()
@@ -1114,10 +1277,10 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
     
     if returnCount > 0:
         groupByCell = small_df.groupby(cellID)
-        d_agg = {'compNum':'count', CondCol:'first', 'date':'first', 'manipID':'first'}
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
         df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
 
-        groupByCond = df_CountByCell.reset_index().groupby(CondCol)
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
         d_agg = {cellID: 'count', 'compCount': 'sum', 
                  'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
         d_rename = {cellID:'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
@@ -1133,37 +1296,37 @@ def D1Plot_wNormalize(data, fig = None, ax = None, CondCol=[], Parameters=[], Fi
 
 
 
-def D1PlotDetailed(data, CondCol=[], Parameters=[], Filters=[], Boxplot=True, cellID='cellID', 
+def D1PlotDetailed(data, condCol=[], Parameters=[], Filters=[], Boxplot=True, cellID='cellID', 
                    co_order=[], stats=True, statMethod='Mann-Whitney', box_pairs=[],
                    figSizeFactor = 1, markersizeFactor=1, orientation = 'h', showManips = True):
     
     data_f = data
     for fltr in Filters:
         data_f = data_f.loc[fltr]    
-    NCond = len(CondCol)
+    NCond = len(condCol)
     
     print(min(data_f['EChadwick'].values))
     
     if NCond == 1:
-        CondCol = CondCol[0]
+        condCol = condCol[0]
         
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += condCol[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_f[newColName] = ''
         for i in range(NCond):
-            data_f[newColName] += data_f[CondCol[i]].astype(str)
+            data_f[newColName] += data_f[condCol[i]].astype(str)
             data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
         data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
         
-    data_f_agg = getAggDf(data_f, cellID, CondCol, Parameters)
+    data_f_agg = getAggDf(data_f, cellID, condCol, Parameters)
     
     NPlots = len(Parameters)
-    Conditions = list(data_f[CondCol].unique())
+    Conditions = list(data_f[condCol].unique())
         
     if orientation == 'h':
         fig, ax = plt.subplots(1, NPlots, figsize = (5*NPlots*NCond*figSizeFactor, 5))
@@ -1193,7 +1356,7 @@ def D1PlotDetailed(data, CondCol=[], Parameters=[], Filters=[], Boxplot=True, ce
 
         for i in range(len(Conditions)):
             c = Conditions[i]
-            sub_data_f_agg = data_f_agg.loc[data_f_agg[CondCol] == c]
+            sub_data_f_agg = data_f_agg.loc[data_f_agg[condCol] == c]
             Ncells = sub_data_f_agg.shape[0]
             
             color = gs.colorList[i]
@@ -1269,7 +1432,7 @@ def D1PlotDetailed(data, CondCol=[], Parameters=[], Filters=[], Boxplot=True, ce
             if len(box_pairs) == 0:
                 box_pairs = makeBoxPairs(co_order)
             addStat_df(ax[k], data_f_agg.rename(columns = renameDict), 
-                    box_pairs, Parameters[k], CondCol, test = statMethod)
+                    box_pairs, Parameters[k], condCol, test = statMethod)
         
     plt.rcParams['axes.prop_cycle'] = gs.my_default_color_cycle
     return(fig, ax)
@@ -1352,28 +1515,28 @@ def D1PlotPaired(data, Parameters=[], Filters=[], Boxplot=True, cellID='cellID',
 
 
 
-def D2Plot(data, fig = None, ax = None, XCol='', YCol='', CondCol='', Filters=[], 
+def D2Plot(data, fig = None, ax = None, XCol='', YCol='', condCol='', Filters=[], 
            cellID='cellID', AvgPerCell=False, xscale = 'lin', yscale = 'lin', 
            figSizeFactor = 1, markers = [], markersizeFactor = 1):
     data_filtered = data
     for fltr in Filters:
         data_filtered = data_filtered.loc[fltr]
     
-    NCond = len(CondCol)    
+    NCond = len(condCol)    
     if NCond == 1:
-        CondCol = CondCol[0]
+        condCol = condCol[0]
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += CondCol[i]
+            newColName += condCol[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_filtered[newColName] = ''
         for i in range(NCond):
-            data_filtered[newColName] += data_filtered[CondCol[i]].astype(str)
+            data_filtered[newColName] += data_filtered[condCol[i]].astype(str)
             data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x + ' & ')
         data_filtered[newColName] = data_filtered[newColName].apply(lambda x : x[:-3])
-        CondCol = newColName
+        condCol = newColName
     
     if AvgPerCell:
         group = data_filtered.groupby(cellID)
@@ -1381,7 +1544,7 @@ def D2Plot(data, fig = None, ax = None, XCol='', YCol='', CondCol='', Filters=[]
         data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
         data_filtered.reset_index(level=0, inplace=True)
         
-    Conditions = list(data_filtered[CondCol].unique())
+    Conditions = list(data_filtered[condCol].unique())
     
     if fig == None:
         fig, ax = plt.subplots(1, 1, figsize = (8*figSizeFactor,5))
@@ -1401,8 +1564,8 @@ def D2Plot(data, fig = None, ax = None, XCol='', YCol='', CondCol='', Filters=[]
     
     im = 0
     for c in Conditions:
-        Xraw = data_filtered[data_filtered[CondCol] == c][XCol].values
-        Yraw = data_filtered[data_filtered[CondCol] == c][YCol].values
+        Xraw = data_filtered[data_filtered[condCol] == c][XCol].values
+        Yraw = data_filtered[data_filtered[condCol] == c][YCol].values
         XYraw = np.array([Xraw,Yraw]).T
         XY = XYraw[~np.isnan(XYraw).any(axis=1), :]
         X, Y = XY[:,0], XY[:,1]
@@ -1468,12 +1631,11 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     data_ff = data_ff.dropna(subset = ['fit_ciwK'])
     
     conditions = np.array(data_ff[condCol].unique())
-    centers = np.array(data_ff['fit_center'].unique())
+    
     
     # Compute the weights
     data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
     
-    #### NOTE
     # In the following lines, the weighted average and weighted variance are computed
     # using new columns as intermediates in the computation.
     #
@@ -1495,6 +1657,7 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     # Compute the weighted std
     data_ff['B'] = data_ff['fit_K']
     for co in conditions:
+        centers = np.array(data_ff[data_ff[condCol] == co]['fit_center'].unique())
         for ce in centers:
             weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
             
@@ -1594,6 +1757,193 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
             output += (df_CountByCond, )
         elif returnCount == 2:
             output += (df_CountByCond, df_CountByCell)
+
+    return(output)
+
+
+def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
+              mode = 'wholeCurve', scale = 'lin', printText = True, Sinf = 0, Ssup = np.Inf,
+              returnData = 0, returnCount = 0):
+    
+    fig, ax = plt.subplots(1,1, figsize = (9,6))
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+    
+    if mode == 'wholeCurve':
+        if Ssup >= 1500:
+            xmax = 1550
+        else:
+            xmax = Ssup + 50
+        xmin = Sinf
+        ax.set_xlim([xmin, xmax])  
+        
+    else:
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+    
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data_f = data_f[globalExtraFilter]
+            
+        ax.set_xlim([Sinf-50, Ssup+50])     
+    
+    fitId = '_' + str(fitWidth)
+    data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    
+    conditions = np.array(data_ff[condCol].unique())
+    
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    data_ff['A'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=['cellID', 'fit_center'])
+    data_agg_cells = grouped1.agg({'compNum':'count',
+                                   'A':'sum', 
+                                   'weight': 'sum',
+                                   condCol:'first'})
+    data_agg_cells = data_agg_cells.reset_index()
+    data_agg_cells['K_wAvg'] = data_agg_cells['A']/data_agg_cells['weight']
+    data_agg_cells = data_agg_cells.rename(columns = {'compNum' : 'compCount'})
+    
+    # 2nd selection
+    data_agg_cells = data_agg_cells.drop(data_agg_cells[data_agg_cells['compCount'] <= 2].index)
+    data_agg_cells = data_agg_cells.drop(data_agg_cells[data_agg_cells['weight'] <= 1].index)
+    
+    grouped2 = data_agg_cells.groupby(by=[condCol, 'fit_center'])
+    data_agg_all = grouped2.agg({'compCount':['sum', 'count'],
+                                   'K_wAvg':['mean', 'std', 'median']})
+    data_agg_all = data_agg_all.reset_index()
+    data_agg_all.columns = ufun.flattenPandasIndex(data_agg_all.columns)
+    data_agg_all = data_agg_all.rename(columns = {'compCount_sum' : 'compCount', 'compCount_count' : 'cellCount'})
+    data_agg_all['K_wAvg_ste'] = data_agg_all['K_wAvg_std']/data_agg_all['cellCount']**0.5
+    
+    # Compute the weighted std
+    # data_ff['B'] = data_ff['fit_K']
+    # for co in conditions:
+    #     centers = np.array(data_ff[data_ff[condCol] == co]['fit_center'].unique())
+    #     for ce in centers:
+    #         weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
+            
+    #         index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
+    #         col_loc = 'B'
+    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    # data_ff['C'] = data_ff['B'] * data_ff['weight']
+    # grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
+    # data_agg2 = grouped2.agg({'compNum' : 'count',
+    #                           'C': 'sum', 'weight': 'sum'}).reset_index()
+    # data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
+    # data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
+    
+    # # Combine all in data_agg
+    # data_agg['K_wVar'] = data_agg2['K_wVar']
+    # data_agg['K_wStd'] = data_agg2['K_wStd']
+    # data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
+    
+    # Plot
+    for co in conditions:
+        df = data_agg_all[data_agg_all[condCol] == co]
+        color = styleDict1[co]['color']
+        centers = df['fit_center'].values
+        Kavg = df['K_wAvg_mean'].values
+        Kste = df['K_wAvg_ste'].values
+        N = df['cellCount'].values
+        total_N = np.max(N)
+        
+        dof = N
+        alpha = 0.975
+        q = st.t.ppf(alpha, dof) # Student coefficient
+    
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            ax.set_yscale('linear')
+            ax.set_ylim([0, 10])
+                
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            ax.set_yscale('log')
+            
+        # weighted means -- weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
+                    label = co + ' | ' + str(total_N) + ' cells')
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left', fontsize = 11)
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (kPa)')
+        ax.grid(visible=True, which='major', axis='y')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
+    
+    
+    # # Define the count df
+    # cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condCol]
+    # count_df = data_ff[cols_count_df]
+    
+    # # Define the export df
+    # # cols_export_df = ['date', 'manipID', 'cellID', 'compNum', condCol]
+    # # export_df = data_ff[cols_export_df]
+    # cols_export_df = [c for c in data_agg_all.columns if c not in ['weights', 'A', 'B', 'C']]
+    # export_df = data_agg_all[cols_export_df]
+    
+    # Make output
+    
+    output = (fig, ax)
+    
+    # if returnData > 0:
+    #     output += (export_df, )
+    
+    # #### NOT FINISHED
+    # if returnCount > 0:
+    #     groupByCell = count_df.groupby('cellID')
+    #     d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
+    #     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+    #     groupByCond = df_CountByCell.reset_index().groupby(condCol)
+    #     d_agg = {'cellID': 'count', 'compCount': 'sum', 
+    #               'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    #     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    #     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+    #     if returnCount == 1:
+    #         output += (df_CountByCond, )
+    #     elif returnCount == 2:
+    #         output += (df_CountByCond, df_CountByCell)
 
     return(output)
 
@@ -1743,7 +2093,7 @@ def plotAllH0(data, Filters = [], condCols = [],
     if stats:
         if len(box_pairs) == 0:
             box_pairs = makeBoxPairs(co_order)
-        addStat_df(ax, data_ff, box_pairs, Parameters[k], CondCol, test = statMethod)
+        addStat_df(ax, data_ff, box_pairs, Parameters[k], condCol, test = statMethod)
     
     sns.swarmplot(x=condCol, y='allH0_H0', data=data_ff, ax=ax, order = co_order)
 
@@ -1782,7 +2132,7 @@ def getDictAggMean(df):
     return(dictAggMean)
 
 
-def getAggDf(df, cellID, CondCol, Variables):
+def getAggDf(df, cellID, condCol, Variables):
     
     allCols = df.columns.values
     group = df.groupby(cellID)
@@ -1790,8 +2140,8 @@ def getAggDf(df, cellID, CondCol, Variables):
     dictAggCategories = {}
     Categories = ['date', 'cellName', 'manipID', 'experimentType', 'drug', 
                   'substrate', 'cell type', 'cell subtype', 'bead type', 'bead diameter']
-    if CondCol not in Categories:
-        Categories += [CondCol]
+    if condCol not in Categories:
+        Categories += [condCol]
     for c in Categories:
         if c in allCols:
             dictAggCategories[c] = 'first'
@@ -1840,7 +2190,7 @@ def getAggDf(df, cellID, CondCol, Variables):
     return(dfAgg)
 
 
-def getAggDf_K_wAvg(df, cellID, CondCol, Variables, weightCols):
+def getAggDf_K_wAvg(df, cellID, condCol, Variables, weightCols):
     
     def w_std(x, w):
         m = np.average(x, weights=w)
@@ -1877,8 +2227,8 @@ def getAggDf_K_wAvg(df, cellID, CondCol, Variables, weightCols):
     dictAggCategories = {}
     Categories = ['date', 'cellName', 'manipID', 'experimentType', 'drug', 
                   'substrate', 'cell type', 'cell subtype', 'bead type', 'bead diameter']
-    if CondCol not in Categories:
-        Categories += [CondCol]
+    if condCol not in Categories:
+        Categories += [condCol]
     for c in Categories:
         if c in allCols:
             dictAggCategories[c] = 'first'
@@ -1983,7 +2333,7 @@ def renameAxes(axes, rD):
         axes[i].set_ylabel(newYlabel)
         
 
-def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentHeight = 98):
+def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentHeight = 99):
     refHeight = np.percentile(data[param].values, percentHeight)
     currentHeight = refHeight
     scale = ax.get_yscale()
@@ -2011,15 +2361,15 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
             text = '***'
         elif pval < 0.0001:
             text = '****'
-        ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1)
+        ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1.5)
         XposText = (dictXTicks[bp[0]]+dictXTicks[bp[1]])/2
         if scale == 'log':
             power = 0.01* (text=='ns') + 0.000 * (text!='ns')
             YposText = currentHeight*(refHeight**power)
         else:
-            factor = 0.02 * (text=='ns') + 0.000 * (text!='ns')
+            factor = 0.025 * (text=='ns') + 0.000 * (text!='ns')
             YposText = currentHeight + factor*refHeight
-        ax.text(XposText, YposText, text, ha = 'center', color = 'k', size = 10)
+        ax.text(XposText, YposText, text, ha = 'center', color = 'k', size = 12 + 2*(text!='ns'))
 #         if text=='ns':
 #             ax.text(posText, currentHeight + 0.025*refHeight, text, ha = 'center')
 #         else:
@@ -2027,7 +2377,7 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
         if scale == 'log':
             currentHeight = currentHeight*(refHeight**0.05)
         else:
-            currentHeight =  currentHeight + 0.1*refHeight
+            currentHeight =  currentHeight + 0.125*refHeight
     # ax.set_ylim([ax.get_ylim()[0], currentHeight])
     
 
@@ -2159,7 +2509,7 @@ def buildStyleDictMCA():
 # %%% Tests of plotting functions
 
 
-#### Test getAggDf_K_wAvg(df, cellID, CondCol, Variables, weightCols)
+#### Test getAggDf_K_wAvg(df, cellID, condCol, Variables, weightCols)
 
 # data = MecaData_NonLin
 
@@ -2222,14 +2572,14 @@ def buildStyleDictMCA():
             
 # # df
 
-# CondCol = 'date'
+# condCol = 'date'
 # Variables = KChadwick_Cols
 # weightCols = Kweight_Cols
-# data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', CondCol, Variables, weightCols)
+# data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', condCol, Variables, weightCols)
 # data_f_agg
 
 
-#### Test getAggDf(df, cellID, CondCol, Variables)
+#### Test getAggDf(df, cellID, condCol, Variables)
 
 # data = MecaData_All
 
@@ -2252,7 +2602,7 @@ def buildStyleDictMCA():
 #            (data['substrate'] == '20um fibronectin discs'),
 #            (data['date'].apply(lambda x : x in ['21-12-16','21-12-08']))]
 
-# fig, ax = D2Plot_wFit(data, XCol='ctFieldThickness', YCol='EChadwick', CondCol = ['bead type'],
+# fig, ax = D2Plot_wFit(data, XCol='ctFieldThickness', YCol='EChadwick', condCol = ['bead type'],
 #            Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', 
 #            modelFit=True, modelType = 'y=k*x^a')
 
@@ -2268,7 +2618,7 @@ def buildStyleDictMCA():
 #### Test of the averaging per cell routine
 
 # data = MecaData_All
-# CondCol='drug'
+# condCol='drug'
 # Parameters=['SurroundingThickness','EChadwick']
 # Filters = [(MecaData_All['Validated'] == 1)]
 # AvgPerCell=True
@@ -2282,7 +2632,7 @@ def buildStyleDictMCA():
 # dictAggMean = getDictAggMean(data_filtered)
 # data_filtered = group.agg(dictAggMean.pop(cellID)) #.reset_index(level=0, inplace=True)
 # data_filtered.reset_index(level=0, inplace=True)
-# data_filtered=data_filtered[[cellID]+[CondCol]+Parameters]
+# data_filtered=data_filtered[[cellID]+[condCol]+Parameters]
 # print(data_filtered)
 
 
@@ -2392,6 +2742,240 @@ plt.show()
 
 # %% Plots
 
+# %%% Non-linearity
+
+gs.set_bigText_options_jv()
+
+data = MecaData_All
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['drug'].apply(lambda x : x in ['none'])),
+           (data['substrate'].apply(lambda x : x in ['20um fibronectin discs'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), # , 'aSFL-LG+++'
+           (data['date'].apply(lambda x : x.startswith('22')))]
+
+# out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False,
+#                                 Sinf = 0, Ssup = 1000,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1 = out1
+# ax1.set_ylim([0, 14])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell type', mode = '150_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 16])
+
+renameAxes(ax2, {'K (kPa)' : 'Tangeantial Modulus (kPa)'})
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+
+
+# %%%  Thickness analysis
+
+# %%%%  Thickness stiffness curves
+gs.set_bigText_options_jv()
+
+# %%%%%  Low stress
+
+data_main = MecaData_All
+fitType = 'stressGaussian'
+fitId = '200_75'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit on [{:.0f}, {:.0f}] Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+
+Filters = [(data['validatedThickness'] == True),
+           (data['cell type'].apply(lambda x : x in ['3T3'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-LG+++'])),
+           (data['normal field'] == 5),
+           (data['ctFieldThickness'] <= 1200),
+           (data['drug'] == 'none'),
+           (data['fit_error'] == False), 
+           (data['fit_valid'] == True),
+           (data['substrate'] == '20um fibronectin discs')]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='fit_K', condCol=['cell type'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=k*x^a', writeEqn=True,
+                        xscale = 'log', yscale = 'log', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD)
+ax.set_xlim([50, 1200])
+ax.set_ylim([0, 30000])
+
+fig.suptitle('Thickness - Stiffness relation at low stress')
+
+plt.show()
+
+# %%%%  Medium stress
+
+data_main = MecaData_All
+fitType = 'stressGaussian'
+fitId = '400_75'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit on [{:.0f}, {:.0f}] Pa'.format(c-hw, c+hw)
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+Filters = [(data['validatedThickness'] == True),
+           (data['cell type'].apply(lambda x : x in ['3T3'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-LG+++'])),
+           (data['normal field'] == 5),
+           (data['ctFieldThickness'] <= 1200),
+           (data['drug'] == 'none'),
+           (data['fit_error'] == False), 
+           (data['fit_valid'] == True),
+           (data['substrate'] == '20um fibronectin discs')]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='fit_K', condCol=['cell type'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=k*x^a', writeEqn=True,
+                        xscale = 'log', yscale = 'log', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD)
+ax.set_xlim([50, 1200])
+ax.set_ylim([0, 30000])
+
+fig.suptitle('Thickness - Stiffness relation at medium stress')
+
+plt.show()
+
+# %%%%  Thickness stiffness curves
+
+data_main = MecaData_All
+fitType = 'stressGaussian'
+fitId = '500_75'
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+Filters = [(data['validatedThickness'] == True),
+           (data['cell type'].apply(lambda x : x in ['3T3'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-LG+++'])),
+           (data['ctFieldThickness'] <= 1200),
+           (data['drug'] == 'none'),
+           (data['fit_error'] == False), 
+           (data['fit_valid'] == True),
+           (data['substrate'] == '20um fibronectin discs')]
+
+fig, ax, df = D2Plot_wFit(data, fig = None, ax = None, 
+                        XCol='bestH0', YCol='fit_K', condCol=['cell type'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=False, showManips = True,
+                        modelFit=True, modelType='y=k*x^a', writeEqn=True,
+                        xscale = 'log', yscale = 'log', 
+                        figSizeFactor = 1, markersizeFactor = 1,
+                        returnData = True)
+
+rD = {'ctFieldThickness':'Median thickness (nm)', 'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+renameAxes(ax, rD)
+# ax.set_xlim([0, 1200])
+# ax.set_ylim([0, 1000])
+
+fig.suptitle('Compression Experiments')
+
+med, ampli = np.median(df['ctFieldThickness'].values), np.median(df['ctFieldFluctuAmpli'].values)
+
+plt.show()
+
+
+# %%%%  Median-Fluctu on compression expts
+# 'aSFL-A11', 
+
+data = MecaData_All
+
+Filters = [(data['validatedThickness'] == True),
+           (data['cell type'].apply(lambda x : x in ['3T3'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-LG+++'])),
+           (data['compNum'] >= 6),
+           (data['ctFieldThickness'] <= 1200),
+           (data['date'].apply(lambda x : x.startswith('22'))),
+           (data['drug'] == 'none'),
+           (data['substrate'] == '20um fibronectin discs')]
+
+fig, ax, df = D2Plot_wFit(data, fig = None, ax = None, 
+                        XCol='ctFieldThickness', YCol='ctFieldFluctuAmpli', condCol=['cell type'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1,
+                        returnData = True)
+
+rD = {'ctFieldThickness':'Median thickness (nm)', 'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+renameAxes(ax, rD)
+ax.set_xlim([0, 1200])
+ax.set_ylim([0, 1000])
+
+fig.suptitle('Compression Experiments')
+
+med, ampli = np.median(df['ctFieldThickness'].values), np.median(df['ctFieldFluctuAmpli'].values)
+print(med, ampli)
+
+plt.show()
+
+# %%%%  Median-Fluctu on ct field expts
+
+data = CtFieldData_All_JV
+
+Filters = [(data['cell type'].apply(lambda x : x in ['3T3'])),
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11', 'aSFL-LG+++'])),
+           (data['duration'] >= 300),
+            (data['date'].apply(lambda x : x in ['21-02-10', '21-04-21', '21-04-23'])),
+            (data['drug'] == 'none'),
+           (data['substrate'] == '20um fibronectin discs')]
+
+fig, ax, df = D2Plot_wFit(data, fig = None, ax = None, 
+                        XCol='medianThickness', YCol='fluctuAmpli', condCol=['cell type'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1,
+                        returnData = True)
+
+rD = {'medianThickness':'Median thickness (nm)', 'fluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+renameAxes(ax, rD)
+ax.set_xlim([0, 1200])
+ax.set_ylim([0, 1000])
+
+fig.suptitle('Constant Field Experiments')
+
+med, ampli = np.median(df['medianThickness'].values), np.median(df['fluctuAmpli'].values)
+print(med, ampli)
+
+plt.show()
 
 # %%%  Region fits, non linearity
 
@@ -2581,7 +3165,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2608,7 +3192,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)', fontsize = 12)
 ax.set_xlabel('Thickness at low force (nm)', fontsize = 12)
@@ -2635,7 +3219,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)', fontsize = 12)
 ax.set_xlabel('Thickness at low force (nm)', fontsize = 12)
@@ -2662,7 +3246,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)', fontsize = 12)
 ax.set_xlabel('Thickness at low force (nm)', fontsize = 12)
@@ -2689,7 +3273,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)', fontsize = 12)
 ax.set_xlabel('Thickness at low force (nm)', fontsize = 12)
@@ -2713,7 +3297,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2737,7 +3321,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2761,7 +3345,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2785,7 +3369,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2809,7 +3393,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick_' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2833,7 +3417,7 @@ Filters = [(data['validatedFit'] == True),
            (data['drug'] == 'none'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2855,7 +3439,7 @@ Filters = [(MecaData_All['validatedFit'] == True),
            (MecaData_All['substrate'] == '20um fibronectin discs'),
            (MecaData_All['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,CondCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,condCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2878,7 +3462,7 @@ Filters = [(MecaData_All['validatedFit'] == True),
            (MecaData_All['substrate'] == '20um fibronectin discs'),
            (MecaData_All['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,CondCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,condCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2901,7 +3485,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(MecaData_All, XCol='ctFieldThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_All, XCol='ctFieldThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2926,7 +3510,7 @@ fit = '_s<400Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 #            (data['drug'] == 'none'),
 #            (data['date'].apply(lambda x : x in dates))]
 
-# fig, ax = D2Plot_wFit(data, XCol='surroundingThickness', YCol='EChadwick_' + fit, CondCol = ['bead type', 'date'],\
+# fig, ax = D2Plot_wFit(data, XCol='surroundingThickness', YCol='EChadwick_' + fit, condCol = ['bead type', 'date'],\
 #            Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 
@@ -2935,7 +3519,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(MecaData_All, XCol='surroundingThickness',YCol='EChadwick' + fit, CondCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_All, XCol='surroundingThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -2955,7 +3539,7 @@ data = MecaData_All
 Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True),
           (data['date'].apply(lambda x : x in ['21-12-08', '22-01-12']))] #, '21-12-16'
 
-fig, ax = D1PlotDetailed(data, CondCol=['bead type'], Parameters=['surroundingThickness', 'EChadwick'], Filters=Filters, 
+fig, ax = D1PlotDetailed(data, condCol=['bead type'], Parameters=['surroundingThickness', 'EChadwick'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=[], stats=True, statMethod='Mann-Whitney', 
                box_pairs=[], figSizeFactor = 1.8, markersizeFactor=1, orientation = 'v', showManips = True)
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan22_M450vsM270_CompressionsLowStart_Detailed1DPlot', figSubDir = figSubDir)
@@ -2975,7 +3559,7 @@ box_pairs=[('21-12-08 & M270', '21-12-08 & M450'),
              ('21-12-16 & M450', '21-12-16 & M270'),
              ('22-01-12 & M270', '22-01-12 & M450')]
 
-fig, ax = D1PlotDetailed(data, CondCol=['date', 'bead type'], Parameters=['surroundingThickness', 'EChadwick'], Filters=Filters, 
+fig, ax = D1PlotDetailed(data, condCol=['date', 'bead type'], Parameters=['surroundingThickness', 'EChadwick'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=[], stats=True, statMethod='Mann-Whitney', 
                box_pairs=box_pairs, figSizeFactor = 0.9, markersizeFactor=1, orientation = 'v', showManips = True)
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan22_M450vsM270_CompressionsLowStart_Detailed1DPlot_all3exp', figSubDir = figSubDir)
@@ -3097,10 +3681,10 @@ data_f.tail()
 # %%%%% K(s) cell by cell
 
 
-CondCol = 'date'
+condCol = 'date'
 Variables = KChadwick_Cols
 weightCols = Kweight_Cols
-data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', CondCol, Variables, weightCols)
+data_f_agg = getAggDf_K_wAvg(data_f, 'cellID', condCol, Variables, weightCols)
 data_f_agg.T
 dictPlot = {'cellID' : [], 'Kavg' : [], 'Kstd' : [], 'Kcount' : []}
 meanCols = []
@@ -3728,7 +4312,7 @@ for S in listeS:
                (data['validatedThickness'] == True),
                (data['date'].apply(lambda x : x in ['22-02-09']))] #, '21-12-16'
 
-    fig, ax = D1Plot(data, fig=fig, ax=axes[kk], CondCol=['bead type'], Parameters=['KChadwick_'+interval], Filters=Filters, 
+    fig, ax = D1Plot(data, fig=fig, ax=axes[kk], condCol=['bead type'], Parameters=['KChadwick_'+interval], Filters=Filters, 
                    Boxplot=True, cellID='cellID', co_order=[], stats=True, statMethod='Mann-Whitney', AvgPerCell = True,
                    box_pairs=[], figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
 
@@ -3777,7 +4361,7 @@ for S in listeS:
                (data['date'].apply(lambda x : x in ['22-02-09']))] #, '21-12-16'
 
     fig, ax = D2Plot_wFit(data, #fig=fig, ax=axes[kk], 
-                          XCol='bestH0', YCol='KChadwick_'+interval, CondCol = ['bead type'], Filters=Filters, 
+                          XCol='bestH0', YCol='KChadwick_'+interval, condCol = ['bead type'], Filters=Filters, 
                           cellID = 'cellID', AvgPerCell=False, 
                           xscale = 'linear', yscale = 'log', modelFit=True, modelType='y=k*x^a')
     
@@ -3824,7 +4408,7 @@ for S in listeS:
 
     fig, ax = D2Plot_wFit(data, #fig=fig, ax=axes[kk], 
                           XCol='bestH0', YCol='KChadwick_'+interval, 
-                          CondCol = ['bead type'], Filters=Filters, 
+                          condCol = ['bead type'], Filters=Filters, 
                           cellID = 'cellID', AvgPerCell=False, 
                           xscale = 'log', yscale = 'log', modelFit=True, 
                           modelType='y=k*x^a', markersizeFactor = 1.2)
@@ -3909,19 +4493,19 @@ for ii in range(len(fitW)):
                 # axes[0, kk].set_yscale('linear')
                 # axes[0, kk].set_ylim([0, 3e4])
             
-                D1Plot(data, fig=fig, ax=axes[0, kk], CondCol=['bead type'], Parameters=['KChadwick_'+interval], 
+                D1Plot(data, fig=fig, ax=axes[0, kk], condCol=['bead type'], Parameters=['KChadwick_'+interval], 
                      Filters=Filters, Boxplot=True, cellID='cellID', 
                      stats=True, statMethod='Mann-Whitney', AvgPerCell = True, box_pairs=[], 
                      figSizeFactor = 1, markersizeFactor=1, orientation = 'h', 
                      stressBoxPlot = True)# , bypassLog = True)
                 
-                D1Plot(data, fig=fig, ax=axes[1, kk], CondCol=['bead type'], Parameters=['bestH0'], 
+                D1Plot(data, fig=fig, ax=axes[1, kk], condCol=['bead type'], Parameters=['bestH0'], 
                      Filters=Filters, Boxplot=True, cellID='cellID', 
                      stats=True, statMethod='Mann-Whitney', AvgPerCell = True, box_pairs=[], 
                      figSizeFactor = 1, markersizeFactor=1, orientation = 'h', stressBoxPlot = True)
                 
                 D2Plot_wFit(data, fig=fig, ax=axes[2, kk], Filters=Filters, 
-                      XCol='bestH0', YCol='KChadwick_'+interval, CondCol = ['bead type'],
+                      XCol='bestH0', YCol='KChadwick_'+interval, condCol = ['bead type'],
                       cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', 
                       modelFit=True, modelType='y=k*x^a', markersizeFactor = 1)
                 
@@ -4063,13 +4647,13 @@ for S in fitCPlot:
     # axes[0, kk].set_yscale('linear')
     # axes[0, kk].set_ylim([0, 3e4])
 
-    D1Plot(data_new, fig=fig, ax=axes[kk], CondCol=['fitWidth'], Parameters=['KChadwick_S='+str(S)], 
+    D1Plot(data_new, fig=fig, ax=axes[kk], condCol=['fitWidth'], Parameters=['KChadwick_S='+str(S)], 
          Filters=Filters, Boxplot=True, cellID='cellID', 
          stats=False, statMethod='Mann-Whitney', AvgPerCell = False, box_pairs=[], 
          figSizeFactor = 1, markersizeFactor=0.5, orientation = 'h', 
          stressBoxPlot = True)# , bypassLog = True)
     
-    # D1Plot(data_new, fig=fig, ax=axes[1, kk], CondCol=['fitWidth'], Parameters=['bestH0'], 
+    # D1Plot(data_new, fig=fig, ax=axes[1, kk], condCol=['fitWidth'], Parameters=['bestH0'], 
     #      Filters=Filters, Boxplot=True, cellID='cellID', 
     #      stats=False, statMethod='Mann-Whitney', AvgPerCell = False, box_pairs=[], 
     #      figSizeFactor = 1, markersizeFactor=0.5, orientation = 'h', stressBoxPlot = True)
@@ -4104,14 +4688,17 @@ plt.show()
 
 # %%%  Drug experiments
 
-# %%%%% 3T3 aSFL - March 22 - Compression experiments
+# %%%%% Summary
 
+fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+# Part 1.
 
 data_main = MecaData_Drugs
-dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+dates = ['22-03-30'] # ['22-03-28', '22-03-30', '22-11-23']
 
 fitType = 'stressRegion'
-fitId = '250_100'
+fitId = '300_100'
 c, hw = np.array(fitId.split('_')).astype(int)
 fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
 
@@ -4119,64 +4706,423 @@ data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
 thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
 
+data['fit_K'] = data['fit_K']/1e3
+
 Filters = [(data['validatedThickness'] == True), 
            (data['valid_Chadwick'] == True),
            (data['surroundingThickness'] <= 700),
            (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
             # (data['ctFieldMinThickness'] >= 200**2),
-           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
            (data['date'].apply(lambda x : x in dates))]
 
-co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
+# co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
+co_order=['dmso & 0.0', 'blebbistatin & 50.0']
 
-fig, ax = D1Plot(data, CondCols=['drug'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
+fig, a = D1Plot(data, fig=fig, ax = axes[:,0], condCols=['drug', 'concentration'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=co_order, 
                 AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
-                figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
+                figSizeFactor = 0.4, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+# Part 2.
+data_main = MecaData_Drugs
+dates = ['22-03-30', '22-11-23'] # ['22-03-28', '22-03-30', '22-11-23']
+
+fitType = 'stressRegion'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_Chadwick'] == True),
+           (data['surroundingThickness'] <= 700),
+           (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
+            # (data['ctFieldMinThickness'] >= 200**2),
+           (data['drug'].apply(lambda x : x in ['dmso', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
+co_order=['dmso & 0.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+
+fig, a = D1Plot(data, fig=fig, ax = axes[:,1], condCols=['drug', 'concentration'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 0.4, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+# Formatting
 
 # rD = {'none' : 'Control\n(nothing)', 'dmso' : 'Control\n(DMSO)', 
 #       'blebbistatin' : 'Blebbistatin', 'latrunculinA' : 'LatA', 
 #       'bestH0' : 'Thickness (nm)', 'K' + fit : 'fit_KTangeantial Modulus (Pa)'}
 
-# renameAxes(ax, rD)
-renameAxes(ax, renameDict1)
+rD = {'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+renameAxes(axes.flatten(), renameDict1)
+renameAxes(axes.flatten(), rD)
+
+titles = ['Blebbistatin', 'LatrunculinA']
+tl = matplotlib.ticker.MultipleLocator(2)
+
+for k in range(2):
+    axes[0,k].set_ylim([0,900])
+    axes[1,k].set_ylim([0,12.5])
+    axes[k,1].set_ylabel('')
+    # axes[0,k].set_xticklabels([])
+    axes[0,k].set_title(titles[k])
+    axes[1,k].yaxis.set_major_locator(tl)
+
+
 
 # ax[0].set_ylim([0, 1000])
 # ax[0].legend(loc = 'upper right', fontsize = 8)
 # ax[1].legend(loc = 'upper right', fontsize = 8)
-fig.suptitle('3T3aSFL & drugs\nPreliminary data')
+# fig.suptitle('3T3aSFL & drugs\nPreliminary data')
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
 
-# %%%% Test
+# %%%% H0, Date by date
 
+Avg = True
 data_main = MecaData_Drugs
-dates = ['22-03-30'] # ['22-03-28', '22-03-30']
-fitType = 'stressRegion'
-fitId = '250_100'
-data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
+# fitType = 'stressRegion'
+# fitId = '250_75'
+# data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+# valCol = 'fit_K'
+# weightCol = 'fit_ciwK'
+
+data = data_main
+
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 1, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+
+
+
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 1, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+
+
+dates = ['22-11-23'] # ['22-03-28', '22-03-30']
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 1, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+plt.show()
+
+
+# %%%% H0, Drug by drug
+
+Avg = True
+data_main = MecaData_Drugs
+
+
+data = data_main
+
+
+drugs = ['dmso']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & dmso & 0.0', '22-03-30 & dmso & 0.0', '22-11-23 & dmso & 0.0']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['date', 'drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 0.5, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+
+
+
+drugs = ['blebbistatin']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & blebbistatin & 50.0', '22-03-30 & blebbistatin & 50.0']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['date', 'drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 0.5, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+
+
+drugs = ['latrunculinA']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & latrunculinA & 0.5', '22-03-30 & latrunculinA & 0.5', '22-11-23 & latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot(data, condCols=['date', 'drug', 'concentration'], Parameters=['ctFieldThickness'], Filters=Filters, 
+           Boxplot=True, AvgPerCell=Avg, cellID='cellID', co_order=co_order,
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+           figSizeFactor = 0.5, markersizeFactor = 1, orientation = 'h',
+           stressBoxPlot = False, bypassLog = False, 
+           returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+plt.show()
+
+
+
+
+
+# %%%% K, Date by date
+
+Avg = False
+data_main = MecaData_Drugs
+
+fitType = 'stressRegion'
+fitId = '250_75'
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 valCol = 'fit_K'
 weightCol = 'fit_ciwK'
 
+dates = ['22-03-28'] # ['22-03-28', '22-03-30']
+
 Filters = [(data['fit_error'] == False), 
            (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
            (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
            (data['date'].apply(lambda x : x in dates))]
 
-data_agg = taka2.computeWeightedAverage(data, valCol, weightCol, groupCol = 'cellID', Filters = Filters, weight_method = 'ciw')
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.6, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+
+
+
+dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.6, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+
+
+dates = ['22-11-23'] # ['22-03-28', '22-03-30']
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin', 'latrunculinA'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.5, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(dates[0])
+
+plt.show()
+
+
+# %%%% K, Drug by drug
+
+Avg = True
+data_main = MecaData_Drugs
+
+fitType = 'stressRegion'
+fitId = '300_75'
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+valCol = 'fit_K'
+weightCol = 'fit_ciwK'
+
+drugs = ['dmso']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & dmso & 0.0', '22-03-30 & dmso & 0.0', '22-11-23 & dmso & 0.0']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['date', 'drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.8, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+
+
+
+drugs = ['blebbistatin']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & blebbistatin & 50.0', '22-03-30 & blebbistatin & 50.0']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['date', 'drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.8, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+
+
+drugs = ['latrunculinA']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['fit_error'] == False), 
+           (data['fit_K'] > 0),
+           (data['fit_R2'] > 0.2),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+co_order=['22-03-28 & latrunculinA & 0.5', '22-03-30 & latrunculinA & 0.5', '22-11-23 & latrunculinA & 2.5']
+# co_order = []
+
+fig, ax = D1Plot_K(data, condCols=['date', 'drug', 'concentration'], Filters=Filters, AvgPerCell=Avg, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+            figSizeFactor = 0.8, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+fig.suptitle(drugs[0])
+
+plt.show()
+
 
 
 # %%%% Test_2
 
 data_main = MecaData_Drugs
-dates = ['22-03-30'] # ['22-03-28', '22-03-30']
+
 dfH0 = taka2.getMatchingFits(data_main, fitType = 'H0', output = 'df')
 
-# %%%% Test_3
-
-data_main = MecaData_Drugs
 dates = ['22-03-28', '22-03-30'] # ['22-03-28', '22-03-30']
+
 data_wH0 = taka2.getAllH0InTable(data_main)
 
 Filters = [(data_main['validatedThickness'] == True),
@@ -4192,295 +5138,227 @@ plt.show()
 
 
 
-# %%%% K(s) for MCA3
+# %%%% K(s) for drugs
+
+# %%%%% Date 2
 
 #### Making the Dataframe 
 
 data = MecaData_Drugs
-
 dates = ['22-03-30']
 
-thicknessType = 'ctFieldThickness'
-condCol = 'drug'
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'] != 'none'),
+            ]
 
-filterList = [(data['validatedThickness'] == True), 
-           (data['bestH0'] <= 800),
-           (data['drug'].apply(lambda x : x in ['none', 'dmso', 'blebbistatin'])),
-           (data['date'].apply(lambda x : x in dates))]
+out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig1, ax1, exportDf1, countDf1 = out1
+ax1.set_ylim([0, 10])
 
-globalFilter = filterList[0]
-for k in range(1, len(filterList)):
-    globalFilter = globalFilter & filterList[k]
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
 
-data_f = data[globalFilter]
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
 
-# data_f['HoxB8_Co'] = data_f['substrate'].values + \
-#                      np.array([' & ' for i in range(data_f.shape[0])]) + \
-#                      data_f['cell subtype'].values
-
-width = 150 # 200
-fitCenters =  np.array([S for S in range(100, 700, 50)])
-# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
-# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
-
-# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
-regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
-
-listColumnsMeca = []
-
-KChadwick_Cols = []
-Kweight_Cols = []
-
-for rFN in regionFitsNames:
-    listColumnsMeca += ['K_'+rFN, 'K_CIW_'+rFN, 'R2_'+rFN, 
-                        'Npts_'+rFN, 'validatedFit_'+rFN]
-    KChadwick_Cols += [('K_'+rFN)]
-
-    K_CIWidth = data_f['K_CIW_'+rFN] #.apply(lambda x : x.strip('][').split(', ')).apply(lambda x : (np.abs(float(x[0]) - float(x[1]))))
-    Kweight = (data_f['K_'+rFN]/K_CIWidth)**2
-    data_f['K_weight_'+rFN] = Kweight
-    data_f['K_weight_'+rFN] *= data_f['K_'+rFN].apply(lambda x : (x<1e6))
-    data_f['K_weight_'+rFN] *= data_f['R2_'+rFN].apply(lambda x : (x>1e-2))
-    data_f['K_weight_'+rFN] *= data_f['K_CIW_'+rFN].apply(lambda x : (x!=0))
-    Kweight_Cols += [('K_weight_'+rFN)]
-    
-
-#### Useful functions
-
-def w_std(x, w):
-    m = np.average(x, weights=w)
-    v = np.average((x-m)**2, weights=w)
-    std = v**0.5
-    return(std)
-
-def nan2zero(x):
-    if np.isnan(x):
-        return(0)
-    else:
-        return(x)
-
-
-#### Whole curve
-
-
-valStr = 'K_'
-weightStr = 'K_weight_'
-
-
-
-# regionFitsNames = [str(fitMin[ii]) + '<s<' + str(fitMax[ii]) for ii in range(len(fitMin))]
-regionFitsNames = ['S={:.0f}+/-{:.0f}'.format(fitCenters[ii], width//2) for ii in range(len(fitCenters))]
-
-fig, axes = plt.subplots(2,1, figsize = (9,12))
-ListDfWhole = []
-
-conditions = np.array(data_f[condCol].unique())
-
-
-cD = {co: [styleDict1[co]['color'], styleDict1[co]['color']] for co in conditions}
-
-# oD = {'none': [-15, 1.02] , 'doxycyclin': [5, 0.97] }
-# lD = {'naked glass & ctrl':', 
-#       'naked glass & tko':'',
-#       '20um fibronectin discs & tko':'',
-#       '20um fibronectin discs & ctrl':''}
-
-for co in conditions:
-    print(co)
-    Kavg = []
-    Kstd = []
-    D10 = []
-    D90 = []
-    N = []
-    
-    data_ff = data_f[data_f[condCol] == co]
-    
-    
-    for ii in range(len(fitCenters)):
-        S = fitCenters[ii]
-        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
-        variable = valStr+rFN
-        weight = weightStr+rFN
-        
-        x = data_ff[variable].apply(nan2zero).values
-        w = data_ff[weight].apply(nan2zero).values
-        
-        print(S)
-        print(np.sum(w))
-        
-        m = np.average(x, weights=w)
-        v = np.average((x-m)**2, weights=w)
-        std = v**0.5
-        
-        d10, d90 = np.percentile(x[x != 0], (10, 90))
-        n = len(x[x != 0])
-        
-        Kavg.append(m)
-        Kstd.append(std)
-        D10.append(d10)
-        D90.append(d90)
-        N.append(n)
-    
-    Kavg = np.array(Kavg)
-    Kstd = np.array(Kstd)
-    D10 = np.array(D10)
-    D90 = np.array(D90)
-    N = np.array(N)
-    Kste = Kstd / (N**0.5)
-    
-    alpha = 0.975
-    dof = N
-    q = st.t.ppf(alpha, dof) # Student coefficient
-    
-    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
-    
-    for ax in axes:
-        # weighted means -- weighted ste 95% as error
-        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
-                       ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
-        ax.set_ylim([500,2e4])
-        ax.set_xlim([0,1100])
-        ax.set_title('K(s) - All compressions pooled')
-        
-        ax.legend(loc = 'upper left')
-        
-        ax.set_xlabel('Stress (Pa)')
-        ax.set_ylabel('K (Pa)')
-        
-        for kk in range(len(N)):
-            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), 
-                    fontsize = 8, color = cD[co][1])
-        # for kk in range(len(N)):
-        #     ax[k].text(x=fitCenters[kk]+oD[co][0], y=Kavg[kk]**oD[co][1], 
-        #                s='n='+str(N[kk]), fontsize = 6, color = cD[co][k])
-        
-    axes[0].set_yscale('log')
-    axes[0].set_ylim([500,2e4])
-    
-    axes[1].set_ylim([0,1.4e4])
-    
-    fig.suptitle('K(s)'+'\n(fits width: {:.0f}Pa)'.format(width))    
-    
-    df_val = pd.DataFrame(d_val)
-    ListDfWhole.append(df_val)
-    dftest = pd.DataFrame(d)
-
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
 plt.show()
 
-# ufun.archiveFig(fig, name='MCA3_K(s)', figDir = 'MCA3_project', dpi = 100)
+# %%%%% Date 1
 
+#### Making the Dataframe 
 
+data = MecaData_Drugs
+dates = ['22-11-23']
 
-#### Local zoom
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
 
-Sinf, Ssup = 200, 300
-extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
-fitCenters = fitCenters[(fitCenters>=(Sinf)) & (fitCenters<=Ssup)] # <800
-# fitMin = np.array([int(S-(width/2)) for S in fitCenters])
-# fitMax = np.array([int(S+(width/2)) for S in fitCenters])
+out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig1, ax1, exportDf1, countDf1 = out1
 
-data2_f = data_f
-globalExtraFilter = extraFilters[0]
-for k in range(1, len(extraFilters)):
-    globalExtraFilter = globalExtraFilter & extraFilters[k]
-data2_f = data2_f[globalExtraFilter]  
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
 
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
 
-fig, axes = plt.subplots(2,1, figsize = (9,12))
-
-conditions = np.array(data_f[condCol].unique())
-print(conditions)
-
-
-cD = {co: [styleDict1[co]['color'], styleDict1[co]['color']] for co in conditions}
-
-listDfZoom = []
-
-for co in conditions:
-    
-    Kavg = []
-    Kstd = []
-    D10 = []
-    D90 = []
-    N = []
-    
-    data_ff = data2_f[data_f[condCol] == co]
-    
-    for ii in range(len(fitCenters)):
-        S = fitCenters[ii]
-        rFN = 'S={:.0f}+/-{:.0f}'.format(S, width//2)
-        S = fitCenters[ii]
-        variable = valStr+rFN
-        weight = weightStr+rFN
-        
-        x = data_ff[variable].apply(nan2zero).values
-        w = data_ff[weight].apply(nan2zero).values
-        
-
-        
-        m = np.average(x, weights=w)
-        v = np.average((x-m)**2, weights=w)
-        std = v**0.5
-        
-        d10, d90 = np.percentile(x[x != 0], (10, 90))
-        n = len(x[x != 0])
-        
-        Kavg.append(m)
-        Kstd.append(std)
-        D10.append(d10)
-        D90.append(d90)
-        N.append(n)
-    
-    Kavg = np.array(Kavg)
-    Kstd = np.array(Kstd)
-    D10 = np.array(D10)
-    D90 = np.array(D90)
-    N = np.array(N)
-    Kste = Kstd / (N**0.5)
-    
-    alpha = 0.975
-    dof = N
-    q = st.t.ppf(alpha, dof) # Student coefficient
-    
-    d_val = {'S' : fitCenters, 'Kavg' : Kavg, 'Kstd' : Kstd, 'D10' : D10, 'D90' : D90, 'N' : N}
-    
-    for ax in axes:
-        # weighted means -- weighted ste 95% as error
-        ax.errorbar(fitCenters, Kavg, yerr = q*Kste, marker = 'o', color = cD[co][0], 
-                        ecolor = cD[co][1], elinewidth = 0.8, capsize = 3, label = co)
-        
-        ax.set_xlim([Sinf-50, Ssup+50])
-        ax.set_title('K(s)\nOnly compressions including the [{:.0f},{:.0f}]Pa range'.format(Sinf, Ssup))
-        
-        # weighted means -- D9-D1 as error
-        # ax[1].errorbar(fitCenters, Kavg, yerr = [D10, D90], marker = 'o', color = cD[co][1], 
-        #                 ecolor = 'k', elinewidth = 0.8, capsize = 3, label = lD[co]) 
-        # ax[1].set_ylim([500,2e4])
-        # ax[1].set_xlim([200,900])
-        
-        # for k in range(2):
-        ax.legend(loc = 'upper left')
-        
-        ax.set_xlabel('Stress (Pa)')
-        ax.set_ylabel('K (Pa)')
-        for kk in range(len(N)):
-            ax.text(x=fitCenters[kk], y=Kavg[kk]**0.9, s='n='+str(N[kk]), fontsize = 8, color = cD[co][1])
-    
-    axes[0].set_yscale('log')
-    axes[0].set_ylim([500,2e4])
-    
-    axes[1].set_ylim([0,15000])
-    
-    fig.suptitle('K(s)'+' - (fits width: {:.0f}Pa)'.format(width))
-    
-    df_val = pd.DataFrame(d_val)
-    listDfZoom.append(df_val)
-
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
 plt.show()
 
-# ufun.archiveFig(fig, name='MCA3_K(s)_localZoom_{:.0f}-{:.0f}Pa'.format(Sinf, Ssup), 
-#                 figDir = 'MCA3_project', dpi = 100)
 
 
+# %%%  Cell types
 
+# %%%% Naive plots -> GOOD FOR 24/01
+
+# %%%%% 1
+
+data_main = MecaData_All
+# dates = 
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data_wFits = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+# %%%%% Stiffness
+
+Filters = [(data_wFits['validatedThickness'] == True), 
+           (data_wFits['surroundingThickness'] <= 800),
+           # (data['fit_valid'] == True),
+           (data_wFits['fit_K'] > 0),
+            (data_wFits['fit_K'] < 2e4),
+           (data_wFits['fit_R2'] > 0.1),
+           (data_wFits['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data_wFits['cell subtype'].apply(lambda x : x in ['mouse-primary', 'ctrl', 'aSFL-A11', 'aSFL-LG+++'])),
+           (data_wFits['date'].apply(lambda x : (x.startswith('18') or x.startswith('22'))))]
+
+co_order=[] 
+box_pairs=[]
+
+fig, ax = D1Plot_K(data_wFits, condCols=['cell type'], Filters=Filters, AvgPerCell = True, 
+                    parm = 'fit_K', weightParm = 'fit_ciwK',
+                    co_order=co_order, box_pairs=box_pairs, stats=True, statMethod='Mann-Whitney', 
+                    Boxplot=True, stressBoxPlot = 2, styleDict = styleDict1,
+                    figSizeFactor = 2, markersizeFactor = 1, scale = 'lin',
+                    returnData = 0, returnCount = 0)
+
+# fig, ax = D1Plot(data_wFits, condCols=['cell type'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
+#                 Boxplot=True, cellID='cellID', co_order=[], 
+#                 AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+#                 figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
+
+# rD = {'none' : 'Control\n(nothing)', 'dmso' : 'Control\n(DMSO)', 
+#       'blebbistatin' : 'Blebbistatin', 'latrunculinA' : 'LatA', 
+#       'bestH0' : 'Thickness (nm)', 'K' + fit : 'fit_KTangeantial Modulus (Pa)'}
+
+# renameAxes(ax, rD)
+renameAxes(ax, renameDict1)
+
+# ax[0].set_ylim([0, 1000])
+# ax[0].legend(loc = 'upper right', fontsize = 8)
+# ax[1].legend(loc = 'upper right', fontsize = 8)
+fig.suptitle('Cell types\nPreliminary data')
+# ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
+plt.show()
+
+
+# %%%%% Thickness
+data_main = MecaData_All
+data = data_main
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['bestH0'] <= 1000),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['cell subtype'].apply(lambda x : x in ['mouse-primary', 'ctrl', 'aSFL-A11'])), #, 'aSFL-LG+++'])),
+           (data['date'].apply(lambda x : (x.startswith('18') or x.startswith('22'))))]
+
+co_order=['3T3', 'DC', 'HoxB8-Macro']
+
+fig, ax = D1Plot(data, condCols=['cell type'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], stressBoxPlot=2,
+                figSizeFactor = 1, markersizeFactor=1, orientation = 'h')
+
+# rD = {'none' : 'Control\n(nothing)', 'dmso' : 'Control\n(DMSO)', 
+#       'blebbistatin' : 'Blebbistatin', 'latrunculinA' : 'LatA', 
+#       'bestH0' : 'Thickness (nm)', 'K' + fit : 'fit_KTangeantial Modulus (Pa)'}
+
+# renameAxes(ax, rD)
+renameAxes(ax, renameDict1)
+
+# ax[0].set_ylim([0, 1000])
+# ax[0].legend(loc = 'upper right', fontsize = 8)
+# ax[1].legend(loc = 'upper right', fontsize = 8)
+fig.suptitle('Cell types')
+# ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
+plt.show()
+
+# %%%%% K(s) - 1
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['substrate'].apply(lambda x : x in ['BSA coated glass', '20um fibronectin discs'])),
+           (data['cell subtype'].apply(lambda x : x in ['mouse-primary', 'ctrl', 'aSFL-A11'])),
+           (data['date'].apply(lambda x : (x.startswith('18') or x.startswith('22'))))]
+
+out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters,
+                                condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+fig1, ax1, exportDf1, countDf1 = out1
+ax1.set_ylim([0, 14])
+
+out2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell type', mode = '250_500', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2, exportDf2, countDf2 = out2
+ax2.set_ylim([0, 14])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+
+# %%%%% K(s) - 2
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['substrate'].apply(lambda x : x in ['BSA coated glass', '20um fibronectin discs'])),
+           (data['cell subtype'].apply(lambda x : x in ['mouse-primary', 'ctrl', 'aSFL-A11'])),
+           (data['date'].apply(lambda x : (x.startswith('18') or x.startswith('22'))))]
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                Sinf = 0, Ssup = 1000,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 14])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell type', mode = '250_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 14])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
 

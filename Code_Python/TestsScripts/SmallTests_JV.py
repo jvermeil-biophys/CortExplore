@@ -26,7 +26,9 @@ df['A'] = df[valCol] * df[weightCol]
 grouped1 = df.groupby(by=groupCols)
 data_agg = grouped1.agg({'A': ['count', 'sum'], 
                          weightCol: 'sum'}).reset_index()
-data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
+# data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
+
+# data_id2 = df.groupby('course').agg('first')
 
 
 # %%
