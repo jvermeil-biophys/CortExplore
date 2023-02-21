@@ -350,6 +350,41 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%% Next experiment day
 # %%%% Next manipe
 
+# %%% 23.02.16, compressionsLowStart of 3T3-ATCC-2023, M450, M1 = DMSO, M2 = Blebbi 1X
+
+# %%%% 23.02.16_M1 C1 Seulement
+
+dates = '23.02.16'
+manips, wells, cells = 1, 1, 13
+depthoNames = '23.02.16_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.02.16_M1
+
+dates = '23.02.16'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.02.16_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.02.16_M2
+
+dates = '23.02.16'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.02.16_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+
 # %%% 22.11.23, compressionsLowStart of 3T3 LG +++, M450, M1 = DMSO, M2 = LatA - 5x, M3 = DMSO
 # %%%% 22.11.23_M1 C1 Seulement
 dates = '22.11.23'

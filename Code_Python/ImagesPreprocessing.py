@@ -46,17 +46,17 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '22.11.16'
-DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
-# prefix = 'cell'
-# channel = 'w1TIRF DIC'
-microscope = 'labview'
+# date = '22.11.16'
+# DirSave = os.path.join(cp.DirDataRaw, date)
+# DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
+# # prefix = 'cell'
+# # channel = 'w1TIRF DIC'
+# microscope = 'labview'
 
 #%% Define parameters # Jojo
 
-date = '22.11.23'
-DirExt = 'G:/2022-11-23_3t3aSFL-LaGFP+++_LatA' #'/M4_patterns_ctrl'
+date = '23.02.16'
+DirExt = 'E:/2023-02-16_3T3atcc' #'/M4_patterns_ctrl'
 DirSave = os.path.join(cp.DirDataRaw, date)
 
 prefix = ''
@@ -437,7 +437,8 @@ for i in range(len(allCellsRaw)):
             print(gs.CYAN + '--> Will be copied' + gs.NORMAL)
         except:
             print(gs.BRIGHTRED + '/!\ Unexpected error during file handling' + gs.NORMAL)
-        
+
+#### DO THIS !
 copyFieldFiles(allCells, DirSave)
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
@@ -446,7 +447,7 @@ copyFieldFiles(allCells, DirSave)
 
 instructionText = "Draw the ROIs to crop !\n\n(1) Click on the image to define a rectangular selection\n"
 instructionText += "(2) Press 'a' to accept your selection, 'r' to redraw it, "
-instructionText += "or 's' if you have a second selection to make (don't use 'm' more than once per stack)\n"
+instructionText += "or 's' if you have a second selection to make (don't use 's' more than once per stack)\n"
 instructionText += "(3) Make sure to choose the number of files you want to crop at once\nin the variable 'limiter'"
 instructionText += "\n\nC'est parti !\n"
 

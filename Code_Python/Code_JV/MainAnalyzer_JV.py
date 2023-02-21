@@ -14,7 +14,7 @@ import pandas as pd
 import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
-import matplotlib.pyplot as plt
+
 
 
 import os
@@ -201,20 +201,37 @@ res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName
 # %%%% Refresh an entire table
 
 res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'MecaData_All_JV', 
-                                    save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+                                    save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
+
+# %%%% ATCC-2023
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_20'],
+                'method_bestH0':'Chadwick',
+                'zone_bestH0':'%f_10',
+                }
+
+AtccTask = '23-02-16'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+
+
 
 # %%%% Drugs
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['pts_10', 'pts_15', 'pts_20', '%f_5', '%f_10', '%f_15', '%f_20', '%f_25'],
+                'zones_H0':['pts_10', 'pts_15', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15', '%f_20', '%f_25'],
                 'method_bestH0':'Dimitriadis',
                 'zone_bestH0':'%f_15',
                 }
 
 drugTask = '22-03-28 & 22-03-30 & 22-11-23'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs', 
-                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs', 
+                                    save = False, PLOT = False, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
 
 # %%%% Non-Lin
 
@@ -293,7 +310,7 @@ df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['%f_20'],
+                'zones_H0':['%f_10', '%f_20', 'pts_5'],
                 'method_bestH0':'Dimitriadis',
                 'zone_bestH0':'%f_20',
                 }
@@ -312,10 +329,10 @@ fitSettings = {# H0
 #                 'plotHW': 50
 #                 }
 
-fitSettings = {}
+# fitSettings = {}
 plotSettings = {}
 
-PlotTask = '22-03-28'
+PlotTask = '22-02-09_M1_P1_C9'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
                                    save = False, PLOT = True, source = 'Python', 
                                    plotSettings = plotSettings, fitSettings = fitSettings)
