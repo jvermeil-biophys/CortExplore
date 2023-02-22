@@ -1201,7 +1201,7 @@ class CellCompression:
         self.df_stressRegions = pd.DataFrame({})
         self.df_stressGaussian = pd.DataFrame({})
         self.df_nPoints = pd.DataFrame({})
-
+        self.df_log = pd.DataFrame({})
         
         
         
@@ -1261,14 +1261,21 @@ class CellCompression:
         
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
-            fitError = IC.dictFitFH_Chadwick['error']
-            if not fitError:
-                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
-                        color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+            # print(ii)
+            # print(IC.dictFitFH_Chadwick)
+            compValid = IC.isValidForAnalysis
+            
+            if compValid:
+                fitError = IC.dictFitFH_Chadwick['error']
                 
-            else:
-                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
-                        color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
+                if not fitError:
+                    ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                            color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+                    
+                else:
+                    print(ii)
+                    ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                            color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
         
         (axm, axM) = ax.get_ylim()
         ax.set_ylim([min(0,axm), axM])
@@ -1337,6 +1344,10 @@ class CellCompression:
                                                       plotSettings['plotHW'])
             if fitType == 'nPoints':
                 figTitle += (' - ' + plotSettings['plotPoints'])
+            
+            if fitType == 'Log':
+                figTitle += (' - ' + plotSettings['plotLog'])
+            
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1367,6 +1378,10 @@ class CellCompression:
                                                   plotSettings['plotHW'])
         if fitType == 'nPoints':
             figTitle += (' - ' + plotSettings['plotPoints'])
+            
+        if fitType == 'Log':
+            figTitle += (' - ' + plotSettings['plotLog'])
+            
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1410,12 +1425,12 @@ class CellCompression:
         
         # 1.
         if plotSettings['FH(t)']:
-            try:
-                name = self.cellID + '_01_h(t)'
-                fig, ax = self.plot_Timeseries(plotSettings)
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_01_h(t)'
+            fig, ax = self.plot_Timeseries(plotSettings)
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
             
         # 2.
         if plotSettings['F(H)']:
@@ -1428,19 +1443,19 @@ class CellCompression:
             
         # 3.
         if plotSettings['S(e)_stressRegion']:
-            # try:
-            name = self.cellID + '_03-1_S(e)_stressRegion'
-            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressRegion')
-            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
+            try:
+                name = self.cellID + '_03-1_S(e)_stressRegion'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressRegion')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
         if plotSettings['K(S)_stressRegion']:
-            # try:
-            name = self.cellID + '_03-2_K(S)_stressRegion'
-            fig, ax = self.plot_KS(plotSettings, fitType = 'stressRegion')
-            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
+            try:
+                name = self.cellID + '_03-2_K(S)_stressRegion'
+                fig, ax = self.plot_KS(plotSettings, fitType = 'stressRegion')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
             
         # 4.
         if plotSettings['S(e)_stressGaussian']:
@@ -1473,6 +1488,24 @@ class CellCompression:
                 ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             except:
                 pass
+            
+
+        # 6.
+        if plotSettings['S(e)_Log']:
+            try:
+                name = self.cellID + '_06-1_S(e)_Log'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'Log')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+            
+        if plotSettings['K(S)_Log']:
+            # try:
+            name = self.cellID + '_06-2_K(S)_Log'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'Log')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass     
             
             
     def exportTimeseriesWithStressStrain(self):
@@ -1611,6 +1644,7 @@ class CellCompression:
         ctFieldDZ = np.median(self.tsDf.loc[self.tsDf['idxAnalysis'] == 0, 'dz'].values)
             
         for i in range(N):
+            
             IC = self.listIndent[i]
             
             # Identifiers
@@ -1682,6 +1716,7 @@ class CellCompression:
                 try:
                     method = 'Chadwick'
                     results['error_'+ method][i] = IC.dictFitFH_Chadwick['error']
+                    
                     results['nbPts_'+ method][i] = IC.dictFitFH_Chadwick['nbPts']
                     results['E_'+ method][i] = IC.dictFitFH_Chadwick['E']
                     results['ciwE_'+ method][i] = IC.dictFitFH_Chadwick['ciwE']
@@ -1739,11 +1774,13 @@ class CellCompression:
             df = pd.concat([IC.df_nPoints for IC in self.listIndent], axis = 0)
             df.reset_index(drop=True, inplace=True)
             self.df_nPoints = df
+        
+        if fitSettings['doLogFits']:
+            df = pd.concat([IC.df_log for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_log = df
     
-    
-    #### METHODS IN DEVELOPMENT
-    
-    
+        
     def getH0Df(self):
         L = []
         for IC in self.listIndent:
@@ -1751,11 +1788,14 @@ class CellCompression:
         df = pd.concat(L, axis = 0)
         return(df)
     
+    
+    #### METHODS IN DEVELOPMENT
+    
     def plot_KS_smooth(self):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, ax = plt.subplots(1,1, figsize = (7,5))
-        figTitle = 'Tangeantial modulus'
+        figTitle = 'Tangential modulus'
         fig.suptitle(figTitle)
         
         listArraysStrain = []
@@ -1862,11 +1902,13 @@ class IndentCompression:
         self.dictFitsSS_stressRegions = {}
         self.dictFitsSS_stressGaussian = {}
         self.dictFitsSS_nPoints = {}
+        self.dictFitsSS_log = {}
         
         # dictFits_To_DataFrame()
         self.df_stressRegions = pd.DataFrame({})
         self.df_stressGaussian = pd.DataFrame({})
         self.df_nPoints = pd.DataFrame({})
+        self.df_log = pd.DataFrame({})
         
         
         
@@ -2225,6 +2267,7 @@ class IndentCompression:
             mask = np.ones_like(self.hCompr, dtype = bool)
         h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
         params, ses, error = fitChadwick_hf(h, f, D)
+        
         E, H0 = params
         hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
         x = f
@@ -2234,7 +2277,10 @@ class IndentCompression:
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
+        
+
         self.dictFitFH_Chadwick = dictFit
+        
 
                 
     def fitFH_Dimitriadis(self, fitValidationSettings, mask = []):
@@ -2388,6 +2434,43 @@ class IndentCompression:
                                  err_chi2, fitValidationSettings)
         self.dictFitsSS_nPoints[id_range] = dictFit
     
+    def fitSS_Log(self, mask, fitValidationSettings):
+        """
+        
+
+        Parameters
+        ----------
+        mask : TYPE
+            DESCRIPTION.
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        iStart = ufun.findFirst(1, mask)
+        iStop = iStart + np.sum(mask)
+        id_range = str(iStart) + '_' +str(iStop)
+        stress, strain = self.stressCompr, self.strainCompr
+        params, ses, error = fitLinear_ss(stress, strain, weights = mask)
+        
+        K, strain0 = params
+        strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+        
+        x = stress[mask]
+        y, yPredict = strain[mask], strainPredict
+        #### err_Chi2 for strain
+        err_chi2 = 0.01
+        center = np.median(x)
+        halfWidth = (np.max(x) - np.min(x))/2
+        
+        dictFit = makeDictFit_ss(params, ses, error, 
+                                 center, halfWidth, x, y, yPredict, 
+                                 err_chi2, fitValidationSettings)
+        self.dictFitsSS_log[id_range] = dictFit
+    
     
     def dictFits_To_DataFrame(self, fitSettings):
         """
@@ -2423,6 +2506,13 @@ class IndentCompression:
             df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_nPoints = df
+        
+        if fitSettings['doLogFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_log)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
+            self.df_log = df
     
     
     
@@ -2591,6 +2681,21 @@ class IndentCompression:
                             y = d['yPredict']
                             color = gs.colorList30[k]
                             ax.plot(y, x, color = color, ls = ls, lw = lw)
+                
+                if fitType == 'Log':
+                    dictFit = self.dictFitsSS_log
+                    id_ranges = list(dictFit.keys())
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        d = dictFit[idr]
+                        if not d['error']:
+                            if not d['valid']:
+                                ls = '--'
+                            x = d['x']
+                            y = d['yPredict']
+                            color = gs.colorList30[k]
+                            ax.plot(y, x, color = color, ls = ls, lw = lw)
                     
     
                 
@@ -2712,12 +2817,74 @@ class IndentCompression:
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
                                     ms = 5, mec = mec, ecolor = colors[k])
             
-            
+            if fitType == 'Log':
+                df = self.df_log
+                ax.set_xlabel('Stress (Pa)')
+                ax.set_xlim([0, 1200])
+                # ax.set_xscale('log')
+                # ax.set_yscale('log')
+                # ax.set_ylim([0, 6])
+                legendText = ''
+                N = df.shape[0]
+                colors = gs.colorList30[:N]
+                XtoFit = []
+                YtoFit = []
+                YerrToFit = []
+                colorMask = []
+                for k in range(N):
+                    X = df['center_x'].values[k]
+                    Y = df['K'].values[k]/1000
+                    Yerr = df['ciwK'].values[k]/1000
+
+                    if df['valid'].values[k]:
+                        color = colors[k]
+                        mec = 'none'
+                        XtoFit.append(X)
+                        YtoFit.append(Y)
+                        YerrToFit.append(Yerr)
+                    else:
+                        color = 'w'
+                        mec = colors[k]
+                        
+                    if (not pd.isnull(Y)) and (Y > 0):
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                    ms = 5, mec = mec, ecolor = colors[k])
+                
+                XtoFit, YtoFit, YerrToFit = np.asarray(XtoFit), np.asarray(YtoFit), np.asarray(YerrToFit)
+                
+                if len(XtoFit) > 4:
+                    posValues = ((XtoFit > 0) & (YtoFit > 0))
+                    XtoFit, YtoFit = XtoFit[posValues], YtoFit[posValues]
+                    print(YerrToFit)
+     
+                    #Unwighted linear regression
+                    # params, results = ufun.fitLine(np.log(XtoFit), np.log(YtoFit)) # Y=a*X+b ; params[0] = b,  params[1] = a
+                    
+                    #Weighted linear regression
+                    params, results = ufun.fitLineWeighted(np.log(XtoFit), np.log(YtoFit), 1/(YerrToFit))
+                    k = np.exp(params[0])
+                    a = params[1]
+                    R2 = results.rsquared
+                    pval = results.pvalues[1] # pvalue on the param 'a'
+                    legendText += " Y = {:.1e} * X^{:.1f}".format(k, a)
+                    legendText += " \n p-val = {:.3f}".format(pval)
+                    legendText += " \n R2 = {:.2f}".format(R2)
+                    # print("Y = {:.4e} * X^{:.4f}".format(k, a))
+                    # print("p-value on the 'a' coefficient: {:.4e}".format(pval))
+                    # print("R2 of the fit: {:.4f}".format(R2))
+                    # fitY = k * X**a
+                    # imin = np.argmin(X)
+                    # imax = np.argmax(X)
+                    # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1', 
+                    #         color = color, zorder = 4)
+                    fitX = np.linspace(np.min(XtoFit), np.max(XtoFit), 100)
+                    fitY = k * fitX**a
+                    ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                    ax.legend(loc = 'upper left', prop={'size': 6})
+        
             for item in ([ax.title, ax.xaxis.label, \
                           ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
                 item.set_fontsize(9)
-            
-            
     
     #### METHODS IN DEVELOPMENT
             
@@ -2888,9 +3055,6 @@ class IndentCompression:
         fig.tight_layout()
             
             
-            
-            
-            
     def fitSS_smooth(self):
         if not self.error_bestH0:
             T, stress, strain = self.TCompr - self.TCompr[0], self.stressCompr, self.strainCompr
@@ -3058,6 +3222,9 @@ DEFAULT_fitSettings = {# H0
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       'doLogFits' : True,
+                       'nbPtsFitLog' : 13,
+                       'overlapFitLog' : 3,
                        }
 
 
@@ -3088,11 +3255,15 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'S(e)_nPoints':True,
                         'K(S)_nPoints':True,
+                        'S(e)_Log':True,
+                        'K(S)_Log':True,
                         # Fits plotting parameters
                         'plotCenters':DEFAULT_plot_centers,
                         'plotHW':DEFAULT_plot_halfWidth,
                         'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
+                        'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
                         }
         
 # %%%% Main 
@@ -3147,6 +3318,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     halfWidths_StressFits = fitSettings['halfWidths_StressFits']
     nbPtsFit = fitSettings['nbPtsFit']
     overlapFit = fitSettings['overlapFit']
+    nbPtsFitLog = fitSettings['nbPtsFitLog']
+    overlapFitLog = fitSettings['overlapFitLog']
     
     #### 0.2 Options for fits validation
     fitValidationSettings = ufun.updateDefaultSettingsDict(fitValidationSettings, 
@@ -3180,7 +3353,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     
     #### 3. Start looping over indents
     for i in range(Ncomp):
-
+        
         #### 3.1 Correct jumps
         CC.correctJumpForCompression(i)
             
@@ -3201,9 +3374,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
             IC.refineStartStop()            
             
-            #### 3.7 Fit with Chadwick model of the force-thickness curve     
+            #### 3.7 Fit with Chadwick model of the force-thickness curve   
             IC.fitFH_Chadwick(fitValidationSettings)
-                
+            
             #### 3.8 Find the best H0
             IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
             
@@ -3222,7 +3395,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                         validRange = ((C-HW) > 0)
                         if validRange:
                             IC.fitSS_stressRegion(C, HW, fitValidationSettings)
-            
+           
             #### 3.10.2 Local fits based on sliding gaussian weights based on stress values
             if fitSettings['doStressGaussianFits']:
                 for jj in range(len(halfWidths_StressFits)):
@@ -3244,7 +3417,20 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                     
                     iStart = iStop - overlapFit
                     iStop = iStart + nbPtsFit
+            
+            #### 3.10.3 Local fits based on fixed number of points
+            if fitSettings['doLogFits']:
+                nbPtsTotal = len(IC.stressCompr)
+                iStart = 0
+                iStop = iStart + nbPtsFitLog
+                
+                while iStop < nbPtsTotal:
+                    mask = np.array([((i >= iStart) and (i < iStop)) for i in range(nbPtsTotal)])
+                    IC.fitSS_Log(mask, fitValidationSettings)
                     
+                    iStart = iStop - overlapFitLog
+                    iStop = iStart + nbPtsFitLog
+            
             #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
             IC.dictFits_To_DataFrame(fitSettings)
             
@@ -3270,6 +3456,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     # else:
     #     plt.close('all')
     
+    
     if PLOT:        
         CC.plot_and_save(plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells')
         
@@ -3290,11 +3477,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             'results_stressRegions' : CC.df_stressRegions,
             'results_stressGaussian' : CC.df_stressGaussian,
             'results_nPoints' : CC.df_nPoints,
+            'results_Log' : CC.df_log,
             'results_H0' : df_H0
             }
 
     print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
     warnings.filterwarnings('default')
+    
+    print(gs.ORANGE + 'END' + gs.NORMAL)
     
     return(res)
 
@@ -3367,11 +3557,13 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                     cellID = ufun.findInfosInFileName(f, 'cellID')
                     fileName = cellID + '_' + k + '.csv' # Example: '22-05-03_M4_P1_C17_results_nPoints.csv'
                     if fitsSubDir == '':
-                        path = os.path.join(cp.DirDataAnalysisFits, fileName)
+                        df_path = os.path.join(cp.DirDataAnalysisFits, fileName)
                     else:
-                        path = os.path.join(cp.DirDataAnalysisFits, fitsSubDir, fileName)
+                        subdir_path = os.path.join(cp.DirDataAnalysisFits, fitsSubDir)
+                        ufun.softMkdir(subdir_path)
+                        df_path = os.path.join(subdir_path, fileName)
                         
-                    df.to_csv(path, sep=';', index=False)
+                    df.to_csv(df_path, sep=';', index=False)
                     if cp.CloudSaving != '':
                         cloudpath = os.path.join(cp.DirCloudAnalysisFits, fileName)
                         df.to_csv(cloudpath, sep=';', index=False)
@@ -3467,6 +3659,8 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
         Make and save the plots or not.
     * source : string
         'Matlab' or 'Python', default is 'Python'.
+    * fitsSubDir : string, optionnal
+        A subdirectory to save the local fit files.
     * **kwargs : setting dictionaries.
 
     Returns
@@ -3578,8 +3772,10 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     
     if imported_mecaDf:
         listMecaDf.append(existing_mecaDf)
-        
+    
+    print(list_selectedMecaFiles)
     if Nfiles > 0:
+        
         for i in range(0, Nfiles, 10):
             i_start, i_stop = i, min(i+10, Nfiles)
             bloc_selectedMecaFiles = list_selectedMecaFiles[i_start:i_stop]
@@ -4022,6 +4218,7 @@ def getAllH0InTable(mecaDf, fitsSubDir = ''):
     """
     
     fitsDf = getMatchingFits(mecaDf, fitsSubDir = fitsSubDir, fitType = 'H0', filter_fitID = None, output = 'df')
+    print(fitsDf.columns)
     mergeCols = ['cellID', 'compNum']
     rd = {c : 'allH0_' + c for c in fitsDf.columns if c not in mergeCols}
     fitsDf = fitsDf.rename(columns = rd) 
