@@ -261,8 +261,8 @@ class PincherTimeLapse:
             self.totalActivationImages = np.array([np.sum(self.LoopActivations < kk) 
                                                for kk in range(self.nLoop)])
             
-            
-            # print(self.excludedFrames_outward)
+            print('total activation images')
+            print(self.totalActivationImages)
             self.excludedFrames_outward += self.totalActivationImages
         else:
             pass
@@ -305,6 +305,7 @@ class PincherTimeLapse:
             print(offsets)
             for i in range(self.nLoop):
                 j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
+                print(j)
                 checkSum = np.sum(self.I[j])
                 while checkSum == 0:
                     print('Black image found')
@@ -479,10 +480,11 @@ class PincherTimeLapse:
         #     print(mask_notAlreadyExcluded)
         # else:
         #     mask_notAlreadyExcluded = np.ones(len(self.dictLog['status_frame']), dtype = bool)
-
+        
         for i in range(self.nLoop):
             totalExcludedOutward = self.excludedFrames_outward[i]
             jstart = int(i*N0 + totalExcludedOutward)
+            print(jstart)
             if Nramp0 == 0:
                 for j in range(N0): # N
                     self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
@@ -1166,6 +1168,7 @@ class PincherTimeLapse:
                 
                 # 'optoGen' or 'compressions' but b=probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
+                    # print(iLoop)
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)

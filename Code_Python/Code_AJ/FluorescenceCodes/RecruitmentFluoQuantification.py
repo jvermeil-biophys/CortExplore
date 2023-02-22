@@ -388,14 +388,14 @@ for j in range(len(allCells)):
             # warped_copy[j] = np.average(warped_img[j, maxval - cortexThickness:maxval + cortexThickness])
             # warped_mask[j, maxval - cortexThickness],  warped_mask[j, maxval + cortexThickness] = 0, 0
         
-        # final = warped_copy
-        # plt.imshow(maskVerifyBounds)
-        # plt.show()
+        final = warped_copy
+        plt.imshow(maskVerifyBounds)
+        plt.show()
         
         allKymo.append(warped_copy)
     
     
-    plt.style.use('dark_background')
+    plt.style.use('default')
     cmap = 'plasma'
     # cmap = 'viridis'
     allKymo = np.asarray(allKymo)
@@ -475,24 +475,24 @@ for j in range(len(allCells)):
 fluoDf = pd.DataFrame(fluoDict)
 plt.figure(figsize=(15,10))
 
-data = fluoDf[fluoDf['cellID'].str.contains('M3')]
+data = fluoDf[fluoDf['cellID'].str.contains('M2')]
 # data = fluoDf[fluoDf['cellID'].str.contains('C9') == False]
 # data = fluoDf[fluoDf['cellID'].str.contains('C13') == False]
 
-data = data[(data['frame'] < 27)]
+# data = data[(data['frame'] < 27)]
 # data = data[(data['frame'] > 11)]
 
 x = data['frame']*timeRes
 
 
-flatui = ["#ffe257", "#dabcff"]
+flatui =  ["#1111EE", "#ee1111"]
 sns.set_palette(flatui)
 
 sns.lineplot(data=data, x = x ,y="fluoFront") #, hue ='cellID')
 sns.lineplot(data=data, x = x ,y="fluoBack")
 
-control = mpatches.Patch(color='#ffe257', label='Activated rear')
-activated = mpatches.Patch(color="#dabcff", label='Non-activated front')
+control = mpatches.Patch(color=flatui[0], label='Activated rear')
+activated = mpatches.Patch(color=flatui[1], label='Non-activated front')
 
 plt.legend(handles=[activated, control], fontsize = 20, loc = 'upper left')
 plt.xticks(fontsize=25)

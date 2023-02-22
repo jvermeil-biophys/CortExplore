@@ -46,9 +46,9 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.01.18'
+date = '23.02.02'
 DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'E:/CortexExperiments/20230118_3t3optorhoa-lowExpressing_100x_4.5StreptBeads_Mechanics/' + date
+DirExt = 'E:/Cortex Experiments/20230202_3t3optorhoa-Y27_100x_4.5StreptBeads_Mechanics/' + date
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'

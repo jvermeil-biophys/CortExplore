@@ -333,7 +333,7 @@ manips, wells, cells = 1, 'all', 'all'
 depthoNames = '22.03.22_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 
@@ -742,10 +742,10 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
                      sourceField = 'default')
 
 
-# %%%% M1 : Half activation, away from beads, 500ms first followed by 10ms
+# %%%% M2 : Half activation, away from beads, 500ms first followed by 10ms
 
 dates = '22.04.28'
-manips, wells, cells = 2, 1, 2
+manips, wells, cells = 2, 'all', 'all'
 depthoNames = '22.04.28_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -1070,11 +1070,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '23.01.23'
-manips, wells, cells = 1, 1, 'all'
+manips, wells, cells = 1, 1, 1
 depthoNames = '23.01.23_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M2 : 
@@ -1100,8 +1100,52 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M4 : 
 
 dates = '23.01.23'
-manips, wells, cells = 4, 3, 6
+manips, wells, cells = 4, 1, 6
 depthoNames = '23.01.23_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-02-02. Mechanics experiment with Y27, different concentrations
+#i.e. 10uM, 1uM and 100nM
+#Using Strep beads + 10X mPEG-Biot
+
+# %%%% M1 : 
+
+dates = '23.02.02'
+manips, wells, cells = 'all', 1, 'all'
+depthoNames = '23.02.02_P1_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.02.02'
+manips, wells, cells = 'all', 2, 'all'
+depthoNames = '23.02.02_P2_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.02.02'
+manips, wells, cells ='all', 3, 'all'
+depthoNames = '23.02.02_P3_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M4 : 
+
+dates = '23.02.02'
+manips, wells, cells = 7, 4, 6
+depthoNames = '23.02.02_P4_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 

@@ -85,6 +85,12 @@ markerList10 = ['o', 's', 'D', '>', '^', 'P', 'X', '<', 'v', 'p']
 todayFigDir = cp.DirDataFigToday
 experimentalDataDir = cp.DirRepoExp
 
+plotLabels = 25
+plotTicks = 20
+plotTitle = 25
+plotLegend = 15
+fontColour = '#ffffff'
+
 #%% DEFAULT settings
 
 DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
@@ -106,6 +112,9 @@ DEFAULT_fitSettings = {# H0
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       'doLogFits' : True,
+                       'nbPtsFitLog' : 13,
+                       'overlapFitLog' : 3,
                        }
 
 DEFAULT_crit_nbPts = 8 # sup or equal to
@@ -423,9 +432,12 @@ def plotPopKS(data, fig, ax, fitsSubDir = '',  fitType = 'stressRegion', fitWidt
         # ax.set_title('K(s) - All compressions pooled')
         
         ax.legend(loc = 'upper left', fontsize = 11)
-        ax.set_xlabel('Stress (Pa)')
-        ax.set_ylabel('K (kPa)')
-        ax.grid(visible=True, which='major', axis='y')
+        ax.set_xlabel('Stress (Pa)', fontsize = 20,  color = "#ffffff")
+        ax.set_ylabel('K (kPa)', fontsize = 20, color = "#ffffff")
+        ax.tick_params(axis='both', colors='#ffffff') 
+        ax.xaxis.set_tick_params(labelsize=15)
+        ax.yaxis.set_tick_params(labelsize=15)
+        ax.grid(visible=True, which='major', axis='y') #, color = '#3a3b3b')
         
         if printText:
             for kk in range(len(N)):
@@ -563,8 +575,8 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
 
 # %%%% Update the table
 
-tka.computeGlobalTable_meca(task = 'updateExisting', fileName = 'Global_MecaData_AJ', 
-                            save = True, PLOT = True, source = 'Python')
+# tka.computeGlobalTable_meca(task = 'updateExisting', fileName = 'Global_MecaData_AJ', 
+#                             save = True, PLOT = True, source = 'Python')
 
 # %%%% Specific experiments
 newFitSettings = {# H0
@@ -608,23 +620,28 @@ newFitSettings = {# H0
                        'zones_H0':['%pts_15', '%f_15'],
                        'method_bestH0':'Dimitriadis',
                        'zone_bestH0':'%f_15',
+                       'nbPtsFitLog' : 10,
+                       'overlapFitLog' : 4,
                        }
 
-newfitValidationSettings = {'crit_nbPts': 6}
-date = '23-01-23'
-fitSubDir = '23-01-23_Dimi_f15'
 
+newfitValidationSettings = {'crit_nbPts': 6}
+# date = '23-02-02 & 23-01-23 & 22-12-07'
+
+date = '22-12-07_M1'
+# date = '22-10-05_M2_P1_C10'
+fitsSubDir = '22-12-07_Dimi_f15_tka3'
 
 fitSettings = ufun.updateDefaultSettingsDict(newFitSettings, DEFAULT_fitSettings)
 fitValidationSettings = ufun.updateDefaultSettingsDict(newfitValidationSettings, \
                                                        DEFAULT_fitValidationSettings)
 
-GlobalTable_mecam=  taka.computeGlobalTable_meca(task = date, mode = 'fromScratch', \
-                            fileName = 'Global_MecaData_23-01-23_Dimi_f15', \
+GlobalTable_meca =  tka3.computeGlobalTable_meca(task = date, mode = 'fromScratch', \
+                            fileName = fitsSubDir, \
                             save = True, PLOT = True, source = 'Python', fitSettings = fitSettings,\
-                               fitValidationSettings = fitValidationSettings, fitSubDir = fitSubDir ) # task = 'updateExisting'
+                            fitValidationSettings = fitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
-# %% > Data import & export
+ # %% > Data import & export
 #### GlobalTable_meca_Py
 
 date = '22-08-26'
@@ -632,11 +649,10 @@ GlobalTable_meca = taka.getMergedTable('Global_MecaData_all')
 GlobalTable_meca.head()
 # %% Non-linear plots 
 
-
-data = taka.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
-data = data.drop(data[data['fit_error'] == True].index)
-data = data.drop(data[data['fit_K'] < 0].index)
-data = data.dropna(subset = ['fit_ciwK'])
+# data = taka.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+# data = data.drop(data[data['fit_error'] == True].index)
+# data = data.drop(data[data['fit_K'] < 0].index)
+# data = data.dropna(subset = ['fit_ciwK'])
 
 #%% Plots for 22-10-06 and 22-12-07
 
@@ -1204,7 +1220,7 @@ plt.show()
 
 cellCond = pd.read_csv(os.path.join(experimentalDataDir, 'cellConditions_22-10-06&22-12-07.csv'))
 
-plt.style.use('dark_background')
+plt.style.use('default')
 # category = 'Polarised, beads together'
 # category = 'Polarised, no lamellipodia'
 
@@ -1261,24 +1277,25 @@ fig1, axes = plt.subplots(1,1, figsize=(15,10))
 
 # sns.set_palette(sns.color_palette("tab10"))
 
-flatui = ["#dabcff", "#ffe257"]
+flatui = ["#ee1111", "#1111EE"]
 sns.set_palette(flatui)
 
 x = data_f['compNum']*20
-sns.lineplot(x = x, y = 'surroundingThickness', data = data_f, hue = 'manip')
+sns.lineplot(x = x, y = 'bestH0', data = data_f, hue = 'manip', linewidth = 3)
 
-fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
+fig1.suptitle('[15mT = 500pN] bestH0 (nm) vs. Time (secs)', fontsize = 25)
 plt.xticks(fontsize=30)
 plt.yticks(fontsize=30)
 plt.xlabel('Time (secs)', fontsize = 25)
-plt.ylabel('Surrounding thickness (nm)', fontsize = 25)
+plt.ylabel('bestH0 (nm)', fontsize = 25)
 
-activated = mpatches.Patch(color="#ffe257", label='Activated')
-control = mpatches.Patch(color='#dabcff', label='Non-activated')
+activated = mpatches.Patch(color=flatui[1], label='Activated')
+control = mpatches.Patch(color=flatui[0], label='Non-activated')
 plt.legend(handles=[activated, control], fontsize = 20)
 
 
 plt.ylim(0,1500)
+plt.tight_layout()
 
 plt.savefig(todayFigDir + '/22-12-07_surroundingThicknessvsCompr.png')
 
@@ -1401,13 +1418,55 @@ addStat_df(mainAx1, data, [('M4', 'M5')], y, test = 'Wilcox_less',  cond = x)
 
 plt.show()
 
+#%%%% K vs. S for each cell
+
+data = data_main 
+
+
+manips = ['M1', 'M2'] #, '22-12-07_M1'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['22-12-07']
+condCol = 'manip'
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+ 
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 30000].index)
+
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+
+sns.lineplot(y = 'fit_K', x = 'fit_center', hue = 'cellCode', data = data_ff)
+
+
 #%% Plots for 23-01-23
 
-GlobalTable = taka.getMergedTable('Global_MecaData_23-01-23_Dimi_f15') #'_tka3_offset15pts')
+GlobalTable = taka.getMergedTable('Global_MecaData_23-01-23&22-12-07_Dimi_f15')
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
-fitsSubDir = '23-01-23_Dimi_f15'
+fitsSubDir = '23-01-23&22-12-07_Dimi_f15'
 
 fitType = 'stressGaussian'
 # fitType = 'nPoints'
@@ -1434,8 +1493,8 @@ styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
 
 data = data_main
 
-# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
-# data = data.drop(selRows, axis = 0)
+selRows = data[(data['manip'] == 'M4') & (data['compNum'] > 3)].index
+data = data.drop(selRows, axis = 0)
 
 manips = ['M3', 'M4'] 
 legendLabels = ['No activation', 'Activation at beads']
@@ -1465,7 +1524,7 @@ plt.style.use('default')
 mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig2, mainAx2 = plt.subplots(1,1)
 
-out1 = plotPopKS(data, mainFig1, mainAx1, legendLabels = legendLabels,
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, legendLabels = legendLabels,
                  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
                                 condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
@@ -1473,11 +1532,1298 @@ out1 = plotPopKS(data, mainFig1, mainAx1, legendLabels = legendLabels,
 mainFig1, mainAx1, exportDf1, countDf1 = out1
 
 
-out2 = plotPopKS(data, mainFig2, mainAx2, legendLabels = legendLabels,
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, legendLabels = legendLabels,
                  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = condCol, mode = '100_500', scale = 'lin', printText = True,
+                                condCol = condCol, mode = '150_450', scale = 'lin', printText = True,
                                 returnData = 1, returnCount = 1)
 
 mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.show()
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+
+
+# cellCond = pd.read_csv(os.path.join(experimentalDataDir, 'cellConditions_22-10-06&22-12-07.csv'))
+
+# plt.style.use('dark_background')
+# category = 'Polarised, beads together'
+# category = 'Polarised, no lamellipodia'
+
+# category = 'beads non-adhesive'
+# cellCats = cellCond[category]
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+                'M2':{'color': gs.colorList40[11],'marker':'o'},
+                'M3':{'color': gs.colorList40[12],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                }
+
+data = data_main
+
+selRows = data[(data['manip'] == 'M4') & (data['compNum'] > 3)].index
+data = data.drop(selRows, axis = 0)
+
+manips = ['M3', 'M4'] 
+legendLabels = ['No activation', 'Activation at beads']
+dates = ['23-01-23']
+condCol = 'manip'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = data_f['compNum']*20
+sns.lineplot(x = x, y = 'bestH0', data = data_f, hue = 'manipId')
+
+fig1.suptitle('[15mT = 500pN] bestH0 (nm) vs. Time (secs)')
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('bestH0 (nm)', fontsize = 25)
+
+
+plt.ylim(0,1600)
+
+plt.savefig(todayFigDir + '/22-12-07_surroundingThicknessvsCompr.png')
+
+plt.show()
+
+
+#%%%% Non-linear plots for 23-01-23 and 22-12-07
+# Comparing low-exporessing, normal and Y27-treated cells
+
+# cellCond = pd.read_csv(os.path.join(experimentalDataDir, 'cellConditions_22-10-06&22-12-07.csv'))
+
+# category = 'Polarised, beads together'
+# # category = 'Polarised, no lamellipodia'
+# category = 'beads non-adhesive'
+
+
+# cellCats = cellCond[category]
+
+styleDict1 =  {'23-01-23_M3':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M4':{'color': gs.colorList40[11],'marker':'o'},
+                '22-12-07_M1':{'color': gs.colorList40[12],'marker':'o'},
+                }
+
+data = data_main
+
+
+oldManip = ['23-01-23_M1']
+for i in oldManip:
+    data['manipId'][data['manipId'] == i] = '23-01-23_M3'
+    
+# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manipsIDs = ['23-01-23_M3', '22-12-07_M4', '22-12-07_M1'] 
+legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-01-23', '22-12-07']
+condCol = 'manipId'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipId'].apply(lambda x : x in manipsIDs))]
+
+plt.style.use('default')
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, legendLabels = legendLabels,
+                 fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, legendLabels = legendLabels,
+                 fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = '150_450', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.show()
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+
+
+# cellCond = pd.read_csv(os.path.join(experimentalDataDir, 'cellConditions_22-10-06&22-12-07.csv'))
+
+# plt.style.use('dark_background')
+# category = 'Polarised, beads together'
+# category = 'Polarised, no lamellipodia'
+
+# category = 'beads non-adhesive'
+# cellCats = cellCond[category]
+
+styleDict1 =  {'23-01-23_M3':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M4':{'color': gs.colorList40[11],'marker':'o'},
+                '22-12-07_M1':{'color': gs.colorList40[12],'marker':'o'},
+                }
+
+data = data_main
+
+oldManip = ['23-01-23_M1']
+for i in oldManip:
+    data['manipId'][data['manipId'] == i] = '23-01-23_M3'
+    
+# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manipsIDs = ['23-01-23_M3', '22-12-07_M4'] #, '22-12-07_M1'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-01-23', '22-12-07']
+condCol = 'manipId'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manipId'].apply(lambda x : x in manipsIDs))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = data_f['compNum']*20
+sns.lineplot(x = x, y = 'surroundingThickness', data = data_f, hue = 'manipId')
+
+fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('Surrounding thickness (nm)', fontsize = 25)
+
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/22-12-07_surroundingThicknessvsCompr.png')
+
+plt.show()
+
+
+#%%%% K vs. S for each cell
+
+data = data_main 
+
+
+manips = ['M3', 'M4'] #, '22-12-07_M1'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-01-23']
+condCol = 'manip'
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+ 
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 30000].index)
+
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+
+sns.lineplot(y = 'fit_K', x = 'fit_center', hue = 'cellCode', data = data_ff)
+
+#%%%% Fluctuations vs. median thickness
+
+data = data_main 
+
+oldManip = ['M1']
+for i in oldManip:
+    data['manip'][data['manip'] == i] = 'M3'
+    
+oldManip = ['M2']
+for i in oldManip:
+    data['manip'][data['manip'] == i] = 'M4'
+
+manips = ['M3', 'M4'] #, '22-12-07_M1'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-01-23']
+condCol = 'manip'
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+ 
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 30000].index)
+
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+
+sns.lmplot(y = 'ctFieldFluctuAmpli', x = 'ctFieldThickness', hue = 'cellCode', data = data_ff)
+
+#%% Plots for 23-02-02, 22-12-07 and 23-01-23
+
+GlobalTable = taka.getMergedTable('Global_MecaData_23-02-02&23-01-23&22-12-07_Dimi_f15') #'_tka3_offset15pts')
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = '23-02-02&23-01-23&22-12-07_Dimi_f15'
+
+fitType = 'stressGaussian'
+# fitType = 'nPoints'
+fitId = '_75'
+fitWidth = 75
+
+
+# %%%% Plotting for each dates, not looped over manip pairs
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color': gs.colorList40[11],'marker':'o'},
+               'M3':{'color': gs.colorList40[12],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+               }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['23-02-02']
+manips = ['M1', 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 4)].index
+data = data.drop(selRows, axis = 0)
+
+stressRange = '150_400'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manip', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manip', mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+    
+plt.show()
+
+
+# %%%% Comparing experiments with manipIDs
+
+# cellCond = pd.read_csv(os.path.join(experimentalDataDir, 'cellConditions_22-10-06&22-12-07.csv'))
+
+category = 'Polarised, beads together'
+# category = 'Polarised, no lamellipodia'
+# category = 'beads non-adhesive'
+
+
+cellCats = cellCond[category]
+
+styleDict1 =  {'23-02-02_M1':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M1':{'color': gs.colorList40[11],'marker':'o'},
+                '22-12-07_M4':{'color': gs.colorList40[11],'marker':'o'},
+                '23-02-02_M3':{'color': gs.colorList40[12],'marker':'o'},
+                '23-02-02_M7':{'color': gs.colorList40[13],'marker':'o'},
+                '23-02-02_M5':{'color': gs.colorList40[14],'marker':'o'},
+                '23-02-02_M2':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M2':{'color': gs.colorList40[11],'marker':'o'},
+                '23-02-02_M4':{'color': gs.colorList40[12],'marker':'o'},
+                '23-02-02_M8':{'color': gs.colorList40[13],'marker':'o'},
+                '23-01-23_M3':{'color': gs.colorList40[13],'marker':'o'},
+                '23-02-02_M6':{'color': gs.colorList40[14],'marker':'o'}
+                }
+
+data = data_main
+
+    
+# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manipIDs = ['23-02-02_M3', '22-12-07_M1', '23-02-02_M7'] #, '23-02-02_M8'] #,  '23-02-02_M5']
+# legendLabels = ['Ctrl', '50uM', '10uM', '1uM'] #, '100nM']
+# legendLabels = ['50uM', 'Ctrl', '10uM', '1uM']
+dates = ['23-02-02', '22-12-07', '23-01-23']
+condCol = 'manipId'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipId'].apply(lambda x : x in manipIDs))]
+
+plt.style.use('default')
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, 
+                 fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir,
+                 fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.show()
+
+
+#%%%% K vs. S for each cell
+
+data = data_main 
+
+manips = ['M7', 'M8'] 
+# manipIDs = ['23-02-02_M3'] #, '22-12-07_M4', '23-01-23_M1', '23-01-23_M3'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+# dates = ['23-02-02', '22-12-07', '23-']
+condCol = 'manip'
+cellCode = ['P1_C10']
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 2000),
+            (data['cellCode'].apply(lambda x : x in cellCode)),
+            # (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+            # (data['manipId'].apply(lambda x : x in manipIDs))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+ 
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 60000].index)
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+sns.lineplot(y = 'fit_K', x = 'fit_center', hue = 'manip', style = 'cellCode', data = data_ff)
+
+plt.show()
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+
+data = data_main
+
+# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manips = ['M3', 'M4'] 
+dates = ['23-02-02']
+# manipIDs = ['23-02-02_M3', '22-12-07_M1', '23-02-02_M7']
+condCol = 'manip'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = data_f['compNum']*20
+sns.lineplot(x = x, y = 'bestH0', data = data_f, hue = condCol)
+
+fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('Surrounding thickness (nm)', fontsize = 25)
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/23-02-02_surroundingThicknessvsCompr.png')
+
+plt.show()
+
+#%%%% H0 boxplots
+
+data = data_main
+
+# selRows = data[(data['manip'] == 'M4') & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manips = ['M3', 'M4'] 
+dates = ['23-02-02']
+# manipIDs = ['23-02-02_M1', '22-12-07_M4', '23-01-23_M1', '23-01-23_M3'] 
+condCol = 'manip'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+mainFig, mainAx = plt.subplots(1,1, figsize = (10,8))
+
+plotAllH0(data, mainFig, mainAx, fitsSubDir = fitsSubDir, Filters = Filters, maxH0 = 1000,
+        condCols = ['manip'], co_order = [], box_pairs = [], AvgPerCell = False,
+        stats = False, statMethod = 'Mann-Whitney', stressBoxPlot = 2)
+
+fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
+plt.xlabel('Time (secs)', fontsize = 25)
+plt.ylabel('Surrounding thickness (nm)', fontsize = 25)
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/23-02-02_surroundingThicknessvsCompr.png')
+
+plt.show()
+
+#%%%% K boxplots
+
+data = data_main
+
+# selRows = data[(data['manip'] == 'M4') & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+
+manips = ['M3', 'M4'] 
+dates = ['23-02-02']
+# manipIDs = ['23-02-02_M1', '22-12-07_M4', '23-01-23_M1', '23-01-23_M3'] 
+condCol = 'manip'
+
+# control = 'M4'
+
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 2000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+
+fitId = '150_' + str(fitWidth)
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 9e3].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_R2'] < 0.2].index)
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+
+dfValid = data_ff
+# y = dfValid['E_Chadwick']
+
+data = dfValid
+x = 'manip'
+y = 'fit_K'
+
+cellAverage = True
+
+if cellAverage:
+    # Compute the weights
+    data['weight'] = (data['fit_K']/data['fit_ciwK'])**2
+    
+    # Compute the weighted mean
+    data['A'] = data['fit_K'] * data['weight']
+    grouped1 = data.groupby(by=['cellID'])
+    data_agg = grouped1.agg({'cellCode' : 'first',
+                             x : 'first',
+                             'compNum' : 'count',
+                            'A': 'sum', 'weight': 'sum'})
+    data_agg = data_agg.reset_index()
+    data_agg['fit_K'] = data_agg['A']/data_agg['weight']
+    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
+    data = data_agg
+
+sns.boxplot(x = x, y = y, data=data, ax = mainAx1, \
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+
+    
+sns.swarmplot(x = x, y = y, data=data, linewidth = 1, ax = mainAx1, edgecolor='k')
+
+# mainAx1.set_ylim(0, 50000)
+# mainAx1.set_xticklabels(['AtBeadsBefore', 'AtBeadsActivated'])
+# plt.setp(axes[0].get_legend().get_texts(), fontsize='10')
+
+# addStat_df(mainAx1, data, [(manips[0], manips[1])], y, test = 'Wilcox_less',  cond = x)
+
+plt.show()
+
+
+#%% Plots for 23-02-02, 22-12-07 and 23-01-23
+
+GlobalTable = taka.getMergedTable('Global_MecaData_all_Dimi_f15') #'_tka3_offset15pts')
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'All_Dimi_f15'
+
+# fitType = 'Log'
+fitType = 'nPoints'
+fitId = '_75' #  = '_75'
+fitWidth = 75
+
+
+#%%%% Non-linearity curves for 22-06-21
+
+
+plt.style.use('seaborn')
+
+flatui =  ["#e5c100", "#ad6aea", "#000000"]
+legendLabels = ['Activation away from beads', 'No Activation']
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color': flatui[1],'marker':'o'},
+               'M3':{'color': gs.colorList40[10],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+                }
+
+# styleDict1 =  {'22-05-31_M7_P1_C8':{'color': gs.colorList40[10],'marker':'o'},
+#                '22-05-31_M7_P2_C1':{'color': gs.colorList40[11],'marker':'o'},
+#                '22-05-31_M7_P2_C3':{'color': gs.colorList40[12],'marker':'o'},
+#                }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['22-06-21']
+manips = ['M2'] #, 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+stressRange = '200_400'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+selRows = data[(data['manip'] == manips[0]) & (data['compNum'] < 5)].index
+data = data.drop(selRows, axis = 0)
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig1.patch.set_facecolor('black')
+
+# mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                  legendLabels = legendLabels, condCol = 'manip', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color':flatui[2],'marker':'o'},
+               'M3':{'color': gs.colorList40[10],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+                }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['22-06-21']
+manips = ['M2'] #, 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+stressRange = '200_400'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+selRows = data[(data['manip'] == manips[0]) & (data['compNum'] > 5)].index
+data = data.drop(selRows, axis = 0)
+
+
+out2 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                 fitWidth=75, Filters = Filters, legendLabels = legendLabels,
+                                condCol = 'manip', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+# mainFig1, mainAx2, exportDf2, countDf2 = out2
+
+
+# atbeads = mpatches.Patch(color=flatui[0], label='Activation at beads')
+# awaybeads = mpatches.Patch(color=flatui[1], label='Activation away from beads')
+# control = mpatches.Patch(color=flatui[2], label='Control')
+
+# plt.legend(handles=[awaybeads, control], fontsize = 20, loc = 'upper left')
+
+plt.tight_layout()
+plt.show()
+
+mainFig1.savefig(cp.DirDataFigToday + '/temp.png')
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+
+data = data_main
+
+# selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
+# data = data.drop(selRows, axis = 0)
+
+dates = ['22-10-06']
+manips = ['M5', 'M6'] #, 'M8']
+# manipIDs = ['23-02-02_M3', '22-12-07_M1', '23-02-02_M7']
+condCol = 'cellID'
+measure = 'surroundingThickness'
+
+# control = 'M4'
+# active = 'M5'
+# intersected = list(set(data['cellID'][data['manip'] == active]) & set(cellCats))
+# controlCells = ['{}_{}_P{}_C{}'.format(dates[0], control, ufun.findInfosInFileName(x, 'P'), ufun.findInfosInFileName(x, 'C'))\
+#               for x in intersected]
+    
+# allSelectedCells = np.asarray(intersected + controlCells)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+fig1.patch.set_facecolor('black')
+
+
+x = (data_f['compNum']-1)*20
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = 'manip')
+# ax.axvline(x = 5, color = 'red')
+
+fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper left')
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr.png')
+
+plt.show()
+
+#%%%% Non-linearity curves for 22-10-06
+
+# %%%% Plotting for each dates, not looped over manip pairs
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color': gs.colorList40[11],'marker':'o'},
+               'M3':{'color': gs.colorList40[12],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+               }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['22-10-06']
+manips = ['M5', 'M6'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 4)].index
+data = data.drop(selRows, axis = 0)
+
+stressRange = '150_400'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manip', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manip', mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.show()
+
+#%%%% Fluctuations vs. median thickness
+
+data = data_main 
+plt.style.use('seaborn')
+
+# oldManip = ['M1']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M3'
+    
+# oldManip = ['M2']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M4'
+
+manips = ['M1', 'M3', 'M5', 'M7'] #, '22-12-07_M1'] 
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-02-02']
+condCol = 'manip'
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['ctFieldFluctuAmpli'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+ 
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 30000].index)
+
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+
+sns.lmplot(y = 'ctFieldFluctuAmpli', x = 'ctFieldThickness', hue = 'manip',
+                data = data_ff)
+
+
+#%%%% Plotting all K vs Stress, cell by cell
+
+data = data_main 
+plt.style.use('seaborn')
+
+
+# oldManip = ['M1']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M3'
+    
+# oldManip = ['M2']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M4'
+
+# manips = ['M1', 'M3', 'M5', 'M7'] #, '22-12-07_M1'] 
+manips = ['M4']
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-02-02']
+condCol = 'manip'
+dfCells =  data['cellID'][data['date'] == dates[0]]
+cells = dfCells[dfCells.str.contains(manips[0])].unique()
+
+nColsSubplot = 4
+nRowsSubplot = (12 // nColsSubplot) + 1
+fig, axes = plt.subplots(nRowsSubplot, nColsSubplot)
+_axes = []
+
+for ax_array in axes:
+    for ax in ax_array:
+        _axes.append(ax)
+
+for i in range(len(cells)):
+    allSelectedCells = [cells[i]]
+    ax = _axes[i]
+    Filters = [(data['validatedThickness'] == True),
+                # (data['substrate'] == '20um fibronectin discs'), 
+                # (data['drug'] == 'none'), 
+                (data['bead type'] == 'M450'),
+                (data['UI_Valid'] == True),
+                (data['bestH0'] <= 1500),
+                (data['date'].apply(lambda x : x in dates)),
+                (data['cellID'].apply(lambda x : x in allSelectedCells)),
+                (data['manip'].apply(lambda x : x in manips))]
+    
+    
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+    
+    data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    # data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 80000].index)
+    
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    
+    
+    sns.scatterplot(y = 'fit_K', x = 'fit_center', hue = 'compNum', palette = 'flare',
+                              data = data_ff, ax = ax, s = 20)
+    ax.set_ylim(0, 30000)
+    ax.set_xlim(0, 1200)
+    ax.set_title(allSelectedCells[0])
+    ax.legend(fontsize = 8)
+    
+
+
+plt.tight_layout()
+plt.show()
+
+#%%%% Plotting all K vs Stress, per compression with fits on K
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'All_Dimi_f15'
+
+# fitType = 'Log'
+fitType = 'nPoints'
+fitId = None
+Sinf, Ssup = 150, 450
+FIT_MODE = 'linlin'  # 'linlin', 'loglog'
+
+data = data_main 
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+
+#Only for 23-01-23
+# oldManip = ['23-01-23_M1']
+# for i in oldManip:
+#     data['manipId'][data['manipId'] == i] = '23-01-23_M3'
+    
+# oldManip = ['M2']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M4'
+
+manips = ['M1', 'M2'] #, 'M5', 'M7'] #, 'M6']
+# manipIDs = ['23-01-23_M3', '22-12-07_M4', '23-02-02_M1']
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['23-02-02']
+condCol = 'manip'
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+# Filter the table
+# data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 80000].index)
+data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+cells = data_ff['cellID'].unique()
+
+# Making fits and new table with fit parameter values
+
+dfAllCells = data_ff
+dfAllCells['q'] = [np.nan]*len(dfAllCells)
+dfAllCells['a'] = [np.nan]*len(dfAllCells)
+dfAllCells['A'] = [np.nan]*len(dfAllCells)
+dfAllCells['B'] = [np.nan]*len(dfAllCells)
+dfAllCells['R2Fit'] = [np.nan]*len(dfAllCells)
+
+for i in range(len(cells)):
+    allSelectedCells = cells[i]
+    filtr = dfAllCells[dfAllCells['cellID'] == allSelectedCells].index.values
+    idx = dfAllCells.index.isin(filtr)
+    
+    # try:
+    N = dfAllCells['compNum'][idx].max()
+    nColsSubplot = 4
+    nRowsSubplot = (N // nColsSubplot) + 2
+    fig, axes = plt.subplots(nRowsSubplot, nColsSubplot)
+    _axes = []
+    
+    # if N > 1:
+    for ax_array in axes:
+        for ax in ax_array:
+            _axes.append(ax)
+    # else:
+    #     break
+            
+    # ax.set_xlabel('Stress (Pa)')
+    # ax.set_xlim([0, 1200])
+    
+    colors = gs.colorList30[:N]
+    for ii in range(N):
+        filtrComp = dfAllCells[(dfAllCells['cellID'] == allSelectedCells) & (dfAllCells['compNum'] == ii)].index.values
+        idxComp = dfAllCells.index.isin(filtrComp)
+        ax = _axes[ii]
+        legendText = ''
+        Y = dfAllCells['fit_K'][idxComp]
+        X = dfAllCells['fit_center'][idxComp]
+        Yerr = dfAllCells['fit_ciwK'][idxComp]
+        validity = dfAllCells['fit_error'][idxComp]
+           
+        # if (not pd.isnull(Y)) and (Y > 0):
+        ax.errorbar(X, Y, yerr = Yerr, marker = 'o', ms = 5, ecolor = colors[ii])
+    
+        if len(X) >= 3:
+            posValues = ((X > 0) & (Y > 0))
+            X, Y = X[posValues], Y[posValues]
+            weights = (Y / Yerr)**2
+    
+            #Unwighted linear regression
+            # params, results = ufun.fitLine(np.log(XtoFit), np.log(YtoFit)) # Y=a*X+b ; params[0] = b,  params[1] = a
+            
+            #Weighted linear regression
+            if FIT_MODE == 'loglog':
+                params, results = ufun.fitLineWeighted(np.log(X), np.log(Y), weights)
+                q = np.exp(params[0])
+                a = params[1]
+                R2 = results.rsquared
+                pval = results.pvalues[1] # pvalue on the param 'a'
+                dfAllCells['q'][idxComp] = [q]*len(X)
+                dfAllCells['a'][idxComp] = [a]*len(X)
+                dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
+                legendText += " Y = {:.1e} * X^{:.1f}".format(q, a)
+                legendText += " \n R2 = {:.2f}".format(R2)
+                # print("Y = {:.4e} * X^{:.4f}".format(k, a))
+                # print("p-value on the 'a' coefficient: {:.4e}".format(pval))
+                # print("R2 of the fit: {:.4f}".format(R2))
+                # fitY = k * X**a
+                # imin = np.argmin(X)
+                # imax = np.argmax(X)
+                # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1', 
+                #         color = color, zorder = 4)
+                fitX = np.linspace(np.min(X), np.max(X), 100)
+                fitY = q * fitX**a
+                label = legendText
+                ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                ax.legend(loc = 'upper left', prop={'size': 8})
+                
+            elif FIT_MODE == 'linlin':
+                params, results = ufun.fitLineWeighted(X, Y, weights)
+                A = params[1]
+                B = params[0]
+                R2 = results.rsquared
+                pval = results.pvalues[1] # pvalue on the param 'a'
+                dfAllCells['A'][idxComp] = [A]*len(X)
+                dfAllCells['B'][idxComp] = [B]*len(X)
+                dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
+                legendText += " Y = {:.1f} X + {:.1f}".format(A, B)
+                legendText += " \n R2 = {:.2f}".format(R2)
+                fitX = np.linspace(np.min(X), np.max(X), 100)
+                fitY = A * fitX + B
+                label = legendText
+                ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                ax.legend(loc = 'upper left', prop={'size': 8})
+                
+
+            ax.set_ylim(0, 30000)
+            ax.set_xlim(0, 1200)
+            ax.set_title('CompNum: ' + str(ii))
+            ax.legend(fontsize = 8)
+            fig.suptitle(allSelectedCells, fontsize = 15)
+    
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(pathFits + '/' + allSelectedCells)        
+    # except:
+    #     print('No data for cell ', allSelectedCells)
+plt.close('all')
+
+#%%%% Plotting box plots with above data
+fig1, ax = plt.subplots(1, 2)
+df = dfAllCells[dfAllCells['fit_id'] == '20_33']
+df = df[df['R2Fit'] > 0.70]
+y1, y2 = df['A'],  df['B']
+x = df['manipId']
+
+sns.boxplot(x = x, y = y1, data=dfAllCells, ax = ax[0], \
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+
+sns.swarmplot(x = x, y = y1, data=dfAllCells,  linewidth = 1, ax = ax[0], edgecolor='k')
+
+sns.boxplot(x = x, y = y2, data=dfAllCells, ax = ax[1], \
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+
+    
+sns.swarmplot(x = x, y = y2, data=dfAllCells,  linewidth = 1, ax = ax[1], edgecolor='k')
+
+
+ax[0].set_title('Slope (A)')
+ax[1].set_title('Intercept (B)')
+
+plt.show()
+
+#%%%% Plotting box plots, cell-wise
+
+fig1, ax = plt.subplots(1, 2)
+df = dfAllCells[dfAllCells['fit_id'] == '20_33']
+listOfCells = df['cellID'].values[3]
+df = df[df['cellID'] == listOfCells]
+df = df[df['R2Fit'] > 0.70]
+y1, y2 = df['A'],  df['B']
+x = df['manip']
+
+sns.boxplot(x = x, y = y1, data=dfAllCells, ax = ax[0], \
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+
+sns.swarmplot(x = x, y = y1, data=dfAllCells,  linewidth = 1, hue = 'cellCode',ax = ax[0], edgecolor='k')
+
+sns.boxplot(x = x, y = y2, data=dfAllCells, ax = ax[1],\
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+
+    
+sns.swarmplot(x = x, y = y2, data=dfAllCells, hue = 'cellCode', linewidth = 1, ax = ax[1], edgecolor='k')
+
+
+ax[0].set_title('Slope (A)')
+ax[1].set_title('Intercept (B)')
 
 plt.show()

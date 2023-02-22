@@ -1146,6 +1146,34 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
+def fitLineWeighted(X, Y, weights):
+    """
+    returns: results.params, results \n
+    Y=a*X+b ; params[0] = b,  params[1] = a
+    
+    NB:
+        R2 = results.rsquared \n
+        ci = results.conf_int(alpha=0.05) \n
+        CovM = results.cov_params() \n
+        p = results.pvalues \n
+    
+    This is how one should compute conf_int:
+        bse = results.bse \n
+        dist = stats.t \n
+        alpha = 0.05 \n
+        q = dist.ppf(1 - alpha / 2, results.df_resid) \n
+        params = results.params \n
+        lower = params - q * bse \n
+        upper = params + q * bse \n
+    """
+    
+    X = sm.add_constant(X)
+    model = sm.WLS(Y, X, weights)
+    results = model.fit()
+    params = results.params 
+#     print(dir(results))
+    return(results.params, results)
+
 
 def toList(x):
     """
