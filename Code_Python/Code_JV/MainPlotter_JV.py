@@ -372,6 +372,9 @@ MecaData_NonLin = taka2.getMergedTable('MecaData_NonLin')
 #### MecaData_Drugs
 MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
 
+#### MecaData_Atcc
+MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc')
+
 #### MecaData_MCA
 # MecaData_MCA = taka2.getMergedTable('MecaData_MCA')
 
@@ -2741,6 +2744,109 @@ plt.show()
 
 
 # %% Plots
+
+# %%%  2023 ATCC
+
+# %%%%% H and K
+
+# fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+# Part 1.
+
+data_main = MecaData_Atcc
+dates = ['23-02-16'] # ['22-03-28', '22-03-30', '22-11-23']
+
+fitType = 'stressRegion'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_Chadwick'] == True),
+           # (data['surroundingThickness'] <= 700),
+           (data['fit_valid'] == True),
+           # (data['fit_K'] <= 10),
+            # (data['ctFieldMinThickness'] >= 200**2),
+           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+# co_order=['none', 'dmso', 'blebbistatin', 'latrunculinA']
+co_order=['dmso & 0.0', 'blebbistatin & 50.0']
+
+fig, axes = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType, 'fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 0.4, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+renameAxes(axes.flatten(), renameDict1)
+renameAxes(axes.flatten(), rD)
+
+# titles = ['Blebbistatin', 'LatrunculinA']
+# tl = matplotlib.ticker.MultipleLocator(2)
+
+# for k in range(2):
+#     axes[0,k].set_ylim([0,900])
+#     axes[1,k].set_ylim([0,12.5])
+#     axes[k,1].set_ylabel('')
+#     # axes[0,k].set_xticklabels([])
+#     axes[0,k].set_title(titles[k])
+#     axes[1,k].yaxis.set_major_locator(tl)
+
+
+
+# ax[0].set_ylim([0, 1000])
+# ax[0].legend(loc = 'upper right', fontsize = 8)
+# ax[1].legend(loc = 'upper right', fontsize = 8)
+# fig.suptitle('3T3aSFL & drugs\nPreliminary data')
+# ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
+plt.show()
+
+# %% K(s)
+
+data = MecaData_Atcc
+dates = ['23-02-16']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'] != 'none'),
+            ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '300_500', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
 
 # %%% Non-linearity
 
