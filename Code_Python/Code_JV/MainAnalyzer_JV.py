@@ -214,7 +214,21 @@ fitSettings = {# H0
                 }
 
 AtccTask = '23-02-16'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = AtccTask, fileName = 'MecaData_Atcc', 
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+
+# %%%% ATCC-2023
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_20'],
+                'method_bestH0':'Chadwick',
+                'zone_bestH0':'%f_10',
+                }
+
+AtccTask = '23-02-23'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
                                     save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
 
 

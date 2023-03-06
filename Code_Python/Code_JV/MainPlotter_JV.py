@@ -364,7 +364,7 @@ testTraj(1.5)
 CtFieldData_All_JV = taka2.getMergedTable('CtFieldData_All_JV', mergeUMS = False)
 
 #### MecaData_All
-MecaData_All = taka2.getMergedTable('MecaData_All_JV')
+# MecaData_All = taka2.getMergedTable('MecaData_All_JV')
 
 #### MecaData_NonLin
 MecaData_NonLin = taka2.getMergedTable('MecaData_NonLin')
@@ -383,6 +383,8 @@ MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc')
 
 #### Test
 # MecaData_Test = taka2.getMergedTable('Test')
+
+MecaData_AtccDrugs = pd.concat([MecaData_Drugs, MecaData_Atcc])
 
 # %%% Test of adding fits
 
@@ -416,11 +418,18 @@ renameDict1 = {# Variables
 
 styleDict1 =  {# Drugs
                'none':{'color': gs.colorList40[10],'marker':'o'},
+               'none & 0.0':{'color': gs.colorList40[10],'marker':'o'},
                'dmso':{'color': gs.colorList40[11],'marker':'o'},
                'blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
+               'aSFL-LG+++ & dmso':{'color': gs.colorList40[21],'marker':'o'},
+               'aSFL-LG+++ & blebbistatin':{'color': gs.colorList40[32],'marker':'o'},
+               'Atcc-2023 & dmso':{'color': gs.colorList40[11],'marker':'o'},
+               'Atcc-2023 & blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
                'latrunculinA':{'color': gs.colorList40[13],'marker':'o'},
                'dmso & 0.0':{'color': gs.colorList40[11],'marker':'o'},
                'blebbistatin & 50.0':{'color': gs.colorList40[22],'marker':'o'},
+               'PNB & 50.0':{'color': gs.colorList40[15],'marker':'o'},
+               'PNB & 250.0':{'color': gs.colorList40[25],'marker':'o'},
                'latrunculinA & 0.5':{'color': gs.colorList40[13],'marker':'o'},
                'latrunculinA & 2.5':{'color': gs.colorList40[33],'marker':'o'},
                # Cell types
@@ -1764,13 +1773,14 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     return(output)
 
 
-def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
+def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCols = [''], 
               mode = 'wholeCurve', scale = 'lin', printText = True, Sinf = 0, Ssup = np.Inf,
               returnData = 0, returnCount = 0):
     
     fig, ax = plt.subplots(1,1, figsize = (9,6))
 
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    print(len(Filters))
     for k in range(0, len(Filters)):
         globalFilter = globalFilter & Filters[k]
     data_f = data[globalFilter]
@@ -1793,7 +1803,24 @@ def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], cond
             globalExtraFilter = globalExtraFilter & extraFilters[k]
         data_f = data_f[globalExtraFilter]
             
-        ax.set_xlim([Sinf-50, Ssup+50])     
+        ax.set_xlim([Sinf-50, Ssup+50])
+        
+    # Make cond col
+    NCond = len(condCols)
+    if NCond == 1:
+        condCol = condCols[0]
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += condCols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_f[newColName] = ''
+        for i in range(NCond):
+            data_f[newColName] += data_f[condCols[i]].astype(str)
+            data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
+        data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
+        condCol = newColName
     
     fitId = '_' + str(fitWidth)
     data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
@@ -2747,7 +2774,7 @@ plt.show()
 
 # %%%  2023 ATCC
 
-# %%%%% H and K
+# %%%% H and K
 
 # fig, axes = plt.subplots(2,2, figsize = (9,7))
 
@@ -2815,7 +2842,129 @@ renameAxes(axes.flatten(), rD)
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
 
-# %% K(s)
+# %%%% H and K PNB
+
+# fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO', 
+      'PNB & 50.0' : 'PNB\n(50µM)', 
+      'PNB & 250.0' : 'PNB\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.
+
+data_main = MecaData_Atcc
+dates = ['23-02-23'] # ['22-03-28', '22-03-30', '22-11-23']
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['none & 0.0', 'dmso & 0.0', 'PNB & 50.0', 'PNB & 250.0']
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+
+
+
+fitType = 'stressRegion'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            # (data['fit_K'] <= 10),
+            # (data['ctFieldMinThickness'] >= 200**2),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['none & 0.0', 'dmso & 0.0', 'PNB & 50.0', 'PNB & 250.0']
+
+fig, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+# titles = ['Blebbistatin', 'LatrunculinA']
+# tl = matplotlib.ticker.MultipleLocator(2)
+
+# for k in range(2):
+#     axes[0,k].set_ylim([0,900])
+#     axes[1,k].set_ylim([0,12.5])
+#     axes[k,1].set_ylabel('')
+#     # axes[0,k].set_xticklabels([])
+#     axes[0,k].set_title(titles[k])
+#     axes[1,k].yaxis.set_major_locator(tl)
+
+
+
+# ax[0].set_ylim([0, 1000])
+# ax[0].legend(loc = 'upper right', fontsize = 8)
+# ax[1].legend(loc = 'upper right', fontsize = 8)
+# fig.suptitle('3T3aSFL & drugs\nPreliminary data')
+# ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
+plt.show()
+
+# %%%% K(s) PNB
+
+data = MecaData_Atcc
+dates = ['23-02-23']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+# %%%% K(s)
 
 data = MecaData_Atcc
 dates = ['23-02-16']
@@ -2833,10 +2982,109 @@ Filters = [(data['validatedThickness'] == True),
 # ax1.set_ylim([0, 10])
 
 out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = 'drug', mode = '300_500', scale = 'lin', printText = True,
+                                condCol = 'drug', mode = 'wholeCurve', scale = 'lin', printText = True,
                                 returnData = 1, returnCount = 1)
 fig2, ax2 = out2
 ax2.set_ylim([0, 20])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '300_500', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+# %%%% K(s) for drugs
+
+
+#### Making the Dataframe 
+
+data = MecaData_Drugs
+dates = ['22-03-30']
+drugs = ['dmso', 'blebbistatin']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            ]
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 20])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'drug', mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+# %%%% K(s)
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '23-02-16']
+drugs = ['dmso', 'blebbistatin']
+
+condCols = ['cell subtype', 'drug']
+
+NCond = len(condCols)
+if NCond == 1:
+    condCol = condCols[0]
+elif NCond > 1:
+    newColName = ''
+    for i in range(NCond):
+        newColName += condCols[i]
+        newColName += ' & '
+    newColName = newColName[:-3]
+    data[newColName] = ''
+    for i in range(NCond):
+        data[newColName] += data[condCols[i]].astype(str)
+        data[newColName] = data[newColName].apply(lambda x : x + ' & ')
+    data[newColName] = data[newColName].apply(lambda x : x[:-3])
+    condCol = newColName
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs))
+            ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell subtype & drug', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig, ax = out
+ax.set_ylim([0, 20])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'cell subtype & drug', mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
 
 # data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
 #                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)

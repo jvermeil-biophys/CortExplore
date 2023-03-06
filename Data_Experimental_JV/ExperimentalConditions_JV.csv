@@ -130,3 +130,7 @@ Drugs. Test.;22-11-23;M2;compressionsLowStart;latrunculinA;2.5;20um fibronectin 
 Drugs. Test.;22-11-23;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;3T3;aSFL-LG+++;M450;4477;0;5;1_40;1.5s;True;3;500;436_200;
 Drugs. 3T3-Atcc-2023;23-02-16;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.94;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;
 Drugs. 3T3-Atcc-2023;23-02-16;M2;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200	;
+Drugs. 3T3-Atcc-2023;23-02-23;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;
+Drugs. 3T3-Atcc-2023;23-02-23;M2;compressionsLowStart;PNB;250.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.066;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;
+Drugs. 3T3-Atcc-2023;23-02-23;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;
+Drugs. 3T3-Atcc-2023;23-02-23;M4;compressionsLowStart;PNB;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.97;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;

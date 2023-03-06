@@ -2009,8 +2009,10 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 fPath = os.path.join(rd, f)
                 if os.path.isfile(fPath[:-4] + '_Field.txt'):
                     imagesToAnalyse.append(f)
-                    imagesToAnalyse_Paths.append(os.path.join(rd, f))    
-    
+                    imagesToAnalyse_Paths.append(os.path.join(rd, f))
+                    
+    # print(rawDirList)    
+    # print(imagesToAnalyse)
     
         #### 0.2 - Begining of the Main Loop
     for i in range(len(imagesToAnalyse)): 

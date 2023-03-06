@@ -55,8 +55,8 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Jojo
 
-date = '23.02.16'
-DirExt = 'E:/2023-02-16_3T3atcc' #'/M4_patterns_ctrl'
+date = '23.02.23_depthos'
+DirExt = 'D://MagneticPincherData//Raw//23.02.23_Deptho//M4_depthos' #'/M4_patterns_ctrl'
 DirSave = os.path.join(cp.DirDataRaw, date)
 
 prefix = ''
@@ -66,7 +66,7 @@ microscope = 'labview'
 
 # %% Functions
 
-def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded', 'out', 'bad']):
+def getListOfSourceFolders(Dir, forbiddenWords = ['error', 'excluded', 'out', 'bad']): #'deptho', 'depthos', 
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -260,7 +260,7 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
         
     Zimg = cv2.resize(Zimg, (int(imgWidth/scaleFactor), int(imgHeight/scaleFactor)))
     Zimg = cv2.normalize(Zimg, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    return Zimg
+    return(Zimg)
 
 def shape_selection(event, x, y, flags, param):
     """
@@ -454,7 +454,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 40
+limiter = 60
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

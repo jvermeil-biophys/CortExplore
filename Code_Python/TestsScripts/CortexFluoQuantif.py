@@ -42,8 +42,6 @@ import UtilityFunctions as ufun
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment', None)
 
-# 3. Plot settings
-gs.set_smallText_options_jv()
 
 # %% Stacks based analysis
 
