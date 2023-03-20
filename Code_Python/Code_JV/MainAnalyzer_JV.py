@@ -146,34 +146,56 @@ df = taka.getGlobalTable_ctField().head()
 #### AS REFERENCE ONLY, here is a copy of the default settings.
 
 #### 1. For Fits
+DEFAULT_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_stressHalfWidths = [50, 75, 100]
+
+DEFAULT_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
+
 DEFAULT_fitSettings = {# H0
-                       'methods_H0':['Dimitriadis'],
-                       'zones_H0':['%f_20'],
+                       'methods_H0':['Chadwick', 'Dimitriadis'],
+                       'zones_H0':['%f_10', '%f_20'],
                        'method_bestH0':'Dimitriadis',
-                       'zone_bestH0':'%f_20',
+                       'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
                        'doDimitriadisFit' : False,
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
-                       'centers_StressFits' : [ii for ii in range(100, 1550, 50)],
-                       'halfWidths_StressFits' : [50, 75, 100],
+                       'centers_StressFits' : DEFAULT_stressCenters,
+                       'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       # NEW
+                       'doStrainGaussianFits' : True,
+                       'centers_StrainFits' : DEFAULT_strainCenters,
+                       'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
                        }
 
 #### 2. For Validation
 
-DEFAULT_fitValidationSettings = {'crit_nbPts': 8, # sup or equal to
-                                 'crit_R2': 0.6, # sup or equal to
-                                 'crit_Chi2': 1, # inf or equal to
-                                 'str': 'nbPts>{:.0f} - R2>{:.2f} - Chi2<{:.1f}'.format(8, 0.6, 1),
-                                 }
+DEFAULT_crit_nbPts = 8 # sup or equal to
+DEFAULT_crit_R2 = 0.6 # sup or equal to
+DEFAULT_crit_Chi2 = 1 # inf or equal to
+DEFAULT_str_crit = 'nbPts>{:.0f} - R2>{:.2f} - Chi2<{:.1f}'.format(DEFAULT_crit_nbPts, 
+                                                                   DEFAULT_crit_R2, 
+                                                                   DEFAULT_crit_Chi2)
+
+DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts, 
+                                 'crit_R2': DEFAULT_crit_R2, 
+                                 'crit_Chi2': DEFAULT_crit_Chi2,
+                                 'str': DEFAULT_str_crit}
 
 
 #### 3. For Plots
+
+DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_plot_stressHalfWidth = 50
+
+DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_plot_strainHalfWidth = 0.0125
 
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
@@ -184,10 +206,16 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'S(e)_nPoints':True,
                         'K(S)_nPoints':True,
-                        
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
                         # Fits plotting parameters
-                        'plotCenters': [ii for ii in range(100, 1550, 50)],
-                        'plotHW': 75,
+                        # Stress
+                        'plotStressCenters':DEFAULT_plot_stressCenters,
+                        'plotStressHW':DEFAULT_plot_stressHalfWidth,
+                        # Strain
+                        'plotStrainCenters':DEFAULT_plot_strainCenters,
+                        'plotStrainHW':DEFAULT_plot_strainHalfWidth,
+                        # Points
                         'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
                         }
@@ -203,7 +231,78 @@ res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName
 res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileName = 'MecaData_All_JV', 
                                     save = True, PLOT = False, source = 'Python') # task = 'updateExisting'
 
+
+
 # %%%% ATCC-2023
+
+# %%%%% 23-03-08 & 23-03-09_M4 - Y27
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 'pts_30',
+                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : True,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                'doStrainGaussianFits' : True,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
+                        }
+
+AtccTask = '23-03-08 & 23-03-09_M4'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
+
+# %%%%% 23-02-23 - PNB
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 'pts_30',
+                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                'doStrainGaussianFits' : True,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
+                        }
+
+AtccTask = '23-02-23'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = False, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
+
+
+# %%%%% 23-02-16 - Blebbi
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
@@ -211,25 +310,13 @@ fitSettings = {# H0
                             '%f_5', '%f_10', '%f_20'],
                 'method_bestH0':'Chadwick',
                 'zone_bestH0':'%f_10',
+                
                 }
 
 AtccTask = '23-02-16'
 res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
-                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
-
-# %%%% ATCC-2023
-
-fitSettings = {# H0
-                'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['pts_10', 'pts_20', 
-                            '%f_5', '%f_10', '%f_20'],
-                'method_bestH0':'Chadwick',
-                'zone_bestH0':'%f_10',
-                }
-
-AtccTask = '23-02-23'
-res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
-                                    save = True, PLOT = True, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings) # task = 'updateExisting'
 
 
 

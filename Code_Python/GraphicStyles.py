@@ -124,7 +124,7 @@ def colorTester():
     plt.tight_layout()
     plt.show()
     
-colorTester()
+# colorTester()
 
 # %% 2. Global constants
 
