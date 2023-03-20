@@ -789,6 +789,80 @@ def fitLinear_ss(stress, strain, weights = []):
         
     return(res)
 
+def fitLinear_ss_i(strain, stress, weights = []):
+    """
+    Linear fit on a stress-strain curve, with strain as the x- and stress as the y-variable.
+
+    Parameters
+    ----------
+    strain : (N x 1) numpy array
+        Array of strain.
+    stress : (N x 1) numpy array
+        Array of stress in Pa.
+    weights : (N x 1) numpy array, optional
+        Array of weights. Can be interpreted in two ways, which condition how this function will work.
+        
+        * If weigths is an array of boolean-like values, it is interpreted as a mask, 
+          to select only a part of the stress-strain curve.
+        * If weigths is an array of float-like values, it is interpreted as weigths, 
+          that apply to the stress-strain curve during the fit. This is typically used with gaussian weights.
+        * If weigths = [], it is set as an array of True, 
+          and the whole stress-strain curve is fitted without mask or weights.
+        The default is [].
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [K, strain0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(strain0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: Pa.
+    """
+    
+    error = False
+    
+    if len(weights) == 0:
+        weights = np.ones_like(strain, dtype = bool)
+    
+    # Are all the weights equal to 0 or 1 ? 
+    # If so it is a mask.
+    masked = (np.all(weights.astype(bool) == weights))
+    # If not they are interpreted as weigths.
+    weighted = not masked 
+    
+    try:
+    # if np.sum(weights) > 0:
+        if masked:
+            ols_model = sm.OLS(stress[weights], sm.add_constant(strain[weights]))
+            results_ols = ols_model.fit()
+            S0, K = results_ols.params[0], results_ols.params[1]
+            seS0, seK = results_ols.HC3_se[0], results_ols.HC3_se[1]
+        
+        if weighted:
+            wls_model = sm.WLS(stress, sm.add_constant(strain), weights=weights)
+            results_wls = wls_model.fit()
+            S0, K = results_wls.params[0], results_wls.params[1]
+            seS0, seK = results_wls.HC3_se[0], results_wls.HC3_se[1]
+            
+            
+        params = np.array([K, S0])
+        ses = np.array([seK, seS0])
+        
+    except:
+    # else:
+        error = True
+        params = np.ones(2) * np.nan
+        ses = np.ones(2) * np.nan
+
+    res = (params, ses, error)
+        
+    return(res)
+
 
 # %%%% Functions to store the results of fits
 
@@ -1200,6 +1274,9 @@ class CellCompression:
         self.df_stressRegions = pd.DataFrame({})
         self.df_stressGaussian = pd.DataFrame({})
         self.df_nPoints = pd.DataFrame({})
+        
+        # in dev
+        self.df_strainGaussian = pd.DataFrame({})
 
         
         
@@ -1331,11 +1408,18 @@ class CellCompression:
         if plotFit:
             figTitle += '\nfit type: ' + fitType
             if fitType in ['stressRegion', 'stressGaussian']:
-                step = plotSettings['plotCenters'][1] - plotSettings['plotCenters'][0]
+                step = plotSettings['plotStressCenters'][1] - plotSettings['plotStressCenters'][0]
                 figTitle += ' - {:.0f}_{:.0f}'.format(step, 
-                                                      plotSettings['plotHW'])
+                                                      plotSettings['plotStressHW'])
+            
             if fitType == 'nPoints':
                 figTitle += (' - ' + plotSettings['plotPoints'])
+            
+            # NEW: Strain
+            if fitType == 'strainGaussian':
+                step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
+                figTitle += ' - {:.0f}_{:.0f}'.format(step, 
+                                                      plotSettings['plotStrainHW'])
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1361,12 +1445,17 @@ class CellCompression:
         figTitle = 'Tangeantial modulus'
         figTitle += '\nfit type: ' + fitType
         if fitType in ['stressRegion', 'stressGaussian']:
-            step = plotSettings['plotCenters'][1] - plotSettings['plotCenters'][0]
+            step = plotSettings['plotStressCenters'][1] - plotSettings['plotStressCenters'][0]
             figTitle += ' - {:.0f}_{:.0f}'.format(step, 
-                                                  plotSettings['plotHW'])
+                                                  plotSettings['plotStressHW'])
         if fitType == 'nPoints':
             figTitle += (' - ' + plotSettings['plotPoints'])
         fig.suptitle(figTitle)
+        
+        if fitType in ['strainGaussian']:
+            step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
+            figTitle += ' - {:.0f}_{:.0f}'.format(step, 
+                                                  plotSettings['plotStrainHW'])
         
         for i in range(self.Ncomp):
             colSp = (i) % nColsSubplot
@@ -1443,19 +1532,19 @@ class CellCompression:
             
         # 4.
         if plotSettings['S(e)_stressGaussian']:
-            try:
-                name = self.cellID + '_04-1_S(e)_stressGaussian'
-                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressGaussian')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_04-1_S(e)_stressGaussian'
+            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'stressGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
         if plotSettings['K(S)_stressGaussian']:
-            try:
-                name = self.cellID + '_04-2_K(S)_stressGaussian'
-                fig, ax = self.plot_KS(plotSettings, fitType = 'stressGaussian')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_04-2_K(S)_stressGaussian'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'stressGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
             
         # 5.
         if plotSettings['S(e)_nPoints']:
@@ -1472,6 +1561,23 @@ class CellCompression:
                 ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             except:
                 pass
+            
+        # 6.
+        if plotSettings['S(e)_strainGaussian']:
+            try:
+                name = self.cellID + '_06-1_S(e)_strainGaussian'
+                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+        if plotSettings['K(S)_strainGaussian']:
+            try:
+                name = self.cellID + '_06-2_K(S)_strainGaussian'
+                fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
+
             
             
     def exportTimeseriesWithStressStrain(self):
@@ -1739,6 +1845,12 @@ class CellCompression:
             df = pd.concat([IC.df_nPoints for IC in self.listIndent], axis = 0)
             df.reset_index(drop=True, inplace=True)
             self.df_nPoints = df
+            
+        # NEW
+        if fitSettings['doStrainGaussianFits']:
+            df = pd.concat([IC.df_strainGaussian for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_strainGaussian = df
     
     
     #### METHODS IN DEVELOPMENT
@@ -1868,6 +1980,9 @@ class IndentCompression:
         self.df_stressGaussian = pd.DataFrame({})
         self.df_nPoints = pd.DataFrame({})
         
+        # NEW ! with strain
+        self.dictFitsSS_strainGaussian = {} # fitSS_strainGaussian()
+        self.df_strainGaussian = pd.DataFrame({}) # dictFits_To_DataFrame()
         
         
         # test
@@ -2431,6 +2546,14 @@ class IndentCompression:
             df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_nPoints = df
+            
+        # NEW !
+        if fitSettings['doStrainGaussianFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_strainGaussian)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
+            self.df_strainGaussian = df
     
     
     
@@ -2551,8 +2674,8 @@ class IndentCompression:
             if plotFit:
                 if fitType == 'stressRegion':
                     # Read settings
-                    HW = plotSettings['plotHW']
-                    centers = plotSettings['plotCenters']
+                    HW = plotSettings['plotStressHW']
+                    centers = plotSettings['plotStressCenters']
                     dictFit = self.dictFitsSS_stressRegions
                     id_ranges = [str(C) + '_' + str(HW) for C in centers]
                     # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
@@ -2572,8 +2695,8 @@ class IndentCompression:
                             
                 if fitType == 'stressGaussian':
                     # Read settings
-                    HW = plotSettings['plotHW']
-                    centers = plotSettings['plotCenters']
+                    HW = plotSettings['plotStressHW']
+                    centers = plotSettings['plotStressCenters']
                     dictFit = self.dictFitsSS_stressGaussian
                     id_ranges = [str(C) + '_' + str(HW) for C in centers]
                     # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
@@ -2605,6 +2728,27 @@ class IndentCompression:
                             y = d['yPredict']
                             color = gs.colorList30[k]
                             ax.plot(y, x, color = color, ls = ls, lw = lw)
+                            
+                if fitType == 'strainGaussian':
+                    # Read settings
+                    HW = plotSettings['plotStrainHW']
+                    centers = plotSettings['plotStrainCenters']
+                    dictFit = self.dictFitsSS_strainGaussian
+                    id_ranges = [str(C) + '_' + str(HW) for C in centers]
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        try:
+                            d = dictFit[idr]
+                            if not d['error']:
+                                if not d['valid']:
+                                    ls = '--'
+                                x = d['x']
+                                y = d['yPredict']
+                                color = gs.colorList30[k]
+                                ax.plot(x, y, color = color, ls = ls, lw = lw)
+                        except:
+                            pass
                     
     
                 
@@ -2645,8 +2789,8 @@ class IndentCompression:
                 ax.set_xlim([0, 1200])
                 
                 # Read settings
-                HW = plotSettings['plotHW']
-                centers = plotSettings['plotCenters']
+                HW = plotSettings['plotStressHW']
+                centers = plotSettings['plotStressCenters']
                 # N = len(centers)
                 # colors = gs.colorList30[:N]
                 
@@ -2656,19 +2800,21 @@ class IndentCompression:
                 df_fltr = df[fltr]
                 N = len(df_fltr['center_x'].values)
                 colors = gs.colorList30[:N]
+                N_col = len(colors)
 
                 for k in range(N):
                     X = df_fltr['center_x'].values[k]
                     Y = df_fltr['K'].values[k]/1000
                     Yerr = df_fltr['ciwK'].values[k]/1000
                     if df_fltr['valid'].values[k]:
-                        color = colors[k]
+                        color = colors[k%N_col]
                         mec = 'none'
                     else:
                         color = 'w'
-                        mec = colors[k]
+                        mec = colors[k%N_col]
                     if (not pd.isnull(Y)) and (Y > 0):
-                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                    ms = 5, mec = mec, ecolor = color) 
             
             if fitType == 'stressGaussian':
                 df = self.df_stressGaussian
@@ -2676,8 +2822,8 @@ class IndentCompression:
                 ax.set_xlim([0, 1200])
                 
                 # Read settings
-                HW = plotSettings['plotHW']
-                centers = plotSettings['plotCenters']
+                HW = plotSettings['plotStressHW']
+                centers = plotSettings['plotStressCenters']
                 # N = len(centers)
                 # colors = gs.colorList30[:N]
                 
@@ -2687,6 +2833,7 @@ class IndentCompression:
                 df_fltr = df[fltr]
                 N = len(df_fltr['center_x'].values)
                 colors = gs.colorList30[:N]
+                N_col = len(colors)
                 
                 # relativeError[k] = (Err/K_fit)
                 # # mec = None
@@ -2696,13 +2843,14 @@ class IndentCompression:
                     Y = df_fltr['K'].values[k]/1000
                     Yerr = df_fltr['ciwK'].values[k]/1000
                     if df_fltr['valid'].values[k]:
-                        color = colors[k]
+                        color = colors[k%N_col]
                         mec = 'none'
                     else:
                         color = 'w'
-                        mec = colors[k]
+                        mec = colors[k%N_col]
                     if (not pd.isnull(Y)) and (Y > 0):
-                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', ms = 5, mec = mec, ecolor = colors[k]) 
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                    ms = 5, mec = mec, ecolor = color) 
                 
             if fitType == 'nPoints':
                 df = self.df_nPoints
@@ -2711,20 +2859,59 @@ class IndentCompression:
     
                 N = df.shape[0]
                 colors = gs.colorList30[:N]
+                N_col = len(colors)
 
                 for k in range(N):
                     X = df['center_x'].values[k]
                     Y = df['K'].values[k]/1000
                     Yerr = df['ciwK'].values[k]/1000
                     if df['valid'].values[k]:
-                        color = colors[k]
+                        color = colors[k%N_col]
                         mec = 'none'
                     else:
                         color = 'w'
-                        mec = colors[k]
+                        mec = colors[k%N_col]
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
-                                    ms = 5, mec = mec, ecolor = colors[k])
+                                    ms = 5, mec = mec, ecolor = color)
+                        
+                        
+            if fitType == 'strainGaussian':
+                df = self.df_strainGaussian
+                ax.set_xlabel('Strain')
+                # ax.set_xlim([0, 1200])
+                
+                # Read settings
+                HW = plotSettings['plotStrainHW']
+                centers = plotSettings['plotStrainCenters']
+                # N = len(centers)
+                # colors = gs.colorList30[:N]
+                
+                fltr = (df['center_x'].apply(lambda x : x in centers)) & \
+                       (df['halfWidth_x'] == HW)
+                
+                df_fltr = df[fltr]
+                N = len(df_fltr['center_x'].values)
+                colors = gs.colorList30[:N]
+                N_col = len(colors)
+                
+                # relativeError[k] = (Err/K_fit)
+                # # mec = None
+                
+                for k in range(N):
+                    X = df_fltr['center_x'].values[k]
+                    Y = df_fltr['K'].values[k]/1000
+                    Yerr = df_fltr['ciwK'].values[k]/1000
+                    if df_fltr['valid'].values[k]:
+                        color = colors[k%N_col]
+                        mec = 'none'
+                    else:
+                        color = 'w'
+                        mec = colors[k%N_col]
+                    if (not pd.isnull(Y)) and (Y > 0):
+                        ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                    ms = 5, mec = mec, ecolor = color) 
+                
             
             
             for item in ([ax.title, ax.xaxis.label, \
@@ -3044,7 +3231,116 @@ class IndentCompression:
 
                 
                 axes[k,3].set_title('Spline smoothing\ns = {:.4f}'.format(sfact))
+                
+                
+    def fitSS_strainGaussian(self, center, halfWidth, fitValidationSettings):
+        """
+        
+
+        Parameters
+        ----------
+        center : TYPE
+            DESCRIPTION.
+        halfWidth : TYPE
+            DESCRIPTION.
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        id_range = str(center) + '_' + str(halfWidth)
+        stress, strain = self.stressCompr, self.strainCompr
+        
+        X = strain.flatten(order='C')
+        weights = np.exp( -((X - center) ** 2) / halfWidth ** 2)
+        
+        params, ses, error = fitLinear_ss_i(strain, stress, weights = weights)
+        
+        K, stress0 = params
+        lowStrain, highStrain = center - halfWidth, center + halfWidth
+        mask = ((strain > lowStrain) & (strain < highStrain))
+        stressPredict = constitutiveRelation(strain[mask], K, stress0)
+        
+        x = strain[mask]
+        y, yPredict = stress[mask], stressPredict
+        #### err_Chi2 for stress
+        err_chi2 = 100
+        
+        dictFit = makeDictFit_ss(params, ses, error, 
+                                 center, halfWidth, x, y, yPredict, 
+                                 err_chi2, fitValidationSettings)
+        self.dictFitsSS_strainGaussian[id_range] = dictFit
             
+        
+    def plot_KS_Xthickness(self, fig, ax, plotSettings, fitType = 'stressRegion'):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        fitType : TYPE, optional
+            DESCRIPTION. The default is 'stressRegion'.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.isValidForAnalysis and not self.error_bestH0:
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            ax.title.set_text(titleText)
+            ax.set_ylabel('K (kPa)')
+            ax.set_ylim([0, 16])
+
+            df = self.df_strainGaussian
+            ax.set_xlabel('Strain')
+            # ax.set_xlim([0, 1200])
+            
+            # Read settings
+            HW = plotSettings['plotStrainHW']
+            centers = plotSettings['plotStrainCenters']
+            # N = len(centers)
+            # colors = gs.colorList30[:N]
+            
+            fltr = (df['center_x'].apply(lambda x : x in centers)) & \
+                   (df['halfWidth_x'] == HW)
+            
+            df_fltr = df[fltr]
+            N = len(df_fltr['center_x'].values)
+            colors = gs.colorList30[:N]
+            N_col = len(colors)
+            
+            # relativeError[k] = (Err/K_fit)
+            # # mec = None
+            
+            for k in range(N):
+                X = df_fltr['center_x'].values[k]
+                Y = df_fltr['K'].values[k]/1000
+                Yerr = df_fltr['ciwK'].values[k]/1000
+                if df_fltr['valid'].values[k]:
+                    color = colors[k%N_col]
+                    mec = 'none'
+                else:
+                    color = 'w'
+                    mec = colors[k%N_col]
+                if (not pd.isnull(Y)) and (Y > 0):
+                    ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                ms = 5, mec = mec, ecolor = color) 
+                
+            
+            
+            for item in ([ax.title, ax.xaxis.label, \
+                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+                item.set_fontsize(9)
 # %%%% Default settings
 
 #### HOW TO USE:
@@ -3053,8 +3349,11 @@ class IndentCompression:
 # And the 'Settings' flag in analyseTimeSeries_meca() 
 
 # %%%%% For Fits
-DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
-DEFAULT_halfWidths = [50, 75, 100]
+DEFAULT_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_stressHalfWidths = [50, 75, 100]
+
+DEFAULT_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 
 DEFAULT_fitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
@@ -3067,11 +3366,15 @@ DEFAULT_fitSettings = {# H0
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
-                       'centers_StressFits' : DEFAULT_centers,
-                       'halfWidths_StressFits' : DEFAULT_halfWidths,
+                       'centers_StressFits' : DEFAULT_stressCenters,
+                       'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       # NEW
+                       'doStrainGaussianFits' : True,
+                       'centers_StrainFits' : DEFAULT_strainCenters,
+                       'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
                        }
 
 # %%%%% For Validation
@@ -3089,8 +3392,11 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
                                  'str': DEFAULT_str_crit}
 
 # %%%%% For Plots
-DEFAULT_plot_centers = [ii for ii in range(100, 1550, 100)]
-DEFAULT_plot_halfWidth = 75
+DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_plot_stressHalfWidth = 50
+
+DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_plot_strainHalfWidth = 0.0125
 
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
@@ -3101,9 +3407,16 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'S(e)_nPoints':True,
                         'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
                         # Fits plotting parameters
-                        'plotCenters':DEFAULT_plot_centers,
-                        'plotHW':DEFAULT_plot_halfWidth,
+                        # Stress
+                        'plotStressCenters':DEFAULT_plot_stressCenters,
+                        'plotStressHW':DEFAULT_plot_stressHalfWidth,
+                        # Strain
+                        'plotStrainCenters':DEFAULT_plot_strainCenters,
+                        'plotStrainHW':DEFAULT_plot_strainHalfWidth,
+                        # Points
                         'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
                         }
@@ -3160,6 +3473,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     halfWidths_StressFits = fitSettings['halfWidths_StressFits']
     nbPtsFit = fitSettings['nbPtsFit']
     overlapFit = fitSettings['overlapFit']
+    
+    centers_StrainFits = fitSettings['centers_StrainFits']
+    halfWidths_StrainFits = fitSettings['halfWidths_StrainFits']
     
     #### 0.2 Options for fits validation
     fitValidationSettings = ufun.updateDefaultSettingsDict(fitValidationSettings, 
@@ -3258,7 +3574,16 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                     iStart = iStop - overlapFit
                     iStop = iStart + nbPtsFit
                     
-            #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            #### 3.10.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
+            if fitSettings['doStrainGaussianFits']:
+                for jj in range(len(halfWidths_StrainFits)):
+                    for ii in range(len(centers_StrainFits)):
+                        C, HW = centers_StrainFits[ii], halfWidths_StrainFits[jj]
+                        validRange = ((C-HW) > 0)
+                        if validRange:
+                            IC.fitSS_strainGaussian(C, HW, fitValidationSettings)
+                    
+            #### 3.10.5 Convert all dictFits into DataFrame that can be concatenated and exported after.
             IC.dictFits_To_DataFrame(fitSettings)
             
             
@@ -3303,7 +3628,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             'results_stressRegions' : CC.df_stressRegions,
             'results_stressGaussian' : CC.df_stressGaussian,
             'results_nPoints' : CC.df_nPoints,
-            'results_H0' : df_H0
+            'results_H0' : df_H0,
+            'results_strainGaussian' : CC.df_strainGaussian,
             }
 
     print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
@@ -3321,11 +3647,55 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 
-# f = '22-07-15_M1_P1_C1_disc20um_L40_PY.csv'
+# f = '23-02-23_M1_P1_C7_L40_disc20um_PY.csv'
+
+# stressCenters = [ii for ii in range(50, 1550, 25)]
+# stressHalfWidths = [25]
+
+# plot_stressCenters = stressCenters
+# plot_stressHalfWidth = stressHalfWidths[0]
+
+# fitSettings = {# H0
+#                 'methods_H0':['Chadwick', 'Dimitriadis'],
+#                 'zones_H0':['%f_5', '%f_10', '%f_20'],
+#                 'method_bestH0':'Chadwick',
+#                 'zone_bestH0':'%f_10',
+#                 # Stress regions
+#                 'doStressRegionFits' : False,
+#                 'doStressGaussianFits' : True,
+#                 'centers_StressFits' : stressCenters,
+#                 'halfWidths_StressFits' : stressHalfWidths,
+#                 # Nb point
+#                 'doNPointsFits' : False,
+#                 'nbPtsFit' : 17,
+#                 'overlapFit' : 9
+#                 }
+
+# plotSettings = {# ON/OFF switchs plot by plot
+#                 'FH(t)':True,
+#                 'F(H)':True,
+#                 'S(e)_stressRegion':False,
+#                 'K(S)_stressRegion':False,
+#                 'S(e)_stressGaussian':True,
+#                 'K(S)_stressGaussian':True,
+#                 'S(e)_nPoints':False,
+#                 'K(S)_nPoints':False,
+#                 'S(e)_strainGaussian':True, # NEW
+#                 'K(S)_strainGaussian':True, # NEW
+#                 # Stress
+#                 'plotStressCenters':plot_stressCenters,
+#                 'plotStressHW':plot_stressHalfWidth,
+#                 # Strain
+#                 # 'plotStrainCenters':DEFAULT_plot_strainCenters,
+#                 'plotStrainHW':DEFAULT_plot_strainHalfWidth,
+#                 }
 
 # def simpleWrapper(f, expDf):
 #     tsDf = getCellTimeSeriesData(f, fromCloud = False)
-#     res = analyseTimeSeries_meca(f, tsDf, expDf, PLOT = True, SHOW = False)
+#     # res = tsDf
+#     res = analyseTimeSeries_meca(f, tsDf, expDf, PLOT = True, SHOW = False,
+#                                   fitSettings = fitSettings,
+#                                   plotSettings = plotSettings)
 #     return(res)
     
 # res = simpleWrapper(f, expDf)
@@ -3363,7 +3733,8 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
         for k in res_all.keys(): 
             # Go through all types of results in res_all: 
             #     'results_main', 'results_stressRegions', 'results_stressGaussian', 
-            #     'results_nPoints', 'results_H0', etc.
+            #     'results_nPoints', 'results_H0', 
+            #     'results_strainGaussian', etc.
             
             df = res_all[k]
             if k == 'results_main':
