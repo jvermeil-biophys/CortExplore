@@ -113,9 +113,12 @@ def findAndRename(path, target_string, new_string, target='file', test = True, r
                 newFileName = f[:searchString.start()] + new_string + f[searchString.end():]
                 renamedListTarget.append(newFileName)
                 if not test:
-                    new_path = os.path.join(path,newFileName)
+                    new_path = os.path.join(path, newFileName)
                     if not os.path.isfile(new_path):
-                        os.rename(r''+os.path.join(path,f),r''+os.path.join(path,newFileName))
+                        os.rename(r''+os.path.join(path, f),r''+os.path.join(path, newFileName))
+                        
+                # else:
+                #     print(f)
                     
     if recursiveAction:
         # Update ListDir after potential renaming
@@ -127,8 +130,13 @@ def findAndRename(path, target_string, new_string, target='file', test = True, r
         # Start going recursive
         for d in listDir:
             print("Let's go into " + os.path.join(path,d))
-            inverseDate(os.path.join(path,d), target, test = test, recursiveAction = True, exceptStrings = exceptStrings)
+            rlT = findAndRename(os.path.join(path,d), target_string, new_string, 
+                          target=target, test = test, recursiveAction = True, exceptStrings = exceptStrings)
+            renamedListTarget += rlT
+            
     print(renamedListTarget)
+    print(len(renamedListTarget))
+    return(renamedListTarget)
 
 # %% Script Dates
         
@@ -139,13 +147,30 @@ path0 = 'D://MagneticPincherData//Raw//'
 
 # %% Script Other renaming
 
+path0 = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\'
+sub = 'M4_dmso'
+path = path0 + sub
+
+findAndRename(path, '_M1_', '_M4_', 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
+
+
+path0 = 'D://MagneticPincherData//Raw//'
+date = '23.03.09'
+path = path0 + date
+
+findAndRename(path, '23.03.09', '23-03-09', 
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
+
+
+
 date = '18.09.24'
 path = path0 + date
 
 findAndRename(path, 'M2_P1', 'M3_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 findAndRename(path, 'M1_P2', 'M2_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 
 
 
@@ -153,11 +178,11 @@ date = '18.09.25'
 path = path0 + date
 
 findAndRename(path, 'M2_P2', 'M4_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 findAndRename(path, 'M2_P1', 'M3_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 findAndRename(path, 'M1_P2', 'M2_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 
 
 
@@ -166,11 +191,11 @@ date = '18.10.30'
 path = path0 + date
 
 findAndRename(path, 'M2_P2', 'M4_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 findAndRename(path, 'M2_P1', 'M3_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 findAndRename(path, 'M1_P2', 'M2_P1', 
-              target='file', test = False, recursiveAction = False, exceptStrings = [])
+              target='file', test = True, recursiveAction = False, exceptStrings = [])
 
 
 
