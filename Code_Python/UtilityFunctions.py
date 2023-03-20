@@ -195,6 +195,7 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
             expDf = expDf.drop([c], axis=1)
         if '.1' in c:
             expDf = expDf.drop([c], axis=1)
+        
     expDf = expDf.convert_dtypes()
 
     #### 1.2 Convert commas into dots
@@ -276,6 +277,9 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     dictT0 = {unique_dates[ii]:unique_T0[ii] for ii in range(len(unique_dates))}
     all_T0 = np.array([dictT0[d] for d in expDf.date.values])
     expDf['date_T0'] = all_T0
+    
+    #### 3.3 Drop the 'comments' column
+    expDf = expDf.drop(['comments'], axis=1)
         
     
     # def str2int(s):
@@ -409,6 +413,21 @@ def findInfosInFileName(f, infoType):
     """
     infoString = ''
     try:
+        if infoType in ['M', 'P', 'C', 'cellName']:
+            templateStr = r'M[0-9]_P[0-9]_C[0-9\-]+'
+            s = re.search(templateStr, f)
+            if s:
+                iStart, iStop = s.span()
+                foundStr = f[iStart:iStop]
+                if infoType == 'cellName':
+                    infoString = foundStr
+                elif infoType == 'M':
+                    infoString = foundStr.split('_')[0][1:]
+                elif infoType == 'P':
+                    infoString = foundStr.split('_')[1][1:]
+                elif infoType == 'C':
+                    infoString = foundStr.split('_')[2][1:]
+                
         if infoType in ['M', 'P', 'C']:
             acceptedChar = [str(i) for i in range(10)] + ['-']
             string = '_' + infoType
@@ -528,7 +547,7 @@ def findInfosInFileName(f, infoType):
 
 
 
-def isFileOfInterest(f, manips, wells, cells):
+def isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = ''):
     """
     Determine if a file f correspond to the given criteria.
     More precisely, return a boolean saying if the manip, well and cell number are in the given range.
@@ -548,22 +567,31 @@ def isFileOfInterest(f, manips, wells, cells):
     """
     test = False
     testM, testP, testC = False, False, False
+    testSuffix = False
     
     listManips, listWells, listCells = toListOfStrings(manips), toListOfStrings(wells), toListOfStrings(cells)
     
     try:
-        # fM = int(findInfosInFileName(f, 'M'))
-        # fP = int(findInfosInFileName(f, 'P'))
-        # fC = int(findInfosInFileName(f, 'C'))
         fM = (findInfosInFileName(f, 'M'))
         fP = (findInfosInFileName(f, 'P'))
         fC = (findInfosInFileName(f, 'C'))
     except:
         return(False)
-        
-    # print(fM, fP, fC)
-    # print(manips, wells, cells)
-    # print(toList(manips), toList(wells), toList(cells))
+    
+    if mode == 'soft':
+        L = [fM, fP, fC]
+        for i in range(3):
+            x = L[i]
+            try:
+                L[i] = x.split('-')[0]
+            except:
+                pass
+        fM, fP, fC = L
+            
+    elif mode == 'strict':
+        pass
+    else:
+        pass
     
     if (manips == 'all') or (fM in listManips):
         testM = True
@@ -571,11 +599,24 @@ def isFileOfInterest(f, manips, wells, cells):
         testP = True
     if (cells == 'all') or (fC in listCells):
         testC = True
+    if (suffix == '') or f.endswith(suffix):
+        testSuffix = True
         
-    if testM and testP and testC:
-        test = True
-    
+    test = (testM and testP and testC and testSuffix)
     return(test)
+
+
+def simplifyCellId(f):
+    res = f
+    templateStr = r'M[0-9]_P[0-9]_C[0-9\-]+'
+    s = re.search(templateStr, f)
+    if s:
+        iStart, iStop = s.span()
+        foundStr = f[iStart:iStop]
+        newStr = foundStr.split('-')[0]
+        res = res[:iStart] + newStr + res[iStop:]
+    return(res)
+
 
 def getDictAggMean(df):
     dictAggMean = {}
