@@ -1345,6 +1345,10 @@ class CellCompression:
             else:
                 ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
                         color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
+                
+            if not IC.error_bestH0:
+                ax.plot(IC.Df['T'].values[0], IC.bestH0, 
+                        color = 'skyblue', marker = 'o', markersize = 2, zorder = 3)
         
         (axm, axM) = ax.get_ylim()
         ax.set_ylim([min(0,axm), axM])
@@ -1418,7 +1422,7 @@ class CellCompression:
             # NEW: Strain
             if fitType == 'strainGaussian':
                 step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
-                figTitle += ' - {:.0f}_{:.0f}'.format(step, 
+                figTitle += ' - {:.3e}_{:.3e}'.format(step, 
                                                       plotSettings['plotStrainHW'])
         fig.suptitle(figTitle)
         
@@ -1432,6 +1436,11 @@ class CellCompression:
                 
             IC = self.listIndent[i]
             IC.plot_SS(fig, ax, plotSettings, plotFit = plotFit, fitType = fitType)
+            
+        axes = ufun.setCommonBounds_V2(axes, mode = 'firstLine', 
+                                       xb = [0, 'auto'], yb = [0, 'auto'],
+                                       Xspace = [0, 1], Yspace = [0, 5000])
+        # axes = ufun.setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'])
             
         fig.tight_layout()
         return(fig, axes)
@@ -1450,12 +1459,13 @@ class CellCompression:
                                                   plotSettings['plotStressHW'])
         if fitType == 'nPoints':
             figTitle += (' - ' + plotSettings['plotPoints'])
-        fig.suptitle(figTitle)
         
         if fitType in ['strainGaussian']:
             step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
-            figTitle += ' - {:.0f}_{:.0f}'.format(step, 
+            figTitle += ' - {:.3e}_{:.3e}'.format(step, 
                                                   plotSettings['plotStrainHW'])
+            
+        fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
             colSp = (i) % nColsSubplot
@@ -1467,6 +1477,11 @@ class CellCompression:
                 
             IC = self.listIndent[i]
             IC.plot_KS(fig, ax, plotSettings, fitType = fitType)
+        
+        axes = ufun.setCommonBounds_V2(axes, mode = 'allLines', 
+                                       xb = [0, 'auto'], yb = [0, 'auto'],
+                                       Xspace = [0, 5000], Yspace = [0, 25])
+        # axes = ufun.setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'])
             
         fig.tight_layout()
         return(fig, axes)
@@ -1548,35 +1563,35 @@ class CellCompression:
             
         # 5.
         if plotSettings['S(e)_nPoints']:
-            try:
-                name = self.cellID + '_05-1_S(e)_nPoints'
-                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'nPoints')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_05-1_S(e)_nPoints'
+            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'nPoints')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
         if plotSettings['K(S)_nPoints']:
-            try:
-                name = self.cellID + '_05-2_K(S)_nPoints'
-                fig, ax = self.plot_KS(plotSettings, fitType = 'nPoints')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_05-2_K(S)_nPoints'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'nPoints')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
             
         # 6.
         if plotSettings['S(e)_strainGaussian']:
-            try:
-                name = self.cellID + '_06-1_S(e)_strainGaussian'
-                fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_06-1_S(e)_strainGaussian'
+            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
         if plotSettings['K(S)_strainGaussian']:
-            try:
-                name = self.cellID + '_06-2_K(S)_strainGaussian'
-                fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
-                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            except:
-                pass
+            # try:
+            name = self.cellID + '_06-2_K(S)_strainGaussian'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
 
             
             
@@ -1965,6 +1980,8 @@ class IndentCompression:
         self.deltaCompr = np.zeros_like(self.hCompr)*np.nan
         self.stressCompr = np.zeros_like(self.hCompr)*np.nan
         self.strainCompr = np.zeros_like(self.hCompr)*np.nan
+        self.contactRadius = np.zeros_like(self.hCompr)*np.nan
+        self.ChadwickRatio = np.zeros_like(self.hCompr)*np.nan
         
         # fitFH_Chadwick() & fitFH_Dimitriadis()
         self.dictFitFH_Chadwick = {}
@@ -2189,6 +2206,11 @@ class IndentCompression:
             pseudoDelta = np.max(self.hCompr) - self.hCompr
             thresh = (int(zoneVal)/100.) * np.max(pseudoDelta)
             mask = (pseudoDelta < thresh)
+        elif zoneType == 'ratio':
+            z1, z2 = zoneVal.split('-')
+            thresh1 = float(z1)
+            thresh2 = float(z2)
+            mask = (self.ChadwickRatio > thresh1) & (self.ChadwickRatio < thresh2)
         else:
             mask = np.ones_like(self.hCompr, dtype = bool)
         
@@ -2326,6 +2348,35 @@ class IndentCompression:
             self.deltaCompr = deltaCompr
             self.stressCompr = stressCompr
             self.strainCompr = strainCompr
+            
+        
+    def computeContactRadius(self, method = 'Chadwick'):
+        """
+        
+
+        Parameters
+        ----------
+        method : TYPE, optional
+            DESCRIPTION. The default is 'Chadwick'.
+
+        Returns
+        -------
+        None.
+
+        """
+        if not self.error_bestH0:
+            hCompr = self.hCompr / 1000 # µm
+            deltaCompr = (self.bestH0 - self.hCompr) / 1000 # µm
+            R = self.DIAMETER / 2000 # µm
+            if method == 'Chadwick':
+                S = R*deltaCompr
+            elif method == 'Dimitriadis':
+                S = R*deltaCompr/2
+            
+            S[S < 0] = 0
+            
+            self.contactRadius = np.sqrt(S)
+            self.ChadwickRatio = self.contactRadius / hCompr
         
     
     def fitFH_Chadwick(self, fitValidationSettings, mask = []):
@@ -2598,7 +2649,6 @@ class IndentCompression:
                     legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
                     ax.plot(hPredict, self.fCompr,'k--', linewidth = 0.8, 
                             label = legendText, zorder = 2)
-                    ax.legend(loc = 'upper right', prop={'size': 6})
                 else:
                     titleText += '\nFIT ERROR'
                     
@@ -2627,13 +2677,38 @@ class IndentCompression:
                     ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
                             label = legendText)
                     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
-                    ax.legend(loc = 'upper right', prop={'size': 6})
-            
+
+                    
+                if 'H0_Chadwick_' + 'ratio_2-3' in self.dictH0.keys():
+                    H0_ratio = self.dictH0['H0_Chadwick_ratio_2-3']
+                    E_ratio = self.dictH0['E_Chadwick_ratio_2-3']
+                    str_m_z = 'Chadwick_ratio_2-3'
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, H0_ratio, 20)
+                    low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+
+                    # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                            # label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    
+                # darkslateblue
+                ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
-                for item in ([ax.title, ax.xaxis.label, \
-                              ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                    item.set_fontsize(9)
-            
+                
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+                    
+            if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+                ax_r = ax.twinx()
+                ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='+', markersize=1)
+                ax_r.set_ylabel('a/h')
+                ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+                ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+                ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+                ax_r.set_ylim([0,10])
             
         
     def plot_SS(self, fig, ax, plotSettings, plotFit = True, fitType = 'stressRegion'):
@@ -2749,12 +2824,21 @@ class IndentCompression:
                                 ax.plot(x, y, color = color, ls = ls, lw = lw)
                         except:
                             pass
-                    
+                   
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+            
+            if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+                ax_r = ax.twinx()
+                ax_r.plot(self.strainCompr, self.ChadwickRatio, color='gold', marker='+', markersize=1)
+                ax_r.set_ylabel('a/h')
+                ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+                ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+                ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+                ax_r.set_ylim([0,10])
     
                 
-            for item in ([ax.title, ax.xaxis.label, \
-                          ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(9)
+            
+            
     
         
     def plot_KS(self, fig, ax, plotSettings, fitType = 'stressRegion'):
@@ -2781,12 +2865,12 @@ class IndentCompression:
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             ax.title.set_text(titleText)
             ax.set_ylabel('K (kPa)')
-            ax.set_ylim([0, 16])
+            # ax.set_ylim([0, 16])
             
             if fitType == 'stressRegion':
                 df = self.df_stressRegions
                 ax.set_xlabel('Stress (Pa)')
-                ax.set_xlim([0, 1200])
+                # ax.set_xlim([0, 1200])
                 
                 # Read settings
                 HW = plotSettings['plotStressHW']
@@ -2819,7 +2903,7 @@ class IndentCompression:
             if fitType == 'stressGaussian':
                 df = self.df_stressGaussian
                 ax.set_xlabel('Stress (Pa)')
-                ax.set_xlim([0, 1200])
+                # ax.set_xlim([0, 1200])
                 
                 # Read settings
                 HW = plotSettings['plotStressHW']
@@ -2855,7 +2939,7 @@ class IndentCompression:
             if fitType == 'nPoints':
                 df = self.df_nPoints
                 ax.set_xlabel('Stress (Pa)')
-                ax.set_xlim([0, 1200])
+                # ax.set_xlim([0, 1200])
     
                 N = df.shape[0]
                 colors = gs.colorList30[:N]
@@ -2879,6 +2963,7 @@ class IndentCompression:
             if fitType == 'strainGaussian':
                 df = self.df_strainGaussian
                 ax.set_xlabel('Strain')
+                ax.autoscale()
                 # ax.set_xlim([0, 1200])
                 
                 # Read settings
@@ -3273,6 +3358,8 @@ class IndentCompression:
                                  center, halfWidth, x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
         self.dictFitsSS_strainGaussian[id_range] = dictFit
+        
+        
             
         
     def plot_KS_Xthickness(self, fig, ax, plotSettings, fitType = 'stressRegion'):
@@ -3341,6 +3428,9 @@ class IndentCompression:
             for item in ([ax.title, ax.xaxis.label, \
                           ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
                 item.set_fontsize(9)
+                
+
+
 # %%%% Default settings
 
 #### HOW TO USE:
@@ -3409,6 +3499,7 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_nPoints':True,
                         'S(e)_strainGaussian':True, # NEW
                         'K(S)_strainGaussian':True, # NEW
+                        'Plot_Ratio':True, # NEW
                         # Fits plotting parameters
                         # Stress
                         'plotStressCenters':DEFAULT_plot_stressCenters,
@@ -3539,7 +3630,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
 
             #### 3.9 Compute stress and strain based on the best H0
-            IC.computeStressStrain(method = 'Chadwick')            
+            IC.computeStressStrain(method = 'Chadwick')
+            
+            #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
+            IC.computeContactRadius(method = 'Chadwick')
+            
+            #### 3.9.2 Re-Compute the best H0
+            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
+            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
             
             #### 3.10 Local fits of stress-strain curves
             

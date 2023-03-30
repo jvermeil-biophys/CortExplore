@@ -1321,54 +1321,121 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
         simpleSaveFig(fig, name, cloudSavePath, ext, dpi)
         
    
+def setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'],
+                    largestX = [-np.inf, np.inf], largestY = [-np.inf, np.inf]):
+    
+    
+    axes_f = axes.flatten()
+        
+    if xb[0] == 'auto':
+        x_min =  np.min([ax.get_xlim()[0] for ax in axes_f])
+    else:
+        x_min = xb[0]
+        
+    if xb[1] == 'auto':
+        x_max =  np.max([ax.get_xlim()[1] for ax in axes_f])
+    else:
+        x_max = xb[1]
+        
+    if yb[0] == 'auto':
+        y_min =  np.min([ax.get_ylim()[0] for ax in axes_f])
+    else:
+        y_min = yb[0]
+        
+    if yb[1] == 'auto':
+        y_max =  np.max([ax.get_ylim()[1] for ax in axes_f])
+    else:
+        y_max = yb[1]
+        
+    for ax in axes_f:
+        ax.set_xlim([x_min, x_max])
+        ax.set_ylim([y_min, y_max])
+    
+    return(axes)
+
+
+def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'auto'],
+                    Xspace = [-np.inf, np.inf], Yspace = [-np.inf, np.inf]):
+
+    axes_f = axes.flatten()
+    x_bounds = []
+    y_bounds = []
+    
+    for ax in axes_f:
+        lines = ax.get_lines()
+        if len(lines) == 0:
+            continue
+        else:
+            if mode == 'firstLine':
+                L = lines[0]
+                data = L.get_data()
+            elif mode == 'allLines':
+                data = (np.concatenate([L.get_data()[0] for L in lines]),
+                        np.concatenate([L.get_data()[1] for L in lines]))
+        
+        x_bounds.append([0.85*np.percentile(data[0], 5), 
+                         1.15*np.percentile(data[0], 95)])
+        y_bounds.append([0.85*np.percentile(data[1], 5), 
+                         1.15*np.percentile(data[1], 95)])
+    
+    x_bounds = np.array(x_bounds)
+    y_bounds = np.array(y_bounds)
+    
+    X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
+    Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
+
+    if xb[0] == 'auto':
+        X_BOUND[0] = max(X_BOUND[0], Xspace[0])
+    else:
+        X_BOUND[0] = xb[0]
+        
+    if xb[1] == 'auto':
+        X_BOUND[1] = min(X_BOUND[1], Xspace[1])
+    else:
+        X_BOUND[1] = xb[1]
+
+
+    if yb[0] == 'auto':
+        Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
+    else:
+        Y_BOUND[0] = yb[0]
+        
+    if yb[1] == 'auto':
+        Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
+    else:
+        Y_BOUND[1] = yb[1]
+            
+    
+        
+    for ax in axes_f:
+        ax.set_xlim(X_BOUND)
+        ax.set_ylim(Y_BOUND)
+    
+    return(axes)
+
+
+
+def setAllTextFontSize(ax, size = 9):
+    """
     
 
-# def archiveFig_V0(fig, ax, figDir, name='auto', dpi = 100):
+    Parameters
+    ----------
+    ax : TYPE
+        DESCRIPTION.
+    size : TYPE, optional
+        DESCRIPTION. The default is 9.
+
+    Returns
+    -------
+    None.
+
+    """
+    for item in ([ax.title, ax.xaxis.label, \
+                  ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(size)
+    return(ax)
     
-#     if not os.path.exists(figDir):
-#         os.makedirs(figDir)
-    
-#     # saveDir = os.path.join(figDir, str(date.today()))
-#     # if not os.path.exists(saveDir):
-#     #     os.makedirs(saveDir)
-#     saveDir = figDir
-    
-#     if name != 'auto':
-#         fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-    
-#     else:
-#         suptitle = fig._suptitle.get_text()
-#         if len(suptitle) > 0:
-#             name = suptitle
-#             fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-        
-#         else:
-#             try:
-#                 N = len(ax)
-#                 ax = ax[0]
-#             except:
-#                 N = 1
-#                 ax = ax
-                
-#             xlabel = ax.get_xlabel()
-#             ylabel = ax.get_ylabel()
-#             if len(xlabel) > 0 and len(ylabel) > 0:
-#                 name = ylabel + ' Vs ' + xlabel
-#                 if N > 1:
-#                     name = name + '___etc'
-#                 fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-            
-#             else:
-#                 title = ax.get_title()
-#                 if len(title) > 0:
-#                     if N > 1:
-#                         name = name + '___etc'
-#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-                
-#                 else:
-#                     figNum = plt.gcf().number
-#                     name = 'figure ' + str(figNum) 
-#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
 
 def lighten_color(color, amount=0.5):
     """
