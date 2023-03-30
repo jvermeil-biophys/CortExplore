@@ -1338,19 +1338,22 @@ class CellCompression:
         
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
-
             compValid = IC.isValidForAnalysis
+            fitError = IC.dictFitFH_Chadwick['error']
             
-            if compValid:
-                fitError = IC.dictFitFH_Chadwick['error']
+            if (not fitError) and compValid:                
+                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                        color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+                
+                if not IC.error_bestH0:
+                    ax.plot(IC.Df['T'].values[0], IC.bestH0, 
+                            color = 'skyblue', marker = 'o', markersize = 2, zorder = 3)
                 
             else:
                 ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
                         color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
                 
-            if not IC.error_bestH0:
-                ax.plot(IC.Df['T'].values[0], IC.bestH0, 
-                        color = 'skyblue', marker = 'o', markersize = 2, zorder = 3)
+            
         
         (axm, axM) = ax.get_ylim()
         ax.set_ylim([min(0,axm), axM])
@@ -1421,15 +1424,16 @@ class CellCompression:
             if fitType == 'nPoints':
                 figTitle += (' - ' + plotSettings['plotPoints'])
             
+            # NEW: Log
             if fitType == 'Log':
                 figTitle += (' - ' + plotSettings['plotLog'])
-            
             
             # NEW: Strain
             if fitType == 'strainGaussian':
                 step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
                 figTitle += ' - {:.3e}_{:.3e}'.format(step, 
                                                       plotSettings['plotStrainHW'])
+                
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1596,23 +1600,6 @@ class CellCompression:
                 ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             except:
                 pass
-        # 6.
-        if plotSettings['S(e)_strainGaussian']:
-            # try:
-            name = self.cellID + '_06-1_S(e)_strainGaussian'
-            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
-            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
-        if plotSettings['K(S)_strainGaussian']:
-            # try:
-            name = self.cellID + '_06-2_K(S)_strainGaussian'
-            fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
-            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
-
-            
         if plotSettings['K(S)_Log']:
             # try:
             name = self.cellID + '_06-2_K(S)_Log'
@@ -1621,6 +1608,23 @@ class CellCompression:
             # except:
             #     pass     
             
+        
+        # 7.
+        if plotSettings['S(e)_strainGaussian']:
+            # try:
+            name = self.cellID + '_07-1_S(e)_strainGaussian'
+            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+        if plotSettings['K(S)_strainGaussian']:
+            # try:
+            name = self.cellID + '_07-2_K(S)_strainGaussian'
+            fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+        
             
     def exportTimeseriesWithStressStrain(self):
         """
@@ -2929,6 +2933,7 @@ class IndentCompression:
                    
             ax = ufun.setAllTextFontSize(ax, size = 9)
             
+            # NEW ! Jojo
             if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
                 ax_r = ax.twinx()
                 ax_r.plot(self.strainCompr, self.ChadwickRatio, color='gold', marker='+', markersize=1)
@@ -3622,10 +3627,11 @@ DEFAULT_fitSettings = {# H0
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       # NEW - Numi
                        'doLogFits' : True,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
-                       # NEW
+                       # NEW - Jojo
                        'doStrainGaussianFits' : True,
                        'centers_StrainFits' : DEFAULT_strainCenters,
                        'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
@@ -3662,10 +3668,10 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'S(e)_nPoints':True,
                         'K(S)_nPoints':True,
-                        'S(e)_Log':True,
-                        'K(S)_Log':True,
-                        'S(e)_strainGaussian':True, # NEW
-                        'K(S)_strainGaussian':True, # NEW
+                        'S(e)_Log':True, # NEW - Numi
+                        'K(S)_Log':True, # NEW - Numi
+                        'S(e)_strainGaussian':True, # NEW - Jojo
+                        'K(S)_strainGaussian':True, # NEW - Jojo
                         'Plot_Ratio':True, # NEW
                         # Fits plotting parameters
                         # Stress
@@ -3913,7 +3919,6 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             'results_stressGaussian' : CC.df_stressGaussian,
             'results_nPoints' : CC.df_nPoints,
             'results_Log' : CC.df_log,
-            'results_H0' : df_H0
             'results_H0' : df_H0,
             'results_strainGaussian' : CC.df_strainGaussian,
             }
