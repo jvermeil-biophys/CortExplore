@@ -72,8 +72,32 @@ timeSeriesDataDir = os.path.join(mainDataDir, "Data_TimeSeries")
 figDir = os.path.join(mainDataDir, "Figures")
 todayFigDir = os.path.join(figDir, "Historique/" + str(date.today()))
 
+#%% Pandas test code
+
+import numpy as np
+import pandas as pd
+
+D = {'subject': ['physics', 'hindi', 'english', 'sport', 
+                 'physics', 'hindi', 'english', 'sport', 
+                 'physics', 'hindi', 'english', 'sport',
+                 'physics', 'hindi', 'english', 'sport'],
+     'teacher': ['Mrs B.', 'Mr A.', 'Mr A.', 'Mrs C.', 
+                'Mrs B.', 'Mr A.', 'Mr A.', 'Mrs C.', 
+                'Mrs B.', 'Mr A.', 'Mr A.', 'Mrs C.',
+                'Mrs B.', 'Mr A.', 'Mr A.', 'Mrs C.'],
+     'grades': [89, 58, 77, 82, 95, 62, 80, 99, 
+                59, 85, 97, 47, 98, 65, 79, 82],
+     'coefficient':[1,1,1,1,2,3,2,3,6,5,7,6,8,7,9,10]}
+
+df = pd.DataFrame(D)
+
+group_by_subject = df.groupby(by = 'subject')
+
+df_average = group_by_subject.agg({'grades':['mean', 'std', 'count', 'sum'], 
+                                   'teacher':'first'})
 
 #%% shitty test plots
+
 #%%% Plotting all three graphs (3D, 2D and Dz)
 
 expt = '20220412_100xoil_3t3optorhoa_4.5beads_15mT_Mechanics'

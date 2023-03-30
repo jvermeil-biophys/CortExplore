@@ -46,12 +46,15 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-# date = '22.11.16'
-# DirSave = os.path.join(cp.DirDataRaw, date)
-# DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
-# # prefix = 'cell'
-# # channel = 'w1TIRF DIC'
-# microscope = 'labview'
+date = '23.03.28'
+DirSave = os.path.join(cp.DirDataRaw, date)
+# DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
+DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+
+# prefix = 'cell'
+# channel = 'w1TIRF DIC'
+microscope = 'labview'
+
 
 #%% Define parameters # Jojo
 
@@ -59,10 +62,9 @@ date = '23.03.17'
 DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
 DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
 
-prefix = ''
-channel = ''
-microscope = 'labview'
-
+# prefix = ''
+# channel = ''
+# microscope = 'labview'
 
 # %% Functions
 
@@ -488,6 +490,7 @@ count = 0
 # for i in range(len(allZimg)):
 for i in range(min(len(allZimg), limiter)):
     if count%24 == 0:
+        
         count = 0
         
     currentCell = allCells[i]

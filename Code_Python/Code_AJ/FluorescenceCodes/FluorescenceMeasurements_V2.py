@@ -732,10 +732,12 @@ for currentCell in allCells:
     
 #%% Creating stacks from individual files
 
-dirExt = 'F:/Cortex Experiments/Fluorescence Experiments/20221015_3t3optorhoaLifeAct_40x_FluoTimeLapse'
-dirSave = 'D:/Anumita/MagneticPincherData/Fluorescence_Analysis/Raw'
+expt = '20221202_rpe1-3t3_100x_ActivationTests'
+subDir = '3t3optorhoa_Fastact640'
+dirExt = 'F:/Cortex Experiments/Fluorescence Experiments/'
+dirSave = 'D:/Anumita/MagneticPincherData/DataFluorescence/Raw/'
 prefix = 'cell'
 channel = 'w3CSU640'
 
-excludedCells = ufun.AllMMTriplets2Stack(dirExt, dirSave, prefix, channel)
+excludedCells = ufun.AllMMTriplets2Stack(dirExt, dirSave, expt = expt, prefix = prefix, channel = channel, subDir = subDir)
 
