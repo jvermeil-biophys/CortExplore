@@ -281,6 +281,8 @@ cv2.destroyAllWindows()
 # allCells = ['22-12-02_M3_P1_C19_disc20um']
 allCells = os.listdir(dirProcessed)
 # allCells = [x for x in allCells if 'P1' in x and 'M1' not in x ]
+allCells = [x for x in allCells if 'M2' in x ]
+
 
 fluoDict = {'cellID': [], 
             'fluoFront': [],
@@ -471,7 +473,7 @@ for j in range(len(allCells)):
 # plt.close('all')
 
 #%%
-
+plt.style.use('dark_background')
 fluoDf = pd.DataFrame(fluoDict)
 plt.figure(figsize=(15,10))
 
@@ -479,13 +481,13 @@ data = fluoDf[fluoDf['cellID'].str.contains('M2')]
 # data = fluoDf[fluoDf['cellID'].str.contains('C9') == False]
 # data = fluoDf[fluoDf['cellID'].str.contains('C13') == False]
 
-# data = data[(data['frame'] < 27)]
+data = data[(data['frame'] < 27)]
 # data = data[(data['frame'] > 11)]
 
 x = data['frame']*timeRes
 
 
-flatui =  ["#1111EE", "#ee1111"]
+flatui =  ["#FFD700", "#ee82ee"]
 sns.set_palette(flatui)
 
 sns.lineplot(data=data, x = x ,y="fluoFront") #, hue ='cellID')
@@ -501,6 +503,7 @@ plt.xlabel('Time (secs)', fontsize=30)
 plt.ylabel('Normalised Actin fluoresence intensity', fontsize=30)
 plt.axvline(x = 120, color = 'red')
 plt.tight_layout()
+plt.ylim(0.6, 1.8)
 
 plt.savefig('{}/{}_{}_ActinRecruitmentvTime.png'.format(cp.DirDataFigToday, currentCell, channel), dpi = 100)
 

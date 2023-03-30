@@ -86,10 +86,10 @@ todayFigDir = cp.DirDataFigToday
 experimentalDataDir = cp.DirRepoExp
 
 plotLabels = 25
-plotTicks = 20
+plotTicks = 18 
 plotTitle = 25
-plotLegend = 15
-fontColour = '#ffffff'
+plotLegend = 25
+fontColour = '#000000'
 
 #%% DEFAULT settings
 
@@ -113,8 +113,8 @@ DEFAULT_fitSettings = {# H0
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
                        'doLogFits' : True,
-                       'nbPtsFitLog' : 13,
-                       'overlapFitLog' : 3,
+                       'nbPtsFitLog' : 10,
+                       'overlapFitLog' : 5,
                        }
 
 DEFAULT_crit_nbPts = 8 # sup or equal to
@@ -131,6 +131,154 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
 
 
 #%% Functions
+
+def plot2Params(data, Filters, fitSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = True):
+
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+
+    data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+
+    # Filter the table
+    # data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 80000].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+    cells = data_ff['cellID'].unique()
+
+    # Making fits and new table with fit parameter values
+
+    dfAllCells = data_ff
+    dfAllCells['fit_K_kPa'] = dfAllCells['fit_K']/1000
+    dfAllCells['fit_ciwK_kPa'] = dfAllCells['fit_ciwK']/1000
+    dfAllCells['q'] = [np.nan]*len(dfAllCells)
+    dfAllCells['a'] = [np.nan]*len(dfAllCells)
+    dfAllCells['chosenIntercept'] = [np.nan]*len(dfAllCells)
+    dfAllCells['chosenInterceptStress'] = [np.nan]*len(dfAllCells)
+
+    dfAllCells['A'] = [np.nan]*len(dfAllCells)
+    dfAllCells['B'] = [np.nan]*len(dfAllCells)
+    dfAllCells['R2Fit'] = [np.nan]*len(dfAllCells)
+
+    for i in range(len(cells)):
+        allSelectedCells = cells[i]
+        print(gs.BLUE + allSelectedCells + gs.NORMAL)
+        filtr = dfAllCells[dfAllCells['cellID'] == allSelectedCells].index.values
+        idx = dfAllCells.index.isin(filtr)
+        
+        # try:
+        N = dfAllCells['compNum'][idx].max()
+        nColsSubplot = 4
+        nRowsSubplot = (N // nColsSubplot) + 2
+        
+        if plot: 
+            fig, axes = plt.subplots(nRowsSubplot, nColsSubplot, figsize = (20,20))
+            _axes = []
+            
+            for ax_array in axes:
+                for ax in ax_array:
+                    _axes.append(ax)
+
+        colors = gs.colorList30[:N]
+        for ii in range(N):
+            filtrComp = dfAllCells[(dfAllCells['cellID'] == allSelectedCells) & (dfAllCells['compNum'] == ii)].index.values
+            idxComp = dfAllCells.index.isin(filtrComp)
+            
+            legendText = ''
+            Y = dfAllCells['fit_K_kPa'][idxComp]
+            X = dfAllCells['fit_center'][idxComp]
+            Yerr = dfAllCells['fit_ciwK_kPa'][idxComp]
+            validity = dfAllCells['fit_error'][idxComp]
+            
+            if plot == True:
+                ax = _axes[ii]
+               
+            if len(X) >= 3:
+                posValues = ((X > 0) & (Y > 0))
+                X, Y = X[posValues], Y[posValues]
+                weights = (Y / Yerr)**2
+        
+                #Weighted linear regression
+                if FIT_MODE == 'loglog':
+                    logX = np.log(X)
+                    logY = np.log(Y)
+                    logYerr = np.log(Yerr)
+                    weights = (Y / Yerr)**2
+                    params, results = ufun.fitLineWeighted(logX, logY, weights)
+                    q = params[0]
+                    a = params[1]
+                    R2 = results.rsquared
+                    pval = results.pvalues[1] # pvalue on the param 'a'
+                    dfAllCells['q'][idxComp] = [q]*len(logX)
+                    dfAllCells['a'][idxComp] = [a]*len(logX)
+                    dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
+                    legendText += " Y = {:.3e} * X^{:.3f}".format(q, a)
+                    fitX = np.linspace(np.min(X), np.max(X), 100)
+                    fitY = np.exp(q) * fitX**a
+                    chosenIntercept = np.exp(q) * interceptStress**a
+                    dfAllCells['chosenIntercept'][idxComp] = [chosenIntercept]*len(X)
+                    dfAllCells['chosenInterceptStress'][idxComp] = [interceptStress]*len(X)
+                    label = legendText
+                    if plot:
+                        ax.errorbar(X, Y, yerr = Yerr, marker = 'o', ms = 5, ecolor = colors[ii])
+                        ax.plot((fitX), (fitY), '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                        ax.set_yscale('log')
+                        ax.set_xscale('log')
+                        ax.set_ylim(0, 12)
+                        ax.set_xlim(0, 1500)
+                        ax.set_title('CompNum: ' + str(ii))
+                        ax.legend(loc = 'upper left', prop={'size': 15})
+                        fig.suptitle(allSelectedCells, fontsize = 15)
+                        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+                    
+                elif FIT_MODE == 'linlin':
+                    
+                    params, results = ufun.fitLineWeighted(X, Y, weights)
+                    A = params[1]
+                    B = params[0]
+                    R2 = results.rsquared
+                    pval = results.pvalues[1] # pvalue on the param 'a'
+                    dfAllCells['A'][idxComp] = [A]*len(X)
+                    dfAllCells['B'][idxComp] = [B]*len(X)
+                    dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
+                    legendText += " Y = {:.3f} X + {:.3f}".format(A, B)
+                    legendText += " \n R2 = {:.2f}".format(R2)
+                    fitX = np.round(np.linspace(np.min(X), np.max(X), 100))
+                    fitY = A * fitX + B
+                    chosenIntercept = A * interceptStress + B
+                    dfAllCells['chosenIntercept'][idxComp] = [chosenIntercept]*len(X)
+                    dfAllCells['chosenInterceptStress'][idxComp] = [interceptStress]*len(X)
+                    label = legendText
+                    if plot:
+                        ax.errorbar(X, Y, yerr = Yerr, marker = 'o', ms = 5, ecolor = colors[ii])
+                        ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                        ax.set_ylim(0, 25)
+                        ax.set_xlim(0, 1200)
+                        ax.set_title('CompNum: ' + str(ii))
+                        ax.legend(loc = 'upper left', prop={'size': 15})
+                        fig.suptitle(allSelectedCells, fontsize = 15)
+                    
+        
+        if plot:
+            plt.tight_layout()
+            plt.show()
+            plt.savefig(pathFits + '/' + allSelectedCells)   
+            
+    return dfAllCells
+
+
+def closest_value_index(input_list, input_value):
+ 
+  arr = np.asarray(input_list)
+ 
+  i = (np.abs(arr - input_value)).argmin()
+ 
+  return i
 
 def plotAllH0(data, fig, ax, fitsSubDir = '', Filters = [], maxH0 = np.Inf, condCols = [], 
               co_order = [], box_pairs = [], AvgPerCell = True,
@@ -430,11 +578,11 @@ def plotPopKS(data, fig, ax, fitsSubDir = '',  fitType = 'stressRegion', fitWidt
                     label = label)
         
         # ax.set_title('K(s) - All compressions pooled')
-        
+        color = '#000000'
         ax.legend(loc = 'upper left', fontsize = 11)
-        ax.set_xlabel('Stress (Pa)', fontsize = 20,  color = "#ffffff")
-        ax.set_ylabel('K (kPa)', fontsize = 20, color = "#ffffff")
-        ax.tick_params(axis='both', colors='#ffffff') 
+        ax.set_xlabel('Stress (Pa)', fontsize = 20,  color = color)
+        ax.set_ylabel('K (kPa)', fontsize = 20, color = color)
+        ax.tick_params(axis='both', colors= color) 
         ax.xaxis.set_tick_params(labelsize=15)
         ax.yaxis.set_tick_params(labelsize=15)
         ax.grid(visible=True, which='major', axis='y') #, color = '#3a3b3b')
@@ -506,59 +654,72 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
     xTicks = ax.get_xticklabels()
     dictXTicks = {xTicks[i].get_text() : xTicks[i].get_position()[0] for i in range(len(xTicks))}
     for bp in box_pairs:
-        c1 = data[data[cond] == bp[0]][param] #.values
-        c2 = data[data[cond] == bp[1]][param] #.values
-        
-        if test == 'Mann-Whitney' or test == 'Wilcox_2s' or test == 'Wilcox_greater' or test == 'Wilcox_less' or test == 't-test':
-            if test=='Mann-Whitney':
-                statistic, pval = st.mannwhitneyu(c1,c2)
-            elif test=='Wilcox_2s':
-                statistic, pval = st.wilcoxon(c1,c2, alternative = 'two-sided')
-            elif test=='Wilcox_greater':
-                statistic, pval = st.wilcoxon(c1,c2, alternative = 'greater')
-            elif test=='Wilcox_less':
-                statistic, pval = st.wilcoxon(c1,c2, alternative = 'less')
-            elif test=='t-test':
-                statistic, pval = st.ttest_ind(c1,c2)
-            text = 'ns'
-            if pval == np.nan:
-                text = 'nan'
-            if pval < 0.05 and pval > 0.01:
-                text = '*'
-            elif pval < 0.01 and pval > 0.001:
-                text = '**'
-            elif pval < 0.001 and pval < 0.001:
-                text = '***'
-            elif pval < 0.0001:
-                print('yes')
-                text = '****'
+        c1 = data[data[cond] == bp[0]][param].values
+        c2 = data[data[cond] == bp[1]][param].values
+
+        if test=='Mann-Whitney':
+            res = st.mannwhitneyu(c1,c2)
+            statistic, pval = res.statistic, res.pvalue
+        elif test=='Wilcox_2s':
+            res = st.wilcoxon(c1,c2, alternative = 'two-sided')
             
-            # print('Pval')
-            # print(pval)
-            ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1)
-            XposText = (dictXTicks[bp[0]]+dictXTicks[bp[1]])/2
-            
-            if scale == 'log':
-                power = 0.01* (text=='ns') + 0.000 * (text!='ns')
-                YposText = currentHeight*(refHeight**power)
-            else:
-                factor = 0.03 * (text=='ns') + 0.000 * (text!='ns')
-                YposText = currentHeight + factor*refHeight
-            
-            # if XposText == np.nan or YposText == np.nan:
-            #     XposText = 0
-            #     YposText = 0
+        elif test=='Wilcox_greater':
+            res = st.wilcoxon(c1,c2, alternative = 'greater')
+            statistic, pval = res.statistic, res.pvalue[0]
+        elif test=='Wilcox_less':
+            res = st.wilcoxon(c1,c2, alternative = 'less')
+            statistic, pval = res.statistic, res.pvalue[0]
+        elif test=='ranksum_greater':
+            res = st.ranksums(c1,c2, alternative = 'greater')
+            statistic, pval = res.statistic, res.pvalue[0]
+        elif test=='ranksum_less':
+            res = st.ranksums(c1,c2, alternative = 'less')
+            statistic, pval = res.statistic, res.pvalue[0]
+        elif test=='ranksum_2s':
+            res = st.ranksums(c1,c2, alternative = 'two-sided')
+        elif test=='t-test':
+            res = st.ttest_ind(c1,c2)
                 
-            ax.text(XposText, YposText, text, ha = 'center', color = 'k')
-    #         if text=='ns':
-    #             ax.text(posText, currentHeight + 0.025*refHeight, text, ha = 'center')
-    #         else:
-    #             ax.text(posText, currentHeight, text, ha = 'center')
-            if scale == 'log':
-                currentHeight = currentHeight*(refHeight**0.05)
-            else:
-                currentHeight =  currentHeight + 0.15*refHeight
-        # ax.set_ylim([ax.get_ylim()[0], currentHeight])
+        
+        print(pval)
+        text = 'ns'
+        if pval == np.nan:
+            text = 'nan'
+        if pval < 0.05 and pval > 0.01:
+            text = '*'
+        elif pval < 0.01 and pval > 0.001:
+            text = '**'
+        elif pval < 0.001 and pval < 0.001:
+            text = '***'
+        elif pval < 0.0001:
+            text = '****'
+        
+        # print('Pval')
+        # print(pval)
+        ax.plot([bp[0], bp[1]], [currentHeight, currentHeight], 'k-', lw = 1)
+        XposText = (dictXTicks[bp[0]]+dictXTicks[bp[1]])/2
+        
+        if scale == 'log':
+            power = 0.01* (text=='ns') + 0.000 * (text!='ns')
+            YposText = currentHeight*(refHeight**power)
+        else:
+            factor = 0.03 * (text=='ns') + 0.000 * (text!='ns')
+            YposText = currentHeight + factor*refHeight
+        
+        # if XposText == np.nan or YposText == np.nan:
+        #     XposText = 0
+        #     YposText = 0
+            
+        ax.text(XposText, YposText, text, ha = 'center', color = 'k')
+#         if text=='ns':
+#             ax.text(posText, currentHeight + 0.025*refHeight, text, ha = 'center')
+#         else:
+#             ax.text(posText, currentHeight, text, ha = 'center')
+        if scale == 'log':
+            currentHeight = currentHeight*(refHeight**0.05)
+        else:
+            currentHeight =  currentHeight + 0.15*refHeight
+    # ax.set_ylim([ax.get_ylim()[0], currentHeight])
 
         if test == 'pairwise':
             ratio = (c2/c1)
@@ -579,13 +740,16 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
 #                             save = True, PLOT = True, source = 'Python')
 
 # %%%% Specific experiments
+
 newFitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
-                       'zones_H0':[ 'pts_15',  '%f_15'],
+                       'zones_H0':['%pts_15', '%f_15'],
                        'method_bestH0':'Dimitriadis',
                        'zone_bestH0':'%f_15',
+                       'centers_StressFits' : [ii for ii in range(100, 1550, 25)],
+                       # 'halfWidths_StressFits' : [25, 30, 45],
                        }
-# 
+
 newfitValidationSettings = {'crit_nbPts': 6}
 
 fitSettings = ufun.updateDefaultSettingsDict(newFitSettings, DEFAULT_fitSettings)
@@ -593,14 +757,16 @@ fitValidationSettings = ufun.updateDefaultSettingsDict(newfitValidationSettings,
                                                         DEFAULT_fitValidationSettings)
     
 # Task = '22-10-06 & 22-10-05 & 22-12-07'
-Task = '22-12-07'
+# Task = '22-12-07 & 23-02-02'
+Task = '22-10-05 & 22-10-06'
+
 
 #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
-fitsSubDir = '22-12-07_Dimi_f15_0Offset'
+fitsSubDir = 'Dimi_f15_22-10-05&22-10-06'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', \
-                            fileName = 'Global_MecaData_22-12-07_Dimi_f15_0Offset', 
-                            save = True, PLOT = False, source = 'Python', fitSettings = fitSettings,\
+                            fileName = 'Global_MecaData_22-10-05&22-10-06', 
+                            save = True, PLOT = True, source = 'Python', fitSettings = fitSettings,\
                                fitValidationSettings = fitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
  # %%%% Precise dates (to plot)
@@ -1877,12 +2043,12 @@ data = data_main
 
 # manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
 dates = ['23-02-02']
-manips = ['M1', 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+manips = ['M1', 'M3', 'M5', 'M7'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
 
 selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 4)].index
 data = data.drop(selRows, axis = 0)
 
-stressRange = '150_400'
+stressRange = '100_400'
 
 Filters = [(data['validatedThickness'] == True),
             # (data['substrate'] == '20um fibronectin discs'), 
@@ -1944,7 +2110,7 @@ data = data_main
 # data = data.drop(selRows, axis = 0)
 
 manipIDs = ['23-02-02_M3', '22-12-07_M1', '23-02-02_M7'] #, '23-02-02_M8'] #,  '23-02-02_M5']
-# legendLabels = ['Ctrl', '50uM', '10uM', '1uM'] #, '100nM']
+legendLabels = ['Ctrl', '50uM', '10uM', '1uM', '100nM']
 # legendLabels = ['50uM', 'Ctrl', '10uM', '1uM']
 dates = ['23-02-02', '22-12-07', '23-01-23']
 condCol = 'manipId'
@@ -2243,6 +2409,10 @@ fitType = 'nPoints'
 fitId = '_75' #  = '_75'
 fitWidth = 75
 
+#Plot decorations for different dates:
+
+# For 22-12-07
+    
 
 #%%%% Non-linearity curves for 22-06-21
 
@@ -2348,6 +2518,134 @@ plt.show()
 
 mainFig1.savefig(cp.DirDataFigToday + '/temp.png')
 
+#%%%% Non-linearity curves for 22-07-12
+
+
+plt.style.use('seaborn')
+
+flatui =  ["#e5c100", "#ad6aea", "#000000"]
+legendLabels = ['Activation away from beads', 'No Activation']
+
+
+styleDict1 =  {'23-02-02_M1':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M1':{'color': gs.colorList40[11],'marker':'o'},
+                '22-12-07_M4':{'color': gs.colorList40[11],'marker':'o'},
+                '23-02-02_M3':{'color': gs.colorList40[12],'marker':'o'},
+                '23-02-02_M7':{'color': gs.colorList40[13],'marker':'o'},
+                '23-02-02_M5':{'color': gs.colorList40[14],'marker':'o'},
+                '23-02-02_M2':{'color': gs.colorList40[10],'marker':'o'},
+                '22-12-07_M2':{'color': gs.colorList40[11],'marker':'o'},
+                '23-02-02_M4':{'color': gs.colorList40[12],'marker':'o'},
+                '23-02-02_M8':{'color': gs.colorList40[13],'marker':'o'},
+                '23-01-23_M3':{'color': gs.colorList40[13],'marker':'o'},
+                '23-02-02_M6':{'color': gs.colorList40[14],'marker':'o'}
+                }
+
+
+# styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+#                'M2':{'color': gs.colorList40[11],'marker':'o'},
+#                'M3':{'color': gs.colorList40[12],'marker':'o'},
+#                 'M4':{'color': gs.colorList40[30],'marker':'o'},
+#                 'M5':{'color': gs.colorList40[31],'marker':'o'},
+#                 'M6':{'color': gs.colorList40[32],'marker':'o'},
+#                 'M7':{'color': gs.colorList40[22],'marker':'o'},
+#                 'M8':{'color': gs.colorList40[23],'marker':'o'}
+#                }
+
+data = data_main
+
+manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['23-02-02']
+# legendLabels = ['Ctrl', '10uM', '100nM', '1uM', '50nM']
+legendLabels = ['50uM', 'Ctrl', '10uM', '100nM', '1uM']
+
+
+manips = ['M1', 'M3', 'M5', 'M7'] #, 'M5', 'M7'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+# selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+
+stressRange = '150_450'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
+            (data['manipId'].apply(lambda x : x in manipIDs))]
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,legendLabels = legendLabels, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manipId', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, legendLabels = legendLabels, fitType =  'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = 'manipId', mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+    
+plt.show()
+
+
+#%%%%
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color':flatui[2],'marker':'o'},
+               'M3':{'color': gs.colorList40[10],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+                }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['22-06-21']
+manips = ['M2'] #, 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+stressRange = '200_400'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+selRows = data[(data['manip'] == manips[0]) & (data['compNum'] > 5)].index
+data = data.drop(selRows, axis = 0)
+
+
+out2 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                 fitWidth=75, Filters = Filters, legendLabels = legendLabels,
+                                condCol = 'manip', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+# mainFig1, mainAx2, exportDf2, countDf2 = out2
+
+
+# atbeads = mpatches.Patch(color=flatui[0], label='Activation at beads')
+# awaybeads = mpatches.Patch(color=flatui[1], label='Activation away from beads')
+# control = mpatches.Patch(color=flatui[2], label='Control')
+
+# plt.legend(handles=[awaybeads, control], fontsize = 20, loc = 'upper left')
+
+plt.tight_layout()
+plt.show()
+
+mainFig1.savefig(cp.DirDataFigToday + '/temp.png')
+
 # %%%% Plotting surrounding thickness / best H0 - manip wise
 
 data = data_main
@@ -2355,10 +2653,12 @@ data = data_main
 # selRows = data[(data['manip'] == 'M5') & (data['compNum'] > 3)].index
 # data = data.drop(selRows, axis = 0)
 
-dates = ['22-10-06']
-manips = ['M5', 'M6'] #, 'M8']
+dates = ['22-12-07']
+manips = ['M1', 'M3'] #, 'M8']
+manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+
 # manipIDs = ['23-02-02_M3', '22-12-07_M1', '23-02-02_M7']
-condCol = 'cellID'
+condCol = 'manipId'
 measure = 'surroundingThickness'
 
 # control = 'M4'
@@ -2374,11 +2674,11 @@ Filters = [(data['validatedThickness'] == True),
             # (data['drug'] == 'none'), 
             (data['bead type'] == 'M450'),
             (data['UI_Valid'] == True),
-            (data['bestH0'] <= 1900),
-            (data['date'].apply(lambda x : x in dates)),
+            (data['bestH0'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
             # (data['cellID'].apply(lambda x : x in allSelectedCells)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
-            (data['manip'].apply(lambda x : x in manips))
+            (data['manipId'].apply(lambda x : x in manipIDs)),
+            # (data['manip'].apply(lambda x : x in manips))
             ]
 
 globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
@@ -2388,11 +2688,11 @@ data_f = data[globalFilter]
 
 
 fig1, axes = plt.subplots(1,1, figsize=(15,10))
-fig1.patch.set_facecolor('black')
+# fig1.patch.set_facecolor('black')
 
 
 x = (data_f['compNum']-1)*20
-ax = sns.lineplot(x = x, y = measure, data = data_f, hue = 'manip')
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
 # ax.axvline(x = 5, color = 'red')
 
 fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
@@ -2404,7 +2704,7 @@ plt.legend(fontsize = 25, loc = 'upper left')
 
 plt.ylim(0,1500)
 
-plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr.png')
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
 
 plt.show()
 
@@ -2585,6 +2885,7 @@ plt.tight_layout()
 plt.show()
 
 #%%%% Plotting all K vs Stress, per compression with fits on K
+
 plt.style.use('seaborn')
 
 data_main = GlobalTable
@@ -2596,7 +2897,7 @@ fitsSubDir = 'All_Dimi_f15'
 fitType = 'nPoints'
 fitId = None
 Sinf, Ssup = 150, 450
-FIT_MODE = 'linlin'  # 'linlin', 'loglog'
+FIT_MODE = 'loglog'  # 'linlin', 'loglog'
 
 data = data_main 
 
@@ -2611,6 +2912,7 @@ pathFits = pathSubDir + '/' + FIT_MODE
 if not os.path.exists(pathFits):
     os.mkdir(pathFits)
 
+
 #Only for 23-01-23
 # oldManip = ['23-01-23_M1']
 # for i in oldManip:
@@ -2620,12 +2922,19 @@ if not os.path.exists(pathFits):
 # for i in oldManip:
 #     data['manip'][data['manip'] == i] = 'M4'
 
-manips = ['M1', 'M2'] #, 'M5', 'M7'] #, 'M6']
+manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+
+manips = ['M1', 'M2', 'M3'] #, 'M5', 'M7'] #, 'M3'] #, 'M5', 'M7'] #, 'M6']
 # manipIDs = ['23-01-23_M3', '22-12-07_M4', '23-02-02_M1']
 # legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
-dates = ['23-02-02']
-condCol = 'manip'
+dates = ['22-12-07']
+condCol = 'manipId'
+interceptStress = 250
 
+# selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+# selRows = data[(data['manip'] == 'M3') & (data['compNum'] < 2)].index
+# data = data.drop(selRows, axis = 0)
 
 Filters = [(data['validatedThickness'] == True),
             # (data['substrate'] == '20um fibronectin discs'), 
@@ -2633,10 +2942,156 @@ Filters = [(data['validatedThickness'] == True),
             (data['bead type'] == 'M450'),
             (data['UI_Valid'] == True),
             (data['bestH0'] <= 1500),
-            (data['date'].apply(lambda x : x in dates)),
+            # (data['date'].apply(lambda x : x in dates)),
             # (data['cellID'].apply(lambda x : x in allSelectedCells)),
-            (data['manip'].apply(lambda x : x in manips)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+dfAllCells = plot2Params(data, Filters, interceptStress, FIT_MODE, plot = False)
+
+fig1, ax = plt.subplots(1, 2, figsize = (20,20))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+    
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+# cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+# df = df[df['cellCode'].isin(cellCodes)]
+
+# order = manips #, 'M7', 'M5']
+order = ['22-12-07_M1', '23-02-02_M3', '23-02-02_M7', '23-02-02_M5', '23-02-02_M1']
+
+x = df[condCol]
+y1, y2 = df[params[0]],  df[params[1]]
+# y1, y2 = df[params[0]],  df['chosenIntercept']
+sns.boxplot(x = x, y = y1, data=df, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+sns.swarmplot(x = x, y = y1, data=df,  order = order,linewidth = 1, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+    
+sns.swarmplot(x = x, y = y2, data=df,  order = order, linewidth = 1, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('1uM Y27', '1uM - Act. at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('No drug', '10uM', '1uM', '100nM'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('50uM', '50uM - Act. at beads', '50uM - Act. away beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('50uM', '50uM - Act. at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('Control', 'Activation at beads', 'Activation away beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('No drug', '50uM Y27'), fontsize = plotTicks)
+ax[0].set_xticklabels(('50uM', '10uM', '1uM', '100nM', 'No drug'), fontsize = plotTicks)
+
+
+# ax[1].set_title('K-value at '+str(interceptStress)+'Pa', fontsize = plotLabels)
+ax[1].set_title(ax_titles[1], fontsize = plotLabels)
+# ax[1].set_xticklabels(('No drug', '10uM', '1uM', '100nM'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('1uM Y27', '1uM - Act. at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('50uM', '50uM - Act. at beads', '50uM - Act. away beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('50uM', '50uM - Act. at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('Control', 'Activation at beads', 'Activation away beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('No drug', '50uM Y27'), fontsize = plotTicks)
+ax[1].set_xticklabels(('50uM', '10uM', '1uM', '100nM', 'No drug'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+# ax[0].set_yscale('log')
+# ax[0].set_ylim(-150, 100)
+# ax[1].set_ylim(-10000, 15000)
+# ax[1].get_legend().remove()
+fig1.suptitle('{} | {}'.format(str(dates), str(condPairs)))
+filename = '{}_{}_{}.png'.format(str(dates), FIT_MODE, str(condPairs))
+plt.savefig(todayFigDir, filename)
+plt.tight_layout()
+plt.show()
+
+
+# %%%% Plotting surrounding thickness / best H0 - box plots
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'All_Dimi_f15'
+
+# fitType = 'Log'
+fitType = 'nPoints'
+fitId = None
+Sinf, Ssup = 150, 450
+
+data = data_main 
+
+#Only for 23-01-23
+# oldManip = ['23-01-23_M1']
+# for i in oldManip:
+#     data['manipId'][data['manipId'] == i] = '23-01-23_M3'
+    
+# oldManip = ['M2']
+# for i in oldManip:
+#     data['manip'][data['manip'] == i] = 'M4'
+
+manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+
+manips = ['M4', 'M5', 'M6'] #, 'M5', 'M7'] #, 'M3'] #, 'M5', 'M7'] #, 'M6']
+# order = manips
+order = ['22-12-07_M1', '23-02-02_M3', '23-02-02_M7', '23-02-02_M5', '23-02-02_M1']
+# legendLabels = ['Y27-treated', 'Normally Expressing Pop.', 'Low Expressing Pop.', ]
+dates = ['22-12-07']
+condCol = 'manipId'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+
+
+# selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+# selRows = data[(data['manip'] == manips[2]) & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+# selRows = data[(data['manip'] == 'M3') & (data['compNum'] < 2)].index
+# data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
 
 globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
@@ -2653,177 +3108,1923 @@ data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
 data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 80000].index)
 data_ff = data_ff.dropna(subset = ['fit_ciwK'])
 
-cells = data_ff['cellID'].unique()
 
-# Making fits and new table with fit parameter values
+fig1, ax1 = plt.subplots(1,1, figsize=(15,10))
+# fig1.patch.set_facecolor('black')
 
-dfAllCells = data_ff
-dfAllCells['q'] = [np.nan]*len(dfAllCells)
-dfAllCells['a'] = [np.nan]*len(dfAllCells)
-dfAllCells['A'] = [np.nan]*len(dfAllCells)
-dfAllCells['B'] = [np.nan]*len(dfAllCells)
-dfAllCells['R2Fit'] = [np.nan]*len(dfAllCells)
+x = 'manipId'
+y = 'surroundingThickness'
 
-for i in range(len(cells)):
-    allSelectedCells = cells[i]
-    filtr = dfAllCells[dfAllCells['cellID'] == allSelectedCells].index.values
-    idx = dfAllCells.index.isin(filtr)
-    
-    # try:
-    N = dfAllCells['compNum'][idx].max()
-    nColsSubplot = 4
-    nRowsSubplot = (N // nColsSubplot) + 2
-    fig, axes = plt.subplots(nRowsSubplot, nColsSubplot)
-    _axes = []
-    
-    # if N > 1:
-    for ax_array in axes:
-        for ax in ax_array:
-            _axes.append(ax)
-    # else:
-    #     break
-            
-    # ax.set_xlabel('Stress (Pa)')
-    # ax.set_xlim([0, 1200])
-    
-    colors = gs.colorList30[:N]
-    for ii in range(N):
-        filtrComp = dfAllCells[(dfAllCells['cellID'] == allSelectedCells) & (dfAllCells['compNum'] == ii)].index.values
-        idxComp = dfAllCells.index.isin(filtrComp)
-        ax = _axes[ii]
-        legendText = ''
-        Y = dfAllCells['fit_K'][idxComp]
-        X = dfAllCells['fit_center'][idxComp]
-        Yerr = dfAllCells['fit_ciwK'][idxComp]
-        validity = dfAllCells['fit_error'][idxComp]
-           
-        # if (not pd.isnull(Y)) and (Y > 0):
-        ax.errorbar(X, Y, yerr = Yerr, marker = 'o', ms = 5, ecolor = colors[ii])
-    
-        if len(X) >= 3:
-            posValues = ((X > 0) & (Y > 0))
-            X, Y = X[posValues], Y[posValues]
-            weights = (Y / Yerr)**2
-    
-            #Unwighted linear regression
-            # params, results = ufun.fitLine(np.log(XtoFit), np.log(YtoFit)) # Y=a*X+b ; params[0] = b,  params[1] = a
-            
-            #Weighted linear regression
-            if FIT_MODE == 'loglog':
-                params, results = ufun.fitLineWeighted(np.log(X), np.log(Y), weights)
-                q = np.exp(params[0])
-                a = params[1]
-                R2 = results.rsquared
-                pval = results.pvalues[1] # pvalue on the param 'a'
-                dfAllCells['q'][idxComp] = [q]*len(X)
-                dfAllCells['a'][idxComp] = [a]*len(X)
-                dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
-                legendText += " Y = {:.1e} * X^{:.1f}".format(q, a)
-                legendText += " \n R2 = {:.2f}".format(R2)
-                # print("Y = {:.4e} * X^{:.4f}".format(k, a))
-                # print("p-value on the 'a' coefficient: {:.4e}".format(pval))
-                # print("R2 of the fit: {:.4f}".format(R2))
-                # fitY = k * X**a
-                # imin = np.argmin(X)
-                # imax = np.argmax(X)
-                # ax.plot([X[imin],X[imax]], [fitY[imin],fitY[imax]], '--', lw = '1', 
-                #         color = color, zorder = 4)
-                fitX = np.linspace(np.min(X), np.max(X), 100)
-                fitY = q * fitX**a
-                label = legendText
-                ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
-                ax.legend(loc = 'upper left', prop={'size': 8})
-                
-            elif FIT_MODE == 'linlin':
-                params, results = ufun.fitLineWeighted(X, Y, weights)
-                A = params[1]
-                B = params[0]
-                R2 = results.rsquared
-                pval = results.pvalues[1] # pvalue on the param 'a'
-                dfAllCells['A'][idxComp] = [A]*len(X)
-                dfAllCells['B'][idxComp] = [B]*len(X)
-                dfAllCells['R2Fit'][idxComp] = [R2]*len(X)
-                legendText += " Y = {:.1f} X + {:.1f}".format(A, B)
-                legendText += " \n R2 = {:.2f}".format(R2)
-                fitX = np.linspace(np.min(X), np.max(X), 100)
-                fitY = A * fitX + B
-                label = legendText
-                ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
-                ax.legend(loc = 'upper left', prop={'size': 8})
-                
+dfAllCells = data_ff[['cellCode', x, 'compNum', y]].drop_duplicates()
 
-            ax.set_ylim(0, 30000)
-            ax.set_xlim(0, 1200)
-            ax.set_title('CompNum: ' + str(ii))
-            ax.legend(fontsize = 8)
-            fig.suptitle(allSelectedCells, fontsize = 15)
-    
-    plt.tight_layout()
-    plt.show()
-    plt.savefig(pathFits + '/' + allSelectedCells)        
-    # except:
-    #     print('No data for cell ', allSelectedCells)
-plt.close('all')
-
-#%%%% Plotting box plots with above data
-fig1, ax = plt.subplots(1, 2)
-df = dfAllCells[dfAllCells['fit_id'] == '20_33']
-df = df[df['R2Fit'] > 0.70]
-y1, y2 = df['A'],  df['B']
-x = df['manipId']
-
-sns.boxplot(x = x, y = y1, data=dfAllCells, ax = ax[0], \
+sns.boxplot(x = x, y = y, data=dfAllCells, ax = ax1, order = order, 
                     medianprops={"color": 'darkred', "linewidth": 2},\
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
     
-# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
-
-sns.swarmplot(x = x, y = y1, data=dfAllCells,  linewidth = 1, ax = ax[0], edgecolor='k')
-
-sns.boxplot(x = x, y = y2, data=dfAllCells, ax = ax[1], \
-                    medianprops={"color": 'darkred', "linewidth": 2},\
-                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
     
-# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+sns.swarmplot(x = x, y = y, data=dfAllCells, order = order, linewidth = 1, \
+              ax = ax1, s = 7, edgecolor='k') #, hue = 'cellCode')
 
-    
-sns.swarmplot(x = x, y = y2, data=dfAllCells,  linewidth = 1, ax = ax[1], edgecolor='k')
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax1, data = dfAllCells, box_pairs = box_pairs, param = y, cond = condCol)
 
+ax1.set_xticklabels(('50uM', '10uM', '1uM', '100nM', 'No drug'), fontsize = plotTicks)
+# ax1.set_xticklabels(('Control', 'Activation at beads', 'Activation away beads'), fontsize = plotTicks)
+ax1.yaxis.set_tick_params(labelsize=plotTicks)
+ax1.xaxis.set_tick_params(labelsize=plotTicks)
 
-ax[0].set_title('Slope (A)')
-ax[1].set_title('Intercept (B)')
+fig1.suptitle(str(dates)+'_[15mT = 500pN] '+y+' (nm) vs. Time (secs)_'+str(condPairs), color = fontColour)
+
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(y+' (nm)', fontsize = 25, color = fontColour)
+# plt.legend(fontsize = 25, loc = 'upper left')
+
+# plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+y+'vsCompr'+str(condPairs)+'.png')
 
 plt.show()
 
-#%%%% Plotting box plots, cell-wise
 
-fig1, ax = plt.subplots(1, 2)
-df = dfAllCells[dfAllCells['fit_id'] == '20_33']
-listOfCells = df['cellID'].values[3]
-df = df[df['cellID'] == listOfCells]
-df = df[df['R2Fit'] > 0.70]
-y1, y2 = df['A'],  df['B']
-x = df['manip']
+#%% Plots for 23-02-02, 22-12-07 - Testing different ways to plot
 
-sns.boxplot(x = x, y = y1, data=dfAllCells, ax = ax[0], \
+GlobalTable = taka.getMergedTable('Global_MecaData_Updated')
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'Dimi_f15_Updated_OversamplingStressGaussian'
+
+# fitType = 'Log'
+fitType = 'stressGaussian'
+fitId = '_75' #  = '_75'
+fitWidth = 75
+
+#%%%% Plotting all K vs Stress, per compression with fits on K
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+fitsSubDir = fitsSubDir
+
+fitType = 'stressGaussian'
+fitId = '_75'
+Sinf, Ssup = 150, 450
+FIT_MODE = 'loglog'  # 'linlin', 'loglog'
+
+data = data_main 
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+    
+pathBoxPlots = pathFits + '/BoxPlots'
+if not os.path.exists(pathBoxPlots):
+    os.mkdir(pathBoxPlots)
+
+
+interceptStress = 150
+condCol = 'manip'
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+# order = ['22-12-07_M1', '23-02-02_M3', '23-02-02_M7', '23-02-02_M5', '23-02-02_M1']
+
+manips = ['M1', 'M2']
+order = manips #, 'M7', 'M5']
+
+cellIDs = ['22-12-07_M4_P3_C6', '22-12-07_M4_P3_C1', '22-12-07_M8_P3_C6', '22-12-07_M5_P3_C1',\
+           '22-12-07_M4_P3_C5', '22-12-07_M5_P3_C5', '22-12-07_M4_P3_C7', '22-12-07_M7_P3_C7']
+# order = cellIDs #, 'M7', 'M5']
+
+dates = ['22-12-07']
+plot = True
+
+
+for date in dates:
+    if date == '22-12-07' and condCol == 'manip':
+        oldManip = ['M7', 'M8', 'M9']
+        for i in oldManip:
+            data['manip'][(data['date'] == date) & (data['manip'] == i)] = 'M5'
+
+mode = 'Compare activation'
+if mode == 'Compare activation' and condCol == 'manip':
+    print(gs.ORANGE + 'Considering values after 3rd compression for activate cells' + gs.NORMAL)
+    selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+    data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['cellId'].apply(lambda x : x in cellIDs)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+
+dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
+
+plt.close('all')
+
+
+
+#%%%% Plot box plots
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+    
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+
+plotIntercept = True
+
+if plotIntercept:
+    y1, y2 = df[params[0]],  df['chosenIntercept']
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df[params[0]],  df[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+x = df[condCol]
+
+sns.boxplot(x = x, y = y1, data=dfAllCells, ax = ax[0], order = order, 
                     medianprops={"color": 'darkred', "linewidth": 2},\
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
     
-# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
+sns.swarmplot(x = x, y = y1, data=dfAllCells, hue = 'cellCode', order = order,linewidth = 1, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
 
-sns.swarmplot(x = x, y = y1, data=dfAllCells,  linewidth = 1, hue = 'cellCode',ax = ax[0], edgecolor='k')
-
-sns.boxplot(x = x, y = y2, data=dfAllCells, ax = ax[1],\
+sns.boxplot(x = x, y = y2, data=dfAllCells, ax = ax[1], order = order,
                     medianprops={"color": 'darkred', "linewidth": 2},\
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
     
-# sns.lineplot(data=data, x=x, y=y, units="cellCode",  color = "0.7", estimator=None)
 
+sns.swarmplot(x = x, y = y2, hue = 'cellCode', data=dfAllCells,  order = order, linewidth = 1, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('1uM Y27', '1uM - Act. at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('No drug', '10uM', '1uM', '100nM'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('50uM', '50uM - Act. at beads', '50uM - Act. away beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('50uM', '50uM - Act. at beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('Control', 'Activation at beads', 'Activation away beads'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('No drug', '50uM Y27'), fontsize = plotTicks)
+# ax[0].set_xticklabels(('50uM', '10uM', '1uM', '100nM', 'No drug'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# ax[1].set_xticklabels(('No drug', '10uM', '1uM', '100nM'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('1uM Y27', '1uM - Act. at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('50uM', '50uM - Act. at beads', '50uM - Act. away beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('50uM', '50uM - Act. at beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('Control', 'Activation at beads', 'Activation away beads'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('No drug', '50uM Y27'), fontsize = plotTicks)
+# ax[1].set_xticklabels(('50uM', '10uM', '1uM', '100nM', 'No drug'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# ax[1].get_legend().remove()
+# ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'.png')  
+plt.show()
+
+#%%%% 2Param plots, testing intracellular quantities
+
+fig1, ax = plt.subplots(1, 1, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
     
-sns.swarmplot(x = x, y = y2, data=dfAllCells, hue = 'cellCode', linewidth = 1, ax = ax[1], edgecolor='k')
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+    
+condCol = 'manip'
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+df = df[df['cellCode'].isin(cellCodes)]
+
+plotIntercept = True
+
+if plotIntercept:
+    y1, y2 = df[params[0]],  df['chosenIntercept']
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df[params[0]],  df[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+group_by_cell = df.groupby(['cellID'])
+df_average = group_by_cell.agg({params[0]:['var', 'std', 'mean', 'count'], 'cellCode':'first', 'manip':'first'})
+df_average = df_average[df_average['cellCode'].duplicated(keep = False)]
+
+condCol_box = 'manip', 'first'
+x_box = df_average[(condCol_box)]
+hue_box = df_average[('cellCode', 'first')]
+y_box = df_average[(params[0], 'mean')]
+
+condCol = 'manip'
+x = df[(condCol)]
+hue = df[('cellCode')]
+y = df[(params[0])]
 
 
-ax[0].set_title('Slope (A)')
-ax[1].set_title('Intercept (B)')
+sns.boxplot(x = x_box, y = y_box, data=df_average, ax = ax, order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={"color" : 'grey',  "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.2})
+
+
+# sns.lineplot(data=df_average, x=x, y=y, units=hue,  color = "0.7", ax = ax, estimator=None)
+
+# sns.swarmplot(x = x, y = y, data=df_average, order = order,linewidth = 1, hue = hue, ax = ax, s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.pointplot(x = x, y = y, data=df, order = order, hue = hue, ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
+
+
+condPairs = [manips[1], manips[0]]
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax, data = df_average, box_pairs = box_pairs, param = params[0], cond = condCol_box,\
+            test = 'ranksum_greater')
+
+
+# ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+ax.set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+ax.set_ylabel(ax_titles[0], fontsize = plotTicks)
+
+
+ax.yaxis.set_tick_params(labelsize=plotTicks)
+ax.xaxis.set_tick_params(labelsize=plotTicks)
+handles, labels = ax.get_legend_handles_labels()
+newLabels = []
+for i in labels:
+    count1 = df_average[(params[0], 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[0])].values
+    count2 = df_average[(params[0], 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[1])].values
+    newLabels.append('{}, No.: {}, {}'.format(i, str(count1), str(count2)))
+
+ax.legend(handles, newLabels)
+
+# # # ax[1].get_legend().remove()
+# # # ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' +params[0]+'_'+ str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+plt.show()
+
+#%%%% Whole-fit 'K', testing intracellular quantities
+
+fig1, ax = plt.subplots(1, 1, figsize = (15,10))
+df = dfAllCells
+measure = 'fit_K_kPa'
+
+df = df[[measure, 'dateID', 'manip', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+# if mode == 'Compare activation' and condCol == 'manip':
+cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+df = df[df['cellCode'].isin(cellCodes)]
+
+
+group_by_cell = df.groupby(['cellID'])
+df_average = group_by_cell.agg({measure:['mean', 'count'], 'cellCode':'first', 'manip':'first'})
+df_average = df_average[df_average['cellCode'].duplicated(keep = False)]
+
+
+condCol_box = 'manip', 'first'
+x_box = df_average[condCol_box]
+hue_box = df_average[('cellCode', 'first')]
+y_box = df_average[('fit_K_kPa', 'mean')]
+
+
+condCol = 'manip'
+x = df[condCol]
+hue = df[('cellCode')]
+y = df[('fit_K_kPa')]
+
+
+sns.boxplot(x = x_box, y = y_box, data=df_average, ax = ax, order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={"color" : 'grey',  "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.2})
+
+
+sns.pointplot(x = x, y = y, data=df, order = order, hue = hue, ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
+
+
+condPairs = [manips[0], manips[1]]
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax, data = df_average, box_pairs = box_pairs, param = measure, cond = condCol_box,\
+            test = 'ranksum_greater')
+
+
+ax.set_title(measure, fontsize = plotLabels)
+ax.set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+# ax.set_ylabel(ax_titles[0], fontsize = plotTicks)
+
+# ax[1].set_title(axtitle, fontsize = plotLabels)
+# # # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax.yaxis.set_tick_params(labelsize=plotTicks)
+ax.xaxis.set_tick_params(labelsize=plotTicks)
+
+# handles, labels = ax.get_legend_handles_labels()
+# newLabels = []
+# for i in labels:
+#     count1 = df_average[(measure, 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[0])].values
+#     count2 = df_average[(measure, 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[1])].values
+#     newLabels.append('{}, No.: {}, {}'.format(i, str(count1), str(count2)))
+
+# ax.legend(handles, newLabels)
+
+# fig1.suptitle(str(dates) + '_'+str(condPairs))
+# plt.tight_layout()
+# plt.savefig(pathBoxPlots + '/surroundingThickness_' + str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+# plt.show()
+
+
+#%%%% Surrounding thickness, averaged by cell
+
+fig1, ax = plt.subplots(1, 1, figsize = (15,10))
+df = dfAllCells
+
+df = df[['surroundingThickness', 'dateID', 'manip', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+# if mode == 'Compare activation' and condCol == 'manip':
+cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+df = df[df['cellCode'].isin(cellCodes)]
+
+
+group_by_cell = df.groupby(['cellID'])
+df_average = group_by_cell.agg({'surroundingThickness':['mean', 'count'], 'cellCode':'first', 'manip':'first'})
+df_average = df_average[df_average['cellCode'].duplicated(keep = False)]
+
+
+condCol_box = 'manip', 'first'
+x_box = df_average[condCol_box]
+hue_box = df_average[('cellCode', 'first')]
+y_box = df_average[('surroundingThickness', 'mean')]
+
+condCol = 'manip'
+x = df[condCol]
+hue = df[('cellCode')]
+y = df[('surroundingThickness')]
+
+sns.boxplot(x = x_box, y = y_box, data=df_average, ax = ax, order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={"color" : 'grey',  "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.2})
+
+# sns.lineplot(data=df_average, x=x, y=y, units=hue,  color = "0.7", ax = ax, estimator=None)
+
+# sns.swarmplot(x = x, y = y, data=df_average, order = order,linewidth = 1, hue = hue, ax = ax, s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.pointplot(x = x, y = y, data=df, order = order, hue = hue, ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
+
+condCol = 'manip', 'first'
+condPairs = [manips[1], manips[0]]
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax, data = df_average, box_pairs = box_pairs, param = 'surroundingThickness', cond = condCol,\
+            test = 'ranksum_greater')
+
+
+# ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# # # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+# ax[1].set_title(axtitle, fontsize = plotLabels)
+# # # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax.yaxis.set_tick_params(labelsize=plotTicks)
+ax.xaxis.set_tick_params(labelsize=plotTicks)
+
+handles, labels = ax.get_legend_handles_labels()
+newLabels = []
+for i in labels:
+    count1 = df_average[('surroundingThickness', 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[0])].values
+    count2 = df_average[('surroundingThickness', 'count')][(df_average['cellCode', 'first'] == i) & (df_average['manip', 'first'] == manips[1])].values
+    newLabels.append('{}, No.: {}, {}'.format(i, str(count1), str(count2)))
+
+ax.legend(handles, newLabels)
+
+# fig1.suptitle(str(dates) + '_'+str(condPairs))
+# plt.tight_layout()
+plt.savefig(pathBoxPlots + '/surroundingThickness_' + str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+# plt.show()
+
+
+#%%  For experiments 22-05-31, 22-03-31
+date = '22-05-31'
+
+GlobalTable = taka.getMergedTable('Global_MecaData_' + str(date))
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'Dimi_f15_'+str(date)
+
+
+
+#%%%% Surrounding thickness
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-05-31']
+manips = ['M7']
+
+condCol = 'activation type'
+measure = 'surroundingThickness'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+for cell in allCells:
+    
+    print(cell)
+    meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
+    times = meta['T_abs'] - meta['T_0']
+    activationTime.append(times.values)
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = (data_f['compNum']-1)*18
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = 'cellCode')
+
+for each in activationTime[0]:
+    ax.axvline(x = each, ymax = .05, color = 'blue', lw = 5)
+
+fig1.suptitle(force+'_'+measure+' (nm) vs. Time (secs)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper right')
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr_cellSpecific.png')
+
+plt.show()
+
+#%%%% Non-linear plots for 22-03-31
+
+pathNonlinDir = pathSubDir+'/NonLinPlots'
+if not os.path.exists(pathNonlinDir):
+    os.mkdir(pathNonlinDir)
+
+styleDict1 =  {'M3':{'color': gs.colorList40[10],'marker':'o'},
+                'M4':{'color': gs.colorList40[10],'marker':'o'},
+                'M5':{'color': gs.colorList40[20],'marker':'o'},
+                'M6':{'color': gs.colorList40[10],'marker':'o'},
+                'M7':{'color': gs.colorList40[11],'marker':'o'},
+                'M8':{'color': gs.colorList40[12],'marker':'o'},
+                'M9':{'color': gs.colorList40[14],'marker':'o'},
+                '22-05-31':{'color': gs.colorList40[14],'marker':'o'},
+                }
+
+
+data = data_main
+
+
+manips = ['M7'] #, 'M4'] 
+# legendLabels = ['No activation', 'Activation at beads']
+dates = ['22-05-31']
+condCol = 'manip'
+mode = '150_450'
+
+#Before activation
+selRows = data[(data['manip'] == manips[0]) & (data['compNum'] > 5)].index
+data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # data['compNum'] < 5, 
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips)),
+            ]
+
+plt.style.use('default')
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, #legendLabels = ['Before Activation'],
+                 fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = mode, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+data = data_main
+
+styleDict1 =  {'M5':{'color': gs.colorList40[21],'marker':'o'},
+                'M6':{'color': gs.colorList40[30],'marker':'o'},
+                'M7':{'color': gs.colorList40[31],'marker':'o'},
+                'M8':{'color': gs.colorList40[32],'marker':'o'},
+                'M9':{'color': gs.colorList40[34],'marker':'o'},
+                '22-05-31':{'color': gs.colorList40[15],'marker':'o'},
+
+                }
+
+#After activation
+selRows = data[(data['manip'] ==  manips[0]) & (data['compNum'] < 5)].index
+data = data.drop(selRows, axis = 0)
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manip'].apply(lambda x : x in manips))]
+
+
+out2 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, legendLabels = ['After activation'],
+                  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = mode, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf2, countDf2 = out2
+
+
+plt.tight_layout()
+plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'.png')  
+
+plt.show()
+
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+fitsSubDir = fitsSubDir
+
+fitType = 'Log'
+fitId = None
+Sinf, Ssup = 150, 450
+FIT_MODE = 'loglog'  # 'linlin', 'loglog'
+
+data = data_main 
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+    
+pathBoxPlots = pathFits + '/BoxPlots'
+if not os.path.exists(pathBoxPlots):
+    os.mkdir(pathBoxPlots)
+
+
+interceptStress = 150
+condCol = 'dateID'
+
+
+manips = ['M4', 'M7', 'M5', 'M6']
+order = manips #, 'M7', 'M5']
+
+dates = ['22-05-31']
+plot = True
+
+
+for date in dates:
+    if date == '22-12-07' and condCol == 'manip':
+        oldManip = ['M7', 'M8', 'M9']
+        for i in oldManip:
+            data['manip'][(data['date'] == date) & (data['manip'] == i)] = 'M5'
+
+mode = 'none'
+if mode == 'Compare activation' and condCol == 'manip':
+    selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+    data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['cellId'].apply(lambda x : x in cellIDs)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+dfAllCells = plot2Params(data, Filters, interceptStress, FIT_MODE, pathFits, plot = False)
+
+plt.close('all')
+
+
+#%%%% Plotting boxplots with above data
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+activationTag = (np.zeros(len(df)).astype(str))
+df['activationTag'] = activationTag
+df['activationTag'][df['compNum'] > 5] = '1.0'
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+
+plotIntercept = True
+
+if plotIntercept:
+    y1, y2 = df[params[0]],  df['chosenIntercept']
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df[params[0]],  df[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+condCol = 'activationTag'
+
+x = df[condCol]
+order = None
+hue = 'cellCode'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+elif condCol == 'activationTag':
+    condPairs = ['0.0', '1.0']
+
+sns.boxplot(x = x, y = y1, data=df, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+sns.swarmplot(x = x, y = y1, data=df, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+
+sns.swarmplot(x = x, y = y2, data=df,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# ax[1].get_legend().remove()
+# ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'.png')  
+plt.show()
+
+#%%%% Plotting boxplots with above data, averaged by cell
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+activationTag = (np.zeros(len(df)).astype(str))
+df['activationTag'] = activationTag
+df['activationTag'][df['compNum'] > 5] = '1.0'
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+condCol = 'activationTag', 'first'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+elif condCol == 'activationTag':
+    condPairs = ['0.0', '1.0']
+    
+
+group_by_cell = df.groupby(['cellCode', 'activationTag'])
+df_average = group_by_cell.agg({params[0]:['mean', 'count'], 'chosenIntercept':['mean', 'count'], 
+                                   'cellCode':'first', 'activationTag':'first'})
+plotIntercept = True
+if plotIntercept:
+    y1, y2 = df_average[(params[0], 'mean')],  df_average[('chosenIntercept', 'mean')]
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df_average[params[0]],  df_average[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+
+x = df_average[condCol]
+condPairs = ['0.0', '1.0']
+hue = df_average[('cellCode', 'first')]
+
+sns.boxplot(x = x, y = y1, data=df_average, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y1, units=hue,  color = "0.7", ax = ax[0], estimator=None)
+
+sns.swarmplot(x = x, y = y1, data=df_average, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df_average, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y2, units=hue,  color = "0.7", estimator=None, ax = ax[1])
+
+
+sns.swarmplot(x = x, y = y2, data=df_average,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+# box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+# addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+# addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# # ax[1].get_legend().remove()
+# # ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+plt.show()
+
+#%%%% fluctuations vs. median thickness
+
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-05-31']
+manips = ['M5']
+
+condCol = 'manip'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+plt.figure(figsize = (15,15))
+measure = 'ctFieldThickness'
+dataToPlot = data_f[[measure, 'ctFieldFluctuAmpli', 'cellCode', 'compNum', 'activation type']].drop_duplicates()
+activationTag = (np.zeros(len(dataToPlot)).astype(str))
+dataToPlot['activationTag'] = activationTag
+dataToPlot['activationTag'][dataToPlot['compNum'] > 5] = '1.0'
+
+sns.lmplot(y = 'ctFieldFluctuAmpli', x = measure, data = dataToPlot)
+
+
+plt.title(force+'_'+measure+' (nm) vs. Fluctuations (nm)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.ylabel('Fluctuations (nm)', fontsize = 25, color = fontColour)
+plt.xlabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper left')
+
+plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsFluctu.png')
+
+plt.show()
+
+#%% Plots for old experiments ------ 22-08-26
+date = '22-08-26'
+
+GlobalTable = taka.getMergedTable('Global_MecaData_' + str(date))
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'Dimi_f15_'+str(date)
+
+#%%%% Surrounding thickness
+
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-08-26']
+manips = ['M1', 'M5']
+
+condCol = 'activation type'
+measure = 'surroundingThickness'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+# for cell in allCells:
+#     try:
+#         meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
+#         times = meta['T_abs'] - meta['T_0']
+#         activationTime.append(times.values)
+#     except:
+#         print('No activation data')
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = (data_f['compNum']-1)*18
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = 'cellCode')
+
+# for each in activationTime[0]:
+#     ax.axvline(x = each, ymax = .05, color = 'blue', lw = 5)
+
+fig1.suptitle(force+'_'+measure+' (nm) vs. Time (secs)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper right')
+
+# plt.ylim(0,1500)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'cellCode.png')
+
+plt.show()
+
+#%%%% Non-linear plots for 22-08-26
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+
+
+
+pathNonlinDir = pathSubDir+'/NonLinPlots'
+if not os.path.exists(pathNonlinDir):
+    os.mkdir(pathNonlinDir)
+
+plt.style.use('seaborn')
+
+flatui =  ["#e5c100", "#ad6aea", "#000000"]
+legendLabels = ['Activation away from beads', 'No Activation']
+
+styleDict1 =  {'M1':{'color': gs.colorList40[10],'marker':'o'},
+               'M2':{'color': flatui[1],'marker':'o'},
+               'M3':{'color': gs.colorList40[10],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+                }
+
+styleDict1 =  {'22-08-26':{'color': gs.colorList40[10],'marker':'o'},
+                '22-05-31_M7_P2_C1':{'color': gs.colorList40[11],'marker':'o'},
+                '22-05-31_M7_P2_C3':{'color': gs.colorList40[12],'marker':'o'},
+                }
+
+data = data_main
+
+# manipIDs = ['23-02-02_M1', '23-02-02_M3', '23-02-02_M5', '23-02-02_M7', '22-12-07_M1']
+dates = ['22-08-26']
+manips = ['M3', 'M1'] #, 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+stressRange = '150_450'
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1900),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            ]
+
+# selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+# data = data.drop(selRows, axis = 0)
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                   condCol = 'dateID', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                  fitWidth=75, Filters = Filters, 
+                                condCol = 'dateID', mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+
+# atbeads = mpatches.Patch(color=flatui[0], label='Activation at beads')
+# awaybeads = mpatches.Patch(color=flatui[1], label='Activation away from beads')
+# control = mpatches.Patch(color=flatui[2], label='Control')
+
+# plt.legend(handles=[awaybeads, control], fontsize = 20, loc = 'upper left')
+
+
+plt.tight_layout()
+plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'150-450.png')  
+
+plt.show()
+
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+fitsSubDir = fitsSubDir
+
+fitType = 'Log'
+fitId = None
+Sinf, Ssup = 150, 450
+FIT_MODE = 'linlin'  # 'linlin', 'loglog'
+
+data = data_main 
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+    
+pathBoxPlots = pathFits + '/BoxPlots'
+if not os.path.exists(pathBoxPlots):
+    os.mkdir(pathBoxPlots)
+
+
+interceptStress = 150
+condCol = 'manip'
+
+
+manips = ['M3', 'M7']
+order = manips #, 'M7', 'M5']
+
+dates = ['22-08-26']
+plot = True
+
+
+for date in dates:
+    if date == '22-12-07' and condCol == 'manip':
+        oldManip = ['M7', 'M8', 'M9']
+        for i in oldManip:
+            data['manip'][(data['date'] == date) & (data['manip'] == i)] = 'M5'
+
+mode = 'none'
+if mode == 'Compare activation' and condCol == 'manip':
+    selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+    data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['cellId'].apply(lambda x : x in cellIDs)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+dfAllCells = plot2Params(data, Filters, interceptStress, FIT_MODE, pathFits, plot = True)
+
+plt.close('all')
+
+
+#%%%% Plotting boxplots with above data
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+
+plotIntercept = True
+
+if plotIntercept:
+    y1, y2 = df[params[0]],  df['chosenIntercept']
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df[params[0]],  df[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+condCol = 'manip'
+
+x = df[condCol]
+order = None
+hue = 'cellCode'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+
+
+sns.boxplot(x = x, y = y1, data=df, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+sns.swarmplot(x = x, y = y1, data=df, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+
+sns.swarmplot(x = x, y = y2, data=df,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# ax[1].get_legend().remove()
+# ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'.png')  
+plt.show()
+
+#%%%% Plotting boxplots with above data, averaged by cell
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+activationTag = (np.zeros(len(df)).astype(str))
+df['activationTag'] = activationTag
+df['activationTag'][df['compNum'] > 5] = '1.0'
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+condCol = 'activationTag', 'first'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+elif condCol == 'activationTag':
+    condPairs = ['0.0', '1.0']
+    
+
+group_by_cell = df.groupby(['cellCode', 'activationTag'])
+df_average = group_by_cell.agg({params[0]:['mean', 'count'], 'chosenIntercept':['mean', 'count'], 
+                                   'cellCode':'first', 'activationTag':'first'})
+plotIntercept = True
+if plotIntercept:
+    y1, y2 = df_average[(params[0], 'mean')],  df_average[('chosenIntercept', 'mean')]
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df_average[params[0]],  df_average[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+
+x = df_average[condCol]
+condPairs = ['0.0', '1.0']
+hue = df_average[('cellCode', 'first')]
+
+sns.boxplot(x = x, y = y1, data=df_average, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y1, units=hue,  color = "0.7", ax = ax[0], estimator=None)
+
+sns.swarmplot(x = x, y = y1, data=df_average, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df_average, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y2, units=hue,  color = "0.7", estimator=None, ax = ax[1])
+
+
+sns.swarmplot(x = x, y = y2, data=df_average,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+# box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+# addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+# addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# # ax[1].get_legend().remove()
+# # ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+plt.show()
+
+#%%%% fluctuations vs. median thickness
+
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-08-26']
+manips = ['M1', 'M5']
+
+condCol = 'manip'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+# plt.figure(figsize = (15,15))
+measure = 'ctFieldThickness'
+# dataToPlot = data_f[[measure, 'ctFieldFluctuAmpli', 'cellCode', 'compNum', 'activation type']].drop_duplicates()
+
+fig = sns.lmplot(y = 'ctFieldFluctuAmpli', x = measure, data = data_f, hue = 'manip')
+
+
+plt.title(force+'_'+measure+' (nm) vs. Fluctuations (nm)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.ylabel('Fluctuations (nm)', fontsize = 25, color = fontColour)
+plt.xlabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper left')
+
+plt.ylim(0,2000)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsFluctu'+str(manips)+'.png')
+
+plt.show()
+
+#%% Plots for old experiments ------ 22-10-05 / 22-10-06
+date = '22-10-05&22-10-06'
+
+GlobalTable = taka.getMergedTable('Global_MecaData_' + str(date))
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+fitsSubDir = 'Dimi_f15_'+str(date)
+
+#%%%% Surrounding thickness
+
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-10-06']
+manips = ['M5', 'M6']
+manipIDs = ['22-10-05_M2', '22-10-06_M1', '22-10-06_M5']
+
+
+condCol = 'manipId'
+measure = 'surroundingThickness'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
+            # (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+# for cell in allCells:
+#     try:
+#         meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
+#         times = meta['T_abs'] - meta['T_0']
+#         activationTime.append(times.values)
+#     except:
+#         print('No activation data')
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+
+x = (data_f['compNum']-1)*18
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
+
+# for each in activationTime[0]:
+#     ax.axvline(x = each, ymax = .05, color = 'blue', lw = 5)
+
+fig1.suptitle(force+'_'+measure+' (nm) vs. Time (secs)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper right')
+
+# plt.ylim(0,1500)
+# ax.get_legend().remove()
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'_'+str(condCol)+'.png')
+
+plt.show()
+
+#%%%% Non-linear plots for 22-10-05 / 22-10-06
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+
+
+
+pathNonlinDir = pathSubDir+'/NonLinPlots'
+if not os.path.exists(pathNonlinDir):
+    os.mkdir(pathNonlinDir)
+
+plt.style.use('seaborn')
+
+flatui =  ["#e5c100", "#ad6aea", "#000000"]
+legendLabels = ['Activation away from beads', 'No Activation']
+
+styleDict1 =  {'M1':{'color': gs.colorList40[20],'marker':'o'},
+               'M2':{'color': gs.colorList40[21],'marker':'o'},
+               'M3':{'color': gs.colorList40[22],'marker':'o'},
+                'M4':{'color': gs.colorList40[30],'marker':'o'},
+                'M5':{'color': gs.colorList40[31],'marker':'o'},
+                'M6':{'color': gs.colorList40[32],'marker':'o'},
+                'M7':{'color': gs.colorList40[22],'marker':'o'},
+                'M8':{'color': gs.colorList40[23],'marker':'o'}
+                }
+
+# styleDict1 =  {'22-10-05_M2':{'color': gs.colorList40[21],'marker':'o'},
+#                 '22-10-06_M1':{'color': gs.colorList40[22],'marker':'o'},
+#                 }
+
+data = data_main
+condCol = 'manip'
+manipIDs = ['22-10-05_M2', '22-10-06_M1']
+dates = ['22-10-05']
+manips = ['M1', 'M2'] #, 'M2'] #, 'M7'] #,'M6'] #, 'M4', 'M6', 'M5']
+
+stressRange = '150_450'
+
+if condCol == 'manip':
+    figExt = manips
+elif condCol == 'manipId':
+    figExt = manipIDs
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manip'].apply(lambda x : x in manips)),
+            ]
+
+selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+data = data.drop(selRows, axis = 0)
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+
+out1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                   condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+mainFig2, mainAx2 = plt.subplots(1,1)
+
+
+out2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                  fitWidth=75, Filters = Filters, 
+                                condCol = condCol, mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+
+# atbeads = mpatches.Patch(color=flatui[0], label='Activation at beads')
+# awaybeads = mpatches.Patch(color=flatui[1], label='Activation away from beads')
+# control = mpatches.Patch(color=flatui[2], label='Control')
+
+# plt.legend(handles=[awaybeads, control], fontsize = 20, loc = 'upper left')
+
+
+plt.tight_layout()
+mainFig1.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(condCol) +'_'+ str(figExt)+'_wholeCurve.png')  
+mainFig2.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(condCol) +'_'+ str(figExt)+ '_' + stressRange + '.png')  
+
+
+plt.show()
+
+
+# %%%% Plotting surrounding thickness / best H0 - manip wise
+plt.style.use('seaborn')
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+fitsSubDir = fitsSubDir
+
+fitType = 'Log'
+fitId = None
+Sinf, Ssup = 150, 450
+FIT_MODE = 'linlin'  # 'linlin', 'loglog'
+
+data = data_main 
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+    
+pathBoxPlots = pathFits + '/BoxPlots'
+if not os.path.exists(pathBoxPlots):
+    os.mkdir(pathBoxPlots)
+
+
+interceptStress = 150
+condCol = 'manip'
+# manipIDs = ['22-10-05_M2', '22-10-06_M1']
+
+
+
+manips = ['M1', 'M5']
+order = None #, 'M7', 'M5']
+
+dates = ['22-10-06']
+plot = True
+
+
+for date in dates:
+    if date == '22-12-07' and condCol == 'manip':
+        oldManip = ['M7', 'M8', 'M9']
+        for i in oldManip:
+            data['manip'][(data['date'] == date) & (data['manip'] == i)] = 'M5'
+
+mode = 'none'
+if mode == 'Compare activation' and condCol == 'manip':
+    selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
+    data = data.drop(selRows, axis = 0)
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            # (data['cellId'].apply(lambda x : x in cellIDs)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+dfAllCells = plot2Params(data, Filters, interceptStress, FIT_MODE, pathFits, plot = True)
+
+plt.close('all')
+
+
+#%%%% Plotting boxplots with above data
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], condCol, 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+
+plotIntercept = True
+
+if plotIntercept:
+    y1, y2 = df[params[0]],  df['chosenIntercept']
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df[params[0]],  df[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+condCol = 'manip'
+
+x = df[condCol]
+order = None
+hue = 'cellCode'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+
+
+sns.boxplot(x = x, y = y1, data=df, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+sns.swarmplot(x = x, y = y1, data=df, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+    
+
+sns.swarmplot(x = x, y = y2, data=df,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# ax[1].get_legend().remove()
+# ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'.png')  
+plt.show()
+
+#%%%% Plotting boxplots with above data, averaged by cell
+
+fig1, ax = plt.subplots(1, 2, figsize = (15,10))
+df = dfAllCells
+
+if FIT_MODE == 'linlin':
+    params = ['A', 'B']
+    ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+elif FIT_MODE == 'loglog':
+    params = ['a', 'q']
+    ax_titles = ['Exponent (a)', 'Coefficient (q)']
+
+
+# df = df[df['R2Fit'] > 0.70]
+df = df[[params[0], params[1], 'chosenIntercept', 'chosenInterceptStress', 'dateID', 'R2Fit', 'cellCode', 'cellID', 'compNum']]
+
+activationTag = (np.zeros(len(df)).astype(str))
+df['activationTag'] = activationTag
+df['activationTag'][df['compNum'] > 5] = '1.0'
+
+df = df.drop_duplicates()
+df = df.dropna()
+
+if mode == 'Compare activation' and condCol == 'manip':
+    cellCodes = df['cellCode'][df['manip'] == manips[1]].values
+    df = df[df['cellCode'].isin(cellCodes)]
+
+condCol = 'activationTag', 'first'
+
+if condCol == 'manipId':
+    condPairs = manipIDs
+elif condCol == 'manip':
+    condPairs = manips
+elif condCol == 'cellId':
+    condPairs = cellIDs
+elif condCol == 'activationTag':
+    condPairs = ['0.0', '1.0']
+    
+
+group_by_cell = df.groupby(['cellCode', 'activationTag'])
+df_average = group_by_cell.agg({params[0]:['mean', 'count'], 'chosenIntercept':['mean', 'count'], 
+                                   'cellCode':'first', 'activationTag':'first'})
+plotIntercept = True
+if plotIntercept:
+    y1, y2 = df_average[(params[0], 'mean')],  df_average[('chosenIntercept', 'mean')]
+    figExt = 'Intercept'+str(interceptStress)
+    axtitle = 'Intercept at '+str(interceptStress)+'Pa'
+else:
+    y1, y2 = df_average[params[0]],  df_average[params[1]]
+    figExt = 'Coeff'
+    axtitle = ax_titles[1]
+
+
+x = df_average[condCol]
+condPairs = ['0.0', '1.0']
+hue = df_average[('cellCode', 'first')]
+
+sns.boxplot(x = x, y = y1, data=df_average, ax = ax[0], order = order, 
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y1, units=hue,  color = "0.7", ax = ax[0], estimator=None)
+
+sns.swarmplot(x = x, y = y1, data=df_average, order = order,linewidth = 1, hue = hue, ax = ax[0], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+sns.boxplot(x = x, y = y2, data=df_average, ax = ax[1], order = order,
+                    medianprops={"color": 'darkred', "linewidth": 2},\
+                    boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.4})
+
+sns.lineplot(data=df_average, x=x, y=y2, units=hue,  color = "0.7", estimator=None, ax = ax[1])
+
+
+sns.swarmplot(x = x, y = y2, data=df_average,  order = order, linewidth = 1, hue = hue, ax = ax[1], s = 7, edgecolor='k') #, hue = 'cellCode')
+
+# box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
+# addStat_df(ax = ax[0], data = df, box_pairs = box_pairs, param = params[0], cond = condCol)
+# addStat_df(ax = ax[1], data = df, box_pairs = box_pairs, param = params[1], cond = condCol)
+
+
+ax[0].set_title(ax_titles[0], fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[1].set_title(axtitle, fontsize = plotLabels)
+# # ax[0].set_xticklabels(('Control', 'Activation at beads'), fontsize = plotTicks)
+
+
+ax[0].yaxis.set_tick_params(labelsize=plotTicks)
+ax[1].yaxis.set_tick_params(labelsize=plotTicks)
+ax[0].xaxis.set_tick_params(labelsize=plotTicks)
+ax[1].xaxis.set_tick_params(labelsize=plotTicks)
+
+
+# # ax[1].get_legend().remove()
+# # ax[0].get_legend().remove()
+
+fig1.suptitle(str(dates) + '_'+str(condPairs))
+plt.tight_layout()
+plt.savefig(pathBoxPlots + '/' + str(dates) + '_'+str(condPairs) + '_' + figExt+'_averaged.png')  
+plt.show()
+
+#%%%% fluctuations vs. median thickness
+
+plt.style.use('seaborn')
+
+data = data_main
+
+dates = ['22-08-26']
+manips = ['M1', 'M5']
+
+condCol = 'manip'
+force = '[5mT = 50pN]'
+activationTime = []
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            # (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips))
+            ]
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+allCells = data_f['cellID'].unique()
+dateDir = date.replace('-', '.')
+
+# plt.figure(figsize = (15,15))
+measure = 'ctFieldThickness'
+# dataToPlot = data_f[[measure, 'ctFieldFluctuAmpli', 'cellCode', 'compNum', 'activation type']].drop_duplicates()
+
+fig = sns.lmplot(y = 'ctFieldFluctuAmpli', x = measure, data = data_f, hue = 'manip')
+
+
+plt.title(force+'_'+measure+' (nm) vs. Fluctuations (nm)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.ylabel('Fluctuations (nm)', fontsize = 25, color = fontColour)
+plt.xlabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 25, loc = 'upper left')
+
+plt.ylim(0,2000)
+
+plt.savefig(todayFigDir + '/'+str(dates)+'_'+measure+'vsFluctu'+str(manips)+'.png')
 
 plt.show()

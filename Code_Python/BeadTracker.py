@@ -234,13 +234,15 @@ class PincherTimeLapse:
             self.activationType = manipDict['activation type']
             
             if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                
+                print('case 1')
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
+                print('case 2')
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
             
             else:
+                print('case 3')
                 self.LoopActivations = np.array([self.activationFirst-1])
                             
             fluo = True
@@ -261,9 +263,13 @@ class PincherTimeLapse:
             self.totalActivationImages = np.array([np.sum(self.LoopActivations < kk) 
                                                for kk in range(self.nLoop)])
             
-            print('total activation images')
-            print(self.totalActivationImages)
+            # print('total activation images')
+            # print(self.totalActivationImages)
             self.excludedFrames_outward += self.totalActivationImages
+            
+            # print('excludedFrames_outward')
+            # print(self.excludedFrames_outward)
+            
         else:
             pass
 
@@ -302,10 +308,10 @@ class PincherTimeLapse:
         if self.microscope == 'labview':
             offsets = np.array([np.sum(self.LoopActivations <= kk) 
                                 for kk in range(self.nLoop)])
-            print(offsets)
+            # print(offsets)
             for i in range(self.nLoop):
                 j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
-                print(j)
+                # print(j)
                 checkSum = np.sum(self.I[j])
                 while checkSum == 0:
                     print('Black image found')
@@ -329,6 +335,7 @@ class PincherTimeLapse:
         """
         
         if self.microscope == 'labview':
+            # print('excludedFrames_black')
             # print(self.excludedFrames_black)
             try:
                 if self.activationFirst > 0:
@@ -498,12 +505,14 @@ class PincherTimeLapse:
                         print(gs.ORANGE + 'Writing {:.1f} instead of {:.1f}'.format(1 + j%self.Nuplet, self.dictLog['status_frame'][jstart + j]) + '' + gs.NORMAL)
                     self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
                     self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
+                    
                 jstart += int(Nct//2)
                 for j in range(Nramp0): # Pre-ramp
                     self.dictLog['status_frame'][jstart + j] = 0.1 
                     self.dictLog['status_nUp'][jstart + j] = 0
                 i_nUp = max(self.dictLog['status_nUp']) + 1
                 jstart += int(Nramp0 + Nramp) # In the ramp itself, the two status stay equal to 0
+                
                 for j in range(Nct//2): # Ct field after ramp
                     if self.dictLog['status_frame'][jstart + j] != 0:
                         print(gs.ORANGE + 'Careful ! Rewriting on some data in position {:.0f} (starting from 0)'.format(jstart + j) + '' + gs.NORMAL)
@@ -551,12 +560,52 @@ class PincherTimeLapse:
         pass
     
     def makeOptoMetadata(self, fieldDf, display = 1, save = False, path = ''):
+        try:
+            actFreq = self.activationFreq
+            actExp = self.activationExp
+            actType = [self.activationType]
+            microscope = self.microscope
+            if microscope == 'labview':
+                allActivationIndices = ufun.findActivation(fieldDf)[0]
+                # actFirst = idxActivation//self.loop_mainSize
+                timeScaleFactor = 1000
+                
+                print(fieldDf)
+                actN = len(allActivationIndices)
+                fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
+                metadataDict = {}
+                metadataDict['activationNo'] = np.linspace(1, actN, actN)
+                metadataDict['Slice'] = allActivationIndices
+                #timeScaleFactor converts the time to milliseconds for the labview code and keeps it the same if from Metamorph
+                metadataDict['T_abs'] = fieldToMeta/timeScaleFactor
+                metadataDict['T_0'] = [fieldDf['T_abs'][0]/timeScaleFactor]*actN
+                # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
+                metadataDict['Type'] = actType*actN
+                print(len(fieldToMeta))
+                print(len(metadataDict['activationNo']))
+                print(len(metadataDict['Slice']))
+                print(len(metadataDict['T_abs']))
+                print(len(metadataDict['T_0']))
+                
+                metadataDf = pd.DataFrame(metadataDict)
+                if save:
+                    metadataDf.to_csv(path, sep='\t')
+        except:
+            pass
+        
+        if display == 1:
+            print('\n\n* Initialized Log Table:\n')
+        if display == 2:
+            print('\n\n* Filled Log Table:\n')
+            print(metadataDf[metadataDf['UI']])
+            
+    def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
         actFreq = self.activationFreq
         actExp = self.activationExp
         actType = [self.activationType]
         microscope = self.microscope
         if microscope == 'labview':
-            idxActivation = ufun.findActivation(fieldDf)[0]
+            idxActivation = ufun.findActivation_V1(fieldDf)[0]
             actFirst = idxActivation//self.loop_mainSize
             timeScaleFactor = 1000
         elif microscope == 'metamorph':
@@ -568,11 +617,12 @@ class PincherTimeLapse:
         actN = ((self.nLoop - actFirst))//actFreq
         
         metadataDict = {}
-        metadataDict['Total'] = actN*np.ones(actN, dtype = int)
+        metadataDict['Total'] = actN*np.ones(actN, dtype = type(actN))
         metadataDict['Slice'] = idxActivation
         #timeScaleFactor converts the time to milliseconds for the labview code and keeps it the same if from Metamorph
         metadataDict['T_abs'] = fieldDf['T_abs'][idxActivation]/timeScaleFactor 
-        metadataDict['Exp'] = actExp*np.ones(actN, dtype = int)
+        metadataDict['T_0'] = fieldDf['T_abs'][0]/timeScaleFactor 
+        # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
         metadataDict['Type'] = actType*actN
         
         metadataDf = pd.DataFrame(metadataDict)
@@ -1166,7 +1216,7 @@ class PincherTimeLapse:
                 addOffset = (iF >= i_lim) # Is this ramp going further than it should, considering the black images ?
                 
                 
-                # 'optoGen' or 'compressions' but b=probably necessary in all cases actually
+                # 'optoGen' or 'compressions' but probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
                     # print(iLoop)
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
@@ -2016,11 +2066,11 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             fieldDf = pd.read_csv(fieldFilePath, sep = '\t', names = fieldCols) # '\t'
         
         #### 0.51 Find index of first activation
-        try:
-            optoMetaPath = fP[:-4] + '_OptoMetadata.txt'
-            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
-        except:
-            pass
+        # try:
+        optoMetaPath = fP[:-4] + '_OptoMetadata.txt'
+        PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
+        # except:
+        #     pass
         
         #### 0.6 - Check if a log file exists and load it if required
         logFilePath = fP[:-4] + '_LogPY.txt'

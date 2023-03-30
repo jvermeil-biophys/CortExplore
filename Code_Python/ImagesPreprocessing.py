@@ -46,9 +46,11 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.02.02'
+date = '23.03.28'
 DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'E:/Cortex Experiments/20230202_3t3optorhoa-Y27_100x_4.5StreptBeads_Mechanics/' + date
+# DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
+DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'
@@ -64,10 +66,9 @@ microscope = 'labview'
 # channel = ''
 # microscope = 'labview'
 
-
 # %% Functions
 
-def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded', 'out', 'bad']):
+def getListOfSourceFolders(Dir, forbiddenWords = ['error', 'excluded', 'out', 'bad']):
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -467,6 +468,7 @@ count = 0
 # for i in range(len(allZimg)):
 for i in range(min(len(allZimg), limiter)):
     if count%24 == 0:
+        
         count = 0
         
     currentCell = allCells[i]

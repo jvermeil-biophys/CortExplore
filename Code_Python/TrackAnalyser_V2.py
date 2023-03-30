@@ -1261,8 +1261,7 @@ class CellCompression:
         
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
-            # print(ii)
-            # print(IC.dictFitFH_Chadwick)
+
             compValid = IC.isValidForAnalysis
             
             if compValid:
@@ -2855,7 +2854,7 @@ class IndentCompression:
                 if len(XtoFit) > 4:
                     posValues = ((XtoFit > 0) & (YtoFit > 0))
                     XtoFit, YtoFit = XtoFit[posValues], YtoFit[posValues]
-                    print(YerrToFit)
+                    # print(YerrToFit)
      
                     #Unwighted linear regression
                     # params, results = ufun.fitLine(np.log(XtoFit), np.log(YtoFit)) # Y=a*X+b ; params[0] = b,  params[1] = a
@@ -3223,8 +3222,8 @@ DEFAULT_fitSettings = {# H0
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
                        'doLogFits' : True,
-                       'nbPtsFitLog' : 13,
-                       'overlapFitLog' : 3,
+                       'nbPtsFitLog' : 10,
+                       'overlapFitLog' : 5,
                        }
 
 

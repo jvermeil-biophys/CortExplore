@@ -403,10 +403,17 @@ def removeColumnsDuplicate(df):
     return(df)
 
 
-def findActivation(fieldDf):
+def findActivation_V1(fieldDf):
     maxZidx = fieldDf['Z'].argmax() #Finding the index of the max Z
     maxZ = fieldDf['Z'][maxZidx] #To check if the value is correct
     return(maxZidx, maxZ)   
+
+def findActivation(fieldDf):
+    Z = fieldDf['Z'].values
+    allActivations = [i for i in Z if '73.' in str(i)] #Finding the index of the max Z
+    allActivationIndices =  [i for i in range(len(Z)) if Z[i] in allActivations] #To check if the value is correct
+    return(np.asarray(allActivationIndices), np.asarray(allActivations))   
+
 
 
 
