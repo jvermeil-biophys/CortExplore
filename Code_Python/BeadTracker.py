@@ -305,7 +305,7 @@ class PincherTimeLapse:
         To detect them, compute the checkSum = np.sum(self.I[j]).
         Then modify the 'status_frame' & 'status_nUp' fields to '-1' in the dictLog.
         """
-        if self.microscope == 'labview':
+        if self.microscope == 'labview' or self.microscope == 'old-labview':
             offsets = np.array([np.sum(self.LoopActivations <= kk) 
                                 for kk in range(self.nLoop)])
             # print(offsets)
@@ -334,7 +334,7 @@ class PincherTimeLapse:
         find and save all of the fluo images there.
         """
         
-        if self.microscope == 'labview':
+        if self.microscope == 'labview' or self.microscope == 'old-labview':
             # print('excludedFrames_black')
             # print(self.excludedFrames_black)
             try:
@@ -440,9 +440,7 @@ class PincherTimeLapse:
         # N = N0 - Nexclu
         Nct = N0 - Nramp0 # N
         i_nUp = 1
-        
-
-        # print(N0,Nramp0,Nexclu,nUp)
+        # print(N0,Nramp0,nUp)
 
         for i in range(self.nLoop):
             totalExcludedOutward = np.sum(self.excludedFrames_outward[i])
@@ -540,7 +538,7 @@ class PincherTimeLapse:
                     self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
                 i_nUp = max(self.dictLog['status_nUp']) + 1
                 
-        elif self.microscope == 'labview':
+        elif self.microscope == 'labview' or self.microscope == 'old-labview':
             for i in range(self.nLoop):
                 totalExcludedOutward = (self.excludedFrames_outward[i])
                 jstart = int(i*N0 + totalExcludedOutward)
@@ -604,7 +602,7 @@ class PincherTimeLapse:
         actExp = self.activationExp
         actType = [self.activationType]
         microscope = self.microscope
-        if microscope == 'labview':
+        if microscope == 'labview' or microscope == 'old-labview':
             idxActivation = ufun.findActivation_V1(fieldDf)[0]
             actFirst = idxActivation//self.loop_mainSize
             timeScaleFactor = 1000
@@ -743,7 +741,7 @@ class PincherTimeLapse:
             if self.dictLog['status_frame'][i] >= 0:
                 self.listFrames.append(Frame(self.I[i], i, self.NB, self.threshold, Nup, status_frame, status_nUp, self.scale))
 
-    def detectBeads(self, resFileImported, display = False):
+    def detectBeads(self, resFileImported):
         """
         If no '_Results.txt' file has been previously imported, ask each Frame
         object in the listFrames to run its Frame.detectBeads() method.
@@ -755,18 +753,10 @@ class PincherTimeLapse:
         (each resDf is, as said earlier, just a fragment of the PTL.detectBeadsResult).
         """
         for frame in self.listFrames: #[:3]:
-            plot = 0
-
-            # TEST #################################################################################
-#             listPlot = [i for i in range(1685, 1700)]
-#             if frame.iS in listPlot:
-#                 plot = 1
-            # TEST #################################################################################
-
             if not resFileImported:
+                plot = 0
                 frame.detectBeads(plot)
                 self.detectBeadsResult = pd.concat([self.detectBeadsResult, frame.resDf])
-
             else:
                 resDf = self.detectBeadsResult.loc[self.detectBeadsResult['Slice'] == frame.iS+1]
                 frame.resDf = resDf
@@ -777,10 +767,7 @@ class PincherTimeLapse:
             self.detectBeadsResult = self.detectBeadsResult.convert_dtypes()
             self.detectBeadsResult.reset_index(inplace=True)
             self.detectBeadsResult.drop(['index'], axis = 1, inplace=True)
-
-        if display:
-            print('\n\n* Detected Beads Result:\n')
-            print(self.detectBeadsResult)
+            
 
     def saveBeadsDetectResult(self, path):
         """
@@ -1018,7 +1005,6 @@ class PincherTimeLapse:
                 if self.dictLog['UI'][iS]:
                     QA = self.dictLog['UILog'][iS]
                     if QA == 'Yes':
-                        
                         uiXY = self.dictLog['UIxy'][iS]
                     elif QA == 'No' or QA == 'No to all':
                         validFrame = False
@@ -1188,7 +1174,7 @@ class PincherTimeLapse:
 
         # Add the pointer to the correct line of the _Field.txt file.
         # It's just exactly the iS already saved in the dict, except if there are black images at the end of loops.
-        # In that case you have to skip the X lines corresponding to the end of the ramp part, X being the nb of black images at the end of the current loop
+        # In that case you have to skip the X lines corresPathonding to the end of the ramp part, X being the nb of black images at the end of the current loop
         # This is because when black images occurs, they do because of the high frame rate during ramp parts and thus replace these last ramp images.
 
         # For now : excludedFrames_inward = excludedFrames_black
@@ -1534,8 +1520,8 @@ class Trajectory:
             
             while iF <= max(self.dict['iF']):
             #### Enable plots of Z detection  here
-                # plot = 0
-                # if (iF >= 705 and iF <= 750):# or (iF > 400 and iF <= 440):
+                plot = 0
+                # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
                 #     plot = 1
                     
             # ###################################################################
@@ -1700,7 +1686,33 @@ class Trajectory:
 
 
 
-
+        #### Fit quality
+        # Ddz, Ddx = depthoHD.shape[0], depthoHD.shape[1]
+        # print(Ddz, Ddx)
+        # dz_fitPoly = int(Ddz/32)
+        
+        # def f_sq(x, k):
+        #     return(k * x**2)
+        
+        # listDistances = np.zeros((Ddz, Ddz))
+        # listZQuality = np.zeros(Ddz)
+        
+        # for z in range(Ddz):
+            
+        #     profile_z = depthoHD[z, :]
+        #     listDistances[z] = ufun.squareDistance(depthoHD, profile_z, normalize = True) # Utility functions
+        #     z_start = max(0, z - dz_fitPoly)
+        #     z_stop = min(Ddz - 1, z + dz_fitPoly)
+        #     # print(z, z_start, z_stop)
+        #     Cost_fitPoly = listDistances[z][z_start : z_stop + 1]
+        #     X_fitPoly = np.arange(z_start - z, z_stop - z + 1, dtype=int)
+        #     popt, pcov = curve_fit(f_sq, X_fitPoly, Cost_fitPoly - listDistances[z][z], 
+        #                            p0=[1], bounds=(-np.inf, np.inf))
+        #     z_quality = popt[0]*1e3
+        #     listZQuality[z] = z_quality
+        
+        # Z = np.array([i for i in range(Ddz)]) - depthoZFocusHD
+        # plt.plot(Z, listZQuality)
 
 
 
@@ -1780,7 +1792,11 @@ class Trajectory:
                                     fontsize = 11)
                 
                 # Show the distance map to the deptho
+                listDistances = np.array(listDistances)
+                inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
+                peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
                 axes[3,i].plot(zPos, listDistances[i])
+                axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
                 axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
                 axes[3,i].set_xlabel('Position along the depthograph\n(Z-axis)', 
@@ -1793,6 +1809,11 @@ class Trajectory:
                 limy3 = axes[3,i].get_ylim()
                 min_i = zPos[np.argmin(listDistances[i])]
                 axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
+                for p in peaks:
+                    p_i = zPos[int(p)]
+                    axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
+                                  marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
+                    axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
                 axes[3,i].set_xlim([0, depthoDepth])
                 
                 #
@@ -1809,6 +1830,7 @@ class Trajectory:
                 limy4 = axes[4,i].get_ylim()
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
+                axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
                 axes[4,i].set_xlim([0, depthoDepth])
 
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
@@ -1853,7 +1875,7 @@ class Trajectory:
             
             fig.suptitle('Frames '+str(iFNuplet)+' - Slices '+str(iSNuplet)+' ; '+\
                          'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
-                         '{:.1f} nm'.format(Z*(self.depthoStep/self.HDZfactor)),
+                         '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
                          y=0.98)
             
             if not os.path.isdir(cp.DirTempPlots):
@@ -2002,7 +2024,7 @@ class Trajectory:
 # %%%% Main
 
 def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
-                sourceField = 'default', redoAllSteps = False, MatlabStyle = False, trackAll = False,
+                sourceField = 'default', redoAllSteps = False, trackAll = False,
                 DirData = cp.DirData, 
                 DirDataRaw = cp.DirDataRaw, 
                 DirDataRawDeptho = cp.DirDataRawDeptho, 
@@ -2015,8 +2037,10 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     #### 0. Load different data sources & Preprocess : fluo, black images, sort slices (ct/ramp ; down/middle/up)
         #### 0.1 - Make list of files to analyse
 
-    imagesToAnalyse = []
-    imagesToAnalyse_Paths = []
+    fileRoots = []
+    tifImagesPaths = []
+    txtfieldPaths = []
+    txtResultsPaths = []
     if not isinstance(dates, str):
         rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
     else:
@@ -2024,27 +2048,60 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     for rd in rawDirList:
         fileList = os.listdir(rd)
         for f in fileList:
-            if ufun.isFileOfInterest(f, manips, wells, cells): # See Utility Functions > isFileOfInterest
-                fPath = os.path.join(rd, f)
-                if os.path.isfile(fPath[:-4] + '_Field.txt'):
-                    imagesToAnalyse.append(f)
-                    imagesToAnalyse_Paths.append(os.path.join(rd, f))    
-    
+            if ufun.isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = '_Results.txt'): # See Utility Functions > isFileOfInterest
+                validFileGroup = False
+                f_Res = f # A result file was found
+                f_root = f_Res[:-12]
+                f_root_simple = ufun.simplifyCellId(f_root) # The common 'root' to the .tif and _Field.txt files.
+                # With a call to ufun.simplifyCellId(), 'M1_P1_C2-1' become 'M1_P1_C2'
+                # This is useful cause like that, the image and field files 
+                # do not have to be duplicated if there are 2 results files.
+                
+                test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+                test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+                if test_image and test_field:
+                    f_Tif = f_root_simple + '.tif'
+                    f_Field = f_root_simple + '_Field.txt'
+                    fileRoots.append(f_root)
+                    tifImagesPaths.append(os.path.join(rd, f_Tif))
+                    txtfieldPaths.append(os.path.join(rd, f_Field))
+                    txtResultsPaths.append(os.path.join(rd, f_Res))
+                    validFileGroup = True
+                
+                else: # Retry in case there was a duplicated image
+                # No call to the function that simplifies the names
+                    test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+                    test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+                    if test_image and test_field:
+                        f_Tif = f_root + '.tif'
+                        f_Field = f_root + '_Field.txt'
+                        fileRoots.append(f_root)
+                        tifImagesPaths.append(os.path.join(rd, f_Tif))
+                        txtfieldPaths.append(os.path.join(rd, f_Field))
+                        txtResultsPaths.append(os.path.join(rd, f_Res))
+                        validFileGroup = True
+                
+                if not validFileGroup:
+                    print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be a lonely Results.txt file!' + gs.NORMAL)
+                        
     
         #### 0.2 - Begining of the Main Loop
-    for i in range(len(imagesToAnalyse)): 
-        f, fP = imagesToAnalyse[i], imagesToAnalyse_Paths[i]
+    for i in range(len(fileRoots)):
+        f = fileRoots[i]
+        print(f)
+        imagePath, fieldPath, resPath = tifImagesPaths[i], txtfieldPaths[i], txtResultsPaths[i]
         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
 
         print('\n')
-        print(gs.BLUE + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(imagesToAnalyse), f))
+        print(gs.BLUE + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
         print('Loading image and experimental data...' + gs.NORMAL)
 
         #### 0.3 - Load exp data
         if manipID not in expDf['manipID'].values:
             print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
             break
+        
         else:
             expDf_line = expDf.loc[expDf['manipID'] == manipID]
             manipDict = {}
@@ -2053,27 +2110,26 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     
 
         #### 0.4 - Load image and init PTL
-        I = io.imread(fP) # Approx 0.5s per image
+        I = io.imread(imagePath) # Approx 0.5s per image
         PTL = PincherTimeLapse(I, cellID, manipDict, NB)
     
         #### 0.5 - Load field file
-        fieldFilePath = fP[:-4] + '_Field.txt'
         if sourceField == 'default':
             fieldCols = ['B_set', 'T_abs', 'B', 'Z']
-            fieldDf = pd.read_csv(fieldFilePath, sep = '\t', names = fieldCols) # '\t'
+            fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
         elif sourceField == 'fastImagingVI':
             fieldCols = ['B_set', 'B', 'T_abs']
-            fieldDf = pd.read_csv(fieldFilePath, sep = '\t', names = fieldCols) # '\t'
+            fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
         
         #### 0.51 Find index of first activation
-        # try:
-        optoMetaPath = fP[:-4] + '_OptoMetadata.txt'
-        PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
-        # except:
-        #     pass
+        try:
+            optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
+            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
+        except:
+            pass
         
         #### 0.6 - Check if a log file exists and load it if required
-        logFilePath = fP[:-4] + '_LogPY.txt'
+        logFilePath = resPath[:-12] + '_LogPY.txt'
         logFileImported = False
         if redoAllSteps:
             logFileImported = False
@@ -2090,19 +2146,28 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 0.7 - Detect fluo & black images
         current_date = ufun.findInfosInFileName(f, 'date')
         current_date = current_date.replace("-", ".")
-        fluoDirPath = os.path.join(DirDataRaw, current_date + '_Fluo', f[:-4])
+        fluoDirPath = os.path.join(DirDataRaw, current_date + '_Fluo', f)
 
         PTL.checkIfBlackFrames()
-        PTL.saveFluoAside(fluoDirPath, f)
+        PTL.saveFluoAside(fluoDirPath, f + '.tif')
 
 
         #### 0.8 - Sort slices
         #### ! Exp type dependance here !
         if not logFileImported:
-            if 'R40' in f or 'thickness' in f:
+            if ('R40' in f) or ('R80' in f):
                 PTL.determineFramesStatus_R40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'compressions'
+            if ('thickness' in f):
+                PTL.determineFramesStatus_R40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'constant field'
             elif 'L40' in f:
                 PTL.determineFramesStatus_L40()
+                if PTL.expType == 'compressions and constant field':
+                    PTL.expType = 'compressions'
+                    
             elif 'sin' in f:
                 PTL.determineFramesStatus_Sinus()
             elif 'brokenRamp' in f:
@@ -2132,36 +2197,19 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         Td = time.time()
 
         #### 1.1 - Check if a _Results.txt exists and import it if it's the case
-        # resFilePath = fP[:-4] + '_Results.txt'
+        # resFilePath = imagePath[:-4] + '_Results.txt'
         resFileImported = False
-        
-        if MatlabStyle:
-            try:
-                resFilePath = fP[:-4] + '_ResultsPY.txt'
-                PTL.importBeadsDetectResult(resFilePath)
-                resFileImported = True
-            except:
-                resFilePath = fP[:-4] + '_Results.txt'
-                PTL.importBeadsDetectResult(resFilePath)
-                resFileImported = True
-        elif redoAllSteps:
-            pass
-        elif os.path.isfile(resFilePath):
-            PTL.importBeadsDetectResult(resFilePath)
+        try:
+            PTL.importBeadsDetectResult(resPath)
             resFileImported = True
-        else:
+        except:
             pass
         
         
         
         #### 1.2 - Detect the beads
-        # Detect the beads and create the BeadsDetectResult dataframe [if no file has been loaded before]
-        # OR input the results in each Frame objects [if the results have been loaded at the previous step]
-        PTL.detectBeads(resFileImported, display = 0)
-
-        #### 1.3 - Save the new results if necessary
-        if not resFileImported:
-            PTL.saveBeadsDetectResult(path=resFilePath)
+        # Input the results in each Frame objects [if the results have been loaded at the previous step]
+        PTL.detectBeads(resFileImported)
 
         print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Td) + gs.NORMAL)
 
@@ -2181,9 +2229,9 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         if redoAllSteps:
             pass
         else:
-            allTrajPaths = [os.path.join(trajDirRaw, f[:-4] + '_rawTraj' + str(iB) + '' + '_PY.csv') for iB in range(PTL.NB)]
-            allTrajPaths += [os.path.join(trajDirRaw, f[:-4] + '_rawTraj' + str(iB) + '_In' + '_PY.csv') for iB in range(PTL.NB)]
-            allTrajPaths += [os.path.join(trajDirRaw, f[:-4] + '_rawTraj' + str(iB) + '_Out' + '_PY.csv') for iB in range(PTL.NB)]
+            allTrajPaths = [os.path.join(trajDirRaw, f + '_rawTraj' + str(iB) + '' + '_PY.csv') for iB in range(PTL.NB)]
+            allTrajPaths += [os.path.join(trajDirRaw, f + '_rawTraj' + str(iB) + '_In' + '_PY.csv') for iB in range(PTL.NB)]
+            allTrajPaths += [os.path.join(trajDirRaw, f + '_rawTraj' + str(iB) + '_Out' + '_PY.csv') for iB in range(PTL.NB)]
             allTrajPaths = np.array(allTrajPaths)
             trajFilesExist = np.array([os.path.isfile(trajPath) for trajPath in allTrajPaths])
             trajFilesExist_sum = np.sum(trajFilesExist)
@@ -2334,7 +2382,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         if PTL.microscope == 'metamorph':
             matchingDirection = 'downward' # Change when needed !!
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
-        elif PTL.microscope == 'labview':
+        elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
             matchingDirection = 'upward'
             print(gs.ORANGE + "Deptho detection 'upward' mode" + gs.NORMAL)
             
@@ -2358,7 +2406,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             for iB in range(PTL.NB):
                 traj = PTL.listTrajectories[iB]
                 traj_df = pd.DataFrame(traj.dict)
-                trajPathRaw = os.path.join(DirDataTimeseries, 'Trajectories_raw', f[:-4] + '_rawTraj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+                trajPathRaw = os.path.join(DirDataTimeseries, 'Trajectories_raw', f + '_rawTraj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 traj_df.to_csv(trajPathRaw, sep = '\t', index = False)
 
         #### 4.4 - Keep only the best std data in the trajectories
@@ -2371,12 +2419,12 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             for iB in range(PTL.NB):
                 traj = PTL.listTrajectories[iB]
                 traj_df = pd.DataFrame(traj.dict)
-                trajPath = os.path.join(DirDataTimeseries, 'Trajectories', f[:-4] + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+                trajPath = os.path.join(DirDataTimeseries, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 traj_df.to_csv(trajPath, sep = '\t', index = False)
                 
                 # save in ownCloud
                 # if ownCloud_timeSeriesDataDir != '':
-                #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f[:-4] + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+                #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 #     traj_df.to_csv(OC_trajPath, sep = '\t', index = False)
     
     
@@ -2453,11 +2501,11 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 7.1 - Save the tables !
         if PTL.NB == 2:
             timeSeries_DF = pd.DataFrame(timeSeries)
-            timeSeriesFilePath = os.path.join(DirDataTimeseries, f[:-4] + '_PY.csv')
+            timeSeriesFilePath = os.path.join(DirDataTimeseries, f + '_PY.csv')
             timeSeries_DF.to_csv(timeSeriesFilePath, sep = ';', index=False)
             
             if CloudSaving != '':
-                CloudTimeSeriesFilePath = os.path.join(DirCloudTimeseries, f[:-4] + '_PY.csv')
+                CloudTimeSeriesFilePath = os.path.join(DirCloudTimeseries, f + '_PY.csv')
                 timeSeries_DF.to_csv(CloudTimeSeriesFilePath, sep = ';', index=False)
     
     print(gs.BLUE + '\nTotal time:' + gs.NORMAL)
