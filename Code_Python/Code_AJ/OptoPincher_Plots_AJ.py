@@ -14,6 +14,8 @@ import re
 from datetime import date
 import sys
 import scipy.stats as st
+import matplotlib.patches as mpatches
+
 
 
 # Local imports
@@ -336,7 +338,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
     if kind == 'none':
         plt.style.use('default')
         
-        cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
+        cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct_NoActivationMaster.csv')
         cellConditionsDf = cellConditionsDf[cellConditionsDf['excluded'] == 'no']
         
         if len(parameter) == 1:
@@ -451,7 +453,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 plt.show()
                 cellConditionsDf.to_excel(todayFigDir+"/cellConditions_Ct_"+kind+"_"+str(parameter)+".xlsx")  
                 
-                # summaryDf = np.nan
+                summaryDf = np.nan
                 
         if plot == 2:
             
@@ -470,7 +472,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 patch.set_facecolor((r, g, b, 0.3))
                         
             # print(len(dataSpec[''])
-            addStat_df(ax1, dataSpec, [('3mT', '7mT'), ('3mT', '15mT'), ('7mT', '15mT')], param = 'medianThicknessWhole', test = 'Mann-Whitney', cond = 'magField')
+            # addStat_df(ax1, dataSpec, [('3mT', '7mT'), ('3mT', '15mT'), ('7mT', '15mT')], param = 'medianThicknessWhole', test = 'Mann-Whitney', cond = 'magField')
          
             plt.suptitle('Median Thickness | '+str(parameter))
             plt.savefig(todayFigDir+'/medianThickness_'+kind+'_'+str(parameter)+'.png')
@@ -484,16 +486,24 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             ax1b = sns.boxplot(x = 'magField', y = 'medianThicknessToComp', data=dataSpec, palette = palette)
             ax1b = sns.swarmplot(x = 'magField', y = 'medianThicknessToComp', data=dataSpec, color ='black', size = 6)
             # ax1.set_ylim(0, 1)
+            ax1b.set_ylabel('Median Thickness (μm)')
+            ax1b.set_xlabel('Force between two beads with 300nm separation')
+            
+            xtickslocs = ax1b.get_xticks()
+            new_xlabels = ('20pN', '100pN', '500pN') #Converting frames to second
+            ax1b.set_xticks(xtickslocs, new_xlabels)
+            ax1b.set_xticks(xtickslocs, new_xlabels)
             
             for patch in ax1b.artists:
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
             dataSpec_test = dataSpec.dropna()
-            addStat_df(ax1b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'medianThicknessToComp', test = 'Mann-Whitney', cond = 'magField')
+            # addStat_df(ax1b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'medianThicknessToComp', test = 'Mann-Whitney', cond = 'magField')
            
             
-            plt.suptitle('Median Thickness_5mins | '+str(parameter))
+            # plt.suptitle('Median Thickness_5mins | '+str(parameter))
+            
             plt.savefig(todayFigDir+'/medianThickness5mins_'+kind+'_'+str(parameter)+'.png')
             plt.show()
             
@@ -510,7 +520,7 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
-            addStat_df(ax2, dataSpec, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsWhole', test = 'Mann-Whitney', cond = 'magField')
+            # addStat_df(ax2, dataSpec, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsWhole', test = 'Mann-Whitney', cond = 'magField')
 
             plt.suptitle('Fluctuations | '+str(parameter))
             plt.savefig(todayFigDir+'/fluctuations_'+kind+'_'+str(parameter)+'.png')
@@ -529,11 +539,19 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
                 r, g, b, a = patch.get_facecolor()
                 patch.set_facecolor((r, g, b, 0.3))
             
+            ax2b.set_ylabel('Fluctuations (μm)')
+            ax2b.set_xlabel('Force between two beads with 300nm separation')
+            
+            xtickslocs = ax2b.get_xticks()
+            new_xlabels = ('20pN', '100pN', '500pN') #Converting frames to second
+            ax2b.set_xticks(xtickslocs, new_xlabels)
+            ax2b.set_xticks(xtickslocs, new_xlabels)
 
             dataSpec_test = dataSpec.dropna()
-            addStat_df(ax2b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsToComp', test = 'Mann-Whitney', cond = 'magField')
+            # addStat_df(ax2b, dataSpec_test, [('3mT', '15mT'), ('3mT', '7mT'), ('7mT', '15mT')], param = 'fluctuationsToComp', test = 'Mann-Whitney', cond = 'magField')
             
-            plt.suptitle('Fluctuations_5mins | '+str(parameter))
+            # plt.suptitle('Fluctuations_5mins | '+str(parameter))
+            plt.tight_layout()
             plt.savefig(todayFigDir+'/fluctuations5mins_'+kind+'_'+str(parameter)+'.png')
             plt.show()
             
@@ -612,6 +630,40 @@ def ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, test = 
             plt.suptitle('MedianThicknessControl_15mT | '+str(parameter))
             plt.savefig(todayFigDir+'/MedianThicknessActivationControl15mT_'+kind+'_'+str(parameter)+'.png')
             plt.show()
+            
+            ####Plot fluctuations vs. median thickness : for each mag field  
+            palette = ['#afa3d5', '#8e7cc3', '#71639c']
+            sns.set_palette(palette)
+            dataSpec = summaryDf[summaryDf['activationTag'] == 'Before']
+            
+            lm = sns.lmplot(x ='medianThicknessToComp', y ='fluctuationsToComp', data = dataSpec, \
+                            hue ='magField', legend = False)
+                
+            fig3 = lm.fig
+            text_x = [0.12, 0.12, 0.12]
+            text1_y = [0.810, 0.812, 0.814]
+            fields = ['3mT', '7mT', '15mT']
+            coeffs = []
+            #Calculating correlation coefficient b/w fluctuation and median thickness
+            for j in range(len(fields)):
+                dataSpec = summaryDf[summaryDf['magField'] == fields[j]]
+                fluctuationsSpecBefore = dataSpec['fluctuationsToComp'][dataSpec['activationTag'] == 'Before'].values
+                thicknessSpecBefore = dataSpec['medianThicknessToComp'][dataSpec['activationTag'] == 'Before'].values
+                corrCoefBefore = np.corrcoef(thicknessSpecBefore, fluctuationsSpecBefore)
+                coeffs.append(np.round(corrCoefBefore[0][1], 2))
+                # fig3.text(text_x[j], text1_y[j], str(np.round(corrCoefBefore[0][1], 3)), color = 'blue')
+            
+            fig3.suptitle('Fluctuations vs. Median thickness')
+            fig3.tight_layout()
+            plt.ylabel('Fluctuations (μm)')
+            plt.xlabel('Median thickness (μm)')
+            mt3label = mpatches.Patch(color = '#afa3d5', label='20pN, coeff = ' + str(coeffs[0]))
+            mt7label = mpatches.Patch(color = '#8e7cc3', label='100pN, coeff = ' + str(coeffs[1]))
+            mt15label = mpatches.Patch(color = '#71639c', label='500pN, coeff = ' + str(coeffs[2]))
+            plt.legend(handles = [mt3label, mt7label, mt15label], fontsize = 10, loc = 'upper left')
+            plt.savefig(todayFigDir+'/Summary_MagFields_FluctuationsvsThickness.png')
+            plt.show()
+            
             
             ####Plot fluctuations vs. median thickness : Indidivually for diff activation types  
             palette = sns.color_palette("tab10")
@@ -1151,7 +1203,7 @@ summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter,
 
  #%%%%% Plotting summary of thickness plots if you want cell specific curves for different conditions
 
-cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct.csv')
+cellConditionsDf = pd.read_csv(experimentalDataDir+'/cellConditions_Ct_NoActivationMaster.csv')
 cellIDs = cellConditionsDf['cellID'][cellConditionsDf['excluded'] == 'no']
 
 kind = 'none'
@@ -1159,7 +1211,13 @@ for i in cellIDs:
     date = ufun.findInfosInFileName(i,'date')
     cellID = ufun.findInfosInFileName(i,'cellID')[-5:]
     parameter =  [date, cellID] # ['none']
-    summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 1, kind = kind)
+    summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 2, kind = kind)
+
+
+#%%%% Plotting box plots for median thickness at various magnetic fields
+kind = 'none'
+parameter = ['all']
+summaryDf = ctFieldThicknessSummary(experimentalDataDir, todayFigDir, parameter, plot = 2, kind = kind)
 
 
 # %% Close all open plots

@@ -403,7 +403,6 @@ def main(choicesDict):
 
 choicesDict = {'Is the cell ok?' : ['Yes', 'No'],
                'Is the nucleus visible?' : ['Yes', 'No'],}
-
 res = main(choicesDict)
 
 

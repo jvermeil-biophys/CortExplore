@@ -67,3 +67,12 @@
 65;22-08-26;M6;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1s;1.0;;1.0;300;at beads;3.3;False;3;500;302_133;labview
 66;22-08-26;M7;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1s;1.0;;1.0;300;away from beads;3.3;False;3;500;302_133;labview
 67;22-08-26;M8;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;0.5_0.5;1s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview
+68;22-12-07;M1;compressionsLowStart;Y27;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1.5s;;;;;;;False;3;500;436_200;labview
+69;22-12-07;M2;compressionsLowStart;Y27;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview
+70;22-12-07;M3;compressionsLowStart;Y27;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1.5s;1.0;;1.0;300;away from beads;3.3;False;3;500;436_200;labview
+71;22-12-07;M4;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1.5s;;;;;;;False;3;500;436_200;labview
+71;22-12-07;M4;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4503;0;5;1_50;1.5s;;;;;;;False;3;500;436_200;labview
+;23-01-23;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;-0.2;3T3;optoRhoA, low expressing;M450;4510;0;5;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview
+;23-01-23;M2;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;-0.2;3T3;optoRhoA, low expressing;M450;4510;0;5;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview
+;23-01-23;M3;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;-0.8;3T3;optoRhoA, low expressing;M450;4510;0;5;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview
+;23-01-23;M4;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;-0.8;3T3;optoRhoA, low expressing;M450;4510;0;5;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview

@@ -82,7 +82,7 @@ dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
 # %%% Image management - nomeclature and creating stacks
 
-def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
+def AllMMTriplets2Stack(DirExt, DirSave, expt, prefix, channel, subDir = None):
     """
     Used for metamorph created files.
     Metamoprh does not save images in stacks but individual triplets. These individual triplets take time
@@ -90,35 +90,60 @@ def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
     This function takes images of a sepcific channel and creates .tif stacks from them.
        
     """
+    if subDir == None:
+        DirCells = os.path.join(DirExt, expt)
+    else:
+        DirCells = os.path.join(DirExt, expt, subDir)
     
-    allCells = os.listdir(DirExt)
+    allCells = os.listdir(DirCells)
     excludedCells = []
     for currentCell in allCells:
-        dirPath = os.path.join(DirExt, currentCell)
-        allFiles = os.listdir(dirPath)
+        dirImages = os.path.join(DirCells, currentCell)
         date = findInfosInFileName(currentCell, 'date')
-        
-        # date = date.replace('-', '.')
+        date = date.replace('-', '.')
         filename = currentCell+'_'+channel
-
-        try:
-            os.mkdir(DirSave+'/'+currentCell)
-        except:
-            pass
+        exptPath = DirSave+'/'+date
         
-        allFiles = [dirPath+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        if not os.path.exists(exptPath):
+            os.mkdir(exptPath)
+        
+        if subDir == None:
+            dirSave = os.path.join(exptPath, currentCell)
+            if not os.path.exists(dirSave):
+                os.mkdir(dirSave)
+        else:
+            dirSave = os.path.join(exptPath, subDir, currentCell)
+            dirSaveSubdir = os.path.join(exptPath, subDir)
+            if not os.path.exists(dirSaveSubdir):
+                os.mkdir(dirSaveSubdir)
+            
+            if not os.path.exists(dirSave):
+                os.mkdir(os.path.join(dirSaveSubdir, currentCell))
+                
+        allFiles = os.listdir(dirImages)
+    
+        date = findInfosInFileName(currentCell, 'date')
+        # print(gs.YELLOW + currentCell + gs.NORMAL)
+        
+        allFiles = [dirImages+'/'+string for string in allFiles if 'thumb' not in string and '.TIF' in string and channel in string]
+        
+        if len(allFiles) == 0:
+            print(gs.ORANGE + 'Error in loading files' + gs.NORMAL)
+            break
+        
         #+4 at the end corrosponds to the '_t' part to sort the array well
-        limiter = len(dirPath)+len(prefix)+len(channel)+4
+        limiter = len(dirImages)+len(prefix)+len(channel)+4
         
         try:
             allFiles.sort(key=lambda x: int(x[limiter:-4]))
         except:
-            print('Error in sorting files')
+            print(gs.ORANGE + 'Error in sorting files for ' + currentCell + gs.NORMAL)
         
         try:
             ic = io.ImageCollection(allFiles, conserve_memory = True)
             stack = io.concatenate_images(ic)
-            io.imsave(DirSave+'/'+currentCell+'/'+filename+'.tif', stack)
+            io.imsave(dirSave+'/'+filename+'.tif', stack, check_contrast=False)
+            print(gs.GREEN + "Successfully saved "+currentCell + gs.NORMAL)
         except:
             excludedCells.append(currentCell)
             print(gs.ORANGE + "Unknown error in saving "+currentCell + gs.NORMAL)
@@ -265,6 +290,8 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     #### 3.1 Make 'manipID'
     expDf['manipID'] = expDf['date'] + '_' + expDf['manip']
     
+    
+    
     #### 3.2 Make 'first time point'
     dict_firstTimePoint = {}
     unique_dates = expDf.date.unique()
@@ -381,10 +408,17 @@ def removeColumnsDuplicate(df):
     return(df)
 
 
-def findActivation(fieldDf):
+def findActivation_V1(fieldDf):
     maxZidx = fieldDf['Z'].argmax() #Finding the index of the max Z
     maxZ = fieldDf['Z'][maxZidx] #To check if the value is correct
     return(maxZidx, maxZ)   
+
+def findActivation(fieldDf):
+    Z = fieldDf['Z'].values
+    allActivations = [i for i in Z if '73.' in str(i)] #Finding the index of the max Z
+    allActivationIndices =  [i for i in range(len(Z)) if Z[i] in allActivations] #To check if the value is correct
+    return(np.asarray(allActivationIndices), np.asarray(allActivations))   
+
 
 
 
@@ -1218,6 +1252,34 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
+def fitLineWeighted(X, Y, weights):
+    """
+    returns: results.params, results \n
+    Y=a*X+b ; params[0] = b,  params[1] = a
+    
+    NB:
+        R2 = results.rsquared \n
+        ci = results.conf_int(alpha=0.05) \n
+        CovM = results.cov_params() \n
+        p = results.pvalues \n
+    
+    This is how one should compute conf_int:
+        bse = results.bse \n
+        dist = stats.t \n
+        alpha = 0.05 \n
+        q = dist.ppf(1 - alpha / 2, results.df_resid) \n
+        params = results.params \n
+        lower = params - q * bse \n
+        upper = params + q * bse \n
+    """
+    
+    X = sm.add_constant(X)
+    model = sm.WLS(Y, X, weights)
+    results = model.fit()
+    params = results.params 
+#     print(dir(results))
+    return(results.params, results)
+
 
 def toList(x):
     """
@@ -1288,17 +1350,18 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
 def archiveFig(fig, name = '', ext = '.png', dpi = 100,
                figDir = '', figSubDir = '', cloudSave = 'flexible'):
     """
-    This is supposed to be a "smart" figure saver. \n
-    (1) \n
-    - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100). \n
-    - If you give a name, it will be used to save your file; if not, a name will be generated based on the date. \n
-    - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday. \n
-    - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir. \n
-    (2) \n
-    cloudSave can have 3 values : 'strict', 'flexible', or 'none'. \n
-    - If 'strict', this function will attempt to do a cloud save not matter what. \n
-    - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save. \n
-    - If 'none', this function will not do a cloud save. \n
+    This is supposed to be a "smart" figure saver.
+    
+    1. Main save
+        - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100).
+        - If you give a name, it will be used to save your file; if not, a name will be generated based on the date.
+        - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday.
+        - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir.
+    
+    2. Backup save (optional). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
+        - If 'strict', this function will attempt to do a cloud save not matter what.
+        - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save.
+        - If 'none', this function will not do a cloud save.
     """
     # Generate unique name if needed
     if name == '':
@@ -1458,16 +1521,18 @@ def lighten_color(color, amount=0.5):
 
 # %%% User Input
 
-class ChoicesBox(Qtw.QMainWindow):
+class MultiChoiceBox(Qtw.QMainWindow):
+    """
+    A class to display a dialog box with multiple choices. Inherited from Qtw.QMainWindow.
+    """
     def __init__(self, choicesDict, title = 'Multiple choice box'):
         super().__init__()
-        
         
         self.choicesDict = choicesDict
         self.questions = [k for k in choicesDict.keys()]
         self.nQ = len(self.questions)
         
-        self.res = {}
+        self.answersDict = {}
         self.list_rbg = [] # rbg = radio button group
 
         self.setWindowTitle(title)
@@ -1485,6 +1550,8 @@ class ChoicesBox(Qtw.QMainWindow):
                 rb = Qtw.QRadioButton(c)
                 rbg.addButton(rb)
                 layout.addWidget(rb)
+                if c == choices[0]:
+                    rb.click()
                 
             self.list_rbg.append(rbg)
             layout.addSpacing(20)
@@ -1506,9 +1573,20 @@ class ChoicesBox(Qtw.QMainWindow):
             for i in range(self.nQ):
                 q = self.questions[i]
                 rbg = self.list_rbg[i]
-                self.res[q] = rbg.checkedButton().text()
+                self.answersDict[q] = rbg.checkedButton().text()
                 
             self.quit_button()
+            
+    def location_on_the_screen(self):
+        ag = Qtw.QDesktopWidget().availableGeometry()
+        # sg = Qtw.QDesktopWidget().screenGeometry()
+
+        widget = self.geometry()
+        # x = ag.width() - widget.width()
+        # y = 2 * ag.height() - sg.height() - widget.height()
+        x = int(0.15*ag.width())
+        y = int(0.4*ag.height())
+        self.move(x, y)
             
     def error_dialog(self):
         dlg = Qtw.QMessageBox(self)
@@ -1519,30 +1597,57 @@ class ChoicesBox(Qtw.QMainWindow):
     def quit_button(self):
         Qtw.QApplication.quit()
         self.close()
+        
+    def closeEvent(self, event):
+        Qtw.QApplication.quit()
 
 
-def makeChoicesBox(choicesDict):
+def makeMultiChoiceBox(choicesDict):
     """
     Create and show a dialog box with multiple choices.
     
 
     Parameters
     ----------
-    choicesDict : TYPE
-        DESCRIPTION.
+    choicesDict : dict
+        Contains question and possible answers in the form : {Q1 : [A11, A12,...], Q2 : [A21, A22,...], ...},
+        where Qi and Aij are strings.
 
     Returns
     -------
-    None.
+    answersDict : dict
+        Contains question and chosen answers in the form : {Q1 : A12, Q2 : A25, ...},
+        where Qi and Aij are strings.
+
+    Example
+    -------
+    >>> choicesDict = {'Is the cell ok?' : ['Yes', 'No'],
+    >>>                'Is the nucleus visible?' : ['Yes', 'No'],}
+    >>> answersDict = makeMultiChoiceBox(choicesDict)
+    >>> print(res)
+    >>> Out: {'Is the cell ok?': 'Yes', 'Is the nucleus visible?': 'No'}
 
     """
-    app = Qtw.QApplication(sys.argv)
     
-    box = ChoicesBox(choicesDict)
-    box.show()
-        
+    app = Qtw.QApplication(sys.argv)
+    MCBox = MultiChoiceBox(choicesDict)
+    MCBox.location_on_the_screen()
+    MCBox.show()
     app.exec()
-    res = box.res
-    return(res)
+    
+    answersDict = MCBox.answersDict
+    return(answersDict)
+
+
+
+# choicesDict = {'Is the cell ok?' : ['Yes', 'No', 'peanut butter jelly!'],
+#                 'Is the nucleus visible?' : ['Yes', 'No', 'banana!'],}
+# answersDict = makeMultiChoiceBox(choicesDict)
+
+
+
+
+
+
 
 

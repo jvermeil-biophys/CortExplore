@@ -788,3 +788,17 @@ depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.02.09_M1_M450_step
 
 listZQualityOldObj = computeDepthoQuality(depthoPath)
 
+#%% Numi's calibrations
+#%%% 22.12.5 
+# BEAD CALIBRATION - mPegBiotin + Streptavidin beads (4.5um), 1X and 10X mPEG concentrations
+
+mainPath = 'D:/Anumita/MagneticPincherData//Raw//22.12.15_CalibrationStreptavidinPEG//1XPEG'
+depthoPath = 'D:/Anumita/MagneticPincherData//Raw//DepthoLibrary//22.12.15CALIBRATION_P1_M450_step20_100X'
+
+
+xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.5)
+
+mainPath = 'D:/Anumita/MagneticPincherData//Raw//22.12.15_CalibrationStreptavidinPEG//10XPEG'
+depthoPath = 'D:/Anumita/MagneticPincherData//Raw//DepthoLibrary//22.12.15CALIBRATION_P2_M450_step20_100X'
+
+xyzDf_02, distanceDf_02, statsDf_02 = mainChainAnalysis(mainPath, depthoPath, 4.5)

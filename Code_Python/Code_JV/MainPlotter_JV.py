@@ -347,13 +347,6 @@ testTraj(1)
     
 testTraj(1.5)
 
-
-
-
-
-
-
-
 # %% > Data import & export
 
 #### Data import
