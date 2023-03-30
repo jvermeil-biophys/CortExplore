@@ -42,7 +42,7 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
-import TrackAnalyser_dev3_AJJV as taka2
+import TrackAnalyser_V2 as taka2
 # import TrackAnalyser_dev_AJ as taka
 
 #### Potentially useful lines of code
@@ -63,14 +63,6 @@ matplotlib.rcParams.update({'figure.autolayout': True})
 #### Graphic options
 gs.set_default_options_jv()
 
-#### Bokeh
-from bokeh.io import output_notebook, show
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool, Range1d
-from bokeh.transform import factor_cmap
-from bokeh.palettes import Category10
-from bokeh.layouts import gridplot
-output_notebook()
 
 
 # %% Reminders
@@ -390,65 +382,20 @@ testTraj(1.5)
 # df4 = taka.getFluoData().head()
 
 
-#### GlobalTable_ctField
 
-# GlobalTable_ctField = taka.getGlobalTable(kind = 'ctField')
-GlobalTable_ctField = taka.getMergedTable('Global_CtFieldData')
-
-#### GlobalTable_ctField_Py
-
-# GlobalTable_ctField_Py = taka.getGlobalTable(kind = 'ctField_py')
-GlobalTable_ctField_Py = taka.getMergedTable('Global_CtFieldData_Py')
-
-#### GlobalTable_meca
-
-# GlobalTable_meca = taka.getGlobalTable(kind = 'meca_matlab')
-GlobalTable_meca = taka.getMergedTable('Global_MecaData')
-
-#### GlobalTable_meca_Py
-
-# GlobalTable_meca_Py = taka.getGlobalTable(kind = 'meca_py')
-GlobalTable_meca_Py = taka.getMergedTable('Global_MecaData_Py')
-
-#### GlobalTable_meca_Py2
-
-# GlobalTable_meca_Py2 = taka.getGlobalTable(kind = 'meca_py2')
-GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2', mergeUMS = True)
-
-
-#### Global_MecaData_NonLin_Py
-
-# GlobalTable_meca_nonLin = taka.getGlobalTable(kind = 'meca_nonLin')
-GlobalTable_meca_nonLin = taka.getMergedTable('Global_MecaData_NonLin2_Py')
-
-
-#### Global_MecaData_MCA
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA = taka.getMergedTable('Global_MecaData_MCA2')
-
-#### Global_MecaData_MCA3
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA3 = taka.getMergedTable('Global_MecaData_MCA3', mergeUMS = True)
-
-#### Global_MecaData_MCA123
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA123 = taka.getMergedTable('Global_MecaData_MCA123', mergeUMS = True, mergeFluo = True)
-GlobalTable_meca_MCA123['round'] = GlobalTable_meca_MCA123['tags'].apply(lambda x : x.split('. ')[0])
-# print(GlobalTable_meca_MCA123['round'])
 
 #### Global_MecaData_HoxB8
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_HoxB8 = taka.getMergedTable('Global_MecaData_HoxB8_2', mergeUMS = True)
+GlobalTable_meca_HoxB8 = taka2.getMergedTable('Global_MecaData_HoxB8', mergeUMS = True)
 GlobalTable_meca_HoxB8_new = taka.getMergedTable('Global_MecaData_HoxB8_3', mergeUMS = True)
 
 #### Global_MecaData_MCA-HoxB8_2
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
 GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', mergeUMS = True)
+
+MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8', mergeUMS = True)
 
 # %%%
 
@@ -507,8 +454,8 @@ styleDict1 =  {'DictyDB_M270':{'color':'lightskyblue','marker':'o'},
                'M450':{'color': 'maroon','marker':'o'},
                
                # HoxB8
-               'ctrl':{'color': gs.colorList40[10],'marker':'^'},
-               'tko':{'color': gs.colorList40[30],'marker':'^'},
+               'ctrl':{'color': gs.colorList40[12],'marker':'^'},
+               'tko':{'color': gs.colorList40[32],'marker':'^'},
                'bare glass & ctrl':{'color': gs.colorList40[10],'marker':'^'},
                'bare glass & tko':{'color': gs.colorList40[30],'marker':'^'},
                '20um fibronectin discs & ctrl':{'color': gs.colorList40[12],'marker':'o'},
@@ -1540,6 +1487,203 @@ def plotPopKS(data, width, centers, Filters = [], condCol = '',
         
     fig.suptitle('K(s)'+' - fits width: {:.0f}Pa'.format(width))  
     return(fig, ax)
+
+
+
+
+def plotPopKS_V2(data, fig=None, ax=None, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
+              mode = 'wholeCurve', scale = 'lin', printText = True, Sinf = 0, Ssup = np.Inf,
+              returnData = 0, returnCount = 0):
+    
+    if fig==None and ax==None:
+        fig, ax = plt.subplots(1,1, figsize = (9,6))
+
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+    
+    if mode == 'wholeCurve':
+        if Ssup >= 1500:
+            xmax = 1550
+        else:
+            xmax = Ssup + 50
+        xmin = Sinf
+        ax.set_xlim([xmin, xmax])  
+        
+    else:
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+    
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data_f = data_f[globalExtraFilter]
+            
+        ax.set_xlim([Sinf-50, Ssup+50])     
+    
+    fitId = '_' + str(fitWidth)
+    data_ff = taka2.getFitsInTable(data_f, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff[data_ff['fit_R2'] >= 0.3]
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    
+    conditions = np.array(data_ff[condCol].unique())
+    
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    data_ff['A'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=['cellID', 'fit_center'])
+    data_agg_cells = grouped1.agg({'compNum':'count',
+                                   'A':'sum', 
+                                   'weight': 'sum',
+                                   condCol:'first'})
+    data_agg_cells = data_agg_cells.reset_index()
+    data_agg_cells['K_wAvg'] = data_agg_cells['A']/data_agg_cells['weight']
+    data_agg_cells = data_agg_cells.rename(columns = {'compNum' : 'compCount'})
+    
+    # 2nd selection
+    data_agg_cells = data_agg_cells.drop(data_agg_cells[data_agg_cells['compCount'] <= 2].index)
+    data_agg_cells = data_agg_cells.drop(data_agg_cells[data_agg_cells['weight'] <= 1].index)
+    
+    grouped2 = data_agg_cells.groupby(by=[condCol, 'fit_center'])
+    data_agg_all = grouped2.agg({'compCount':['sum', 'count'],
+                                   'K_wAvg':['mean', 'std', 'median']})
+    data_agg_all = data_agg_all.reset_index()
+    data_agg_all.columns = ufun.flattenPandasIndex(data_agg_all.columns)
+    data_agg_all = data_agg_all.rename(columns = {'compCount_sum' : 'compCount', 'compCount_count' : 'cellCount'})
+    data_agg_all['K_wAvg_ste'] = data_agg_all['K_wAvg_std']/data_agg_all['cellCount']**0.5
+    
+    # Compute the weighted std
+    # data_ff['B'] = data_ff['fit_K']
+    # for co in conditions:
+    #     centers = np.array(data_ff[data_ff[condCol] == co]['fit_center'].unique())
+    #     for ce in centers:
+    #         weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
+            
+    #         index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
+    #         col_loc = 'B'
+    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    # data_ff['C'] = data_ff['B'] * data_ff['weight']
+    # grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
+    # data_agg2 = grouped2.agg({'compNum' : 'count',
+    #                           'C': 'sum', 'weight': 'sum'}).reset_index()
+    # data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
+    # data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
+    
+    # # Combine all in data_agg
+    # data_agg['K_wVar'] = data_agg2['K_wVar']
+    # data_agg['K_wStd'] = data_agg2['K_wStd']
+    # data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
+    
+    # Plot
+    for co in conditions:
+        df = data_agg_all[data_agg_all[condCol] == co]
+        color = styleDict1[co]['color']
+        centers = df['fit_center'].values
+        Kavg = df['K_wAvg_mean'].values
+        Kste = df['K_wAvg_ste'].values
+        N = df['cellCount'].values
+        total_N = np.max(N)
+        
+        dof = N
+        alpha = 0.975
+        q = st.t.ppf(alpha, dof) # Student coefficient
+    
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            ax.set_yscale('linear')
+            ax.set_ylim([0, 10])
+                
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            ax.set_yscale('log')
+            
+        # weighted means -- weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
+                    label = co + ' | ' + str(total_N) + ' cells')
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        
+        ax.legend(loc = 'upper left', fontsize = 11)
+        ax.set_xlabel('Stress (Pa)')
+        ax.set_ylabel('K (kPa)')
+        ax.grid(visible=True, which='major', axis='y')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
+    
+    
+    # # Define the count df
+    # cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condCol]
+    # count_df = data_ff[cols_count_df]
+    
+    # # Define the export df
+    # # cols_export_df = ['date', 'manipID', 'cellID', 'compNum', condCol]
+    # # export_df = data_ff[cols_export_df]
+    # cols_export_df = [c for c in data_agg_all.columns if c not in ['weights', 'A', 'B', 'C']]
+    # export_df = data_agg_all[cols_export_df]
+    
+    # Make output
+    
+    output = (fig, ax)
+    
+    # if returnData > 0:
+    #     output += (export_df, )
+    
+    # #### NOT FINISHED
+    # if returnCount > 0:
+    #     groupByCell = count_df.groupby('cellID')
+    #     d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
+    #     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+    #     groupByCond = df_CountByCell.reset_index().groupby(condCol)
+    #     d_agg = {'cellID': 'count', 'compCount': 'sum', 
+    #               'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    #     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    #     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+    #     if returnCount == 1:
+    #         output += (df_CountByCond, )
+    #     elif returnCount == 2:
+    #         output += (df_CountByCond, df_CountByCell)
+
+    return(output)
+
+
+
+
+
+
 # %%% Subfunctions
 
 
@@ -3094,6 +3238,35 @@ fig1.suptitle('HoxB8 ctrl v. tko - stiffness')
 fig2.suptitle('HoxB8 ctrl v. tko - stiffness')
 plt.show()
 
+# %%%%% Function V2
+# gs.set_bigText_options_jv()
+data = MecaData_HoxB8
+# data['HoxB8_Co'] = data['substrate'].values + \
+#                    np.array([' & ' for i in range(data.shape[0])]) + \
+#                    data['cell subtype'].values
+
+dates = ['22-05-03', '22-05-04', '22-05-05'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['bestH0'] <= 800),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['cell type'] == 'HoxB8-Macro'),
+            (data['cell subtype'].apply(lambda x : x in ['ctrl', 'tko']))]  # (data['validatedFit'] == True),
+
+fig, ax = plt.subplots(1, 1, figsize=(5,4))
+fig, ax = plotPopKS_V2(data, fig=fig, ax=ax, fitType = 'stressGaussian', fitWidth=100, Filters = Filters, condCol = 'cell subtype', 
+              mode = '200_400', scale = 'lin', printText = False, Sinf = 0, Ssup = np.Inf,
+              returnData = 0, returnCount = 0)
+
+# ax.set_xlim([175,325])
+ax.legend(loc='lower right')
+renameAxes(ax, {'K (kPa)':'Tangeantial Modulus (kPa)'})
+
+plt.show()
 
 # %%%% Comparison with 3T3aSFL
 
@@ -4025,7 +4198,7 @@ plt.show()
 
 # %%%%% Thickness
 
-data_main = GlobalTable_meca_HoxB8_new
+data_main = MecaData_HoxB8
 data = data_main
 
 dates = ['22-05-03', '22-05-04', '22-05-05']
@@ -4091,6 +4264,73 @@ ufun.archiveData(dfexport, name=('Fig1_ctFieldH_BareGlass_cellAvg'),
 
 plt.show()
 
+# %%%%% Thickness - 2
+
+data_main = MecaData_HoxB8
+data = data_main
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['surroundingThickness'] <= 900),
+           (data['ctFieldThickness'] <= 1000),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+descText = """
+data_main = GlobalTable_meca_HoxB8_new
+data = data_main
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['surroundingThickness'] <= 900),
+           (data['ctFieldThickness'] <= 1000),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+"""
+
+
+
+co_order = ['ctrl', 'tko']
+box_pairs=[]
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['surroundingThickness'],Filters=Filters,
+                          AvgPerCell=False, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1, orientation = 'v', stressBoxPlot=2,
+                          returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('Thickness')
+
+# ufun.archiveFig(fig, name=('Fig1_surroundingH_BareGlass_allComps'), figDir = 'HoxB8_Paper', dpi = 100)
+# ufun.archiveData(dfexport, name=('Fig1_surroundingH_BareGlass_allComps'), 
+#                   sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
+
+fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype'], Parameters=['ctFieldThickness'],Filters=Filters,
+                          AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                          box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1.4, orientation = 'v', stressBoxPlot= 1, 
+                          returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict1)
+fig.suptitle('HoxB8 Thickness')
+
+# ufun.archiveFig(fig, name=('Fig1_ctFieldH_BareGlass_cellAvg'), figDir = 'HoxB8_Paper', dpi = 100)
+# ufun.archiveData(dfexport, name=('Fig1_ctFieldH_BareGlass_cellAvg'), 
+#                   sep = ';', saveDir = 'HoxB8_Paper', descText = descText)
+
+
+
+plt.show()
 
 # %%%%% Stiffness
 

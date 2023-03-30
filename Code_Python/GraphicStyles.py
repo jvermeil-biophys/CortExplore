@@ -202,10 +202,6 @@ def set_default_options_jv():
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     
     
-SMALLER_SIZE = 5
-SMALL_SIZE = 7
-MEDIUM_SIZE = 10
-BIGGER_SIZE = 12
 
 def set_smallText_options_jv():
     SMALLER_SIZE = 5
@@ -219,6 +215,19 @@ def set_smallText_options_jv():
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    
+
+
+def set_bigText_options_jv():
+    SMALLER_SIZE = 14
+    SMALL_SIZE = 18
+    MEDIUM_SIZE = 20
+    BIGGER_SIZE = 24
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 # set_default_options_jv()    

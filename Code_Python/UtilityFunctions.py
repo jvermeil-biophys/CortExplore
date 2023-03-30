@@ -125,6 +125,7 @@ def AllMMTriplets2Stack(DirExt, DirSave, prefix, channel):
             
     return excludedCells
         
+
 def renamePrefix(DirExt, currentCell, newPrefix):
     """
     Used for metamorph created files.
@@ -194,6 +195,7 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
             expDf = expDf.drop([c], axis=1)
         if '.1' in c:
             expDf = expDf.drop([c], axis=1)
+        
     expDf = expDf.convert_dtypes()
 
     #### 1.2 Convert commas into dots
@@ -275,6 +277,9 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     dictT0 = {unique_dates[ii]:unique_T0[ii] for ii in range(len(unique_dates))}
     all_T0 = np.array([dictT0[d] for d in expDf.date.values])
     expDf['date_T0'] = all_T0
+    
+    #### 3.3 Drop the 'comments' column
+    expDf = expDf.drop(['comments'], axis=1)
         
     
     # def str2int(s):
@@ -408,6 +413,21 @@ def findInfosInFileName(f, infoType):
     """
     infoString = ''
     try:
+        if infoType in ['M', 'P', 'C', 'cellName']:
+            templateStr = r'M[0-9]_P[0-9]_C[0-9\-]+'
+            s = re.search(templateStr, f)
+            if s:
+                iStart, iStop = s.span()
+                foundStr = f[iStart:iStop]
+                if infoType == 'cellName':
+                    infoString = foundStr
+                elif infoType == 'M':
+                    infoString = foundStr.split('_')[0][1:]
+                elif infoType == 'P':
+                    infoString = foundStr.split('_')[1][1:]
+                elif infoType == 'C':
+                    infoString = foundStr.split('_')[2][1:]
+                
         if infoType in ['M', 'P', 'C']:
             acceptedChar = [str(i) for i in range(10)] + ['-']
             string = '_' + infoType
@@ -417,6 +437,18 @@ def findInfosInFileName(f, infoType):
             while f[i+1] in acceptedChar and i < len(f)-1:
                 i += 1
                 infoString += f[i]
+                
+        elif infoType in ['M_float', 'P_float', 'C_float']:
+            acceptedChar = [str(i) for i in range(10)] + ['-']
+            string = '_' + infoType[0]
+            iStart = re.search(string, f).end()
+            i = iStart
+            infoString = '' + f[i]
+            while f[i+1] in acceptedChar and i < len(f)-1:
+                i += 1
+                infoString += f[i]
+            infoString = infoString.replace('-', '.')
+            infoString = float(infoString)
                 
         elif infoType == 'date':
             datePos = re.search(r"[\d]{1,2}-[\d]{1,2}-[\d]{2}", f)
@@ -515,7 +547,7 @@ def findInfosInFileName(f, infoType):
 
 
 
-def isFileOfInterest(f, manips, wells, cells):
+def isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = ''):
     """
     Determine if a file f correspond to the given criteria.
     More precisely, return a boolean saying if the manip, well and cell number are in the given range.
@@ -526,35 +558,65 @@ def isFileOfInterest(f, manips, wells, cells):
     * manips = [1, 2], wells = 'all', cells = 'all' -> the function return True.
     * manips = [1, 2], wells = 2, cells = 'all' -> the function return False.
     * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return True.
+    Example2 : if f = '21-01-18_M2_P1_C8-1.tif'
+    * manips = [1, 2], wells = 1, cells = [5, 6, 7, 8] -> the function return False.
+    * manips = [1, 2], wells = 1, cells = [5, 6, 7, '8-1'] -> the function return True.
     Note : if manips = 'all', the code will consider that wells = 'all', cells = 'all'.
            if wells = 'all', the code will consider that cells = 'all'.
            This means you can add filters only in this order : manips > wells > cells.
     """
     test = False
     testM, testP, testC = False, False, False
+    testSuffix = False
+    
+    listManips, listWells, listCells = toListOfStrings(manips), toListOfStrings(wells), toListOfStrings(cells)
     
     try:
-        fM = int(findInfosInFileName(f, 'M'))
-        fP = int(findInfosInFileName(f, 'P'))
-        fC = int(findInfosInFileName(f, 'C'))
+        fM = (findInfosInFileName(f, 'M'))
+        fP = (findInfosInFileName(f, 'P'))
+        fC = (findInfosInFileName(f, 'C'))
     except:
         return(False)
-        
-    # print(fM, fP, fC)
-    # print(manips, wells, cells)
-    # print(toList(manips), toList(wells), toList(cells))
     
-    if (manips == 'all') or (fM in toList(manips)):
+    if mode == 'soft':
+        L = [fM, fP, fC]
+        for i in range(3):
+            x = L[i]
+            try:
+                L[i] = x.split('-')[0]
+            except:
+                pass
+        fM, fP, fC = L
+            
+    elif mode == 'strict':
+        pass
+    else:
+        pass
+    
+    if (manips == 'all') or (fM in listManips):
         testM = True
-    if (wells == 'all') or (fP in toList(wells)):
+    if (wells == 'all') or (fP in listWells):
         testP = True
-    if (cells == 'all') or (fC in toList(cells)):
+    if (cells == 'all') or (fC in listCells):
         testC = True
+    if (suffix == '') or f.endswith(suffix):
+        testSuffix = True
         
-    if testM and testP and testC:
-        test = True
-    
+    test = (testM and testP and testC and testSuffix)
     return(test)
+
+
+def simplifyCellId(f):
+    res = f
+    templateStr = r'M[0-9]_P[0-9]_C[0-9\-]+'
+    s = re.search(templateStr, f)
+    if s:
+        iStart, iStop = s.span()
+        foundStr = f[iStart:iStop]
+        newStr = foundStr.split('-')[0]
+        res = res[:iStart] + newStr + res[iStop:]
+    return(res)
+
 
 def getDictAggMean(df):
     dictAggMean = {}
@@ -685,6 +747,43 @@ def updateDefaultSettingsDict(settingsDict, defaultSettingsDict):
     for k in settingsDict.keys():
         newSettingsDict[k] = settingsDict[k]
     return(newSettingsDict)
+
+
+
+def flattenPandasIndex(pandasIndex):
+    """
+    Flatten a multi-leveled pandas index.
+
+    Parameters
+    ----------
+    pandasIndex : pandas MultiIndex
+        Example: MultiIndex([('course', ''),('A', 'count'),('A', 'sum'),( 'coeff', 'sum')])
+
+    Returns
+    -------
+    new_pandasIndex : list that can be reasigned as a flatten index.
+        In the former example: new_pandasIndex = ['course', 'A_count', 'A_sum', 'coeff_sum']
+        
+    Example
+    -------
+    >>> data_agg.columns
+    >>> Out: MultiIndex([('course',      ''),
+    >>>                 (     'A', 'count'),
+    >>>                 (     'A',   'sum'),
+    >>>                 ( 'coeff',   'sum')],
+    >>>                )
+    >>> data_agg.columns = flattenPandasIndex(data_agg.columns)
+    >>> data_agg.columns
+    >>> Out: Index(['course', 'A_count', 'A_sum', 'coeff_sum'], dtype='object')
+
+    """
+    new_pandasIndex = []
+    for idx in pandasIndex:
+        new_idx = '_'.join(idx)
+        while new_idx[-1] == '_':
+            new_idx = new_idx[:-1]
+        new_pandasIndex.append(new_idx)
+    return(new_pandasIndex)
 
 
 # %%% File manipulation
@@ -1139,6 +1238,26 @@ def toList(x):
         else: # x is not a Collection : probably a number or a boolean
             return([x]) # return : [x]
         
+def toListOfStrings(x):
+    """
+    if x is a list, return x with all elements converted to string
+    if x is not a list, return ['x']
+    
+    Reference
+    ---------
+    https://docs.python.org/3/library/collections.abc.html
+    """
+    t1 = isinstance(x, str) # Test if x is a string
+    if t1: # x = 'my_string'
+        return([x]) # return : ['my_string']
+    else:
+        t2 = isinstance(x, Collection) # Test if x is a Collection
+        if t2: # x = [1,2,3] or x = array([1, 2, 3]) or x = {'k1' : v1}
+            xx = [str(xi) for xi in x]
+            return(xx) # return : x itself
+        else: # x is not a Collection : probably a number or a boolean
+            return([str(x)]) # return : [x]
+        
 # def toList_V0(x):
 #     """
 #     if x is a list, return x
@@ -1203,56 +1322,121 @@ def archiveFig(fig, name = '', ext = '.png', dpi = 100,
         simpleSaveFig(fig, name, cloudSavePath, ext, dpi)
         
    
+def setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'],
+                    largestX = [-np.inf, np.inf], largestY = [-np.inf, np.inf]):
     
-
-# def archiveFig_V0(fig, ax, figDir, name='auto', dpi = 100):
     
-#     if not os.path.exists(figDir):
-#         os.makedirs(figDir)
-    
-#     # saveDir = os.path.join(figDir, str(date.today()))
-#     # if not os.path.exists(saveDir):
-#     #     os.makedirs(saveDir)
-#     saveDir = figDir
-    
-#     if name != 'auto':
-#         fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-    
-#     else:
-#         suptitle = fig._suptitle.get_text()
-#         if len(suptitle) > 0:
-#             name = suptitle
-#             fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+    axes_f = axes.flatten()
         
-#         else:
-#             try:
-#                 N = len(ax)
-#                 ax = ax[0]
-#             except:
-#                 N = 1
-#                 ax = ax
-                
-#             xlabel = ax.get_xlabel()
-#             ylabel = ax.get_ylabel()
-#             if len(xlabel) > 0 and len(ylabel) > 0:
-#                 name = ylabel + ' Vs ' + xlabel
-#                 if N > 1:
-#                     name = name + '___etc'
-#                 fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+    if xb[0] == 'auto':
+        x_min =  np.min([ax.get_xlim()[0] for ax in axes_f])
+    else:
+        x_min = xb[0]
+        
+    if xb[1] == 'auto':
+        x_max =  np.max([ax.get_xlim()[1] for ax in axes_f])
+    else:
+        x_max = xb[1]
+        
+    if yb[0] == 'auto':
+        y_min =  np.min([ax.get_ylim()[0] for ax in axes_f])
+    else:
+        y_min = yb[0]
+        
+    if yb[1] == 'auto':
+        y_max =  np.max([ax.get_ylim()[1] for ax in axes_f])
+    else:
+        y_max = yb[1]
+        
+    for ax in axes_f:
+        ax.set_xlim([x_min, x_max])
+        ax.set_ylim([y_min, y_max])
+    
+    return(axes)
+
+
+def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'auto'],
+                    Xspace = [-np.inf, np.inf], Yspace = [-np.inf, np.inf]):
+
+    axes_f = axes.flatten()
+    x_bounds = []
+    y_bounds = []
+    
+    for ax in axes_f:
+        lines = ax.get_lines()
+        if len(lines) == 0:
+            continue
+        else:
+            if mode == 'firstLine':
+                L = lines[0]
+                data = L.get_data()
+            elif mode == 'allLines':
+                data = (np.concatenate([L.get_data()[0] for L in lines]),
+                        np.concatenate([L.get_data()[1] for L in lines]))
+        
+        x_bounds.append([0.85*np.percentile(data[0], 5), 
+                         1.15*np.percentile(data[0], 95)])
+        y_bounds.append([0.85*np.percentile(data[1], 5), 
+                         1.15*np.percentile(data[1], 95)])
+    
+    x_bounds = np.array(x_bounds)
+    y_bounds = np.array(y_bounds)
+    
+    X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
+    Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
+
+    if xb[0] == 'auto':
+        X_BOUND[0] = max(X_BOUND[0], Xspace[0])
+    else:
+        X_BOUND[0] = xb[0]
+        
+    if xb[1] == 'auto':
+        X_BOUND[1] = min(X_BOUND[1], Xspace[1])
+    else:
+        X_BOUND[1] = xb[1]
+
+
+    if yb[0] == 'auto':
+        Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
+    else:
+        Y_BOUND[0] = yb[0]
+        
+    if yb[1] == 'auto':
+        Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
+    else:
+        Y_BOUND[1] = yb[1]
             
-#             else:
-#                 title = ax.get_title()
-#                 if len(title) > 0:
-#                     if N > 1:
-#                         name = name + '___etc'
-#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
-                
-#                 else:
-#                     figNum = plt.gcf().number
-#                     name = 'figure ' + str(figNum) 
-#                     fig.savefig(os.path.join(saveDir, name + '.png'), dpi=dpi)
+    
+        
+    for ax in axes_f:
+        ax.set_xlim(X_BOUND)
+        ax.set_ylim(Y_BOUND)
+    
+    return(axes)
 
 
+
+def setAllTextFontSize(ax, size = 9):
+    """
+    
+
+    Parameters
+    ----------
+    ax : TYPE
+        DESCRIPTION.
+    size : TYPE, optional
+        DESCRIPTION. The default is 9.
+
+    Returns
+    -------
+    None.
+
+    """
+    for item in ([ax.title, ax.xaxis.label, \
+                  ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(size)
+    return(ax)
+    
 
 def lighten_color(color, amount=0.5):
     """

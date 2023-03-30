@@ -400,64 +400,15 @@ testTraj(1.5)
 
 #### Data import
 
-#### Display
-
-# df1 = ufun.getExperimentalConditions().head()
-# df2 = taka.getGlobalTable_ctField().head()
-# df3 = taka.getGlobalTable_meca().head()
-# df4 = taka.getFluoData().head()
-
-
-#### GlobalTable_ctField
-
-# GlobalTable_ctField = taka.getGlobalTable(kind = 'ctField')
-GlobalTable_ctField = taka.getMergedTable('Global_CtFieldData')
-
-#### GlobalTable_ctField_Py
-
-# GlobalTable_ctField_Py = taka.getGlobalTable(kind = 'ctField_py')
-GlobalTable_ctField_Py = taka.getMergedTable('Global_CtFieldData_Py')
-
-#### GlobalTable_meca
-
-# GlobalTable_meca = taka.getGlobalTable(kind = 'meca_matlab')
-GlobalTable_meca = taka.getMergedTable('Global_MecaData')
-
-#### GlobalTable_meca_Py
-
-# GlobalTable_meca_Py = taka.getGlobalTable(kind = 'meca_py')
-GlobalTable_meca_Py = taka.getMergedTable('Global_MecaData_Py')
-
-#### GlobalTable_meca_Py2
-
-# GlobalTable_meca_Py2 = taka.getGlobalTable(kind = 'meca_py2')
-GlobalTable_meca_Py2 = taka.getMergedTable('Global_MecaData_Py2', mergeUMS = True)
-
-
-#### Global_MecaData_NonLin_Py
-
-# GlobalTable_meca_nonLin = taka.getGlobalTable(kind = 'meca_nonLin')
-GlobalTable_meca_nonLin = taka.getMergedTable('Global_MecaData_NonLin2_Py')
-
-
-#### Global_MecaData_MCA
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA = taka.getMergedTable('Global_MecaData_MCA2')
-
-#### Global_MecaData_MCA3
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA3 = taka.getMergedTable('Global_MecaData_MCA3', mergeUMS = True)
 
 #### Global_MecaData_MCA123
 
 # GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCA123 = taka.getMergedTable('Global_MecaData_MCA123', mergeUMS = True, mergeFluo = True)
+MecaData_MCA = taka.getMergedTable('MecaData_MCA', mergeUMS = True, mergeFluo = True)
 
 #### 'Round' based selection
 
-GlobalTable_meca_MCA123['round'] = GlobalTable_meca_MCA123['tags'].apply(lambda x : x.split('. ')[0])
+MecaData_MCA['round'] = MecaData_MCA['tags'].apply(lambda x : x.split('. ')[0])
 
 #### Get a 'categorical fluo column'
 
@@ -476,7 +427,7 @@ def categoriesFluoColumn(df):
     
     return(df)
 
-GlobalTable_meca_MCA123 = categoriesFluoColumn(GlobalTable_meca_MCA123)
+MecaData_MCA = categoriesFluoColumn(MecaData_MCA)
 
 
 #### Fluo based selection
@@ -489,32 +440,22 @@ def fluoSelectionColumn(df):
     df.loc[filter02,'FluoSelection'] = True
     return(df)
 
-GlobalTable_meca_MCA123 = fluoSelectionColumn(GlobalTable_meca_MCA123)
+MecaData_MCA = fluoSelectionColumn(MecaData_MCA)
 
 
 #### Option to pool F8 and E4
 
-def linkerTypeColumn(df):
-    df['linker type'] = np.zeros(df.shape[0], dtype='<U7')
-    filter01 = (df['cell subtype'] == 'aSFL-A11')
-    df.loc[filter01,'linker type'] = 'iMC'
-    filter02 = (df['cell subtype'].apply(lambda x : x in ['aSFL-F8', 'aSFL-E4']))
-    df.loc[filter02,'linker type'] = 'iMC-6FP'
-    return(df)
+# def linkerTypeColumn(df):
+#     df['linker type'] = np.zeros(df.shape[0], dtype='<U7')
+#     filter01 = (df['cell subtype'] == 'aSFL-A11')
+#     df.loc[filter01,'linker type'] = 'iMC'
+#     filter02 = (df['cell subtype'].apply(lambda x : x in ['aSFL-F8', 'aSFL-E4']))
+#     df.loc[filter02,'linker type'] = 'iMC-6FP'
+#     return(df)
 
-GlobalTable_meca_MCA123 = linkerTypeColumn(GlobalTable_meca_MCA123)
+# GlobalTable_meca_MCA123 = linkerTypeColumn(GlobalTable_meca_MCA123)
 
 
-
-#### Global_MecaData_HoxB8
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_HoxB8 = taka.getMergedTable('Global_MecaData_HoxB8', mergeUMS = True)
-
-#### Global_MecaData_MCA-HoxB8_2
-
-# GlobalTable_meca_MCA = taka.getGlobalTable(kind = 'meca_MCA')
-GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', mergeUMS = True)
 
 
 
@@ -7626,7 +7567,7 @@ plt.show()
 
 # %%%%% A11 - ctFieldH
 
-data = GlobalTable_meca_MCA123
+data = MecaData_MCA
 dates_r1 = ['21-01-18', '21-01-21']
 dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
 dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
@@ -7686,11 +7627,13 @@ fig, ax, dfexport, dfcount = D1Plot(data, CondCols=['cell subtype','drug'], Para
                  returnData = 1, returnCount = 1)
 
 renameAxes(ax,renameDict_MCA3)
-fig.suptitle('Fig 1 - ' + alias + ' - A11')
+renameAxes(ax,{'clone A11 - ctrl' : '- iMC', 'clone A11 - iMC' : '+ iMC'})
+# fig.suptitle('Fig 1 - ' + alias + ' - A11')
+# fig.suptitle('3T3 aSFL thickness')
 
-ufun.archiveFig(fig, name=('Fig1_' + alias + '_A11_cellAvg'), figDir = 'MCA_Paper'+extDir, dpi = 100)
-ufun.archiveData(dfexport, name=('Fig1_' + alias + '_A11_cellAvg'), 
-                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
+# ufun.archiveFig(fig, name=('Fig1_' + alias + '_A11_cellAvg'), figDir = 'MCA_Paper'+extDir, dpi = 100)
+# ufun.archiveData(dfexport, name=('Fig1_' + alias + '_A11_cellAvg'), 
+#                   sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
 
 plt.show()
 

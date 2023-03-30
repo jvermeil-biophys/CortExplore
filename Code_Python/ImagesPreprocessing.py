@@ -46,18 +46,18 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '22.11.16'
-DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
-# prefix = 'cell'
-# channel = 'w1TIRF DIC'
-microscope = 'labview'
+# date = '22.11.16'
+# DirSave = os.path.join(cp.DirDataRaw, date)
+# DirExt = 'G:/20221116_rpe1tiam_100x_4.5StreptBeads_Mechanics/' + date
+# # prefix = 'cell'
+# # channel = 'w1TIRF DIC'
+# microscope = 'labview'
 
 #%% Define parameters # Jojo
 
-date = '22.03.28'
-DirExt = 'E:/22.03.28_Patterns3T3_drugs' #'/M4_patterns_ctrl'
-DirSave = os.path.join(cp.DirDataRaw, date)
+date = '23.03.17'
+DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
+DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
 
 prefix = ''
 channel = ''
@@ -66,7 +66,9 @@ microscope = 'labview'
 
 # %% Functions
 
-def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded', 'out', 'bad']):
+def getListOfSourceFolders(Dir, 
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
+                           compulsaryWords = ['db3']): # 
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -77,19 +79,29 @@ def getListOfSourceFolders(Dir, forbiddenWords = ['deptho', 'error', 'excluded',
     for w in forbiddenWords:
         if w.lower() in Dir.lower(): # compare the lower case strings
             exclude = True # If a forbidden word is in the dir name, don't consider it
-            
+
             
     if exclude or not os.path.isdir(Dir):
         return(res) # Empty list
     
     elif ufun.containsFilesWithExt(Dir, '.tif'):
-        res = [Dir] # List with 1 element - the name of this dir
+        # Test the compulsary words only at this final step
+        valid = True
+        for w in compulsaryWords:
+            if w.lower() not in Dir.lower(): # compare the lower case strings
+                valid = False # If a forbidden word is in the dir name, don't consider it
+            
+        if valid:
+            res = [Dir] # List with 1 element - the name of this dir
+        else:
+            return(res)
         
     else:
         listDirs = os.listdir(Dir)
         for D in listDirs:
             path = os.path.join(Dir, D)
             res += getListOfSourceFolders(path) # Recursive call to the function !
+            
     # In the end this function will have explored all the sub directories of Dir,
     # searching for folders containing tif files, without forbidden words in their names.        
     return(res)
@@ -260,7 +272,7 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
         
     Zimg = cv2.resize(Zimg, (int(imgWidth/scaleFactor), int(imgHeight/scaleFactor)))
     Zimg = cv2.normalize(Zimg, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-    return Zimg
+    return(Zimg)
 
 def shape_selection(event, x, y, flags, param):
     """
@@ -334,6 +346,9 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
     """
     
     count = 0
+    N_suffix = 0
+    suffix = ''
+    
     for i in range(len(allCellPaths)):
     # for refPts, cellPath in zip(allRefPoints, allCellPaths):
         
@@ -343,13 +358,17 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         cellName = cellPath.split('\\')[-1]
         allFiles = os.listdir(cellPath)
         
-        # to detect second selections
-        suffix = ''
+        # to detect supplementary selections
         try:
             if (allCellPaths[i-1]==allCellPaths[i]):
-                suffix = '-1'
+                N_suffix = N_suffix + 1
+                suffix = '-' + str(N_suffix)
+            else:
+                N_suffix = 0
+                suffix = ''
         except:
-            pass
+            N_suffix = 0
+            suffix = ''
         
         if microscope == 'metamorph':
             allFiles = [cellPath+'/'+string for string in allFiles if channel in string]
@@ -386,7 +405,9 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         if count%5 == 0:
             joke = pj.get_joke(language='en', category= 'all')
             print(joke)
-            count = count + 1
+            
+        count = count + 1
+
 
 
 # preprocess(DirExt, DirSave, microscope, reset = 0)    
@@ -430,14 +451,15 @@ for i in range(len(allCellsRaw)):
         print(gs.GREEN + ':-) Has already been copied' + gs.NORMAL)
         
     if validCell:
-        try:
-            Zimg = Zprojection(currentCell, microscope)
-            allCells.append(currentCell)
-            allZimg.append(Zimg)
-            print(gs.CYAN + '--> Will be copied' + gs.NORMAL)
-        except:
-            print(gs.BRIGHTRED + '/!\ Unexpected error during file handling' + gs.NORMAL)
-        
+        # try:
+        Zimg = Zprojection(currentCell, microscope)
+        allCells.append(currentCell)
+        allZimg.append(Zimg)
+        print(gs.CYAN + '--> Will be copied' + gs.NORMAL)
+        # except:
+        #     print(gs.BRIGHTRED + '/!\ Unexpected error during file handling' + gs.NORMAL)
+
+#### DO THIS !
 copyFieldFiles(allCells, DirSave)
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
@@ -446,14 +468,14 @@ copyFieldFiles(allCells, DirSave)
 
 instructionText = "Draw the ROIs to crop !\n\n(1) Click on the image to define a rectangular selection\n"
 instructionText += "(2) Press 'a' to accept your selection, 'r' to redraw it, "
-instructionText += "or 's' if you have a second selection to make (don't use 'm' more than once per stack)\n"
+instructionText += "or 's' if you have a second selection to make (don't use 's' more than once per stack)\n"
 instructionText += "(3) Make sure to choose the number of files you want to crop at once\nin the variable 'limiter'"
 instructionText += "\n\nC'est parti !\n"
 
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 40
+limiter = 60
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 
@@ -506,7 +528,7 @@ for i in range(min(len(allZimg), limiter)):
             break
         
     # if the 's' key is pressed, save the coordinates and rest the crop, ready to save once more
-    # /!\ The code isn't designed to accept more than 2 selections per stack
+    # The code can accept more than 2 selections per stack !!!
         elif key == ord("s"):
             allRefPoints.append(np.asarray(ref_point)*scaleFactor)
             allCellsToCrop.append(currentCell)
@@ -519,7 +541,7 @@ cv2.destroyAllWindows()
 
 print(gs.BLUE + 'Saving all tiff stacks...' + gs.NORMAL)
 
-cropAndCopy(DirExt, DirSave, allRefPoints[1:], allCellsToCrop[1:], microscope)
+cropAndCopy(DirExt, DirSave, allRefPoints[:], allCellsToCrop[:], microscope)
 
 
 #%% Creating .tif stacks of 561n recruitment images

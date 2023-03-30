@@ -25,27 +25,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # 1. Imports
 import numpy as np
 import pandas as pd
-import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 import os
-import re
 import time
-import pyautogui
-import matplotlib
-import traceback
 # import cv2
 
 # import scipy
 from scipy import interpolate
-from scipy import signal
 
 # import skimage
-from skimage import io, filters, exposure, measure, transform, util, color
-from scipy.signal import find_peaks, savgol_filter
-from scipy.optimize import linear_sum_assignment, curve_fit
-from matplotlib.gridspec import GridSpec
+from skimage import io
+from scipy.optimize import curve_fit
 
 
 #### Local Imports
@@ -69,6 +61,23 @@ gs.set_default_options_jv()
 # %%% (1.1) Simple chain analysis
 
 def mainChainAnalysis(mainPath, depthoPath, approxDiameter):
+    """
+    
+
+    Parameters
+    ----------
+    mainPath : TYPE
+        DESCRIPTION.
+    depthoPath : TYPE
+        DESCRIPTION.
+    approxDiameter : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     start = time.time()
     
     #### 0. Load
@@ -674,26 +683,6 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
     
     return(zr, z_quality)
 
-
-    
-    # except Exception:
-    #     print(RED + '')
-    #     traceback.print_exc()
-    #     print('\n')
-    #     print(ORANGE + 'Error with the Z detection')
-    #     print('iFNuplet')
-    #     print(iFNuplet)
-    #     print('Roi')
-    #     print(Y-2,Y+3, X-cleanSize//2,X+cleanSize//2+1)
-    #     print('Deptho shape')
-    #     print(self.deptho.shape)
-    #     print('Shapes of listDistances, finalDists, sumFinalD')
-    #     print(listDistances.shape)
-    #     print(finalDists.shape)
-    #     print(sumFinalD.shape)
-    #     print('previousZ, previousZ-maxDz, previousZ+maxDz')
-    #     print(previousZ, previousZ-maxDz, previousZ+maxDz)
-    #     print('' + NORMAL)
     
     
 # %%% (1.4) Compute deptho quality
