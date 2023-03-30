@@ -235,6 +235,39 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileN
 
 # %%%% ATCC-2023
 
+# %%%%% 23-03-16 & 23-03-17 - Blebbi
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 'pts_30',
+                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : True,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                'doStrainGaussianFits' : True,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
+                        }
+
+AtccTask = '23-03-16 & 23-03-17'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
+
 # %%%%% 23-03-08 & 23-03-09_M4 - Y27
 
 fitSettings = {# H0
@@ -409,31 +442,38 @@ df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
 
 # %%%%% Plot a precise date
 
+
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['%f_10', '%f_20', 'pts_5'],
-                'method_bestH0':'Dimitriadis',
-                'zone_bestH0':'%f_20',
+                'zones_H0':['pts_10', 'pts_20', 'pts_30',
+                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : True,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                'doStrainGaussianFits' : True,
                 }
 
-# plotSettings = {# ON/OFF switchs plot by plot
-#                 'FH(t)':False,
-#                 'F(H)':True,
-#                 'S(e)_stressRegion':False,
-#                 'K(S)_stressRegion':False,
-#                 'S(e)_stressGaussian':False,
-#                 'K(S)_stressGaussian':False,
-#                 'S(e)_nPoints':True,
-#                 'K(S)_nPoints':True,
-#                 # Fits plotting parameters
-#                 'plotCenters': [ii for ii in range(100, 1550, 50)],
-#                 'plotHW': 50
-#                 }
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':True, # NEW
+                        'K(S)_strainGaussian':True, # NEW
+                        'Plot_Ratio':True, # NEW
+                        }
 
 # fitSettings = {}
-plotSettings = {}
+# plotSettings = {}
 
-PlotTask = '22-02-09_M1_P1_C9'
+# PlotTask = '23-03-08 & 23-03-09_M4 & 23-03-16 & 23-03-17'
+PlotTask = '23-03-08_M2_P1_C1'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
                                    save = False, PLOT = True, source = 'Python', 
                                    plotSettings = plotSettings, fitSettings = fitSettings)

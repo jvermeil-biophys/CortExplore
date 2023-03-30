@@ -418,25 +418,6 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
                      redoAllSteps = False, trackAll = False, 
                      sourceField = 'default')
 
-# %%%% 23.03.09_M5
-
-dates = '23.03.09'
-manips, wells, cells = 5, 1, 'all'
-depthoNames = '23.03.09_M4_M450_step20_100X'
-
-output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, trackAll = False, 
-                     sourceField = 'default')
-
-# %%%% 23.03.09_M6
-
-dates = '23.03.09'
-manips, wells, cells = 6, 1, 'all'
-depthoNames = '23.03.09_M4_M450_step20_100X'
-
-output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, trackAll = False, 
-                     sourceField = 'default')
 
 # %%% 23.03.08 + 23.03.09, compressionsLowStart of 3T3-ATCC-2023, M450, 
 # M1 = Y27 50uM, M2 = Y27 10uM, M3 = No drug, 
