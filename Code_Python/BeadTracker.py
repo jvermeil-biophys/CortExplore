@@ -234,15 +234,11 @@ class PincherTimeLapse:
             self.activationType = manipDict['activation type']
             
             if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                print('case 1')
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
-                print('case 2')
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
-            
             else:
-                print('case 3')
                 self.LoopActivations = np.array([self.activationFirst-1])
                             
             fluo = True
@@ -569,8 +565,6 @@ class PincherTimeLapse:
                 allActivationIndices = ufun.findActivation(fieldDf)[0]
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
-                
-                print(fieldDf)
                 actN = len(allActivationIndices)
                 fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
                 metadataDict = {}
@@ -581,11 +575,11 @@ class PincherTimeLapse:
                 metadataDict['T_0'] = [fieldDf['T_abs'][0]/timeScaleFactor]*actN
                 # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
                 metadataDict['Type'] = actType*actN
-                print(len(fieldToMeta))
-                print(len(metadataDict['activationNo']))
-                print(len(metadataDict['Slice']))
-                print(len(metadataDict['T_abs']))
-                print(len(metadataDict['T_0']))
+                # print(len(fieldToMeta))
+                # print(len(metadataDict['activationNo']))
+                # print(len(metadataDict['Slice']))
+                # print(len(metadataDict['T_abs']))
+                # print(len(metadataDict['T_0']))
                 
                 metadataDf = pd.DataFrame(metadataDict)
                 if save:

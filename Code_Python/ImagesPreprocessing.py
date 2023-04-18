@@ -46,10 +46,10 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.03.28'
+date = '23.03.24'
 DirSave = os.path.join(cp.DirDataRaw, date)
-# DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
-DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+DirExt = 'E:/Cortex Experiments/20230324_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ date
+# DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
@@ -522,7 +522,7 @@ cv2.destroyAllWindows()
 
 print(gs.BLUE + 'Saving all tiff stacks...' + gs.NORMAL)
 
-cropAndCopy(DirExt, DirSave, allRefPoints[1:], allCellsToCrop[1:], microscope)
+cropAndCopy(DirExt, DirSave, allRefPoints, allCellsToCrop, microscope)
 
 
 #%% Creating .tif stacks of 561n recruitment images

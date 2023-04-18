@@ -1168,7 +1168,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M2 : 
 
 dates = '23.03.28'
-manips, wells, cells = 2, 1, 'all'
+manips, wells, cells = 2, 2, 5
 depthoNames = '23.03.28_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -1178,8 +1178,41 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : 
 
 dates = '23.03.28'
-manips, wells, cells = 3, 1, 'all'
+manips, wells, cells = 3, 2, 'all'
 depthoNames = '23.03.28_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-03-24. Mechanics experiment with optoLARG
+#Using Strep beads + 10X mPEG-Biot
+
+# %%%% M1 : 
+
+dates = '23.03.24'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.03.24'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.03.24'
+manips, wells, cells = 4, 2, 4
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
