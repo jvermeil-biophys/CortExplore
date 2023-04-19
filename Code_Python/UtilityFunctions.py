@@ -1338,6 +1338,15 @@ def drop_duplicates_in_array(A):
     A_filtered = np.array([A[idx[j]] for j in range(len(idx))])
     return(A_filtered)
 
+
+
+def interDeciles(A):
+    p10 = np.percentile(A, 10)
+    p90 = np.percentile(A, 90)
+    return(p90-p10)
+
+
+
 # %%% Figure & graphic operations
 
 def simpleSaveFig(fig, name, savePath, ext, dpi):
