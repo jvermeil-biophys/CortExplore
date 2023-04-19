@@ -1472,7 +1472,6 @@ class CellCompression:
             
         if fitType == 'Log':
             figTitle += (' - ' + plotSettings['plotLog'])
-            
         
         if fitType in ['strainGaussian']:
             step = plotSettings['plotStrainCenters'][1] - plotSettings['plotStrainCenters'][0]
@@ -2207,7 +2206,7 @@ class IndentCompression:
 
                     
                 
-    def computeH0_sub(self, method, zone):
+    def computeH0_sub(self, method, zone, returnDict = False):
         """
         Compute the H0 for ONE method and ONE zone.
         Calls fitChadwick_hf() or fitDimitriadis_hf() according to the method required.
@@ -2255,36 +2254,45 @@ class IndentCompression:
             mask = (self.ChadwickRatio > thresh1) & (self.ChadwickRatio < thresh2)
         else:
             mask = np.ones_like(self.hCompr, dtype = bool)
+            
+        dH0 = {}
         
         if method == 'Chadwick':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
             params, covM, error = fitChadwick_hf(h, f, D)
             H0, E = params[1], params[0]
-            self.dictH0['H0_' + method + '_' + zone] = H0
-            self.dictH0['E_' + method + '_' + zone] = E
-            self.dictH0['error_' + method + '_' + zone] = error
-            self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
-            self.dictH0['fArray_' + method + '_' + zone] = f
-            self.dictH0['hArray_' + method + '_' + zone] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
+            dH0['H0_' + method + '_' + zone] = H0
+            dH0['E_' + method + '_' + zone] = E
+            dH0['error_' + method + '_' + zone] = error
+            dH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+            dH0['fArray_' + method + '_' + zone] = f
+            dH0['hArray_' + method + '_' + zone] = inversedChadwickModel(f, E, H0/1000, D/1000)*1000
             
         elif method == 'Dimitriadis':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
             params, covM, error = fitDimitriadis_hf(h, f, D)
             H0, E = params[1], params[0]
-            self.dictH0['H0_' + method + '_' + zone] = H0
-            self.dictH0['E_' + method + '_' + zone] = E
-            self.dictH0['error_' + method + '_' + zone] = error
-            self.dictH0['nbPts_' + method + '_' + zone] = np.sum(mask)
-            self.dictH0['fArray_' + method + '_' + zone] = dimitriadisModel(h/1000, E, H0/1000, D/1000)
-            self.dictH0['hArray_' + method + '_' + zone] = h
+            dH0['H0_' + method + '_' + zone] = H0
+            dH0['E_' + method + '_' + zone] = E
+            dH0['error_' + method + '_' + zone] = error
+            dH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+            dH0['fArray_' + method + '_' + zone] = dimitriadisModel(h/1000, E, H0/1000, D/1000)
+            dH0['hArray_' + method + '_' + zone] = h
             
         elif method == 'NaiveMax': # This method ignore masks
             H0 = np.max(self.hCompr[:])
-            self.dictH0['H0_' + method] = H0
-            self.dictH0['E_' + method] = np.nan
-            self.dictH0['error_' + method] = False
-            self.dictH0['fArray_' + method] = np.array([])
-            self.dictH0['hArray_' + method] = np.array([])
+            dH0['H0_' + method] = H0
+            dH0['E_' + method] = np.nan
+            dH0['error_' + method] = False
+            dH0['fArray_' + method] = np.array([])
+            dH0['hArray_' + method] = np.array([])
+        
+        if not returnDict:
+            self.dictH0.update(dH0)
+        
+        else:
+            return(dH0)
+        
         
             
     def setBestH0(self, method, zone):
@@ -2365,7 +2373,7 @@ class IndentCompression:
         return(df)
     
     
-    def computeStressStrain(self, method = 'Chadwick'):
+    def computeStressStrain(self, method = 'Chadwick', H0 = 'best'):
         """
         
 
@@ -2379,20 +2387,27 @@ class IndentCompression:
         None.
 
         """
-        if not self.error_bestH0:
-            deltaCompr = (self.bestH0 - self.hCompr)
+        if H0 == 'best':
+            H0 = self.bestH0
+            error = self.error_bestH0
+        else:
+            # H0 is the number given in argument
+            error = False
+            
+        if not error:
+            deltaCompr = (H0 - self.hCompr)
             
             if method == 'Chadwick':
                 # pN and µm
                 stressCompr = self.fCompr / (np.pi * (self.DIAMETER/2000) * deltaCompr/1000)
-                strainCompr = (deltaCompr/1000) / (3*(self.bestH0/1000))
+                strainCompr = (deltaCompr/1000) / (3*(H0/1000))
                 
             self.deltaCompr = deltaCompr
             self.stressCompr = stressCompr
             self.strainCompr = strainCompr
             
         
-    def computeContactRadius(self, method = 'Chadwick'):
+    def computeContactRadius(self, method = 'Chadwick', H0 = 'best'):
         """
         
 
@@ -2406,9 +2421,16 @@ class IndentCompression:
         None.
 
         """
-        if not self.error_bestH0:
+        if H0 == 'best':
+            H0 = self.bestH0
+            error = self.error_bestH0
+        else:
+            # H0 is the number given in argument
+            error = False
+        
+        if not error:
             hCompr = self.hCompr / 1000 # µm
-            deltaCompr = (self.bestH0 - self.hCompr) / 1000 # µm
+            deltaCompr = (H0 - self.hCompr) / 1000 # µm
             R = self.DIAMETER / 2000 # µm
             if method == 'Chadwick':
                 S = R*deltaCompr
@@ -2419,6 +2441,29 @@ class IndentCompression:
             
             self.contactRadius = np.sqrt(S)
             self.ChadwickRatio = self.contactRadius / hCompr
+            
+            
+    def convergeToH0(self, method, zone, max_it = 10, stop_crit = 0.01):
+        listDicts = []
+        d0 = self.computeH0_sub(method, zone, returnDict = True)
+        listDicts.append(d0)
+        H0_current = self.bestH0
+        H0_new = d0['H0']
+        gap = np.abs((H0_current-H0_new)/H0_current)
+        it = 1
+        while it < max_it and gap > stop_crit:
+            self.computeStressStrain(method='Chadwick', H0 = H0_new)
+            self.computeContactRadius(method='Chadwick', H0 = H0_new)
+            di = self.computeH0_sub(method, zone, returnDict = True)
+            listDicts.append(di)
+            H0_current = H0_new
+            H0_new = di['H0']
+            gap = np.abs((H0_current-H0_new)/H0_current)
+            it = it + 1
+        print(listDicts)
+        return(listDicts[-1])
+    #### Finish and TEST IT !!!!!
+        
         
     
     def fitFH_Chadwick(self, fitValidationSettings, mask = []):
@@ -2769,10 +2814,10 @@ class IndentCompression:
                     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
 
                     
-                if 'H0_Chadwick_' + 'ratio_2-3' in self.dictH0.keys():
-                    H0_ratio = self.dictH0['H0_Chadwick_ratio_2-3']
-                    E_ratio = self.dictH0['E_Chadwick_ratio_2-3']
-                    str_m_z = 'Chadwick_ratio_2-3'
+                if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
+                    H0_ratio = self.dictH0['H0_Chadwick_ratio_2-2.5']
+                    E_ratio = self.dictH0['E_Chadwick_ratio_2-2.5']
+                    str_m_z = 'Chadwick_ratio_2-2.5'
                     max_h = np.max(self.hCompr)
                     high_h = np.linspace(max_h, H0_ratio, 20)
                     low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
@@ -3813,8 +3858,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             IC.computeContactRadius(method = 'Chadwick')
             
             #### 3.9.2 Re-Compute the best H0
-            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
-            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
+            try:
+                IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
+            except:
+                pass
+            try:
+                IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
+            except:
+                pass
             
             #### 3.10 Local fits of stress-strain curves
             
@@ -4594,10 +4645,9 @@ def getMatchingFits(mecaDf, fitsSubDir = '', fitType = 'stressGaussian', output 
     
     if filter_fitID != None:
         if filter_fitID.startswith('_'):
-            filter_fitID = r'\d{2,4}' + filter_fitID
+            filter_fitID = r'[\.\d]{2,6}' + filter_fitID # r'\d{2,4}'
         if filter_fitID.endswith('_'):
-            filter_fitID = filter_fitID + r'\d{2,4}'
-        
+            filter_fitID = filter_fitID + r'[\.\d]{2,6}' # r'\d{2,4}'
     
     if output == 'df' or output == 'list':
         L = []
@@ -4812,7 +4862,8 @@ def computeWeightedAverage(df, valCol, weightCol, groupCol = 'cellId', Filters =
     data_agg[wStdCol] = data_agg2[wStdCol]
     data_agg[wSteCol] = data_agg[wStdCol] / data_agg['count_wAvg']**0.5
     
-    data_agg = data_agg.drop(columns = ['A_sum', weightCol + '_sum'])
+    # data_agg = data_agg.drop(columns = ['A_sum', weightCol + '_sum'])
+    data_agg = data_agg.drop(columns = ['A_sum'])
     
     return(data_agg)
     
