@@ -49,6 +49,20 @@ if re.match(s, text):
     
 print(re.match(s, text))
 
+# %% Regex test
+
+import re
+
+template = 'Merci_Monsieur'
+s1 = 'Monsieur'
+s2 = 'Madame'
+
+if re.search(s1, template):
+    res = re.sub(s1, s2, template)
+    print(res)
+    
+print(re.search(s1, template))
+
 # %% Dicts
 
 d1 = {'a':1, 'b':2}

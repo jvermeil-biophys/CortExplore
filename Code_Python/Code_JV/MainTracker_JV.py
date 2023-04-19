@@ -359,7 +359,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% 23.03.16_M1 C1 Seulement
 
 dates = '23.03.16'
-manips, wells, cells = 1, 1, 1
+manips, wells, cells = 1, 1, 3
 depthoNames = '23.03.16_M1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 

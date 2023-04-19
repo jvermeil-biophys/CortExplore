@@ -20,6 +20,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 import os
+import re
 import sys
 import time
 import random
@@ -1833,9 +1834,8 @@ def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], cond
               returnData = 0, returnCount = 0):
     
     fig, ax = plt.subplots(1,1, figsize = (9,6))
-
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-    print(len(Filters))
+
     for k in range(0, len(Filters)):
         globalFilter = globalFilter & Filters[k]
     data_f = data[globalFilter]
@@ -1925,29 +1925,6 @@ def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], cond
     data_agg_all = data_agg_all.rename(columns = {'compCount_sum' : 'compCount', 'compCount_count' : 'cellCount'})
     data_agg_all['K_wAvg_ste'] = data_agg_all['K_wAvg_std']/data_agg_all['cellCount']**0.5
     
-    # Compute the weighted std
-    # data_ff['B'] = data_ff['fit_K']
-    # for co in conditions:
-    #     centers = np.array(data_ff[data_ff[condCol] == co]['fit_center'].unique())
-    #     for ce in centers:
-    #         weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
-            
-    #         index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
-    #         col_loc = 'B'
-    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
-    #         data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
-            
-    # data_ff['C'] = data_ff['B'] * data_ff['weight']
-    # grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
-    # data_agg2 = grouped2.agg({'compNum' : 'count',
-    #                           'C': 'sum', 'weight': 'sum'}).reset_index()
-    # data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
-    # data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
-    
-    # # Combine all in data_agg
-    # data_agg['K_wVar'] = data_agg2['K_wVar']
-    # data_agg['K_wStd'] = data_agg2['K_wStd']
-    # data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
     
     # Plot
     i_color = 0
@@ -1966,6 +1943,9 @@ def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], cond
         Kste = df['K_wAvg_ste'].values
         N = df['cellCount'].values
         total_N = np.max(N)
+        
+        n = df['compCount'].values
+        total_n = np.max(n)
         
         dof = N
         alpha = 0.975
@@ -1990,7 +1970,7 @@ def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], cond
         ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
                     color = color, lw = 2, marker = 'o', markersize = 8, mec = 'k',
                     ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
-                    label = co + ' | ' + str(total_N) + ' cells')
+                    label = co + ' | ' + str(total_N) + ' cells' + ' | ' + str(total_n) + ' comp')
         
         # ax.set_title('K(s) - All compressions pooled')
         
@@ -2455,6 +2435,23 @@ def renameAxes(axes, rD, format_xticks = True):
             if test_hasXLabels:
                 newXticksList = [rD.get(k, k) for k in xticksList]
                 axes[i].set_xticklabels(newXticksList)
+                
+                
+                
+def renameLegend(axes, rD):
+    axes = ufun.toList(axes)
+    N = len(axes)
+    for i in range(N):
+        ax = axes[i]
+        L = ax.legend()
+        Ltext = L.get_texts()
+        M = len(Ltext)
+        for j in range(M):
+            T = Ltext[j].get_text()
+            for s in rD.keys():
+                if re.search(s, T):
+                    Ltext[j].set_text(re.sub(s, rD[s], T))
+    
                 
         
 def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plotting_parameters):
@@ -4349,6 +4346,11 @@ ax3.set_ylim([0, 20])
 plt.show()
 
 
+
+
+
+
+
 # %%%%% Fluctuations
 
 data = MecaData_Atcc
@@ -5057,6 +5059,92 @@ ax3.set_ylim([0, 20])
 
 # fig1.suptitle('3T3 vs. HoxB8 - stiffness')
 # fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
+
+# %%%%% All K(s) For Anumita
+
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10µM', 
+      'Y27 & 50.0' : 'Y27 50µM', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi 10µM',  
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)'}
+
+# Only control
+
+dates = ['23-03-08', '23-03-09']
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'] == 'none'),
+          ]
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '150_450', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 18])
+
+# Control vs Y27
+dates = ['23-03-08', '23-03-09']
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
+
+# Control vs Blebbi
+dates = ['23-03-16', '23-03-17']
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig3, ax3 = out3
+ax3.set_ylim([0, 20])
+
+# Y27 & Blebbi
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+out4 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig4, ax4 = out4
+ax4.set_ylim([0, 12])
+
+
+for ax in [ax1, ax2, ax3, ax4]:
+    ax.set_title('3T3 ATCC (no opto construct)')
+    ax.legend(fontsize = 8)
+    renameAxes(ax, renameDict1, format_xticks=False)
+    renameAxes(ax, rD, format_xticks=False)
+    renameLegend(ax, rD)
+
+
 plt.show()
 
 
