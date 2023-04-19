@@ -489,7 +489,7 @@ class PincherTimeLapse:
         for i in range(self.nLoop):
             totalExcludedOutward = self.excludedFrames_outward[i]
             jstart = int(i*N0 + totalExcludedOutward)
-            print(jstart)
+            # print(jstart)
             if Nramp0 == 0:
                 for j in range(N0): # N
                     self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
@@ -591,11 +591,11 @@ class PincherTimeLapse:
         except:
             pass
         
-        if display == 1:
-            print('\n\n* Initialized Log Table:\n')
-        if display == 2:
-            print('\n\n* Filled Log Table:\n')
-            print(metadataDf[metadataDf['UI']])
+        # if display == 1:
+        #     print('\n\n* Initialized Log Table:\n')
+        # if display == 2:
+        #     print('\n\n* Filled Log Table:\n')
+        #     print(metadataDf[metadataDf['UI']])
             
     def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
         actFreq = self.activationFreq
@@ -1174,7 +1174,7 @@ class PincherTimeLapse:
 
         # Add the pointer to the correct line of the _Field.txt file.
         # It's just exactly the iS already saved in the dict, except if there are black images at the end of loops.
-        # In that case you have to skip the X lines corresPathonding to the end of the ramp part, X being the nb of black images at the end of the current loop
+        # In that case you have to skip the X lines corresponding to the end of the ramp part, X being the nb of black images at the end of the current loop
         # This is because when black images occurs, they do because of the high frame rate during ramp parts and thus replace these last ramp images.
 
         # For now : excludedFrames_inward = excludedFrames_black
@@ -1496,6 +1496,9 @@ class Trajectory:
         self.HWScan_triplets = 1200 # Half width of the scans
         self.HWScan_singlets = 600
         
+        #### NEW
+        self.mapZT = 0
+        
     def __str__(self):
         text = 'iS : ' + str(self.series_iS)
         text += '\n'
@@ -1517,13 +1520,21 @@ class Trajectory:
             iF = self.dict['iF'][0]
             previousZ = -1
             
+            #### Enable new Z plot here
+            computeMapZT = True
+            # nt, nz = np.sum(self.dict['bestStd']), self.deptho.shape[0]
+            mapZT = []
+            
+            # ###################################################################
             
             while iF <= max(self.dict['iF']):
+                
             #### Enable plots of Z detection  here
+                
                 plot = 0
                 # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
                 #     plot = 1
-                    
+
             # ###################################################################
 
                 if iF not in self.dict['iF']: # this index isn't in the trajectory list => the frame was removed for some reason.
@@ -1547,11 +1558,24 @@ class Trajectory:
                                 framesNuplet.append(nextF)
                                 iFNuplet.append(iF+jF)
                             jF += 1
-
+                            
                         iF += jF
-
-                    Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                          matchingDirection, plot)
+                        
+                        
+                    if computeMapZT:
+                        Z, Zscanned, sumFinalD = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
+                                              matchingDirection, plot, computeMapZT)
+                        maxD = np.max(sumFinalD)
+                        newLine = np.zeros(self.deptho.shape[0])
+                        newLine[Zscanned] = (maxD - sumFinalD)
+                        mapZT.append(newLine)
+                        
+                        
+                    else:
+                        Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
+                                              matchingDirection, plot, computeMapZT)
+                        
+                        
                     previousZ = Z
                     # This Z_pix has no meaning in itself, it needs to be compared to the depthograph Z reference point,
                     # which is depthoZFocus.
@@ -1562,11 +1586,13 @@ class Trajectory:
 
                     mask = np.array([(iF in iFNuplet) for iF in self.dict['iF']])
                     self.dict['Zr'][mask] = Zr
+                    
+            self.mapZT = np.array(mapZT)
 
 
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot):
+                     matchingDirection, plot = False, computeMapZT = False):
         # try:
         Nframes = len(framesNuplet)
         listStatus_1 = [F.status_frame for F in framesNuplet]
@@ -1644,14 +1670,14 @@ class Trajectory:
             Ztop = max(0, previousZ - halfScannedDepth_raw) 
             Zbot = min(depthoDepth, previousZ + halfScannedDepth_raw)
 
-        scannedDepth = Zbot-Ztop
+        scannedDepth = Zbot - Ztop
         # print(Nup, depthoDepth, Ztop, Zbot, scannedDepth)
         
         listDistances = np.zeros((Nframes, scannedDepth))
         listZ = np.zeros(Nframes, dtype = int)
-        Zscanned = np.arange(Ztop,Zbot,1, dtype=int)
+        Zscanned = np.arange(Ztop, Zbot, 1, dtype=int)
         
-        subDeptho = self.deptho[Ztop:Zbot,:]
+        subDeptho = self.deptho[Ztop:Zbot, :]
         
         for i in range(Nframes):
             
@@ -1793,10 +1819,10 @@ class Trajectory:
                 
                 # Show the distance map to the deptho
                 listDistances = np.array(listDistances)
-                inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
-                peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
+                # inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
+                # peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
                 axes[3,i].plot(zPos, listDistances[i])
-                axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
+                # axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
                 axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
                 axes[3,i].set_xlabel('Position along the depthograph\n(Z-axis)', 
@@ -1809,11 +1835,11 @@ class Trajectory:
                 limy3 = axes[3,i].get_ylim()
                 min_i = zPos[np.argmin(listDistances[i])]
                 axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
-                for p in peaks:
-                    p_i = zPos[int(p)]
-                    axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
-                                  marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
-                    axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
+                # for p in peaks:
+                #     p_i = zPos[int(p)]
+                #     axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
+                #                   marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
+                #     axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
                 axes[3,i].set_xlim([0, depthoDepth])
                 
                 #
@@ -1830,7 +1856,7 @@ class Trajectory:
                 limy4 = axes[4,i].get_ylim()
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
-                axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
+                # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
                 axes[4,i].set_xlim([0, depthoDepth])
 
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
@@ -1891,7 +1917,12 @@ class Trajectory:
             plt.close(fig)
         
         plt.ion()
-        return(Z)
+        
+        if computeMapZT:
+            return(Z, Zscanned, sumFinalD)    
+            
+        else:
+            return(Z)
 
         # except Exception:
         #     print(gs.RED + '')
@@ -2088,7 +2119,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 0.2 - Begining of the Main Loop
     for i in range(len(fileRoots)):
         f = fileRoots[i]
-        print(f)
+        # print(f)
         imagePath, fieldPath, resPath = tifImagesPaths[i], txtfieldPaths[i], txtResultsPaths[i]
         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
@@ -2122,11 +2153,12 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
         
         #### 0.51 Find index of first activation
-        try:
-            optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
-            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
-        except:
-            pass
+        #### Anumita's stuff
+        # try:
+        #     optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
+        #     PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
+        # except:
+        #     pass
         
         #### 0.6 - Check if a log file exists and load it if required
         logFilePath = resPath[:-12] + '_LogPY.txt'
@@ -2399,6 +2431,18 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         else:
             print(gs.BLUE + 'Computing Z...' + gs.NORMAL)
             print(gs.GREEN + 'Z had been already computed :)' + gs.NORMAL)
+            
+        #### 4.x - NEW
+        
+        for iB in range(PTL.NB):
+            traj = PTL.listTrajectories[iB]
+            try:
+                fig, ax = plt.subplots(1,1)
+                pStart, pStop = np.percentile(traj.mapZT, (1, 99))
+                ax.imshow(traj.mapZT, cmap = 'gray', vmin = pStart, vmax = pStop)
+                plt.show()
+            except:
+                pass
         
 
         #### 4.3 - Save the raw traj (before Std selection)
@@ -2512,7 +2556,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     print(gs.BLUE + str(time.time()-start) + gs.NORMAL)
     print(gs.BLUE + '\n' + gs.NORMAL)
 
-    plt.close('all')
+    # plt.close('all')
 
 
         #### 7.2 - Return the last objects, for optional verifications
