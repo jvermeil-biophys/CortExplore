@@ -473,7 +473,8 @@ plotSettings = {# ON/OFF switchs plot by plot
 # plotSettings = {}
 
 # PlotTask = '23-03-08 & 23-03-09_M4 & 23-03-16 & 23-03-17'
-PlotTask = '23-03-08_M2_P1_C1'
+# PlotTask = '23-03-08_M2_P1_C1'
+PlotTask = '22-11-23'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
                                    save = False, PLOT = True, source = 'Python', 
                                    plotSettings = plotSettings, fitSettings = fitSettings)

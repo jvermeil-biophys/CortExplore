@@ -5,15 +5,15 @@ Created on Thu Nov 25 13:37:51 2021
 @author: JosephVermeil
 """
 
-# %%
+# %% Pandas tests
 
 import numpy as np
 import pandas as pd
 import UtilityFunctions as ufun
 
-d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14], 
-     'coeff':[2, 1, 5, 4, 1, 7, 3, 2], 
-     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l']}
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 4, 18, 4, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
 
 df = pd.DataFrame(d)
 
@@ -25,11 +25,41 @@ wAvgCol = valCol + '_wAvg'
 df['A'] = df[valCol] * df[weightCol]
 grouped1 = df.groupby(by=groupCols)
 data_agg = grouped1.agg({'A': ['count', 'sum'], 
-                         weightCol: 'sum'}).reset_index()
+                         weightCol: 'sum',
+                         'grade' : [np.var, np.std, ufun.interDeciles]}).reset_index()
+
+data_agg.columns = ufun.flattenPandasIndex(data_agg.columns)
 # data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
 
 # data_id2 = df.groupby('course').agg('first')
 
+df['id_within_co'] = [np.sum(df.loc[:i,'course'] == df.loc[i,'course']) for i in range(df.shape[0])]
+
+# %% Regex test
+
+import re
+
+joker = r'[\.\d]{2,6}'
+s = '0.2_' + joker
+
+text = '0.2_0.0125'
+
+if re.match(s, text):
+    print('ok')
+    
+print(re.match(s, text))
+
+# %% Dicts
+
+d1 = {'a':1, 'b':2}
+
+d2 = d1
+
+print(d1, d2)
+
+d2.pop('b')
+
+print(d1, d2)
 
 # %%
 
