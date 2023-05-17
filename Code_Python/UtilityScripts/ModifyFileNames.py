@@ -147,11 +147,11 @@ path0 = 'D://MagneticPincherData//Raw//'
 
 # %% Script Other renaming
 
-path0 = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\'
-sub = 'M4_dmso'
+path0 = 'E:\\2023-04-28_3T3atcc2023_CK666\\'
+sub = 'M2_CK666_100uM'
 path = path0 + sub
 
-findAndRename(path, '_M1_', '_M4_', 
+findAndRename(path, '_M1_', '_M2_', 
               target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 

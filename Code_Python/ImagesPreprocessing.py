@@ -46,31 +46,31 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.03.28'
-DirSave = os.path.join(cp.DirDataRaw, date)
-# DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
-DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+# date = '23.03.28'
+# DirSave = os.path.join(cp.DirDataRaw, date)
+# # DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
+# DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
 
-# prefix = 'cell'
-# channel = 'w1TIRF DIC'
-microscope = 'labview'
+# # prefix = 'cell'
+# # channel = 'w1TIRF DIC'
+# microscope = 'labview'
 
 
 #%% Define parameters # Jojo
 
-date = '23.03.17'
-DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
-DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
+date = '23.04.28'
+DirExt = 'E:\\2023-04-28_3T3atcc2023_CK666\\' #'/M4_patterns_ctrl'
+DirSave = os.path.join(cp.DirDataRaw, date) #  + '_Deptho', 'M3'
 
 # prefix = ''
 # channel = ''
-# microscope = 'labview'
+microscope = 'labview'
 
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
-                           compulsaryWords = ['db3']): # 
+                           forbiddenWords = ['deptho', 'depthos', 'error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
+                           compulsaryWords = []): # 'depthos'
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
