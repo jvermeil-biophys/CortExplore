@@ -155,7 +155,7 @@ DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 DEFAULT_fitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
                        'zones_H0':['%f_10', '%f_20'],
-                       'method_bestH0':'Dimitriadis',
+                       'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
@@ -168,7 +168,11 @@ DEFAULT_fitSettings = {# H0
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
-                       # NEW
+                       # NEW - Numi
+                       'doLogFits' : True,
+                       'nbPtsFitLog' : 10,
+                       'overlapFitLog' : 5,
+                       # NEW - Jojo
                        'doStrainGaussianFits' : True,
                        'centers_StrainFits' : DEFAULT_strainCenters,
                        'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
@@ -192,7 +196,7 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
 #### 3. For Plots
 
 DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
-DEFAULT_plot_stressHalfWidth = 50
+DEFAULT_plot_stressHalfWidth = 75
 
 DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
 DEFAULT_plot_strainHalfWidth = 0.0125
@@ -206,8 +210,11 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'S(e)_nPoints':True,
                         'K(S)_nPoints':True,
-                        'S(e)_strainGaussian':True, # NEW
-                        'K(S)_strainGaussian':True, # NEW
+                        'S(e)_Log':True, # NEW - Numi
+                        'K(S)_Log':True, # NEW - Numi
+                        'S(e)_strainGaussian':True, # NEW - Jojo
+                        'K(S)_strainGaussian':True, # NEW - Jojo
+                        'Plot_Ratio':True, # NEW
                         # Fits plotting parameters
                         # Stress
                         'plotStressCenters':DEFAULT_plot_stressCenters,
@@ -218,6 +225,8 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         # Points
                         'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
+                        'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
                         }
 
 
@@ -235,12 +244,52 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = 'all', fileN
 
 # %%%% ATCC-2023
 
-# %%%%% 23-03-16 & 23-03-17 - Blebbi
+
+# %%%%% 23-04-26 & 23-04-28 - CK666
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['pts_10', 'pts_20', 'pts_30',
-                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+AtccTask = '23-04-26 & 23-04-28'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
+
+
+# %%%%% 23-03-16 & 23-03-17 & 23-04-20 - Blebbi
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_10',
                 'doStressRegionFits' : True,
@@ -256,13 +305,15 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressRegion':False,
                         'S(e)_stressGaussian':True,
                         'K(S)_stressGaussian':True,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
-                        'S(e)_strainGaussian':True, # NEW
-                        'K(S)_strainGaussian':True, # NEW
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW
+                        'K(S)_strainGaussian':False, # NEW
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
                         }
 
-AtccTask = '23-03-16 & 23-03-17'
+AtccTask = '23-03-16 & 23-03-17 & 23-04-20'
 res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fileName = 'MecaData_Atcc', 
                                     save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
@@ -357,21 +408,79 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fi
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['pts_10', 'pts_15', 'pts_20', 
-                            '%f_5', '%f_10', '%f_15', '%f_20', '%f_25'],
-                'method_bestH0':'Dimitriadis',
-                'zone_bestH0':'%f_15',
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : True,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : True,
+                # TEST - Jojo
+                'do3partsFits' : False,
                 }
 
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        'S(e)_3parts':False, # TEST - Jojo
+                        }
+
+
 drugTask = '22-03-28 & 22-03-30 & 22-11-23'
-res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs', 
-                                    save = False, PLOT = False, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_aSFL-Drugs', 
+                                    save = True, PLOT = False, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
 
 # %%%% Non-Lin
 
-nonLinTask = '21-12-08 & 22-01-12 & 22-02-09'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = nonLinTask, fileName = 'MecaData_NonLin', 
-                            save = False, PLOT = False, source = 'Python') # task = 'updateExisting'
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : True,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+nonLinTask = '21-12-08 & 22-01-12 & 21-12-16 & 22-02-09'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = nonLinTask, fileName = 'MecaData_NonLin', 
+                            save = True, PLOT = True, source = 'Python', 
+                            fitSettings = fitSettings,
+                            plotSettings = plotSettings) # task = 'updateExisting'
 
 # %%%% MCA
 
@@ -426,32 +535,20 @@ DC_task = '18-08-28 & 18-09-24 & 18-09-24 & 18-10-30 & 18-12-12'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = DC_task, fileName = 'MecaData_DC', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 
-# %%%% Next job !
-
-
-
-
-
-
-
-# %%%% Tools
-
-# %%%%% Display
-
-df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
-
-# %%%%% Plot a precise date
-
+# %%%% Anumita's data
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick', 'Dimitriadis'],
-                'zones_H0':['pts_10', 'pts_20', 'pts_30',
-                            '%f_5', '%f_10', '%f_20', '%f_40'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_10',
-                'doStressRegionFits' : True,
+                'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
                 'doNPointsFits' : True,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
                 'doStrainGaussianFits' : True,
                 }
 
@@ -462,22 +559,77 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressRegion':False,
                         'S(e)_stressGaussian':True,
                         'K(S)_stressGaussian':True,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
-                        'S(e)_strainGaussian':True, # NEW
-                        'K(S)_strainGaussian':True, # NEW
-                        'Plot_Ratio':True, # NEW
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
                         }
 
-# fitSettings = {}
-# plotSettings = {}
 
-# PlotTask = '23-03-08 & 23-03-09_M4 & 23-03-16 & 23-03-17'
-# PlotTask = '23-03-08_M2_P1_C1'
-PlotTask = '22-11-23'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = PlotTask, fileName = 'Test', 
-                                   save = False, PLOT = True, source = 'Python', 
-                                   plotSettings = plotSettings, fitSettings = fitSettings)
+fromAJ_task = '22-12-07 & 23-02-02 & 23-03-24 & 23-03-28 & 23-04-25'
+# testTask = '23-03-24_M2_P1_C22'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = fromAJ_task, fileName = 'MecaData_fromAJ', 
+                            save = True, PLOT = True, source = 'Python', 
+                            fitSettings = fitSettings,
+                            plotSettings = plotSettings) # task
+
+
+# %%%% Next job !
+
+
+
+
+
+# %%%% Tools
+
+
+# %%%%% Display
+
+df = taka2.getGlobalTable_meca('Global_MecaData_Py2')
+
+# %%%%% Plot a precise date
+
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'Dimitriadis'],
+                'zones_H0':['pts_10', 'pts_20', 
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_10',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'doNPointsFits' : False,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                # TEST - Jojo
+                'do3partsFits' : False,
+                }
+
+plotSettings = {# ON/OFF switchs plot by plot
+                'FH(t)':True,
+                'F(H)':True,
+                'S(e)_stressRegion':False,
+                'K(S)_stressRegion':False,
+                'S(e)_stressGaussian':False,
+                'K(S)_stressGaussian':False,
+                'S(e)_nPoints':False,
+                'K(S)_nPoints':False,
+                'S(e)_strainGaussian':False, # NEW - Jojo
+                'K(S)_strainGaussian':False, # NEW - Jojo
+                'S(e)_Log':False, # NEW - Numi
+                'K(S)_Log':False, # NEW - Numi
+                'S(e)_3parts':False, # TEST - Jojo
+                }
+
+AtccTask = '22-02-09_M1_P1_C9'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = AtccTask, fileName = 'MecaData_Atcc_ALT', 
+                                    save = False, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
 
 
 # %%%%% Concat dataframes
