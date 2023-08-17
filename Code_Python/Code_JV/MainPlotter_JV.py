@@ -355,17 +355,20 @@ testTraj(1.5)
 #### GlobalTable_ctField
 CtFieldData_All_JV = taka2.getMergedTable('CtFieldData_All_JV', mergeUMS = False)
 
-#### MecaData_All
-# MecaData_All = taka2.getMergedTable('MecaData_All_JV')
+#### MecaData_Atcc
+# MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc_JV')
 
 #### MecaData_NonLin
 MecaData_NonLin = taka2.getMergedTable('MecaData_NonLin')
 
 #### MecaData_Drugs
-MecaData_Drugs = taka2.getMergedTable('MecaData_Drugs')
+MecaData_aSFLDrugs = taka2.getMergedTable('MecaData_aSFL-Drugs')
 
 #### MecaData_Atcc
 MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc')
+
+#### MecaData_Atcc
+MecaData_fromAJ = taka2.getMergedTable('MecaData_fromAJ')
 
 #### MecaData_MCA
 # MecaData_MCA = taka2.getMergedTable('MecaData_MCA')
@@ -376,7 +379,9 @@ MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc')
 #### Test
 # MecaData_Test = taka2.getMergedTable('Test')
 
-MecaData_AtccDrugs = pd.concat([MecaData_Drugs, MecaData_Atcc])
+MecaData_AtccOpto = pd.concat([MecaData_Atcc, MecaData_fromAJ]).reset_index(drop = True)
+
+MecaData_AtccDrugs = pd.concat([MecaData_Atcc, MecaData_aSFLDrugs]).reset_index(drop = True)
 
 # %%% Test of adding fits
 
@@ -406,6 +411,7 @@ renameDict1 = {# Variables
                'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
                'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)', 
                'fit_K' : 'Tangeantial Modulus (Pa)',
+               'bestH0' : r'$Fitted\ H_0\ (nm)$',
                # Drugs
                'none':'Control',
                'dmso':'DMSO',
@@ -417,28 +423,65 @@ renameDict1 = {# Variables
 styleDict1 =  {# Drugs
                'none':{'color': gs.colorList40[10],'marker':'o'},
                'none & 0.0':{'color': gs.colorList40[10],'marker':'o'},
+               #
                'dmso':{'color': gs.colorList40[19],'marker':'o'},
                'dmso & 0.0':{'color': gs.colorList40[19],'marker':'o'},
+               #
                'blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
                'blebbistatin & 10.0':{'color': gs.colorList40[2],'marker':'o'},
                'blebbistatin & 50.0':{'color': gs.colorList40[22],'marker':'o'},
+               'blebbistatin & 250.0':{'color': gs.colorList40[32],'marker':'o'},
+               #
                'PNB & 50.0':{'color': gs.colorList40[25],'marker':'o'},
                'PNB & 250.0':{'color': gs.colorList40[35],'marker':'o'},
+               #
                'latrunculinA':{'color': gs.colorList40[13],'marker':'o'},
                'latrunculinA & 0.5':{'color': gs.colorList40[13],'marker':'o'},
                'latrunculinA & 2.5':{'color': gs.colorList40[33],'marker':'o'},
-               'Y27':{'color': gs.colorList40[7],'marker':'o'},
-               'Y27 & 10.0':{'color': gs.colorList40[7],'marker':'o'},
+               #
+               'Y27':{'color': gs.colorList40[17],'marker':'o'},
+               'Y27 & 1.0':{'color': gs.colorList40[7],'marker':'o'},
+               'Y27 & 10.0':{'color': gs.colorList40[17],'marker':'o'},
                'Y27 & 50.0':{'color': gs.colorList40[27],'marker':'o'},
+               'Y27 & 100.0':{'color': gs.colorList40[37],'marker':'o'},
+               #
+               'ck666 & 50.0':{'color': gs.colorList40[25],'marker':'o'},
+               'ck666 & 100.0':{'color': gs.colorList40[35],'marker':'o'},
                # Cell types
                '3T3':{'color': gs.colorList40[30],'marker':'o'},
                'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
                'DC':{'color': gs.colorList40[33],'marker':'o'},
                # Drugs + cell types
+               'aSFL':{'color': gs.colorList40[12],'marker':'o'},
+               'Atcc-2023':{'color': gs.colorList40[10],'marker':'o'},
+               'optoRhoA':{'color': gs.colorList40[13],'marker':'o'},
+               # Drugs + cell types
                'aSFL-LG+++ & dmso':{'color': gs.colorList40[19],'marker':'o'},
                'aSFL-LG+++ & blebbistatin':{'color': gs.colorList40[32],'marker':'o'},
                'Atcc-2023 & dmso':{'color': gs.colorList40[19],'marker':'o'},
                'Atcc-2023 & blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
+               #
+               'Atcc-2023 & none':{'color': gs.colorList40[0],'marker':'o'},
+               'Atcc-2023 & none & 0.0':{'color': gs.colorList40[0],'marker':'o'},
+               'Atcc-2023 & Y27': {'color': gs.colorList40[17],'marker':'o'},
+               'Atcc-2023 & Y27 & 10.0': {'color': gs.colorList40[17],'marker':'o'},
+               #
+               'optoRhoA & none':{'color': gs.colorList40[13],'marker':'o'},
+               'optoRhoA & none & 0.0':{'color': gs.colorList40[13],'marker':'o'},
+               'optoRhoA & Y27': {'color': gs.colorList40[27],'marker':'o'},
+               'optoRhoA & Y27 & 10.0': {'color': gs.colorList40[27],'marker':'o'},
+               #
+               'Atcc-2023 & dmso':{'color': gs.colorList40[9],'marker':'o'},
+               'Atcc-2023 & dmso & 0.0':{'color': gs.colorList40[9],'marker':'o'},
+               'Atcc-2023 & blebbistatin':{'color': gs.colorList40[12],'marker':'o'},
+               'Atcc-2023 & blebbistatin & 10.0':{'color': gs.colorList40[2],'marker':'o'},
+               'Atcc-2023 & blebbistatin & 50.0':{'color': gs.colorList40[12],'marker':'o'},
+               #
+               'optoRhoA & dmso':{'color': gs.colorList40[29],'marker':'o'},
+               'optoRhoA & dmso & 0.0':{'color': gs.colorList40[29],'marker':'o'},
+               'optoRhoA & blebbistatin':{'color': gs.colorList40[32],'marker':'o'},
+               'optoRhoA & blebbistatin & 10.0':{'color': gs.colorList40[22],'marker':'o'},
+               'optoRhoA & blebbistatin & 50.0':{'color': gs.colorList40[32],'marker':'o'},
                }
 
 splitterStyleDict_MCA = {'high':'^',
@@ -462,8 +505,11 @@ def D1Plot(data, fig = None, ax = None, condCols=[], Parameters=[], Filters=[],
     data_f = data
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
     for kk in range(len(Filters)):
-        globalFilter = globalFilter & Filters[kk]
+        globalFilter =  Filters[kk] & globalFilter
+        
     data_f = data_f[globalFilter]
+    
+    print(data_f['cell subtype'].unique())
     
     # Make cond col
     NCond = len(condCols)
@@ -540,7 +586,7 @@ def D1Plot(data, fig = None, ax = None, condCols=[], Parameters=[], Filters=[],
                                 'palette': p,
                                 'size'    : markersize, 
                                 'edgecolor'    : 'k', 
-                                'linewidth'    : 1*markersizeFactor
+                                'linewidth'    : 0.75*markersizeFactor
                                 }
 
         # sns.swarmplot(x=condCol, y=Parameters[k], data=data_f, ax=axes[k], order = co_order,
@@ -638,7 +684,7 @@ def D1Plot_K(data, fig = None, ax = None, condCols=[], Filters=[], AvgPerCell=Tr
             parm = 'fit_K', weightParm = 'fit_ciwK',
             co_order=[], box_pairs=[], stats=True, statMethod='Mann-Whitney', statVerbose = False,
             Boxplot=True, stressBoxPlot = 1, showMean = False, styleDict = styleDict1,
-            figSizeFactor = 1, markersizeFactor = 1, scale = 'log',
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'log', unit = 'kPa',
             returnData = 0, returnCount = 0):
     
     # Filter
@@ -675,7 +721,7 @@ def D1Plot_K(data, fig = None, ax = None, condCols=[], Filters=[], AvgPerCell=Tr
         data_wAvg = taka2.computeWeightedAverage(data_f, valCol, weightCol, 
                                      groupCol = 'cellID', weight_method = 'ciw')
         #### HERE CORRECTION ON THE WAY
-        print(data_wAvg)
+        # print(data_wAvg)
         data_wAvg = data_wAvg.drop(data_wAvg[data_wAvg['count_wAvg'] <= 2].index)
         data_wAvg = data_wAvg.drop(data_wAvg[data_wAvg['fit_K_weight_sum'] <= 1].index)
         
@@ -713,8 +759,11 @@ def D1Plot_K(data, fig = None, ax = None, condCols=[], Filters=[], AvgPerCell=Tr
         
     markersize = 5*markersizeFactor
     
-    #### HERE CORRECTION ON THE WAY
-    data_f['fit_K'] = data_f['fit_K']/1000
+    ### HERE CORRECTION ON THE WAY
+    if unit == 'kPa':
+        data_f['fit_K'] = data_f['fit_K']/1000
+    else:
+        pass
     
     swarmplot_parameters = {'ax' : ax,
                             'data':    data_f,
@@ -819,7 +868,7 @@ def D1Plot_K(data, fig = None, ax = None, condCols=[], Filters=[], AvgPerCell=Tr
 
 
 def D2Plot_wFit(data, fig = None, ax = None, 
-                XCol='', YCol='', condCol='', 
+                XCol='', YCol='', condCols=[], 
                 Filters=[], cellID='cellID', co_order = [],
                 AvgPerCell=False, showManips = True,
                 modelFit=False, modelType='y=ax+b', writeEqn = True,
@@ -831,18 +880,18 @@ def D2Plot_wFit(data, fig = None, ax = None,
     for fltr in Filters:
         data_f = data_f.loc[fltr]
     
-    NCond = len(condCol)    
+    NCond = len(condCols)    
     if NCond == 1:
-        condCol = condCol[0]
+        condCol = condCols[0]
     elif NCond > 1:
         newColName = ''
         for i in range(NCond):
-            newColName += condCol[i]
+            newColName += condCols[i]
             newColName += ' & '
         newColName = newColName[:-3]
         data_f[newColName] = ''
         for i in range(NCond):
-            data_f[newColName] += data_f[condCol[i]].astype(str)
+            data_f[newColName] += data_f[condCols[i]].astype(str)
             data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
         data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
         condCol = newColName
@@ -1829,11 +1878,15 @@ def plotPopKS(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCol
     return(output)
 
 
-def plotPopKS_V2(data, fitType = 'stressRegion', fitWidth=75, Filters = [], condCols = [''], 
+def plotPopKS_V2(data, fig = None, ax = None, fitType = 'stressRegion', fitWidth=75, Filters = [], condCols = [''], 
               mode = 'wholeCurve', scale = 'lin', printText = True, Sinf = 0, Ssup = np.Inf,
               returnData = 0, returnCount = 0):
     
-    fig, ax = plt.subplots(1,1, figsize = (9,6))
+    if fig == None:
+        fig, ax = plt.subplots(1,1, figsize = (9,6))
+    else:
+        pass
+    
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
 
     for k in range(0, len(Filters)):
@@ -2213,6 +2266,71 @@ def plotAllH0(data, Filters = [], condCols = [],
     return(output)
 
 
+
+
+
+def StressRange_2D(data, condCols=[], Filters=[], split = False, defaultColors = False):
+    
+    data_f = data
+    for fltr in Filters:
+        data_f = data_f.loc[fltr]
+    
+    NCond = len(condCols)    
+    if NCond == 1:
+        condCol = condCols[0]
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += condCols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_f[newColName] = ''
+        for i in range(NCond):
+            data_f[newColName] += data_f[condCols[i]].astype(str)
+            data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
+        data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
+        condCol = newColName
+        
+    conditions = list(data_f[condCol].unique())
+    
+    if not defaultColors:
+        try:
+            colorList, markerList = getStyleLists(conditions, styleDict1)
+        except:
+            colorList, markerList = gs.colorList30, gs.markerList10
+    else:
+        colorList, markerList = gs.colorList30, gs.markerList10
+
+    if split:
+        fig, axes = plt.subplots(len(conditions), 1, figsize = (8, 3*len(conditions)), sharex = True)
+    else:
+        fig, axes = plt.subplots(1, 1, figsize = (8, 6))
+    
+    for i in range(len(conditions)):
+        if split:
+            ax = axes[i]
+        else:
+            ax = axes
+        
+        co = conditions[i]
+        data_co = data_f[data_f[condCol] == co]
+        color = colorList[i]
+        ax.scatter(data_co['bestH0'], data_co['minStress'], marker = 'o', s = 3, color = color, edgecolor = 'k', zorder=4)
+        ax.scatter(data_co['bestH0'], data_co['maxStress'], marker = 'o', s = 3, color = color, edgecolor = 'k', zorder=4)
+        ax.vlines(data_co['bestH0'], data_co['minStress'], data_co['maxStress'], color = colorList[i], label = co)
+        ax.set_xlim([0, 800])
+        ax.set_ylim([0, 7500])
+        
+    fig.legend()
+    
+    out = fig, axes    
+    
+    return(out)
+
+
+
+
+
 # %%% Subfunctions
 
 def getDictAggMean(df):
@@ -2451,16 +2569,18 @@ def renameLegend(axes, rD):
             for s in rD.keys():
                 if re.search(s, T):
                     Ltext[j].set_text(re.sub(s, rD[s], T))
+                    Ltext[j].set_fontsize(8)
     
                 
         
 def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plotting_parameters):
+    #### STATS
     listTests = ['t-test_ind', 't-test_welch', 't-test_paired', 
                  'Mann-Whitney', 'Mann-Whitney-gt', 'Mann-Whitney-ls', 
                  'Levene', 'Wilcoxon', 'Kruskal', 'Brunner-Munzel']
     if test in listTests:
         annotator = Annotator(ax, box_pairs, **plotting_parameters)
-        annotator.configure(test=test, verbose=verbose).apply_and_annotate()
+        annotator.configure(test=test, verbose=verbose).apply_and_annotate() # , loc = 'outside'
     else:
         print(gs.BRIGHTORANGE + 'Dear Madam, dear Sir, i am the eternal god and i command that you have to define this stat test cause it is not in the list !' + gs.NORMAL)
     return(ax)
@@ -2653,6 +2773,24 @@ def buildStyleDictMCA():
     return(styleDict)
 
 
+def addMergedCol(df, cols = []):
+    
+    N = len(cols)
+    if N > 1:
+        newColName = ''
+        for i in range(N):
+            newColName += cols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        df[newColName] = ''
+        for i in range(N):
+            df[newColName] += df[cols[i]].astype(str)
+            df[newColName] = df[newColName].apply(lambda x : x + ' & ')
+        df[newColName] = df[newColName].apply(lambda x : x[:-3])
+        
+    return(df, newColName)
+
+
 # %%% Tests of plotting functions
 
 
@@ -2728,7 +2866,7 @@ def buildStyleDictMCA():
 
 #### Test getAggDf(df, cellID, condCol, Variables)
 
-# data = MecaData_All
+# data = MecaData_Atcc
 
 # Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True)]
 
@@ -2742,7 +2880,7 @@ def buildStyleDictMCA():
 
 
 #### Test the D2Plot_wFit
-# data = MecaData_All
+# data = MecaData_Atcc
 
 # Filters = [(data['validatedFit'] == True), 
 #            (data['validatedThickness'] == True), 
@@ -2764,10 +2902,10 @@ def buildStyleDictMCA():
 
 #### Test of the averaging per cell routine
 
-# data = MecaData_All
+# data = MecaData_Atcc
 # condCol='drug'
 # Parameters=['SurroundingThickness','EChadwick']
-# Filters = [(MecaData_All['Validated'] == 1)]
+# Filters = [(MecaData_Atcc['Validated'] == 1)]
 # AvgPerCell=True
 # cellID='CellName'
 
@@ -3472,12 +3610,383 @@ fig22, ax22 = out22
 ax22.set_ylim([0, 25])
 
 
-
 plt.show()
 
 # %% Plots
 
 # %%%  2023 ATCC
+
+# %%%% On previous aSFL expts
+
+# %%%%% H metrics
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['none', 'dmso', 'latrunculinA', 'blebbistatin']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['none & 0.0', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('none & 0.0', 'dmso & 0.0'), ('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['bestH0'] <= 780),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['none & 0.0', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('none & 0.0', 'dmso & 0.0'), ('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+
+# %%%%% H metrics without "no drug"
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['none', 'dmso', 'latrunculinA', 'blebbistatin']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['none & 0.0', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('none & 0.0', 'dmso & 0.0'), ('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['bestH0'] <= 780),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['none & 0.0', 'dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('none & 0.0', 'dmso & 0.0'), ('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# %%%%% K metrics
+
+
+# VERSION 1
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA', 'blebbistatin']
+substrate = '20um fibronectin discs'
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+co_order = ['dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+
+
+
+
+# VERSION 2
+
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA', 'blebbistatin']
+substrate = '20um fibronectin discs'
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+co_order = ['dmso & 0.0', 'blebbistatin & 50.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'blebbistatin & 50.0'),
+             ('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+# data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           # (data['fit_valid'] == True),
+           (data['fit_K'] <= 10e3),
+           (data['fit_K'] > 0),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+fig, ax2 = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=box_pairs, stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+plt.show()
+
+
+
+# %%%%% F < 400pN
+
+data = MecaData_AtccDrugs
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+substrate = '20um fibronectin discs'
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
+
+co_order = ['dmso & 0.0', 'ck666 & 50.0', 'ck666 & 100.0']
+box_pairs = []
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+# %%%%% Extremal stress plot
+
+data = MecaData_AtccDrugs
+substrate = '20um fibronectin discs'
+
+
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
+
+
+
+# %%%%% K(s)
+
+data = MecaData_AtccDrugs.reset_index()
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['none', 'dmso', 'latrunculinA', 'blebbistatin']
+
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['cell subtype', 'drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig, ax = out
+ax.set_ylim([0, 20])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['cell subtype', 'drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+plt.show()
+
 
 # %%%% 23-02-16
 
@@ -3569,13 +4078,13 @@ Filters = [(data['validatedThickness'] == True),
 # ax1.set_ylim([0, 10])
 
 out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = 'drug', mode = 'wholeCurve', scale = 'lin', printText = True,
+                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = True,
                                 returnData = 1, returnCount = 1)
 fig2, ax2 = out2
 ax2.set_ylim([0, 20])
 
 out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = 'drug', mode = '300_500', scale = 'lin', printText = True,
+                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = True,
                                 returnData = 1, returnCount = 1)
 fig2, ax2 = out2
 ax2.set_ylim([0, 10])
@@ -3628,26 +4137,9 @@ plt.show()
 # %%%%% K(s)
 
 data = MecaData_AtccDrugs.reset_index()
-dates = ['22-03-28', '22-03-30', '23-02-16']
-drugs = ['dmso', 'blebbistatin']
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['none', 'dmso', 'latrunculinA', 'blebbistatin']
 
-condCols = ['cell subtype', 'drug']
-
-NCond = len(condCols)
-if NCond == 1:
-    condCol = condCols[0]
-elif NCond > 1:
-    newColName = ''
-    for i in range(NCond):
-        newColName += condCols[i]
-        newColName += ' & '
-    newColName = newColName[:-3]
-    data[newColName] = ''
-    for i in range(NCond):
-        data[newColName] += data[condCols[i]].astype(str)
-        data[newColName] = data[newColName].apply(lambda x : x + ' & ')
-    data[newColName] = data[newColName].apply(lambda x : x[:-3])
-    condCol = newColName
 
 Filters = [(data['validatedThickness'] == True),
             (data['UI_Valid'] == True),
@@ -3662,13 +4154,13 @@ Filters = [(data['validatedThickness'] == True),
 # ax1.set_ylim([0, 10])
 
 out = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = 'cell subtype & drug', mode = 'wholeCurve', scale = 'lin', printText = False,
+                                condCols = ['cell subtype', 'drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 fig, ax = out
 ax.set_ylim([0, 20])
 
 out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCol = 'cell subtype & drug', mode = '300_500', scale = 'lin', printText = False,
+                                condCols = ['cell subtype', 'drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 fig2, ax2 = out2
 ax2.set_ylim([0, 10])
@@ -4046,7 +4538,7 @@ fig2, ax2 = plotAllH0(data_main, Filters = Filters, condCols = [],
 
 plt.show()
 
-# %%%% 23-03-08 & 23-03-09
+# %%%% Y27 - 23-03-08 & 23-03-09
 
 # %%%%% Compare the controls 23-03-08 & 23-03-09
 
@@ -4110,6 +4602,32 @@ fig, ax11 = D1Plot(data, condCols=['date', 'drug'], Parameters=[thicknessType], 
 
 renameAxes(ax11, renameDict1)
 renameAxes(ax11, rD)
+
+# Part 1.3.
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+# dates = ['23-02-16', '23-02-23', '23-03-08', 
+#          '23-03-09', '23-03-16', '23-03-17',
+#          '23-04-20', '23-04-26', '23-04-28']
+
+dates = ['23-03-08', '23-03-09']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
 
 # Part 2.
 
@@ -4186,14 +4704,11 @@ ax33.set_ylim([0, 25])
 plt.show()
 
 
-# %%%%% H and K Y27
+# %%%%% H metrics
 
 # fig, axes = plt.subplots(2,2, figsize = (9,7))
 
-fitType = 'stressGaussian'
-fitId = '300_100'
-c, hw = np.array(fitId.split('_')).astype(int)
-fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
 
 rD = {'none & 0.0' : 'No drug',
       'Y27 & 10.0' : 'Y27\n(10µM)', 
@@ -4213,7 +4728,8 @@ data = data_main
 Filters = [(data['validatedThickness'] == True), 
            (data['surroundingThickness'] <= 800),
            (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates))]
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-03-08_M3']))]
 
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
 
@@ -4238,8 +4754,10 @@ data = data_main
 
 Filters = [(data['validatedThickness'] == True), 
            (data['surroundingThickness'] <= 800),
+           (data['bestH0'] <= 780),
            (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates))]
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-03-08_M3']))]
 
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
 
@@ -4251,35 +4769,41 @@ fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thickne
 renameAxes(ax11, renameDict1)
 renameAxes(ax11, rD)
 
-# Part 2.
+
+# %%%%% K metrics
+
+data_main = MecaData_Atcc
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
 
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
-data['fit_K'] = data['fit_K']/1e3
+# data['fit_K'] = data['fit_K']/1e3
 
 Filters = [(data['validatedThickness'] == True), 
-           (data['fit_valid'] == True),
-            (data['fit_K'] <= 10),
+           # (data['fit_valid'] == True),
+            (data['fit_K'] <= 10e3),
             (data['substrate'] == substrate),
             # (data['ctFieldMinThickness'] >= 200**2),
             (data['date'].apply(lambda x : x in dates))]
 
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
 
-# fig, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
-#                 Boxplot=True, cellID='cellID', co_order=co_order, 
-#                 AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
-#                 figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
-
 fig, ax2 = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
             parm = 'fit_K', weightParm = 'fit_ciwK',
             co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
             Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
-            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin', unit = 'kPa',
             returnData = 0, returnCount = 0)
-
-
-
 
 renameAxes(ax2, renameDict1)
 renameAxes(ax2, rD)
@@ -4303,6 +4827,80 @@ renameAxes(ax2, rD)
 # fig.suptitle('3T3aSFL & drugs\nPreliminary data')
 # ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
+
+# %%%%% Extremal stress plot
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+# dates = ['23-02-16', '23-02-23', '23-03-08', 
+#          '23-03-09', '23-03-16', '23-03-17',
+#          '23-04-20', '23-04-26', '23-04-28']
+
+dates = ['23-03-08', '23-03-09']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
+# %%%%% F < 400pN
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+dates = ['23-03-08', '23-03-09']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+
+box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
 
 
 
@@ -4394,7 +4992,7 @@ plt.show()
 
 
 
-# %%%% 23-03-16 & 23-03-17
+# %%%% Blebbi - 23-03-16 & 23-03-17
 
 # %%%%% Compare the controls 23-03-16 & 23-03-17
 
@@ -4598,14 +5196,14 @@ renameAxes(ax11, renameDict1)
 renameAxes(ax11, rD)
 
 # Part 2.
-
+fitId = '500_100'
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
-data['fit_K'] = data['fit_K']/1e3
+# data['fit_K'] = data['fit_K']/1e3
 
 Filters = [(data['validatedThickness'] == True), 
            (data['fit_valid'] == True),
-            (data['fit_K'] <= 10),
+            (data['fit_K'] <= 10000),
             (data['substrate'] == substrate),
             # (data['ctFieldMinThickness'] >= 200**2),
             (data['date'].apply(lambda x : x in dates))]
@@ -4624,6 +5222,35 @@ D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=T
 
 renameAxes(ax2, renameDict1)
 renameAxes(ax2, rD)
+
+
+# Part 2.2
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['E_Chadwick'] <= 20000),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+plt.show()
+
 
 # titles = ['Blebbistatin', 'LatrunculinA']
 # tl = matplotlib.ticker.MultipleLocator(2)
@@ -4794,11 +5421,1462 @@ fig.suptitle('Thickness - Stiffness relation at low stress')
 plt.show()
 
 
+# %%%% Blebbi - 03-16, 03-17 & 04-20
+
+# %%%%% Compare the controls 03-16, 03-17 & 04-20
+
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.1
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M1', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5']
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5']
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.3
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'ctFieldThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16', 'dmso & 23-03-17', 'dmso & 23-04-20']
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'date'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+# Part 2.
+
+fitType = 'stressGaussian'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'dmso'),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M1', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5']
+
+fig, ax2 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+# Part 2.2
+
+fitType = 'stressGaussian'
+fitId = '250_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'dmso'),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16', 'dmso & 23-03-17', 'dmso & 23-04-20']
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'date'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+
+# Part 3.
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '250_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 10])
+
+out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '400_800', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig32, ax32 = out32
+ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug'], mode = '250_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig34, ax34 = out34
+ax34.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle(
+
+
+plt.show()
+
+
+# %%%%% Compare the Blebbi 50µM - 03-16 & 04-20
+
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.1
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'date'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.2
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'date'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+# Part 2.
+
+# Part 2.2
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'blebbistatin'),
+            (data['concentration'] == 50),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'date'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+
+
+# Part 2.2
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'blebbistatin'),
+            (data['concentration'] == 50),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'date'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+
+# Part 3.
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '400_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 15])
+
+# out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['date', 'drug'], mode = '400_800', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig32, ax32 = out32
+# ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+# out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['drug'], mode = '250_600', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig34, ax34 = out34
+# ax34.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle(
+
+
+plt.show()
+
+
+# %%%%% H and K Blebbi
+
+data_main = MecaData_Atcc
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 250.0']
+
+
+# Part 1.1
+
+data = data_main
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+data = data_main
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+plt.show()
+
+
+# Part 2.
+
+
+# Part 2.1
+fitType = 'stressGaussian'
+fitId = '500_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+# data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+            # (data['fit_valid'] == True),
+           # (data['fit_K'] > 0),
+            (data['fit_K'] <= 10000),
+            (data['substrate'] == substrate),
+            # (data['ctFieldMinThickness'] >= 200**2),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+# Part 2.2
+
+data_main = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['E_Chadwick'] <= 20000),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+plt.show()
+
+
+# %%%%% Extremal stress plot
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+# dates = ['23-02-16', '23-02-23', '23-03-08', 
+#          '23-03-09', '23-03-16', '23-03-17',
+#          '23-04-20', '23-04-26', '23-04-28']
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
+
+# %%%%% F < 400pN
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 250.0']
+
+# box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+
+
+
+# %%%%% K(s) Blebbi-2023
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 100
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 10])
+
+out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '400_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig32, ax32 = out32
+ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '600_800', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig34, ax34 = out34
+ax34.set_ylim([0, 25])
+
+plt.show()
+
+# %%%%% Fluctuations
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['compNum'] >= 4),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='ctFieldFluctuAmpli', condCol=['drug', 'concentration'], 
+                        Filters=Filters, cellID='cellID', co_order = co_order,
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD, format_xticks=False)
+ax.set_xlim([0, 500])
+ax.set_ylim([0, 300])
+
+fig.suptitle('Thickness - Fluctuation')
+
+plt.show()
+
+
+# %%%%% Thickness - LowStress stiffness
+
+data_main = MecaData_Atcc
+fitType = 'stressGaussian'
+fitId = '200_75'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit on [{:.0f}, {:.0f}] Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+dates = ['23-03-16', '23-03-17']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='fit_K', condCol=['drug', 'concentration'], 
+                        Filters=Filters, cellID='cellID', co_order = [],
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=k*x^a', writeEqn=True,
+                        xscale = 'log', yscale = 'log', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD)
+ax.set_xlim([50, 1200])
+ax.set_ylim([0, 30000])
+
+fig.suptitle('Thickness - Stiffness relation at low stress')
+
+plt.show()
+
+
+
+
+
+
+
+
+# %%%% Blebbi - 03-16, 03-17 & 04-20 -> dmso vs. 10 vs. 50 µM only !
+
+# 23-03-16	M1	compressionsLowStart	dmso	        0.0
+# 23-03-16	M2	compressionsLowStart	blebbistatin	50.0
+#
+# 23-03-17	M3	compressionsLowStart	blebbistatin	10.0
+# 23-03-17	M4	compressionsLowStart	dmso	        0.0
+#
+# 23-04-20	M1	compressionsLowStart	dmso	        0.0 -> NON
+# 23-04-20	M2	compressionsLowStart	blebbistatin	250.0 -> NON
+# 23-04-20	M3	compressionsLowStart	blebbistatin	50.0
+# 23-04-20	M4	compressionsLowStart	dmso	        0.0
+# 23-04-20	M5	compressionsLowStart	dmso	        0.0
+
+
+# %%%%% Compare the controls 03-16, 03-17 & 04-20
+
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.1
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5', 'dmso & 23-04-20_M1']
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           # (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5', 'dmso & 23-04-20_M1']
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.3
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'ctFieldThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           # (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5', 'dmso & 23-04-20_M1']
+# co_order = ['dmso & 23-03-16', 'dmso & 23-03-17', 'dmso & 23-04-20']
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+# Part 2.
+
+fitType = 'stressGaussian'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'dmso'),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['dmso & 23-03-16_M1', 'dmso & 23-03-17_M4', 'dmso & 23-04-20_M4', 'dmso & 23-04-20_M5', 'dmso & 23-04-20_M1']
+
+fig, ax2 = D1Plot(data, condCols=['drug', 'manipID'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+# Part 3.
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '250_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 10])
+
+out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '400_800', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig32, ax32 = out32
+ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug'], mode = '250_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig34, ax34 = out34
+ax34.set_ylim([0, 10])
+
+plt.show()
+
+
+# %%%%% Compare the Blebbi 50µM - 03-16 & 04-20
+
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.1
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'date'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.2
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'date'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+# Part 2.
+
+# Part 2.1
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'blebbistatin'),
+            (data['concentration'] == 50),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+fig, ax22 = D1Plot(data, condCols=['drug', 'date'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+
+
+
+renameAxes(ax22, renameDict1)
+renameAxes(ax22, rD)
+
+
+
+# Part 3.
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '400_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 15])
+
+# out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['date', 'drug'], mode = '400_800', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig32, ax32 = out32
+# ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+# out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['drug'], mode = '250_600', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig34, ax34 = out34
+# ax34.set_ylim([0, 10])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+
+
+
+
+
+# Part 4
+
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'] == 'blebbistatin'),
+            (data['concentration'] == 50),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+
+co_order = ['blebbistatin & 23-03-16', 'blebbistatin & 23-04-20']
+
+# box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'date'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+# Extremal stress
+
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+# dates = ['23-02-16', '23-02-23', '23-03-08', 
+#          '23-03-09', '23-03-16', '23-03-17',
+#          '23-04-20', '23-04-26', '23-04-28']
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+           (data['drug'] == 'blebbistatin'),
+           (data['concentration'] == 50),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'date'], Filters=Filters, split = False)
+
+plt.show()
+
+
+
+# %%%%% H metrics
+
+data_main = MecaData_Atcc
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+
+# Part 1.1
+
+data = data_main
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+           (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           ]
+
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+plt.show()
+
+# Part 1.3
+
+thicknessType = 'ctFieldThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax13 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax13, renameDict1)
+renameAxes(ax13, rD)
+
+plt.show()
+
+
+# %%%%% K metrics
+
+data_main = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0'] # ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+
+# Part 1
+
+fitType = 'stressGaussian'
+fitId = '500_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+rD = {'none & 0.0' : 'No drug',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['fit_K'] <= 10000),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+            (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            ]
+
+D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+# %%%%% Extremal stress plot
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+           (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
+
+# %%%%% F < 400pN
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+            (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+            ]
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+# box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+
+
+
+# %%%%% K(s) Blebbi-2023
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+           (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '200_400', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 10])
+
+out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '400_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig32, ax32 = out32
+ax32.set_ylim([0, 15])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '600_800', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 20])
+
+out34 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig34, ax34 = out34
+ax34.set_ylim([0, 25])
+
+plt.show()
+
+
+
+
+
+
+
+
 # %%%% Y27 + Blebbi
 
-# %%%%% Test new plots
+
+# %%%%% H metrics
 
 # fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+
+data_main = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Measured Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 590),
+           (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+plt.show()
+
+# %%%%% K metrics
+
+
+# VERSION 1
+
+data_main = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
 
 fitType = 'stressGaussian'
 fitId = '400_100'
@@ -4811,102 +6889,51 @@ rD = {'none & 0.0' : 'No drug',
       'dmso & 0.0' : 'DMSO', 
       'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
       'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
-      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
       'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
 
-# Part 1.
-
-data_main = MecaData_Atcc
-dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17'] # ['22-03-28', '22-03-30', '22-11-23']
-substrate = '20um fibronectin discs'
-thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
-
-data = data_main
-
-Filters = [(data['validatedThickness'] == True), 
-           (data['surroundingThickness'] <= 800),
-           (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates))]
-
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
 box_pairs = [['none & 0.0', 'dmso & 0.0'],
               ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
               ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
 
-out1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
-                Boxplot=True, cellID='cellID', co_order=co_order, 
-                AvgPerCell = True, stats=1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
-                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1,
-                returnData = 1, returnCount = 1)
-
-fig1, ax1, dfExp1, dfCount1 = out1
-
-renameAxes(ax1, renameDict1)
-renameAxes(ax1, rD)
-
-
-out2 = D1Plot_vars(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
-                    cellID='cellID', co_order=co_order, 
-                    stats = 1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
-                    figSizeFactor = 1.4, markersizeFactor=1.2, stressBoxPlot=1)
-
-fig2, ax2 = out2[:2]
-
-renameAxes(ax2, renameDict1)
-renameAxes(ax2, rD)
-
-
-
-# Part 2.
 
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
 data['fit_K'] = data['fit_K']/1e3
-data['E_Chadwick'] = data['E_Chadwick']/1e3
 
 Filters = [(data['validatedThickness'] == True), 
-            (data['valid_Chadwick'] == True),
-             (data['E_Chadwick'] <= 10),
-           # (data['fit_valid'] == True),
-           #  (data['fit_K'] <= 10),
-            (data['substrate'] == substrate),
-            (data['date'].apply(lambda x : x in dates))]
+           (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
 
-co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
-box_pairs = [['none & 0.0', 'dmso & 0.0'],
-              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
-              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
 
-out1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=co_order, 
-                AvgPerCell = True, stats=1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
-                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1,
-                returnData = 1, returnCount = 1)
-
-fig1, ax1, dfExp1, dfCount1 = out1
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
 
 renameAxes(ax1, renameDict1)
 renameAxes(ax1, rD)
 
 
-out2 = D1Plot_vars(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
-                    cellID='cellID', co_order=co_order, 
-                    stats = 1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
-                    figSizeFactor = 1.4, markersizeFactor=1.2, stressBoxPlot=1)
-
-fig2, ax2 = out2[:2]
-
-renameAxes(ax2, renameDict1)
-renameAxes(ax2, rD)
-
-plt.show()
 
 
-# %%%%% H and K Y27 + Blebbi
 
-# fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+# VERSION 2
+
+
+data_main = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
 
 fitType = 'stressGaussian'
-fitId = '300_100'
+fitId = '400_100'
 c, hw = np.array(fitId.split('_')).astype(int)
 fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
 
@@ -4916,149 +6943,190 @@ rD = {'none & 0.0' : 'No drug',
       'dmso & 0.0' : 'DMSO', 
       'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
       'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
-      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
       'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
 
-# Part 1.1
-
-# Part 1.1
-
-data_main = MecaData_Atcc
-dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17'] # ['22-03-28', '22-03-30', '22-11-23']
-substrate = '20um fibronectin discs'
-thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
-
-data = data_main
-
-Filters = [(data['validatedThickness'] == True), 
-           (data['surroundingThickness'] <= 800),
-           (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates))]
-
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
 
-fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
-                Boxplot=True, cellID='cellID', co_order=co_order, 
-                AvgPerCell = True, stats=False, statMethod='Mann-Whitney', box_pairs=[], 
-                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
-
-renameAxes(ax1, renameDict1)
-renameAxes(ax1, rD)
-
-# Part 1.2
-
-data_main = MecaData_Atcc
-dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17'] # ['22-03-28', '22-03-30', '22-11-23']
-substrate = '20um fibronectin discs'
-thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
-
-data = data_main
-
-Filters = [(data['validatedThickness'] == True), 
-           (data['surroundingThickness'] <= 800),
-           (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates))]
-
-co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
-# box_pairs = [['none & 0.0', 'dmso & 0.0'],
-#              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
-#              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
-box_pairs = []
-
-fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
-                Boxplot=True, cellID='cellID', co_order=co_order, 
-                AvgPerCell = True, stats=False, statMethod='Mann-Whitney', box_pairs=box_pairs, 
-                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
-
-renameAxes(ax11, renameDict1)
-renameAxes(ax11, rD)
-
-# Part 2.
 
 data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
 
-data['fit_K'] = data['fit_K']/1e3
+# data['fit_K'] = data['fit_K']/1e3
 
 Filters = [(data['validatedThickness'] == True), 
-           (data['fit_valid'] == True),
-            (data['fit_K'] <= 10),
+           # (data['fit_valid'] == True),
+           (data['fit_K'] <= 10e3),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+fig, ax2 = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=box_pairs, stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+plt.show()
+
+
+# %%%%% F < 400pN
+
+data = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
             (data['substrate'] == substrate),
-            # (data['ctFieldMinThickness'] >= 200**2),
-            (data['date'].apply(lambda x : x in dates))]
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
 
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
 
-fig, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
                 Boxplot=True, cellID='cellID', co_order=co_order, 
-                AvgPerCell = True, stats=False, statMethod='Mann-Whitney', box_pairs=[], 
-                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
-
-
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
 
 
 renameAxes(ax2, renameDict1)
 renameAxes(ax2, rD)
 
-# titles = ['Blebbistatin', 'LatrunculinA']
-# tl = matplotlib.ticker.MultipleLocator(2)
-
-# for k in range(2):
-#     axes[0,k].set_ylim([0,900])
-#     axes[1,k].set_ylim([0,12.5])
-#     axes[k,1].set_ylabel('')
-#     # axes[0,k].set_xticklabels([])
-#     axes[0,k].set_title(titles[k])
-#     axes[1,k].yaxis.set_major_locator(tl)
-
-
-
-# ax[0].set_ylim([0, 1000])
-# ax[0].legend(loc = 'upper right', fontsize = 8)
-# ax[1].legend(loc = 'upper right', fontsize = 8)
-# fig.suptitle('3T3aSFL & drugs\nPreliminary data')
-# ufun.archiveFig(fig, ax, name='3T3aSFL_Jan21_drug_H&Echad_simple', figSubDir = figSubDir)
 plt.show()
 
 
 
-# %%%%% K(s) Y27 + Blebbi
+
+# %%%%% K(s)
 
 
 data = MecaData_Atcc
-dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17']
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
 substrate = '20um fibronectin discs'
+fW = 75
 
 Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
            (data['substrate'] == substrate),
-           (data['date'].apply(lambda x : x in dates)),
-          ]
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
 
-out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+
+out0 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '200_400', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
+fig0, ax0 = out0
+ax0.set_ylim([0, 12])
+
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = '300_500', scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
 fig1, ax1 = out1
 ax1.set_ylim([0, 12])
 
-out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCols = ['drug', 'concentration'], mode = '500_700', scale = 'lin', printText = False,
-                                returnData = 1, returnCount = 1)
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = '350_650', scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
 fig2, ax2 = out2
-ax2.set_ylim([0, 20])
+ax2.set_ylim([0, 12.5])
 
-out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
-                                returnData = 1, returnCount = 1)
+out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
 fig3, ax3 = out3
 ax3.set_ylim([0, 20])
 
-# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
-#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
-# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
-#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+# %%%%% K(s) VERSION 2
 
-# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
-# fig2.suptitle('3T3 vs. HoxB8 - stiffness')
+rD_legend = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10µM', 
+      'Y27 & 50.0' : 'Y27 50µM', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi 10µM',  
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      }
+
+fig00, axes = plt.subplots(1,2, figsize = (8,4), sharey = True)
+
+data = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+fW = 75
+mode = '300_600'
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['none', 'Y27'])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+out01 = plotPopKS_V2(data, fig=fig00, ax=axes[0], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+axes[0].set_ylim([0, 10])
+axes[0].set_ylabel('Tangeantial Modulus (kPa)')
+axes[0].legend(loc='lower right', fontsize = 10)
+renameLegend(axes[0], rD_legend)
+
+# Blebbi
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+out02 = plotPopKS_V2(data, fig=fig00, ax=axes[1], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+axes[1].set_ylim([0, 10])
+axes[1].set_ylabel('')
+axes[1].legend(loc='lower right', fontsize = 10)
+renameLegend(axes[1], rD_legend)
+
+
 plt.show()
 
 
@@ -5148,11 +7216,807 @@ for ax in [ax1, ax2, ax3, ax4]:
 plt.show()
 
 
+# %%%%% Test new plots
+
+# fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+# Part 1.
+
+data_main = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+out1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1,
+                returnData = 1, returnCount = 1)
+
+fig1, ax1, dfExp1, dfCount1 = out1
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+out2 = D1Plot_vars(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                    cellID='cellID', co_order=co_order, 
+                    stats = 1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                    figSizeFactor = 1.4, markersizeFactor=1.2, stressBoxPlot=1)
+
+fig2, ax2 = out2[:2]
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+# Part 2.
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+data['fit_K'] = data['fit_K']/1e3
+data['E_Chadwick'] = data['E_Chadwick']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['valid_Chadwick'] == True),
+             (data['E_Chadwick'] <= 10),
+           # (data['fit_valid'] == True),
+           #  (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+out1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1,
+                returnData = 1, returnCount = 1)
+
+fig1, ax1, dfExp1, dfCount1 = out1
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+out2 = D1Plot_vars(data, condCols=['drug', 'concentration'], Parameters=['E_Chadwick'], Filters=Filters, 
+                    cellID='cellID', co_order=co_order, 
+                    stats = 1, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                    figSizeFactor = 1.4, markersizeFactor=1.2, stressBoxPlot=1)
+
+fig2, ax2 = out2[:2]
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+
+
+# %%%% CK666
+
+# 23-04-26	M1	compressionsLowStart	ck666	50
+# 23-04-26	M2	compressionsLowStart	dmso	0
+# 23-04-26	M3	compressionsLowStart	ck666	100
+# 23-04-28	M1	compressionsLowStart	dmso	0
+# 23-04-28	M2	compressionsLowStart	ck666	100
+# 23-04-28	M3	compressionsLowStart	ck666	50
+
+# %%%%% Compare the controls '23-04-26', '23-04-28'
+
+
+data_main = MecaData_Atcc
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+data = data_main
+co_order = ['23-04-26 & dmso', '23-04-28 & dmso']
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['date'].apply(lambda x : x in dates))]
+
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+
+fig, ax1 = D1Plot(data, condCols=['date', 'drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+
+co_order = ['23-04-26 & dmso', '23-04-28 & dmso']
+
+fig, ax11 = D1Plot(data, condCols=['date', 'drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+
+
+
+# Part 2.
+
+data_main = MecaData_Atcc
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+            (data['fit_K'] <= 10),
+            (data['substrate'] == substrate),
+            (data['drug'] == 'dmso'),
+            (data['date'].apply(lambda x : x in dates))]
+
+co_order = ['23-04-26 & dmso', '23-04-28 & dmso']
+
+fig, ax2 = D1Plot(data, condCols=['date', 'drug'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+# Part 3.
+
+data = MecaData_Atcc
+dates = ['23-04-26', '23-04-28']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'] == 'dmso'),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+# out1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+#                                 condCol = 'drug', mode = '200_400', scale = 'lin', printText = True,
+#                                 returnData = 1, returnCount = 1)
+# fig1, ax1, exportDf1, countDf1 = out1
+# ax1.set_ylim([0, 10])
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '250_600', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_ylim([0, 20])
+
+out32 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = '400_800', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig32, ax32 = out32
+ax32.set_ylim([0, 25])
+
+out33 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['date', 'drug'], mode = 'wholeCurve', scale = 'lin', printText = True,
+                                returnData = 1, returnCount = 1)
+fig33, ax33 = out33
+ax33.set_ylim([0, 25])
+
+# data_ff1 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = 'wholeCurve', scale = 'lin', printText = False)
+# data_ff2 = plotPopKS(data, fitType = 'stressGaussian', fitWidth=50, Filters = Filters, 
+#                                 condCol = 'cell type', mode = '150_550', scale = 'lin', printText = True)
+
+# fig1.suptitle('3T3 vs. HoxB8 - stiffness')
+# fig2.suptitle(
+
+
+plt.show()
+
+
+# %%%%% H metrics
+
+# fig, axes = plt.subplots(2,2, figsize = (9,7))
+
+
+data_main = MecaData_Atcc
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+# dates = ['23-04-28']
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           # (data['surroundingThickness'] <= 590),
+           # (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           ]
+
+co_order = ['dmso & 0.0', 'ck666 & 50.0', 'ck666 & 100.0']
+box_pairs = []
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax11 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 0.6, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax12 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 0.6, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+
+plt.show()
+
+# %%%%% K metrics
+
+
+# VERSION 1
+
+data_main = MecaData_Atcc
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+co_order = ['dmso & 0.0', 'ck666 & 50.0', 'ck666 & 100.0']
+box_pairs = []
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+
+fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+
+
+
+
+# VERSION 2
+
+
+data_main = MecaData_Atcc
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+co_order = ['dmso & 0.0', 'ck666 & 50.0', 'ck666 & 100.0']
+box_pairs = []
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+# data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           # (data['fit_valid'] == True),
+           (data['fit_K'] <= 10e3),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+fig, ax2 = D1Plot_K(data, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=box_pairs, stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+plt.show()
+
+
+
+
+# %%%%% F < 400pN
+
+data = MecaData_Atcc
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+dates = ['23-04-26', '23-04-28']
+substrate = '20um fibronectin discs'
+
+rD = {'dmso & 0.0' : 'DMSO', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Measured H (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr,
+      'E_f_<_400_kPa' : 'Elastic modulus (kPa)\n[F < 400pN]',}
+
+
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
+
+co_order = ['dmso & 0.0', 'ck666 & 50.0', 'ck666 & 100.0']
+box_pairs = []
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+# %%%%% Extremal stress plot
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+plt.show()
+
+
+# %%%%% K(s)
+
+
+data = MecaData_Atcc
+dates = ['23-04-26'] # ['23-04-26', '23-04-28']
+dates = ['23-04-28']
+dates = ['23-04-26', '23-04-28']
+
+substrate = '20um fibronectin discs'
+fW = 75
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
+
+
+out0 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '200_400', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig0, ax0 = out0
+ax0.set_ylim([0, 12])
+
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 10])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '350_650', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 12.5])
+
+out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig3, ax3 = out3
+ax3.set_ylim([0, 20])
+
+
+plt.show()
+
+
+
+# %%%% Some cool checks
+
+# %%%%% 3 parts plot
+
+data_main = MecaData_Atcc
+fitType = '3parts'
+fitId = ''
+# c, hw = np.array(fitId.split('_')).astype(int)
+# fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+def plotRatio3part(data, condCols, Filters, defaultColors = False):
+    data_f = data
+    for fltr in Filters:
+        data_f = data_f.loc[fltr]
+    
+    NCond = len(condCols)    
+    if NCond == 1:
+        condCol = condCols[0]
+    elif NCond > 1:
+        newColName = ''
+        for i in range(NCond):
+            newColName += condCols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        data_f[newColName] = ''
+        for i in range(NCond):
+            data_f[newColName] += data_f[condCols[i]].astype(str)
+            data_f[newColName] = data_f[newColName].apply(lambda x : x + ' & ')
+        data_f[newColName] = data_f[newColName].apply(lambda x : x[:-3])
+        condCol = newColName
+        
+    conditions = list(data_f[condCol].unique())
+    
+    if not defaultColors:
+        try:
+            colorList, markerList = getStyleLists(conditions, styleDict1)
+        except:
+            colorList, markerList = gs.colorList30, gs.markerList10
+    else:
+        colorList, markerList = gs.colorList30, gs.markerList10
+        
+        
+    data = taka2.getFitsInTable(data_f, fitType='3parts')
+    
+    #### 
+
+
+
+
+# %%%%% Extremal stress plot
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+# dates = ['23-02-16', '23-02-23', '23-03-08', 
+#          '23-03-09', '23-03-16', '23-03-17',
+#          '23-04-20', '23-04-26', '23-04-28']
+
+dates = ['23-03-08', '23-03-09']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+          ]
+
+fig, ax = StressRange_2D(data, condCols=['drug'], Filters=Filters, split = True)
+
+plt.show()
+
+
+# %%%%% All controls
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+dates = ['23-02-16', '23-02-23', '23-03-08', 
+         '23-03-09', '23-03-16', '23-03-17',
+         '23-04-20', '23-04-26', '23-04-28']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+            (data['ctFieldThickness'] <= 600),
+            (data['surroundingThickness'] <= 500),
+           (data['substrate'] == substrate),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+          ]
+
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig1, ax1 = D1Plot(data, condCols=['drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=False, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+plt.show()
+
+
+# %%%%% All controls K(s)
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['drug'].apply(lambda x : x in ['none', 'dmso'])), # , 'Y27'
+           (data['date'].apply(lambda x : x not in ['23-04-26', '23-04-28'])),
+          ]
+
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '300_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 12])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug','date'], mode = '300_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 12])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug','date'], mode = '300_500', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug'], mode = '400_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 12])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug','date'], mode = '400_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+
+out1 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug'], mode = '600_800', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 12])
+
+out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug','date'], mode = '600_800', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig2, ax2 = out2
+ax2.set_ylim([0, 20])
+
+
+out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                                condCols = ['drug','date'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig3, ax3 = out3
+ax3.set_ylim([0, 20])
+
+plt.show()
+
+
+# %%%%% ALT dataframe for tests
+
+data = MecaData_Atcc
+substrate = '20um fibronectin discs'
+
+drugList = ['none', 'dmso', 'Y27', 'blebbistatin', 'ck666']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+
+# Part 1.1
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['drug'].apply(lambda x : x in drugList))]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 
+            'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 250.0',
+            'ck666 & 50.0', 'ck666 & 100.0']
+
+box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'),
+            ('dmso & 0.0', 'blebbistatin & 10.0'), ('dmso & 0.0', 'blebbistatin & 50.0'), ('dmso & 0.0', 'blebbistatin & 250.0'),
+            ('dmso & 0.0', 'ck666 & 50.0'), ('dmso & 0.0', 'ck666 & 100.0'),]
+
+fig1, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+# Part 2.
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data['Stiffness'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data['Stiffness'] <= 20),
+            (data['substrate'] == substrate),
+            (data['drug'].apply(lambda x : x in drugList))]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 
+            'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 250.0',
+            'ck666 & 50.0', 'ck666 & 100.0']
+
+box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'),
+            ('dmso & 0.0', 'blebbistatin & 10.0'), ('dmso & 0.0', 'blebbistatin & 50.0'), ('dmso & 0.0', 'blebbistatin & 250.0'),
+            ('dmso & 0.0', 'ck666 & 50.0'), ('dmso & 0.0', 'ck666 & 100.0'),]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=['Stiffness'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+
 # %%% Non-linearity
 
 gs.set_bigText_options_jv()
 
-data = MecaData_All
+data = MecaData_Atcc
 
 Filters = [(data['validatedThickness'] == True), 
            (data['surroundingThickness'] <= 800),
@@ -5194,7 +8058,7 @@ gs.set_bigText_options_jv()
 
 # %%%%%  Low stress
 
-data_main = MecaData_All
+data_main = MecaData_Atcc
 fitType = 'stressGaussian'
 fitId = '200_75'
 c, hw = np.array(fitId.split('_')).astype(int)
@@ -5237,7 +8101,7 @@ plt.show()
 
 # %%%%  Medium stress
 
-data_main = MecaData_All
+data_main = MecaData_Atcc
 fitType = 'stressGaussian'
 fitId = '400_75'
 c, hw = np.array(fitId.split('_')).astype(int)
@@ -5280,7 +8144,7 @@ plt.show()
 
 # %%%%  Thickness stiffness curves
 
-data_main = MecaData_All
+data_main = MecaData_Atcc
 fitType = 'stressGaussian'
 fitId = '500_75'
 
@@ -5319,7 +8183,7 @@ plt.show()
 # %%%%  Median-Fluctu on compression expts
 # 'aSFL-A11', 
 
-data = MecaData_All
+data = MecaData_Atcc
 
 Filters = [(data['validatedThickness'] == True),
            (data['cell type'].apply(lambda x : x in ['3T3'])),
@@ -5391,7 +8255,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 
 Filters = [(data['validatedFit'] == True), 
            (data['validatedThickness'] == True),
@@ -5411,7 +8275,7 @@ print(data_f[data_f['validatedFit_s<500Pa'] & data_f['validatedFit_500<s<1000Pa'
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fits = ['s<500Pa', '250<s<750Pa', '500<s<1000Pa']
 
@@ -5435,7 +8299,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fits = ['s<500Pa', '250<s<750Pa', '500<s<1000Pa']
 
@@ -5459,7 +8323,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fits = ['s<400Pa', '300<s<700Pa', '600<s<1000Pa']
 
@@ -5483,7 +8347,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-12-08', '22-01-12']
 fits = ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -5508,7 +8372,7 @@ plt.show()
 
 
 # ['21-12-08', '21-12-16', '22-01-12']
-data = MecaData_All
+data = MecaData_Atcc
 
 dates = ['22-02-09'] #['21-12-08', '22-01-12'] ['21-01-18', '21-01-21', '21-12-08']
 
@@ -5560,7 +8424,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = 's<200Pa_included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5584,7 +8448,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = '100<s<300Pa_200included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5611,7 +8475,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5638,7 +8502,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['22-01-12']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5665,7 +8529,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21', '22-01-12']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5692,7 +8556,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = 's<300Pa_included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5716,7 +8580,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = '200<s<500Pa_350included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5740,7 +8604,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = 's<200Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5764,7 +8628,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = '250<s<750Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5788,7 +8652,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-01-18', '21-01-21']
 fit = '500<s<1000Pa' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
 
@@ -5812,7 +8676,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-12-08', '21-12-16', '22-01-12']
 fit = '' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -5836,14 +8700,14 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['22-01-12']
 fit = '_s<400Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
-Filters = [(MecaData_All['validatedFit'] == True), 
-           (MecaData_All['validatedThickness'] == True), 
-           (MecaData_All['substrate'] == '20um fibronectin discs'),
-           (MecaData_All['date'].apply(lambda x : x in dates))]
+Filters = [(MecaData_Atcc['validatedFit'] == True), 
+           (MecaData_Atcc['validatedThickness'] == True), 
+           (MecaData_Atcc['substrate'] == '20um fibronectin discs'),
+           (MecaData_Atcc['date'].apply(lambda x : x in dates))]
 
 fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,condCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
@@ -5859,14 +8723,14 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['22-01-12']
 fit = '_s<300Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
-Filters = [(MecaData_All['validatedFit'] == True), 
-           (MecaData_All['validatedThickness'] == True), 
-           (MecaData_All['substrate'] == '20um fibronectin discs'),
-           (MecaData_All['date'].apply(lambda x : x in dates))]
+Filters = [(MecaData_Atcc['validatedFit'] == True), 
+           (MecaData_Atcc['validatedThickness'] == True), 
+           (MecaData_Atcc['substrate'] == '20um fibronectin discs'),
+           (MecaData_Atcc['date'].apply(lambda x : x in dates))]
 
 fig, ax = D2Plot_wFit(data, XCol='surroundingThickness',YCol='EChadwick' + fit,condCol = ['bead type'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
@@ -5882,7 +8746,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-12-08', '21-12-16', '22-01-12']
 fit = '' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -5891,7 +8755,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(MecaData_All, XCol='ctFieldThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_Atcc, XCol='ctFieldThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=True, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -5905,7 +8769,7 @@ plt.show()
 # %%%%%
 
 
-data = MecaData_All
+data = MecaData_Atcc
 dates = ['21-12-08', '22-01-12']
 fit = '_s<400Pa' # ['s<100Pa', '100<s<200Pa', '200<s<300Pa']
 
@@ -5925,7 +8789,7 @@ Filters = [(data['validatedFit'] == True),
            (data['substrate'] == '20um fibronectin discs'),
            (data['date'].apply(lambda x : x in dates))]
 
-fig, ax = D2Plot_wFit(MecaData_All, XCol='surroundingThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
+fig, ax = D2Plot_wFit(MecaData_Atcc, XCol='surroundingThickness',YCol='EChadwick' + fit, condCol = ['bead type', 'date'],           Filters=Filters, cellID = 'cellID', AvgPerCell=False, xscale = 'log', yscale = 'log', modelFit=True, modelType='y=k*x^a')
 
 ax.set_ylabel('EChadwick ['+ fit[1:] +']  (Pa)')
 ax.set_xlabel('Thickness at low force (nm)')
@@ -5940,7 +8804,7 @@ plt.show()
 
 
 # plt.close('all')
-data = MecaData_All
+data = MecaData_Atcc
 
 Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True),
           (data['date'].apply(lambda x : x in ['21-12-08', '22-01-12']))] #, '21-12-16'
@@ -5956,7 +8820,7 @@ plt.show()
 
 
 plt.close('all')
-data = MecaData_All
+data = MecaData_Atcc
 
 Filters = [(data['validatedFit'] == True), (data['validatedThickness'] == True),
           (data['date'].apply(lambda x : x in ['21-12-08', '21-12-16', '22-01-12']))] #, '21-12-16'
@@ -7619,7 +10483,7 @@ plt.show()
 
 # %%%%% 1
 
-data_main = MecaData_All
+data_main = MecaData_Atcc
 # dates = 
 
 fitType = 'stressGaussian'
@@ -7671,7 +10535,7 @@ plt.show()
 
 
 # %%%%% Thickness
-data_main = MecaData_All
+data_main = MecaData_Atcc
 data = data_main
 thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
 
@@ -7768,3 +10632,1545 @@ ax2.set_ylim([0, 14])
 # fig2.suptitle('3T3 vs. HoxB8 - stiffness')
 plt.show()
 
+
+# %% Figures for poster
+
+# %%% Blebbi + Y27
+
+renameDict1 = {# Variables
+               'SurroundingThickness':'Thickness at low force (nm)',
+               'surroundingThickness':'Thickness at low force (nm)',
+               'ctFieldThickness':'Thickness at low force (nm)',
+               'EChadwick': 'E Chadwick (Pa)',
+               'medianThickness': 'Median Thickness (nm)',               
+               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
+               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)', 
+               'fit_K' : 'Tangeantial Modulus (Pa)',
+               'bestH0' : r'$Fitted\ H_0\ (nm)$',
+               # Drugs
+               'none':'Control',
+               'dmso':'DMSO',
+               'blebbistatin':'Blebbi',
+               'latrunculinA':'LatA',
+               'Y27':'Y27',
+               }
+
+styleDict1 =  {# Drugs
+               'none':{'color': gs.colorList40[10],'marker':'o'},
+               'none & 0.0':{'color': gs.colorList40[10],'marker':'o'},
+               #
+                'dmso':{'color': gs.colorList40[19],'marker':'o'},
+               'dmso & 0.0':{'color': gs.colorList40[19],'marker':'o'},
+               #
+               'blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
+               'blebbistatin & 10.0':{'color': gs.colorList40[2],'marker':'o'},
+               'blebbistatin & 50.0':{'color': gs.colorList40[22],'marker':'o'},
+               'blebbistatin & 250.0':{'color': gs.colorList40[32],'marker':'o'},
+               #
+               'PNB & 50.0':{'color': gs.colorList40[25],'marker':'o'},
+               'PNB & 250.0':{'color': gs.colorList40[35],'marker':'o'},
+               #
+               'latrunculinA':{'color': gs.colorList40[13],'marker':'o'},
+               'latrunculinA & 0.5':{'color': gs.colorList40[13],'marker':'o'},
+               'latrunculinA & 2.5':{'color': gs.colorList40[33],'marker':'o'},
+               #
+               'Y27':{'color': gs.colorList40[7],'marker':'o'},
+               'Y27 & 10.0':{'color': gs.colorList40[7],'marker':'o'},
+               'Y27 & 50.0':{'color': gs.colorList40[27],'marker':'o'},
+               #
+               'ck666 & 50.0':{'color': gs.colorList40[25],'marker':'o'},
+               'ck666 & 100.0':{'color': gs.colorList40[35],'marker':'o'},
+               # Cell types
+               '3T3':{'color': gs.colorList40[30],'marker':'o'},
+               'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
+               'DC':{'color': gs.colorList40[33],'marker':'o'},
+               # Drugs + cell types
+               'aSFL-LG+++ & dmso':{'color': gs.colorList40[19],'marker':'o'},
+               'aSFL-LG+++ & blebbistatin':{'color': gs.colorList40[32],'marker':'o'},
+               'Atcc-2023 & dmso':{'color': gs.colorList40[19],'marker':'o'},
+               'Atcc-2023 & blebbistatin':{'color': gs.colorList40[22],'marker':'o'},
+               }
+
+# %%%% H metric
+
+data_main = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n(10µM)', 
+      'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 590),
+           (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+box_pairs = [['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig11, ax11 = D1Plot(data, fig=fig, ax=ax, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'h', stressBoxPlot=2)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+ufun.archiveFig(fig11, name=('BlebbiY27_H'), figDir = 'PosterFigs', dpi = 250)
+
+# %%%% F < 400pN
+
+data = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n10µM', 
+      'Y27 & 50.0' : 'Y27\n50µM', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbistatin\n10µM',  
+      'blebbistatin & 50.0' : 'Blebbistatin\n50µM', 
+      'blebbistatin & 250.0' : 'Blebbistatin\n250µM', 
+      'ck666 & 50.0' : 'CK666\n(50µM)', 
+      'ck666 & 100.0' : 'CK666\n(100µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (kPa)',
+      }
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+box_pairs = [#['none & 0.0', 'dmso & 0.0'],
+              ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+              ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+
+fig, ax = plt.subplots(1,1, figsize = (8,4))
+
+fig2, ax2 = D1Plot(data, fig=fig, ax=ax, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+fig2.tight_layout()
+
+ufun.archiveFig(fig2, name=('BlebbiY27_E'), figDir = 'PosterFigs', dpi = 250)
+
+plt.show()
+
+
+
+
+# %%%% K(s)
+
+rD_legend = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10µM', 
+      'Y27 & 50.0' : 'Y27 50µM', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi 10µM',  
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      }
+
+fig00, axes = plt.subplots(1,2, figsize = (8,4), sharey = True)
+
+data = MecaData_Atcc
+dates = ['23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-04-20']
+substrate = '20um fibronectin discs'
+fW = 75
+mode = '300_600'
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['none', 'Y27'])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+out01 = plotPopKS_V2(data, fig=fig00, ax=axes[0], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+axes[0].set_ylim([0, 10])
+axes[0].set_ylabel('Tangeantial Modulus (kPa)')
+axes[0].legend(loc='lower right', fontsize = 10)
+renameLegend(axes[0], rD_legend)
+
+# Blebbi
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'blebbistatin'])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+out02 = plotPopKS_V2(data, fig=fig00, ax=axes[1], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+axes[1].set_ylim([0, 10])
+axes[1].set_ylabel('')
+axes[1].legend(loc='lower right', fontsize = 10)
+renameLegend(axes[1], rD_legend)
+
+
+plt.show()
+
+
+ufun.archiveFig(fig00, name=('BlebbiY27_KS'), figDir = 'PosterFigs', dpi = 250)
+
+
+# %%% Other drugs
+
+# %%%% LatA
+
+# %%%%% H metrics
+
+data = MecaData_AtccDrugs
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['dmso & 0.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig11, ax11 = D1Plot(data, fig=fig, ax=ax, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.4, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+plt.show()
+
+ufun.archiveFig(fig11, name=('LatA_H'), figDir = 'PosterFigs', dpi = 250)
+
+# %%%%% F < 400pN
+
+
+data = MecaData_AtccDrugs.reset_index()
+
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      # 'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr,
+      }
+
+
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['dmso & 0.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           ]
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+
+# %%%%% Extremal stress plot
+
+data = MecaData_AtccDrugs
+substrate = '20um fibronectin discs'
+
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['minStress'] > 0),
+           (data['maxStress'] < 10e3),
+           (data['drug'].apply(lambda x : x in ['dmso', 'latrunculinA'])),
+           (data['concentration'].apply(lambda x : x in [0, 0.5, 2.5])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+          ]
+
+fig, axes = StressRange_2D(data, condCols=['drug', 'concentration'], Filters=Filters, split = True)
+
+for ax in axes:
+    ax.set_ylim([0, 4000])
+
+plt.show()
+
+
+
+
+
+# %%%%% K metrics
+
+
+# VERSION 1
+
+data_main = MecaData_AtccDrugs.reset_index()
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['dmso & 0.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+           (data['fit_K'] <= 10),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+
+fig, ax1 = D1Plot(data, fig=fig, ax=ax, condCols=['drug', 'concentration'], Parameters=['fit_K'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax1, renameDict1)
+renameAxes(ax1, rD)
+
+
+
+
+
+
+# VERSION 2
+
+
+data_main = MecaData_AtccDrugs.reset_index()
+
+fitType = 'stressGaussian'
+fitId = '400_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+co_order = ['dmso & 0.0', 'latrunculinA & 0.5', 'latrunculinA & 2.5']
+box_pairs = [('dmso & 0.0', 'latrunculinA & 0.5'), ('dmso & 0.0', 'latrunculinA & 2.5'),
+             ('latrunculinA & 0.5', 'latrunculinA & 2.5'),
+             ]
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+# data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           # (data['fit_valid'] == True),
+           (data['fit_K'] <= 10e3),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+fig, ax2 = D1Plot_K(data, fig=fig, ax=ax, condCols=['drug', 'concentration'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=box_pairs, stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+
+
+plt.show()
+
+
+# %%%%% K(s)
+
+
+data = MecaData_AtccDrugs.reset_index()
+
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      # 'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr,
+      }
+
+
+fig, ax = plt.subplots(2,1, figsize = (8,8))
+
+
+substrate = '20um fibronectin discs'
+fW = 100
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+            ]
+
+
+out0 = plotPopKS_V2(data, fig=fig, ax=ax[0], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '250_450', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig0, ax0 = out0
+ax0.set_ylim([0, 12])
+
+
+out1 = plotPopKS_V2(data, fig=fig, ax=ax[1], fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'concentration'], mode = '400_600', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig1, ax1 = out1
+ax1.set_ylim([0, 12])
+
+# out2 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['drug', 'concentration'], mode = '500_700', scale = 'lin', printText = False,
+#                                 returnData = 1, returnCount = 1)
+# fig2, ax2 = out2
+# ax2.set_ylim([0, 12.5])
+
+# out3 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+#                                 condCols = ['drug', 'concentration'], mode = 'wholeCurve', scale = 'lin', printText = False,
+#                                 returnData = 1, returnCount = 1)
+# fig3, ax3 = out3
+# ax3.set_ylim([0, 20])
+
+rD_legend = {'dmso & 0.0' : 'Ctrl - DMSO',
+              'latrunculinA & 0.5' : 'LatA - 0.5 µM', 
+              'latrunculinA & 2.5' : 'LatA - 2.5 µM', 
+              }
+
+renameLegend(ax, rD_legend)
+
+plt.show()
+
+# %%%%% E(h)
+
+data = MecaData_AtccDrugs.reset_index()
+# data, colName = addMergedCol(data_main, cols = ['drug', 'concentration'])
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['surroundingThickness'] <= 800),
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           ]
+
+# def D2Plot_wFit(data, fig = None, ax = None, 
+#                 XCol='', YCol='', condCol='', 
+#                 Filters=[], cellID='cellID', co_order = [],
+#                 AvgPerCell=False, showManips = True,
+#                 modelFit=False, modelType='y=ax+b', writeEqn = True,
+#                 xscale = 'lin', yscale = 'lin', 
+#                 figSizeFactor = 1, markersizeFactor = 1,
+#                 returnData = False):
+
+fig, ax = D2Plot_wFit(data, XCol='bestH0', YCol=stiffnessType + '_kPa', condCols = ['drug', 'concentration'],
+                 Filters=Filters, cellID = 'cellID', AvgPerCell=False, modelFit=False, 
+                 modelType='y=A*exp(kx)',xscale = 'log', yscale = 'log', markersizeFactor= 3)
+
+fig.suptitle('E(h) - Latrunculin treatment')
+# ufun.archiveFig(fig, ax, name='E(h)_3T3aSFL_Oct21_M450-1-10_vs_M270-5-40', figDir = cp.DirDataFigToday + '//' + figSubDir)
+plt.show()
+
+
+# %%%%% K(h)
+
+data_main = MecaData_AtccDrugs.reset_index()
+
+fitType = 'stressGaussian'
+fitId = '300_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+dates = ['22-03-28', '22-03-30', '22-11-23']
+drugs = ['dmso', 'latrunculinA']
+substrate = '20um fibronectin discs'
+
+rD = {'none & 0.0' : 'No drug',
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'blebbistatin\n(10µM)', 
+      'blebbistatin & 50.0' : 'blebbistatin\n(50µM)', 
+      'blebbistatin & 250.0' : 'blebbistatin\n(250µM)',
+      'latrunculinA & 0.5' : 'LatA\n(0.5µM)', 
+      'latrunculinA & 2.5' : 'LatA\n(2.5µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+data['fit_K'] = data['fit_K']/1e3
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['fit_valid'] == True),
+           (data['bestH0'] <= 800),
+           (data['fit_K'] <= 10),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+           ]
+
+# def D2Plot_wFit(data, fig = None, ax = None, 
+#                 XCol='', YCol='', condCol='', 
+#                 Filters=[], cellID='cellID', co_order = [],
+#                 AvgPerCell=False, showManips = True,
+#                 modelFit=False, modelType='y=ax+b', writeEqn = True,
+#                 xscale = 'lin', yscale = 'lin', 
+#                 figSizeFactor = 1, markersizeFactor = 1,
+#                 returnData = False):
+
+fig, ax = D2Plot_wFit(data, XCol='bestH0', YCol='fit_K', condCols = ['drug', 'concentration'],
+                 Filters=Filters, cellID = 'cellID', AvgPerCell=False, modelFit=True, 
+                 modelType='y=A*exp(kx)',xscale = 'lin', yscale = 'log', markersizeFactor= 2)
+
+fig.suptitle('K(h) - Latrunculin treatment')
+# ufun.archiveFig(fig, ax, name='E(h)_3T3aSFL_Oct21_M450-1-10_vs_M270-5-40', figDir = cp.DirDataFigToday + '//' + figSubDir)
+plt.show()
+
+# %%% MCA
+
+MecaData_MCA = taka2.getMergedTable('MecaData_MCA', mergeUMS = True)
+
+#### Main settings
+filterFluo = False
+
+def fluoSelectionColumn(df):
+    df['FluoSelection'] = np.zeros(df.shape[0], dtype=bool)
+    filter01 = (df['drug'] == 'none')
+    df.loc[filter01,'FluoSelection'] = True
+    filter02 = (df['drug'] == 'doxycyclin') & (df['UI_Fluo'].apply(lambda x : x in ['mid', 'high']))
+    df.loc[filter02,'FluoSelection'] = True
+    return(df)
+
+MecaData_MCA = fluoSelectionColumn(MecaData_MCA)
+
+
+
+# %%%% Style
+
+renameDict_MCA3 = {'SurroundingThickness':'Thickness at low force (nm)',
+               'surroundingThickness':'Thickness (nm)',
+               'ctFieldThickness':'Thickness (nm)',
+               'ctFieldThickness_normalized':'Thickness at low force (nm) [Ratio]',
+               'bestH0':'Thickness from fit (nm)',
+               'bestH0_normalized':'Thickness from fit (nm) [Ratio]',
+               'EChadwick': 'E Chadwick (Pa)',
+               'medianThickness': 'Median Thickness (nm)',               
+               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
+               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)',               
+               'none':'control',               
+               'doxycyclin':'expressing iMC linker',
+               
+                'aSFL-A11 & none':'clone A11 - ctrl',              
+                'aSFL-A11 & doxycyclin':'clone A11 - iMC',
+                'aSFL-F8 & none':'clone F8 - ctrl',              
+                'aSFL-F8 & doxycyclin':'clone F8 - long iMC',
+                'aSFL-E4 & none':'clone E4 - ctrl',              
+                'aSFL-E4 & doxycyclin':'clone E4 - long iMC',
+                'aSFL-A11 & MCA1 & none':'Round1: clone A11 - ctrl',              
+                'aSFL-A11 & MCA1 & doxycyclin':'Round1: clone A11 - iMC',
+                'aSFL-F8 & MCA2 & none':'Round2: clone F8 - ctrl',                 
+                'aSFL-F8 & MCA2 & doxycyclin':'Round2: clone F8 - long iMC',
+                'aSFL-E4 & MCA1 & none':'Round1: clone E4 - ctrl',                  
+                'aSFL-E4 & MCA1 & doxycyclin':'Round1: clone E4 - long iMC',
+                'aSFL-A11 & MCA3 & none':'Round3: clone A11 - ctrl',                  
+                'aSFL-A11 & MCA3 & doxycyclin':'Round3: clone A11 - iMC',
+                'aSFL-F8 & MCA3 & none':'Round3: clone F8 - ctrl',                  
+                'aSFL-F8 & MCA3 & doxycyclin':'Round3: clone F8 - long iMC',
+                'aSFL-E4 & MCA3 & none':'Round3: clone E4 - ctrl',               
+                'aSFL-E4 & MCA3 & doxycyclin':'Round3: clone E4 - long iMC',
+                
+                'aSFL-A11 & 21-01-18':'A11\n21-01-18',
+                 'aSFL-A11 & 21-01-21':'A11\n21-01-21',
+                 'aSFL-A11 & 22-07-15':'A11\n22-07-15',
+                 'aSFL-A11 & 22-07-20':'A11\n22-07-20',
+                 'aSFL-F8 & 21-09-08':'F8\n21-09-08',
+                 'aSFL-F8 & 22-07-15':'F8\n22-07-15',
+                 'aSFL-F8 & 22-07-27':'F8\n22-07-27',
+                 'aSFL-E4 & 21-04-27':'E4\n21-04-27',
+                 'aSFL-E4 & 21-04-28':'E4\n21-04-28',
+                 'aSFL-E4 & 22-07-20':'E4\n22-07-20',
+                 'aSFL-E4 & 22-07-27':'E4\n22-07-27',
+                 
+                 'iMC & none':'(-) iMC',              
+                 'iMC & doxycyclin':'(+) iMC',
+                 'iMC-6FP & none':'(-) iMC-6FP',              
+                 'iMC-6FP & doxycyclin':'(+) iMC-6FP',
+               }
+
+
+styleDict1 = { '3T3':{'color':gs.colorList40[20],
+                               'marker':'o'},
+                  'aSFL-A11':{'color':gs.colorList40[10],
+                              'marker':'o'},
+                  'aSFL-F8':{'color':gs.colorList40[11],
+                             'marker':'o'},   
+                  'aSFL-E4':{'color':gs.colorList40[12],
+                             'marker':'o'}, 
+                  'aSFL-A11 & none':{'color':gs.colorList40[10],
+                                     'marker':'o'},              
+                  'aSFL-A11 & doxycyclin':{'color':gs.colorList40[30],
+                                           'marker':'o'},
+                  'aSFL-F8 & none':{'color':gs.colorList40[11],
+                                    'marker':'o'},              
+                  'aSFL-F8 & doxycyclin':{'color':gs.colorList40[31],
+                                          'marker':'o'},
+                  'aSFL-E4 & none':{'color':gs.colorList40[12],
+                                    'marker':'o'},              
+                  'aSFL-E4 & doxycyclin':{'color':gs.colorList40[32],
+                                          'marker':'o'},
+                  'aSFL-A11 & MCA1 & none':{'color':gs.colorList40[10],
+                                            'marker':'o'},              
+                  'aSFL-A11 & MCA1 & doxycyclin':{'color':gs.colorList40[30],
+                                                  'marker':'o'},
+                  'aSFL-F8 & MCA2 & none':{'color':gs.colorList40[11],
+                                           'marker':'o'},              
+                  'aSFL-F8 & MCA2 & doxycyclin':{'color':gs.colorList40[31],
+                                                 'marker':'o'},
+                  'aSFL-E4 & MCA1 & none':{'color':gs.colorList40[12],
+                                           'marker':'o'},              
+                  'aSFL-E4 & MCA1 & doxycyclin':{'color':gs.colorList40[32],
+                                                 'marker':'o'},
+                  'aSFL-A11 & MCA3 & none':{'color':gs.colorList40[10],
+                                            'marker':'o'},              
+                  'aSFL-A11 & MCA3 & doxycyclin':{'color':gs.colorList40[30],
+                                                  'marker':'o'},
+                  'aSFL-F8 & MCA3 & none':{'color':gs.colorList40[11],
+                                           'marker':'o'},              
+                  'aSFL-F8 & MCA3 & doxycyclin':{'color':gs.colorList40[31],
+                                                 'marker':'o'},
+                  'aSFL-E4 & MCA3 & none':{'color':gs.colorList40[12],
+                                           'marker':'o'},              
+                  'aSFL-E4 & MCA3 & doxycyclin':{'color':gs.colorList40[32],
+                                                 'marker':'o'},
+                  
+                  'aSFL-A11 & 21-01-18':{'color':gs.colorList40[00],
+                                                 'marker':'o'},
+                   'aSFL-A11 & 21-01-21':{'color':gs.colorList40[10],
+                                                  'marker':'o'},
+                   'aSFL-A11 & 22-07-15':{'color':gs.colorList40[20],
+                                                  'marker':'o'},
+                   'aSFL-A11 & 22-07-20':{'color':gs.colorList40[30],
+                                                  'marker':'o'},
+                   'aSFL-F8 & 21-09-08':{'color':gs.colorList40[11],
+                                                  'marker':'o'},
+                   'aSFL-F8 & 22-07-15':{'color':gs.colorList40[21],
+                                                  'marker':'o'},
+                   'aSFL-F8 & 22-07-27':{'color':gs.colorList40[31],
+                                                  'marker':'o'},
+                   'aSFL-E4 & 21-04-27':{'color':gs.colorList40[12],
+                                                  'marker':'o'},
+                   'aSFL-E4 & 22-07-20':{'color':gs.colorList40[22],
+                                                  'marker':'o'},
+                   'aSFL-E4 & 22-07-27':{'color':gs.colorList40[32],
+                                                  'marker':'o'},
+                   'none':{'color':gs.colorList40[9],
+                                                  'marker':'o'},
+                   'doxycyclin':{'color':gs.colorList40[29],
+                                                  'marker':'o'},
+                   
+                   'iMC & none':{'color':gs.colorList40[10],
+                                      'marker':'o'},            
+                   'iMC & doxycyclin':{'color':gs.colorList40[30],
+                                      'marker':'o'},
+                   'iMC-6FP & none':{'color':gs.colorList40[13],
+                                      'marker':'o'},
+                   'iMC-6FP & doxycyclin':{'color':gs.colorList40[33],
+                                      'marker':'o'},
+                  }
+
+splitterStyleDict_MCA = {'high':'^',
+                          'mid':'D',   
+                          'low':'v', 
+                          'none':'X'}
+
+
+# %%%% A11 - Thickness
+
+rD = {
+     'clone A11 - ctrl':'Control',              
+     'clone A11 - iMC':'+iMC linker',
+    }
+
+
+data = MecaData_MCA
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1  # + dates_r2 # dates_r1 + dates_r2 + 
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+alias = 'Thickness from fits'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['bestH0'] <= 850),
+           (data['ctFieldThickness'] >= 50),
+           (data['ctFieldThickness'] <= 650),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in all_dates))]
+
+
+descText = """
+data = GlobalTable_meca_MCA123
+
+dates_r1 = ['21-01-18', '21-01-21']
+dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
+dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
+all_dates = dates_r1 + dates_r2 + dates_r3
+
+thicknessType = 'bestH0'
+alias = 'Thickness from fits'
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['bestH0'] <= 850),
+           (data['ctFieldThickness'] >= 50),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == '3T3'), 
+           (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in all_dates))]
+"""
+
+if filterFluo:
+    Filters.append((data['FluoSelection'] == True))
+    extDir = '_filterFluo'
+    descText += """\nWith Filter Fluo Enabled (no +iMC cell with low fluo)."""
+    
+else:
+    extDir = ''
+
+fig, ax = plt.subplots(1,1, figsize = (5,3.5))
+
+co_order = makeOrder(['aSFL-A11'],['none','doxycyclin'])
+box_pairs=[['aSFL-A11 & none','aSFL-A11 & doxycyclin']]
+
+fig, ax, dfexport, dfcount = D1Plot(data, fig = fig, ax = ax,
+                                    condCols=['cell subtype','drug'], Parameters=[thicknessType], Filters=Filters,
+                 AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                 box_pairs=box_pairs, figSizeFactor = 0.6, markersizeFactor = 1.4, orientation = 'v', stressBoxPlot=1,
+                 returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict_MCA3)
+renameAxes(ax, rD)
+# fig.suptitle('Fig 1 - ' + alias + ' - A11')
+
+ufun.archiveFig(fig, name=('Thickness_A11_cellAvg'), figDir = 'PosterFigs', dpi = 250)
+# ufun.archiveData(dfexport, name=('Fig1_' + alias + '_A11_cellAvg'), 
+#                  sep = ';', saveDir = 'MCA_Paper'+extDir, descText = descText)
+
+plt.show()
+
+
+
+
+
+# %%% HoxB8
+
+MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8', mergeUMS = True)
+
+# %%%% Style
+
+renameDict1 = {'SurroundingThickness':'Thickness (nm)',
+               'surroundingThickness':'Thickness at low force (nm)',
+               'ctFieldThickness':'Thickness (nm)',
+               'bestH0':'Thickness from fit (nm)',
+               'EChadwick': 'E Chadwick (Pa)',
+               'medianThickness': 'Median Thickness (nm)',               
+               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
+               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)',               
+               'none':'control',    
+               'fit_K':'Tangeantial Modulus (Pa)',
+               
+               # HoxB8
+               'ctrl':'Control',
+               'tko':'TKO',
+               'bare glass & ctrl':'Control on bare glass',
+               'bare glass & tko':'TKO on bare glass',
+               '20um fibronectin discs & ctrl':'Control on fibronectin',
+               '20um fibronectin discs & tko':'TKO on fibronectin',
+               }
+
+styleDict1 =  {'DictyDB_M270':{'color':'lightskyblue','marker':'o'}, 
+               'DictyDB_M450':{'color': 'maroon','marker':'o'},
+               'M270':{'color':'lightskyblue','marker':'o'}, 
+               'M450':{'color': 'maroon','marker':'o'},
+               
+               # HoxB8
+               'ctrl':{'color': gs.colorList40[12],'marker':'^'},
+               'tko':{'color': gs.colorList40[32],'marker':'^'},
+               'bare glass & ctrl':{'color': gs.colorList40[10],'marker':'^'},
+               'bare glass & tko':{'color': gs.colorList40[30],'marker':'^'},
+               '20um fibronectin discs & ctrl':{'color': gs.colorList40[12],'marker':'o'},
+               '20um fibronectin discs & tko':{'color': gs.colorList40[32],'marker':'o'},
+               
+               # Comparison
+               '3T3':{'color': gs.colorList40[31],'marker':'o'},
+               'HoxB8-Macro':{'color': gs.colorList40[32],'marker':'o'},
+               }
+
+
+# %%%% Thickness
+
+
+data_main = MecaData_HoxB8
+data = data_main
+
+dates = ['22-05-03', '22-05-04', '22-05-05']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['surroundingThickness'] <= 600),
+           (data['bestH0'] <= 850),
+           (data['ctFieldThickness'] <= 650),
+           (data['UI_Valid'] == True),
+           (data['cell type'] == 'HoxB8-Macro'), 
+           (data['substrate'] == 'bare glass'),
+           (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
+           (data['bead type'] == 'M450'),
+           (data['date'].apply(lambda x : x in dates))]
+
+thicknessType = 'ctFieldThickness' # 'surroundingThickness' # 'bestH0' # 'ctFieldThickness'
+
+co_order = ['ctrl', 'tko']
+box_pairs=[]
+
+fig, ax = plt.subplots(1,1, figsize = (5,3.5))
+
+fig, ax, dfexport, dfcount = D1Plot(data, fig=fig, ax=ax,
+                                    condCols=['cell subtype'], Parameters=[thicknessType],Filters=Filters,
+                                      AvgPerCell=True, cellID='cellID', co_order=co_order, stats=True, statMethod='Mann-Whitney', 
+                                      box_pairs=box_pairs, figSizeFactor = 1, markersizeFactor=1.2, orientation = 'v', stressBoxPlot= 1, 
+                                      returnData = 1, returnCount = 1)
+
+renameAxes(ax,renameDict1)
+# fig.suptitle('HoxB8 Macrophages')
+
+ufun.archiveFig(fig, name=('ctFieldH_BareGlass_cellAvg'), figDir = 'PosterFigs', dpi = 250)
+
+
+plt.show()
+
+
+
+# %% Figures for TAC3
+
+# %%% Fluctuations
+
+# %%%% Fluctuations - Y27
+data = MecaData_Atcc
+dates = ['23-03-08', '23-03-09']
+drugs = ['none', 'Y27']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['compNum'] >= 5),
+           (data['ctFieldFluctuAmpli'] <= 500),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='ctFieldFluctuAmpli', condCols=['drug', 'concentration'], 
+                        Filters=Filters, cellID='cellID', co_order = co_order,
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD, format_xticks=False)
+# ax.set_xlim([0, 500])
+# ax.set_ylim([0, 300])
+
+fig.suptitle('Thickness - Fluctuation')
+
+plt.show()
+
+
+# %%%% Fluctuations - Blebbi
+
+data = MecaData_Atcc
+dates = ['23-03-16', '23-03-17', '23-04-20']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['compNum'] >= 4),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='ctFieldFluctuAmpli', condCols=['drug', 'concentration'], 
+                        Filters=Filters, cellID='cellID', co_order = co_order,
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+
+rD = {'fit_K':'Tangeantial Modulus (Pa)\n'+fitStr, 
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD, format_xticks=False)
+ax.set_xlim([0, 500])
+ax.set_ylim([0, 300])
+
+fig.suptitle('Thickness - Fluctuation')
+
+plt.show()
+
+
+# %%% Comparison with Anumita's cells
+
+
+# %%%% H metric - Controls
+
+data_main = MecaData_AtccOpto
+dates = ['23-02-02', '23-03-08', '23-03-09', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['none', 'dmso']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+
+
+rD = {'Atcc-2023 & none' : '3T3 Atcc\nNo drug',
+      'Atcc-2023 & dmso' : '3T3 Atcc\nDMSO', 
+      'optoRhoA & none' : 'OptoRhoA\nNo drug',
+      'optoRhoA & dmso' : 'OptoRhoA\nDMSO', 
+      #
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           # (data['surroundingThickness'] <= 590),
+           # (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            (data['activated'] == 0),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+# box_pairs = [['none & 0.0', 'dmso & 0.0'],
+#               ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+#               ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+co_order = ['Atcc-2023 & none', 'optoRhoA & none', 'Atcc-2023 & dmso', 'optoRhoA & dmso']
+box_pairs = [['Atcc-2023 & none', 'optoRhoA & none'], ['Atcc-2023 & dmso', 'optoRhoA & dmso'],
+             ['Atcc-2023 & none', 'Atcc-2023 & dmso'], ['optoRhoA & none', 'optoRhoA & dmso'],]
+
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig11, ax11 = D1Plot(data, fig=fig, ax=ax, condCols=['cell subtype', 'drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+ufun.archiveFig(fig11, name=('JV&AJ_control_H'), figDir = 'Fig_TAC3', dpi = 250)
+
+plt.show()
+
+# %%%% H metric - Y27
+
+data_main = MecaData_AtccOpto
+dates = ['23-02-02', '23-03-08', '23-03-09', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+
+
+rD = {'Atcc-2023 & none & 0.0' : 'Atcc\nNo drug',
+      'Atcc-2023 & Y27 & 10.0' : 'Atcc\nY27 (10µM)', 
+      'optoRhoA & none & 0.0' : 'OptoRhoA\nNo drug',
+      'optoRhoA & Y27 & 10.0' : 'OptoRhoA\nY27 (10µM)', 
+      # 'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           # (data['surroundingThickness'] <= 590),
+           # (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['concentration'].apply(lambda x : x in [0, 10])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            (data['activated'] == 0),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+# box_pairs = [['none & 0.0', 'dmso & 0.0'],
+#               ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+#               ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+co_order = ['Atcc-2023 & none & 0.0', 'Atcc-2023 & Y27 & 10.0', 'optoRhoA & none & 0.0', 'optoRhoA & Y27 & 10.0']
+box_pairs = [['Atcc-2023 & none & 0.0', 'Atcc-2023 & Y27 & 10.0'], ['optoRhoA & none & 0.0', 'optoRhoA & Y27 & 10.0'],
+             ['Atcc-2023 & none & 0.0', 'optoRhoA & none & 0.0'], ['Atcc-2023 & Y27 & 10.0', 'optoRhoA & Y27 & 10.0'],]
+
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig11, ax11 = D1Plot(data, fig=fig, ax=ax, condCols=['cell subtype', 'drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+ufun.archiveFig(fig11, name=('JV&AJ_Y27_H'), figDir = 'Fig_TAC3', dpi = 250)
+
+plt.show()
+
+# %%%% H metric - Blebbi
+
+data_main = MecaData_AtccOpto
+dates = ['22-12-07', '23-02-02', '23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['dmso', 'blebbistatin']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+
+
+rD = {'Atcc-2023 & dmso & 0.0' : 'Atcc\nDMSO',
+      'Atcc-2023 & blebbistatin & 10.0' : 'Atcc\nBlebbi (10µM)', 
+      'optoRhoA & dmso & 0.0' : 'OptoRhoA\nDMSO',
+      'optoRhoA & blebbistatin & 10.0' : 'OptoRhoA\nBlebbi (10µM)', 
+      # 'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+data = data_main
+Filters = [(data['validatedThickness'] == True), 
+           # (data['surroundingThickness'] <= 590),
+           # (data['bestH0'] <= 750),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['concentration'].apply(lambda x : x in [0, 10])),
+           (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            (data['activated'] == 0),
+           ]
+
+# co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0', 'dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0']
+# box_pairs = [['none & 0.0', 'dmso & 0.0'],
+#               ['none & 0.0', 'Y27 & 10.0'],['none & 0.0', 'Y27 & 50.0'], ['Y27 & 10.0', 'Y27 & 50.0'], 
+#               ['dmso & 0.0', 'blebbistatin & 10.0'],['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 10.0', 'blebbistatin & 50.0']]
+
+co_order = ['Atcc-2023 & dmso & 0.0', 'Atcc-2023 & blebbistatin & 10.0', 'optoRhoA & dmso & 0.0', 'optoRhoA & blebbistatin & 10.0']
+box_pairs = [['Atcc-2023 & dmso & 0.0', 'Atcc-2023 & blebbistatin & 10.0'], ['optoRhoA & dmso & 0.0', 'optoRhoA & blebbistatin & 10.0'],
+             ['Atcc-2023 & dmso & 0.0', 'optoRhoA & dmso & 0.0'], ['Atcc-2023 & blebbistatin & 10.0', 'optoRhoA & blebbistatin & 10.0'],]
+
+
+fig, ax = plt.subplots(1,1, figsize = (6,4))
+
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig11, ax11 = D1Plot(data, fig=fig, ax=ax, condCols=['cell subtype', 'drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.0, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax11, renameDict1)
+renameAxes(ax11, rD)
+
+ufun.archiveFig(fig11, name=('JV&AJ_Blebbi_H'), figDir = 'Fig_TAC3', dpi = 250)
+
+plt.show()
+
+# %%%% F < 400pN
+
+data_main = MecaData_AtccOpto
+dates = ['23-02-02', '23-03-08', '23-03-09', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+data = data_main
+
+rD = {'Atcc-2023 & none & 0.0' : 'Atcc\nNo drug',
+      'Atcc-2023 & Y27 & 10.0' : 'Atcc\nY27 (10µM)', 
+      'optoRhoA & none & 0.0' : 'OptoRhoA\nNo drug',
+      'optoRhoA & Y27 & 10.0' : 'OptoRhoA\nY27 (10µM)', 
+      # 'Y27 & 50.0' : 'Y27\n(50µM)', 
+      'dmso & 0.0' : 'DMSO', 
+      'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+      'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'bestH0' : r'$Fitted\ H_0\ (nm)$',
+      }
+
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+
+Filters = [(data['validatedThickness'] == True), 
+            # (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in drugs)),
+           (data['concentration'].apply(lambda x : x in [0, 10])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            (data['activated'] == 0),
+           ]
+
+co_order = ['Atcc-2023 & none & 0.0', 'Atcc-2023 & Y27 & 10.0', 'optoRhoA & none & 0.0', 'optoRhoA & Y27 & 10.0']
+box_pairs = [['Atcc-2023 & none & 0.0', 'Atcc-2023 & Y27 & 10.0'], ['optoRhoA & none & 0.0', 'optoRhoA & Y27 & 10.0'],
+             ['Atcc-2023 & none & 0.0', 'optoRhoA & none & 0.0'], ['Atcc-2023 & Y27 & 10.0', 'optoRhoA & Y27 & 10.0'],]
+
+
+
+fig, ax = plt.subplots(1,1, figsize = (8,4))
+
+fig2, ax2 = D1Plot(data, fig=fig, ax=ax, condCols=['cell subtype', 'drug', 'concentration'], 
+                   Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=box_pairs, 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+fig2.tight_layout()
+
+# ufun.archiveFig(fig2, name=('JV&AJ_BlebbiY27_E'), figDir = 'Fig_TAC3', dpi = 250)
+
+plt.show()
+
+
+# %%%% K(s) - controls
+
+rD_legend = {'Atcc-2023 & none & 0.0' : 'Atcc - No drug',
+              'Atcc-2023 & Y27 & 10.0' : 'Atcc - Y27 10µM', 
+              'Atcc-2023 & Y27 & 50.0' : 'Atcc - Y27 50µM', 
+              'optoRhoA & none & 0.0' : 'OptoRhoA - No drug',
+            'optoRhoA & Y27 & 10.0' : 'OptoRhoA - Y27 10µM', 
+            'optoRhoA & Y27 & 50.0' : 'OptoRhoA - Y27 50µM', 
+              }
+
+fig, ax = plt.subplots(1,1, figsize = (6,4), sharey = True)
+
+data_main = MecaData_AtccOpto
+dates = ['22-12-07', '23-02-02', '23-03-08', '23-03-09', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['none']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+fW = 100
+mode = '250_600'
+
+data = data_main
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['activated'] == 0),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['concentration'].apply(lambda x : x in [0, 10])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+out01 = plotPopKS_V2(data, fig=fig, ax=ax, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['cell subtype'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+
+ax.set_ylim([0, 10])
+ax.set_ylabel('Tangeantial Modulus (kPa)')
+renameLegend(ax, rD_legend)
+# ax.legend(loc='lower right', fontsize = 8)
+
+
+
+plt.show()
+
+
+ufun.archiveFig(fig, name=('JV&AJ_ctrl_KS'), figDir = 'Fig_TAC3', dpi = 250)
+
+
+# %%%% K(s) - with Y27
+
+# rD_legend = {'Atcc-2023 & none & 0.0' : 'Atcc - No drug',
+#               'Atcc-2023 & Y27 & 10.0' : 'Atcc - Y27 10µM', 
+#               'Atcc-2023 & Y27 & 50.0' : 'Atcc - Y27 50µM', 
+#               'optoRhoA & none & 0.0' : 'OptoRhoA - No drug',
+#                 'optoRhoA & Y27 & 10.0' : 'OptoRhoA - Y27 10µM', 
+#                 'optoRhoA & Y27 & 50.0' : 'OptoRhoA - Y27 50µM', 
+#                   }
+
+rD_legend = {'none & 0.0' : 'Atcc - No drug',
+              'Y27 & 10.0' : 'Atcc - Y27 10µM', 
+              'Y27 & 50.0' : 'Atcc - Y27 50µM', 
+                  }
+
+fig, ax = plt.subplots(1,2, figsize = (8,4), sharey = True)
+
+data_main = MecaData_AtccOpto
+dates = ['22-12-07', '23-02-02', '23-03-08', '23-03-09', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+fW = 75
+mode = '300_600'
+# mode = '300'
+
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['activated'] == 0),
+           (data['cell subtype'] == 'Atcc-2023'),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+ax1 = ax[0]
+out01 = plotPopKS_V2(data, fig=fig, ax=ax1, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+
+ax1.set_title('3T3 Atcc')
+ax1.set_ylim([0, 10])
+ax1.set_ylabel('Tangeantial Modulus (kPa)')
+renameLegend(ax1, rD_legend)
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['activated'] == 0),
+           (data['cell subtype'] == 'optoRhoA'),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['concentration'].apply(lambda x : x in [0, 10])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+
+ax2 = ax[1]
+out01 = plotPopKS_V2(data, fig=fig, ax=ax2, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+
+ax2.set_title('3T3 OptoRhoA')
+ax2.set_ylim([0, 10])
+ax2.set_ylabel('')
+renameLegend(ax2, rD_legend)
+
+
+
+plt.show()
+
+
+ufun.archiveFig(fig, name=('JV&AJ_Y27_KS'), figDir = 'Fig_TAC3', dpi = 250)
+
+
+# %%%% K(s) - with blebbi
+
+rD_legend = {'dmso & 0.0' : 'DMSO',
+              'blebbistatin & 10.0' : 'Blebbi 10µM', 
+              'blebbistatin & 50.0' : 'Blebbi 50µM', 
+              }
+
+fig, ax = plt.subplots(1,2, figsize = (8,4), sharey = True)
+
+data_main = MecaData_AtccOpto
+dates = ['22-12-07', '23-02-02', '23-03-08', '23-03-09', '23-03-16', '23-03-17', '23-03-24', '23-04-20', '23-04-26', '23-04-25']
+drugs = ['dmso', 'blebbistatin']
+substrate = '20um fibronectin discs'
+data_main['activated'] = 1 - pd.isnull(data_main['activation type'])
+
+fW = 100
+mode = '300_600'
+# mode = '300'
+
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['activated'] == 0),
+           (data['cell subtype'] == 'Atcc-2023'),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+ax1 = ax[0]
+out01 = plotPopKS_V2(data, fig=fig, ax=ax1, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+
+ax1.set_title('3T3 Atcc')
+ax1.set_ylim([0, 10])
+ax1.set_ylabel('Tangeantial Modulus (kPa)')
+renameLegend(ax1, rD_legend)
+
+# Y27
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == substrate),
+           (data['activated'] == 0),
+           (data['cell subtype'] == 'optoRhoA'),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['concentration'].apply(lambda x : x in [0, 10])),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1', '23-04-20_M2'])),
+            ]
+
+
+ax2 = ax[1]
+out01 = plotPopKS_V2(data, fig=fig, ax=ax2, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                    condCols = ['drug', 'concentration'], mode = mode, scale = 'lin', printText = False,
+                    returnData = 1, returnCount = 1)
+
+ax2.set_title('3T3 OptoRhoA')
+ax2.set_ylim([0, 10])
+ax2.set_ylabel('')
+renameLegend(ax2, rD_legend)
+
+
+
+plt.show()
+
+
+ufun.archiveFig(fig, name=('JV&AJ_Blebbi_KS'), figDir = 'Fig_TAC3', dpi = 250)

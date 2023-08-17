@@ -295,8 +295,10 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
         nUpletsIndices = [[z_max + center_Zoffset[ii] + kk*dN_nUplets \
                             for kk in range(-2,3)] \
                             for ii in range(len(center_Zoffset))]
+            
+        nUpletsIndices = [[z_max]]
+            
         nUpletsIndices = np.array(nUpletsIndices)
-    
         
 
         #### 3 - Compute XYZ
@@ -758,6 +760,43 @@ mainPath = 'D://MagneticPincherData//Raw//22.04.29_CalibrationM450-2023_SecondTr
 depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.04.29_CALIBRATION_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
+
+# %%% (3.3)
+
+mainPath = 'D://MagneticPincherData//Raw//22.04.29_CalibrationM450-2023_SecondTry//DepthoChains'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.04.29_CALIBRATION_M450_step20_100X'
+
+xyzDf_03, distanceDf_03, statsDf_03 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
+
+
+# %%% plots
+
+fig, ax = plt.subplots(1,1, figsize = (5, 1.6))
+# sns.violinplot(x="D3", data=distanceDf_03, ax=ax, inner="quartile", orient = 'h',
+#                 color = 'skyblue', bw = 'silverman')
+
+sns.histplot(distanceDf_03, ax=ax, binwidth = 0.01, x="D3", color='skyblue')
+Q1, M, Q3 = np.percentile(distanceDf_03.D3, 25), np.median(distanceDf_03.D3), np.percentile(distanceDf_03.D3, 75)
+ax.axvline(Q1, ls='--', lw=1.5, color='darkred')
+ax.axvline(M, ls='-', lw=1.5, color='darkred')
+ax.axvline(Q3, ls='--', lw=1.5, color='darkred')
+
+# sns.swarmplot(x="D3", data=distanceDf_03, ax=ax, color='gray', orient = 'h', size = 3)
+ax.set_xlabel('Bead diameter (µm) - N = 351', fontsize = 10)
+ax.set_xticklabels(ax.get_xticklabels(), fontsize = 9)
+# ax.grid(axis = 'x')
+
+ax.set_ylabel('Count', fontsize = 9)
+ax.set_yticklabels(ax.get_yticklabels(), fontsize = 8)
+ax.set_ylim([0, 90])
+
+plt.tight_layout()
+
+fig.savefig('C://Users//JosephVermeil//Desktop//MethodPaper//Figures//FigBeads//Fig.png', dpi=300)
+
+# sns.swarmplot(y="D3", data=distanceDf_02, ax=ax[1], size = 3)
+plt.show()
+
 
 # %%% (3.2) SCRIPT for deptho chains 1st try
 
