@@ -306,8 +306,10 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     expDf['date_T0'] = all_T0
     
     #### 3.3 Drop the 'comments' column
-    expDf = expDf.drop(['comments'], axis=1)
-        
+    try:
+        expDf = expDf.drop(['comments'], axis=1)
+    except:
+        pass
     
     # def str2int(s):
     #     try:
@@ -350,6 +352,29 @@ def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.
     
     return(expDf)
 
+
+def mergeExpDf(suffixes = [], save = False):
+    # getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix)
+    all_expDf = []
+    DirExp_root = '_'.join(cp.DirRepoExp.split('_')[:-1])
+    for suf in suffixes:
+        DirExp = DirExp_root + suf
+        expDf = getExperimentalConditions(DirExp = DirExp, save = False, suffix = suf)
+        expDf['author'] = suf
+        expDf.insert(0, 'author', expDf.pop('author'))
+        all_expDf.append(expDf)
+        
+    new_expDf = pd.concat(all_expDf, axis=0, join='outer').reset_index(drop = True)
+    new_expDf = new_expDf.sort_values(by = ['date', 'manip'])
+    
+    if save:
+        saveName = 'ExperimentalConditions' + ''.join(suffixes) + '.csv'     
+        if not cp.CloudSaving == '':
+            savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
+            new_expDf.to_csv(savePath_cloud, sep=';', index = False)
+        
+    return(all_expDf)
+    
 
 def correctExcelDatesInDf(df, dateColumn, dateExample = ''):
     if dateExample == '':
@@ -865,11 +890,11 @@ def get_R2(Ymeas, Ymodel):
     meanY = np.mean(Ymeas)
     meanYarray = meanY*np.ones(len(Ymeas))
     SST = np.sum((Ymeas-meanYarray)**2)
-    SSE = np.sum((Ymodel-meanYarray)**2)
-    if pd.isnull(SST) or pd.isnull(SSE) or SST == 0:
+    SSR = np.sum((Ymodel-Ymeas)**2)
+    if pd.isnull(SST) or pd.isnull(SSR) or SST == 0:
         R2 = np.nan
     else:
-        R2 = SSE/SST
+        R2 = 1 - (SSR/SST)
     return(R2)
 
 def get_Chi2(Ymeas, Ymodel, dof, err):
@@ -1167,6 +1192,23 @@ def inversedChadwickModel(f, E, H0, DIAMETER):
     return(h)
 
 def getDimitriadisCoefs(v, order):
+    """
+    
+
+    Parameters
+    ----------
+    v : float
+        Poisson coefficient.
+    order : int, must be in [0, 4]
+        Order of the Dimitriadis polynomia.
+
+    Returns
+    -------
+    ks : list
+        List of the coefficient of the Dimitriadis polynomia expression, in growing exponent order.
+
+    
+    """
     a0 = -0.347*(3 - 2*v)/(1 - v)
     b0 = 0.056*(5 - 2*v)/(1 - v)
     
@@ -1346,6 +1388,22 @@ def interDeciles(A):
     return(p90-p10)
 
 
+def strToMask(A, S):
+    LS = S.split('_')
+    kind = LS[1]
+    if kind == '<':
+        upperBound = float(LS[2])
+        mask = (A < upperBound)
+    elif kind == '>':
+        lowerBound = float(LS[2])
+        mask = (A > lowerBound)
+    elif kind == 'in':
+        lowerBound = float(LS[2])
+        upperBound = float(LS[3])
+        mask = (A < upperBound) & (A > lowerBound)
+    return(mask)
+
+
 
 # %%% Figure & graphic operations
 
@@ -1430,58 +1488,60 @@ def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'aut
                     Xspace = [-np.inf, np.inf], Yspace = [-np.inf, np.inf]):
 
     axes_f = axes.flatten()
-    x_bounds = []
-    y_bounds = []
-    
-    for ax in axes_f:
-        lines = ax.get_lines()
-        if len(lines) == 0:
-            continue
-        else:
-            if mode == 'firstLine':
-                L = lines[0]
-                data = L.get_data()
-            elif mode == 'allLines':
-                data = (np.concatenate([L.get_data()[0] for L in lines]),
-                        np.concatenate([L.get_data()[1] for L in lines]))
+    if len(axes_f) > 1:
+        x_bounds = []
+        y_bounds = []
         
-        x_bounds.append([0.85*np.percentile(data[0], 5), 
-                         1.15*np.percentile(data[0], 95)])
-        y_bounds.append([0.85*np.percentile(data[1], 5), 
-                         1.15*np.percentile(data[1], 95)])
-    
-    x_bounds = np.array(x_bounds)
-    y_bounds = np.array(y_bounds)
-    
-    X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
-    Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
-
-    if xb[0] == 'auto':
-        X_BOUND[0] = max(X_BOUND[0], Xspace[0])
-    else:
-        X_BOUND[0] = xb[0]
-        
-    if xb[1] == 'auto':
-        X_BOUND[1] = min(X_BOUND[1], Xspace[1])
-    else:
-        X_BOUND[1] = xb[1]
-
-
-    if yb[0] == 'auto':
-        Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
-    else:
-        Y_BOUND[0] = yb[0]
-        
-    if yb[1] == 'auto':
-        Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
-    else:
-        Y_BOUND[1] = yb[1]
+        for ax in axes_f:
+            lines = ax.get_lines()
+            if len(lines) == 0:
+                continue
+            else:
+                if mode == 'firstLine':
+                    L = lines[0]
+                    data = L.get_data()
+                elif mode == 'allLines':
+                    data = (np.concatenate([L.get_data()[0] for L in lines]),
+                            np.concatenate([L.get_data()[1] for L in lines]))
             
-    
+            x_bounds.append([0.85*np.percentile(data[0], 5), 
+                             1.15*np.percentile(data[0], 95)])
+            y_bounds.append([0.85*np.percentile(data[1], 5), 
+                             1.15*np.percentile(data[1], 95)])
         
-    for ax in axes_f:
-        ax.set_xlim(X_BOUND)
-        ax.set_ylim(Y_BOUND)
+        x_bounds = np.array(x_bounds)
+        y_bounds = np.array(y_bounds)
+        
+        if len(x_bounds) > 1 and len(y_bounds) > 1:
+            X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
+            Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
+        
+            if xb[0] == 'auto':
+                X_BOUND[0] = max(X_BOUND[0], Xspace[0])
+            else:
+                X_BOUND[0] = xb[0]
+                
+            if xb[1] == 'auto':
+                X_BOUND[1] = min(X_BOUND[1], Xspace[1])
+            else:
+                X_BOUND[1] = xb[1]
+        
+        
+            if yb[0] == 'auto':
+                Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
+            else:
+                Y_BOUND[0] = yb[0]
+                
+            if yb[1] == 'auto':
+                Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
+            else:
+                Y_BOUND[1] = yb[1]
+                    
+            for ax in axes_f:
+                ax.set_xlim(X_BOUND)
+                ax.set_ylim(Y_BOUND)
+        else:
+            pass
     
     return(axes)
 
