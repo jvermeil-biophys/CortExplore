@@ -4,6 +4,134 @@ Created on Thu Nov 25 13:37:51 2021
 
 @author: JosephVermeil
 """
+# %% statannotations 1/2
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import scipy.stats as st
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+import os
+import re
+import sys
+import time
+import random
+import numbers
+import warnings
+import itertools
+import matplotlib
+
+from statannotations.Annotator import Annotator
+from statannotations.stats.StatTest import StatTest
+
+# %% merge
+
+
+d1 = {'i1':[1,2,3,4,5,6,7,8,9], 
+     'i2':[0,1,2,3,4,5,6,7,8], 
+     'i3':[11,12,13,14,15,16,17,18,19]}
+
+df1 = pd.DataFrame(d1)
+
+# d2 = [1,2,3,6,7,8,9]
+# df2 = pd.Series(d2, name = 'i1')
+
+d2 = {'i1':[1,2,3,6,7,8,9]}
+df2 = pd.DataFrame(d2)
+
+df3 = pd.merge(left=df1, right=df2, how='left', on='i1')
+
+# Filter1 = (df['course'] == 'l')
+# Filter2 = (df['grade'] > 10)
+
+# gF = Filter1 & Filter2
+
+
+
+# %% bool ops
+
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 20, 18, 19, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
+
+df = pd.DataFrame(d)
+
+# Filter1 = (df['course'] == 'l')
+# Filter2 = (df['grade'] > 10)
+
+# gF = Filter1 & Filter2
+
+df.at[(df['grade'] == 20), 'course']
+
+
+# %% statannotations 2/2
+
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 20, 18, 19, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
+
+df = pd.DataFrame(d)
+
+fig, ax = plt.subplots(1,1)
+
+swarmplot_parameters = {'ax' : ax,
+                        'data':    df,
+                        'x':       'course',
+                        'y':       'grade',
+                        'edgecolor'    : 'k', 
+                        'linewidth'    : 1,
+                        'orient' : 'v'
+                        }
+
+# sns.boxplot(data = df, ax=ax,
+#             x = 'course', y = 'grade',
+#             showfliers=False, color = 'w')
+
+sns.swarmplot(**swarmplot_parameters)
+
+ax.set_ylim([0, 20])
+
+# annotator = Annotator(ax, box_pairs, **plotting_parameters)
+# annotator.configure(test=test, verbose=verbose).apply_and_annotate()
+
+def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plotting_parameters):
+    listTests = ['t-test_ind', 't-test_welch', 't-test_paired', 
+                 'Mann-Whitney', 'Mann-Whitney-gt', 'Mann-Whitney-ls', 
+                 'Levene', 'Wilcoxon', 'Kruskal', 'Brunner-Munzel']
+    if test in listTests:
+        annotator = Annotator(ax, box_pairs, **plotting_parameters)
+        annotator.configure(test=test, verbose=verbose).apply_and_annotate()
+    else:
+        print(gs.BRIGHTORANGE + 'Dear Madam, dear Sir, i am the eternal god and i command that you have to define this stat test cause it is not in the list !' + gs.NORMAL)
+    return(ax)
+
+plt.show()
+
+# %%
+
+import seaborn as sns
+
+from statannotations.Annotator import Annotator
+
+df = sns.load_dataset("tips")
+x = "day"
+y = "total_bill"
+order = ['Sun', 'Thur', 'Fri', 'Sat']
+
+fig, ax = plt.subplots(1,1, figsize=(5,5))
+ax = sns.boxplot(data=df, x=x, y=y, order=order)
+
+pairs=[("Thur", "Fri"), ("Thur", "Sat"), ("Fri", "Sun")]
+
+annotator = Annotator(ax, pairs, data=df, x=x, y=y, order=order)
+annotator.configure(test='Mann-Whitney', text_format='star', loc='outside')
+annotator.apply_and_annotate()
+
+plt.tight_layout()
 
 # %% Pandas tests
 
