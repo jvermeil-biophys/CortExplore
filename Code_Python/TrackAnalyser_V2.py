@@ -568,7 +568,8 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
 def fitChadwick_hf(h, f, D):
     """
-    Fit the Chadwick model on a force-thickness curve.
+    Fit the Chadwick model on a force-thickness curve, using the inversed model.
+    This means the X-variable is f and the Y-variable is h.
 
     Parameters
     ----------
@@ -605,19 +606,20 @@ def fitChadwick_hf(h, f, D):
         h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
         return(h)
 
-    # some initial parameter values - must be within bounds
-    initH0 = max(h) # H0 ~ h_max
-    initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    
-    initialParameters = [initE, initH0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, 0)
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
     try:
-    # params = [E, H0] ; ses = [seE, seH0]
+        # some initial parameter values - must be within bounds
+        initH0 = max(h) # H0 ~ h_max
+        initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
+        
+        initialParameters = [initE, initH0]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, 0)
+        upperBounds = (np.Inf, np.Inf)
+        parameterBounds = [lowerBounds, upperBounds]
+
+
+        # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
@@ -633,9 +635,12 @@ def fitChadwick_hf(h, f, D):
         
 
 
+
+
 def fitDimitriadis_hf(h, f, D, order = 2):
     """
     Fit the Dimitriadis model on a force-thickness curve.
+    The X-variable is h and the Y-variable is f.
 
     Parameters
     ----------
@@ -680,22 +685,23 @@ def fitDimitriadis_hf(h, f, D, order = 2):
         f = ((4 * E * R**0.5 * delta**1.5)/(3 * (1 - v**2))) * poly
         return(f)
 
-    # some initial parameter values - must be within bounds
-    # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
-    initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) 
-    # H0 ~ h_max
-    initH0 = max(h) 
-
-    # initH0, initE = initH0*(initH0>0), initE*(initE>0)
-    
-    initialParameters = [initE, initH0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, max(h))
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
-
     try:
+        # some initial parameter values - must be within bounds
+        # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
+        initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) 
+        # H0 ~ h_max
+        initH0 = max(h) 
+    
+        # initH0, initE = initH0*(initH0>0), initE*(initE>0)
+        
+        initialParameters = [initE, initH0]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, max(h))
+        upperBounds = (np.Inf, np.Inf)
+        parameterBounds = [lowerBounds, upperBounds]
+
+    
         # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
@@ -715,6 +721,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
 def fitLinear_ss(stress, strain, weights = []):
     """
     Linear fit on a stress-strain curve, with stress as the x- and strain as the y-variable.
+    "_ss" stands for "Stress-Strain".
 
     Parameters
     ----------
@@ -792,6 +799,7 @@ def fitLinear_ss(stress, strain, weights = []):
 def fitLinear_ss_i(strain, stress, weights = []):
     """
     Linear fit on a stress-strain curve, with strain as the x- and stress as the y-variable.
+    "_ss_i" stands for "Stress-Strain, Inversed".
 
     Parameters
     ----------
@@ -861,6 +869,75 @@ def fitLinear_ss_i(strain, stress, weights = []):
 
     res = (params, ses, error)
         
+    return(res)
+
+
+def fitChadwick_hf_fixedH0(h, f, D, H0):
+    """
+    Fit the Chadwick model on a force-thickness curve, using the inversed model.
+    This means the X-variable is f and the Y-variable is h.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    f : numpy array
+        Array of pinching forces in pN.
+    D : float
+        Diameter of the beads indenting the cortex, in µm.
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
+    
+    R = D/2
+    Npts = len(h)
+    error = False
+    
+    def chadwickModel(h, E):
+        f = (np.pi*E*R*((H0-h)**2))/(3*H0)
+        return(f)
+
+    def inversedChadwickModel(f, E):
+        h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
+        return(h)
+
+    try:
+        # some initial parameter values - must be within bounds
+        # initH0 = max(h) # H0 ~ h_max
+        initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
+        
+        initialParameters = [initE]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0)
+        upperBounds = (np.Inf)
+        parameterBounds = [lowerBounds, upperBounds]
+
+
+        # params = [E, H0] ; ses = [seE, seH0]
+        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        
+        ses = np.array([covM[0,0]**0.5])
+        params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
+        
+    except:
+        error = True
+        params = np.ones(1) * np.nan
+        ses = np.ones(1) * np.nan
+    
+    res = (params, ses, error)
+
     return(res)
 
 
@@ -956,7 +1033,7 @@ def makeDictFit_hf(params, ses, error,
         isValidated = False
         issue = 'error'
 
-    res =  {'error':error,
+    res =  {'error': error,
             'nbPts':len(y),
             'E':E, 'seE':seE,
             'H0':H0, 'seH0':seH0,
@@ -1278,6 +1355,7 @@ class CellCompression:
         
         # in dev
         self.df_strainGaussian = pd.DataFrame({})
+        self.df_3parts = pd.DataFrame({}) #### TEST
 
         
         
@@ -1325,13 +1403,15 @@ class CellCompression:
     
         
     def plot_Timeseries(self, plotSettings):
-        fig, ax = plt.subplots(1,1,figsize=(self.tsDf.shape[0]*(1/200),4))
+        fig, ax = plt.subplots(1,1,
+                               # figsize = (5,4))
+                               figsize=(self.tsDf.shape[0]*(1/200),4))
         fig.suptitle(self.cellID)
         
         # Distance axis
-        color = 'blue'
-        ax.set_xlabel('t (s)')
-        ax.set_ylabel('h (nm)', color=color)
+        color = gs.colorList40[30] # 'skyblue'# 'blue'
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Thickness (nm)', color=color)
         ax.tick_params(axis='y', labelcolor=color)
         ax.plot(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
                 color = color, ls = '-', linewidth = 1, zorder = 1)
@@ -1339,15 +1419,21 @@ class CellCompression:
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
             compValid = IC.isValidForAnalysis
-            fitError = IC.dictFitFH_Chadwick['error']
             
-            if (not fitError) and compValid:                
-                ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
-                        color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
-                
-                if not IC.error_bestH0:
-                    ax.plot(IC.Df['T'].values[0], IC.bestH0, 
-                            color = 'skyblue', marker = 'o', markersize = 2, zorder = 3)
+            if compValid:
+                fitError = IC.dictFitFH_Chadwick['Full']['error']
+
+                if (not fitError):                
+                    ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                            color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+                    
+                    if not IC.error_bestH0:
+                        ax.plot(IC.Df['T'].values[0], IC.bestH0, 
+                                color = gs.colorList40[30], marker = 'o', markersize = 2, zorder = 3)
+                        
+                else:
+                    ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
+                            color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
                 
             else:
                 ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
@@ -1361,12 +1447,12 @@ class CellCompression:
             ax.set_yticks(np.arange(0, max(self.tsDf['D3'].values-self.DIAMETER), 100))
         
         # Force axis
-        ax.tick_params(axis='y', labelcolor='b')
+        ax.tick_params(axis='y', labelcolor = color)
         axbis = ax.twinx()
         color = 'firebrick'
-        axbis.set_ylabel('F (pN)', color=color)
+        axbis.set_ylabel('Force (pN)', color=color)
         axbis.plot(self.tsDf['T'].values,self. tsDf['F'].values, color=color)
-        axbis.tick_params(axis='y', labelcolor=color)
+        axbis.tick_params(axis='y', labelcolor=color, labelsize = 8)
         axbis.set_yticks([0,500,1000,1500])
         minh = np.min(self.tsDf['D3'].values-self.DIAMETER)
         ratio = min(1/abs(minh/axM), 5)
@@ -1382,7 +1468,8 @@ class CellCompression:
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
-                               figsize = (3*nColsSubplot, 3*nRowsSubplot))
+                                 # figsize = (3, 4))
+                                figsize = (3*nColsSubplot, 3*nRowsSubplot))
         figTitle = 'Thickness-Force of indentations\n'
         if plotH0:
             figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
@@ -1434,6 +1521,10 @@ class CellCompression:
                 figTitle += ' - {:.3e}_{:.3e}'.format(step, 
                                                       plotSettings['plotStrainHW'])
                 
+            # NEW: 3parts
+            if fitType == '3parts':
+                figTitle += ' - 3 parts'
+                
         fig.suptitle(figTitle)
         
         for i in range(self.Ncomp):
@@ -1447,9 +1538,11 @@ class CellCompression:
             IC = self.listIndent[i]
             IC.plot_SS(fig, ax, plotSettings, plotFit = plotFit, fitType = fitType)
             
+
         axes = ufun.setCommonBounds_V2(axes, mode = 'firstLine', 
                                        xb = [0, 'auto'], yb = [0, 'auto'],
                                        Xspace = [0, 1], Yspace = [0, 5000])
+
         # axes = ufun.setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'])
             
         fig.tight_layout()
@@ -1624,6 +1717,17 @@ class CellCompression:
             # except:
             #     pass
         
+        
+        #### TEST
+        if plotSettings['S(e)_3parts']:
+            # try:
+            name = self.cellID + '_TEST_S(e)_3parts'
+            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = '3parts')
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+        
+        
             
     def exportTimeseriesWithStressStrain(self):
         """
@@ -1718,16 +1822,18 @@ class CellCompression:
                            }
         
         if fitSettings['doChadwickFit']:
-            method = 'Chadwick'
-            d = {'error_'+ method : True,
-                 'nbPts_'+ method : np.nan, 
-                 'E_'+ method : np.nan, 
-                 'ciwE_'+ method : np.nan, 
-                 'H0_'+ method : np.nan, 
-                 'R2_'+ method : np.nan,
-                 'valid_'+ method: False,
-                 }
-            dictColumnsMeca = {**dictColumnsMeca, **d}
+            for m in fitSettings['ChadwickFitMethods']:
+                d = {'error_'+ m : True,
+                     'nbPts_'+ m : np.nan, 
+                     'E_'+ m : np.nan, 
+                     'ciwE_'+ m : np.nan, 
+                     'H0_'+ m : np.nan, 
+                     'R2_'+ m : np.nan,
+                     'Chi2_'+ m : np.nan,
+                     'valid_'+ m: False,
+                     'issue_' + m: '',
+                     }
+                dictColumnsMeca = {**dictColumnsMeca, **d}
             
         if fitSettings['doDimitriadisFit']:
             method = 'Dimitriadis'
@@ -1737,7 +1843,9 @@ class CellCompression:
                  'ciwE_'+ method : np.nan, 
                  'H0_'+ method : np.nan, 
                  'R2_'+ method : np.nan,
+                 'Chi2_'+ m : np.nan,
                  'valid_'+ method: False,
+                 'issue_' + m: '',
                  }
             dictColumnsMeca = {**dictColumnsMeca, **d}   
         
@@ -1833,29 +1941,35 @@ class CellCompression:
             
             # Whole curve fits related
             if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
-                try:
-                    method = 'Chadwick'
-                    results['error_'+ method][i] = IC.dictFitFH_Chadwick['error']
-                    
-                    results['nbPts_'+ method][i] = IC.dictFitFH_Chadwick['nbPts']
-                    results['E_'+ method][i] = IC.dictFitFH_Chadwick['E']
-                    results['ciwE_'+ method][i] = IC.dictFitFH_Chadwick['ciwE']
-                    results['H0_'+ method][i] = IC.dictFitFH_Chadwick['H0']
-                    results['R2_'+ method][i] = IC.dictFitFH_Chadwick['R2']
-                    results['valid_'+ method][i] = IC.dictFitFH_Chadwick['valid']
-                except:
-                    print(IC.dictFitFH_Chadwick)
+                for m in fitSettings['ChadwickFitMethods']:
+                    try:
+                        results['error_'+ m][i] = IC.dictFitFH_Chadwick[m]['error']
+                        results['nbPts_'+ m][i] = IC.dictFitFH_Chadwick[m]['nbPts']
+                        results['E_'+ m][i] = IC.dictFitFH_Chadwick[m]['E']
+                        results['ciwE_'+ m][i] = IC.dictFitFH_Chadwick[m]['ciwE']
+                        results['H0_'+ m][i] = IC.dictFitFH_Chadwick[m]['H0']
+                        results['R2_'+ m][i] = IC.dictFitFH_Chadwick[m]['R2']
+                        results['Chi2_'+ m][i] = IC.dictFitFH_Chadwick[m]['Chi2']
+                        results['valid_'+ m][i] = IC.dictFitFH_Chadwick[m]['valid']
+                        results['issue_'+ m][i] = IC.dictFitFH_Chadwick[m]['issue']
+                    except:
+                        print(IC.dictFitFH_Chadwick)
 
                     
             if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
-                method = 'Dimitriadis'
-                results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
-                results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
-                results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
-                results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
-                results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
-                results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
-                results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+                try:
+                    method = 'Dimitriadis'
+                    results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
+                    results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
+                    results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
+                    results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
+                    results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
+                    results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
+                    results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
+                    results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+                    results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                except:
+                    print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults
@@ -1905,6 +2019,12 @@ class CellCompression:
             df = pd.concat([IC.df_strainGaussian for IC in self.listIndent], axis = 0)
             df.reset_index(drop=True, inplace=True)
             self.df_strainGaussian = df
+            
+        #### TEST
+        if fitSettings['do3partsFits']:
+            df = pd.concat([IC.df_3parts for IC in self.listIndent], axis = 0)
+            df.reset_index(drop=True, inplace=True)
+            self.df_3parts = df
     
         
     def getH0Df(self):
@@ -2026,6 +2146,9 @@ class IndentCompression:
         self.dictFitFH_Chadwick = {}
         self.dictFitFH_Dimitriadis = {}
         
+        # Test of new chad fit
+        # self.dictFitFH_Chadwick_fixedH0 = {}
+        
         # fitSS_stressRegion() & fitSS_stressGaussian() & fitSS_nPoints()
         self.dictFitsSS_stressRegions = {}
         self.dictFitsSS_stressGaussian = {}
@@ -2043,7 +2166,9 @@ class IndentCompression:
         self.df_strainGaussian = pd.DataFrame({}) # dictFits_To_DataFrame()
         
         
-        # test
+        #### TEST
+        self.dictFitsSS_3parts = {} 
+        self.df_3parts = pd.DataFrame({})
         self.computed_SSK_filteredDer = False
 
     
@@ -2440,10 +2565,11 @@ class IndentCompression:
             S[S < 0] = 0
             
             self.contactRadius = np.sqrt(S)
-            self.ChadwickRatio = self.contactRadius / hCompr
+            self.ChadwickRatio = self.contactRadius / (H0/1000)
             
             
     def convergeToH0(self, method, zone, max_it = 10, stop_crit = 0.01):
+        #### Finish and TEST IT !!!!!
         listDicts = []
         d0 = self.computeH0_sub(method, zone, returnDict = True)
         listDicts.append(d0)
@@ -2462,11 +2588,10 @@ class IndentCompression:
             it = it + 1
         print(listDicts)
         return(listDicts[-1])
-    #### Finish and TEST IT !!!!!
-        
+    
         
     
-    def fitFH_Chadwick(self, fitValidationSettings, mask = []):
+    def fitFH_Chadwick(self, fitValidationSettings, method = 'Full', mask = []):
         """
         
 
@@ -2492,17 +2617,19 @@ class IndentCompression:
         x = f
         y, yPredict = h, hPredict
         #### err_Chi2 for distance (nm)
-        err_chi2 = 30
+        err_chi2 = 10
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
         
 
-        self.dictFitFH_Chadwick = dictFit
+        self.dictFitFH_Chadwick[method] = dictFit
+        
+        
         
 
                 
-    def fitFH_Dimitriadis(self, fitValidationSettings, mask = []):
+    def fitFH_Dimitriadis(self, fitValidationSettings, method = 'Full', mask = []):
         """
         
 
@@ -2531,7 +2658,8 @@ class IndentCompression:
         dictFit = makeDictFit_hf(params, ses, error, 
                            x, y, yPredict, 
                            err_chi2, fitValidationSettings)
-        self.dictFitFH_Dimitriadis = dictFit
+        
+        self.dictFitFH_Dimitriadis['method'] = dictFit
                 
     
     def fitSS_stressRegion(self, center, halfWidth, fitValidationSettings):
@@ -2652,6 +2780,7 @@ class IndentCompression:
                                  center, halfWidth, x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
         self.dictFitsSS_nPoints[id_range] = dictFit
+        
     
     def fitSS_Log(self, mask, fitValidationSettings):
         """
@@ -2740,6 +2869,14 @@ class IndentCompression:
             df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_strainGaussian = df
+            
+        #### TEST !
+        if fitSettings['do3partsFits']:
+            df = nestedDict_to_DataFrame(self.dictFitsSS_3parts)
+            nRows = df.shape[0]
+            df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
+            df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
+            self.df_3parts = df
     
     
     
@@ -2774,18 +2911,53 @@ class IndentCompression:
             ax.set_ylabel('f (pN)')
     
             if plotFit:
-                dictFit = self.dictFitFH_Chadwick
+                method = 'Full'
+                # dictFit = self.dictFitFH_Chadwick[method]
+                dictFit = self.dictFitFH_Chadwick[method]
                 fitError = dictFit['error']
                     
                 if not fitError:
                     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
                     hPredict = dictFit['yPredict']
                     
-                    legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    ax.plot(hPredict, self.fCompr,'k--', linewidth = 0.8, 
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit,'k--', linewidth = 0.8, 
                             label = legendText, zorder = 2)
-                else:
-                    titleText += '\nFIT ERROR'
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+                method = 'f_<_400'
+                # dictFit = self.dictFitFH_Chadwick[method]
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
+                    
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
+                
+                method = 'f_in_400_800'
+                # dictFit = self.dictFitFH_Chadwick[method]
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
+                    
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
                     
             if plotH0:
                 bestH0 = self.bestH0
@@ -2814,32 +2986,34 @@ class IndentCompression:
                     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
 
                     
-                if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
-                    H0_ratio = self.dictH0['H0_Chadwick_ratio_2-2.5']
-                    E_ratio = self.dictH0['E_Chadwick_ratio_2-2.5']
-                    str_m_z = 'Chadwick_ratio_2-2.5'
-                    max_h = np.max(self.hCompr)
-                    high_h = np.linspace(max_h, H0_ratio, 20)
-                    low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+                # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
+                #     H0_ratio = self.dictH0['H0_Chadwick_ratio_2-2.5']
+                #     E_ratio = self.dictH0['E_Chadwick_ratio_2-2.5']
+                #     str_m_z = 'Chadwick_ratio_2-2.5'
+                #     max_h = np.max(self.hCompr)
+                #     high_h = np.linspace(max_h, H0_ratio, 20)
+                #     low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
 
-                    # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
-                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
-                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                    ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
-                            # label = legendText)
-                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                #             # label = legendText)
+                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
                 # darkslateblue
-                ax.legend(loc = 'upper right', prop={'size': 6})
-                ax.title.set_text(titleText)
+                
                 
             ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.title.set_text(titleText)
+            
                     
             if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
                 ax_r = ax.twinx()
-                ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='+', markersize=1)
-                ax_r.set_ylabel('a/h')
+                ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+                ax_r.set_ylabel('a/h0')
                 ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
                 ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
                 ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
@@ -2975,14 +3149,30 @@ class IndentCompression:
                                 ax.plot(x, y, color = color, ls = ls, lw = lw)
                         except:
                             pass
+                
+                #### TEST
+                if fitType == '3parts':
+                    dictFit = self.dictFitsSS_3parts
+                    id_ranges = list(dictFit.keys())
+                    # colorDict = {id_ranges[k]:gs.colorList30[k] for k in range(len(id_ranges))}
+                    for k in range(len(id_ranges)):
+                        idr = id_ranges[k]
+                        d = dictFit[idr]
+                        if not d['error']:
+                            if not d['valid']:
+                                ls = '--'
+                            x = d['x']
+                            y = d['yPredict']
+                            color = gs.colorList30[k]
+                            ax.plot(y, x, color = color, ls = ls, lw = lw)
                    
             ax = ufun.setAllTextFontSize(ax, size = 9)
             
             # NEW ! Jojo
             if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
                 ax_r = ax.twinx()
-                ax_r.plot(self.strainCompr, self.ChadwickRatio, color='gold', marker='+', markersize=1)
-                ax_r.set_ylabel('a/h')
+                ax_r.plot(self.strainCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+                ax_r.set_ylabel('a/h0')
                 ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
                 ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
                 ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
@@ -3044,10 +3234,12 @@ class IndentCompression:
                     Yerr = df_fltr['ciwK'].values[k]/1000
                     if df_fltr['valid'].values[k]:
                         color = colors[k%N_col]
-                        mec = 'none'
+                        mec = 'k'
                     else:
-                        color = 'w'
-                        mec = colors[k%N_col]
+                        # color = 'w'
+                        # mec = colors[k%N_col]
+                        color = colors[k%N_col]
+                        mec = 'none'
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
                                     ms = 5, mec = mec, ecolor = color) 
@@ -3080,10 +3272,13 @@ class IndentCompression:
                     Yerr = df_fltr['ciwK'].values[k]/1000
                     if df_fltr['valid'].values[k]:
                         color = colors[k%N_col]
-                        mec = 'none'
+                        mec = 'k'
                     else:
-                        color = 'w'
-                        mec = colors[k%N_col]
+                        # color = 'w'
+                        # mec = colors[k%N_col]
+                        color = colors[k%N_col]
+                        mec = 'none'
+                        
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
                                     ms = 5, mec = mec, ecolor = color) 
@@ -3103,10 +3298,13 @@ class IndentCompression:
                     Yerr = df['ciwK'].values[k]/1000
                     if df['valid'].values[k]:
                         color = colors[k%N_col]
-                        mec = 'none'
+                        mec = 'k'
                     else:
-                        color = 'w'
-                        mec = colors[k%N_col]
+                        # color = 'w'
+                        # mec = colors[k%N_col]
+                        color = colors[k%N_col]
+                        mec = 'none'
+                        
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
                                     ms = 5, mec = mec, ecolor = color)
@@ -3141,10 +3339,13 @@ class IndentCompression:
                     Yerr = df_fltr['ciwK'].values[k]/1000
                     if df_fltr['valid'].values[k]:
                         color = colors[k%N_col]
-                        mec = 'none'
+                        mec = 'k'
                     else:
-                        color = 'w'
-                        mec = colors[k%N_col]
+                        # color = 'w'
+                        # mec = colors[k%N_col]
+                        color = colors[k%N_col]
+                        mec = 'none'
+                        
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
                                     ms = 5, mec = mec, ecolor = color) 
@@ -3214,6 +3415,7 @@ class IndentCompression:
                     fitY = k * fitX**a
                     ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
                     ax.legend(loc = 'upper left', prop={'size': 6})
+        
         
             for item in ([ax.title, ax.xaxis.label, \
                           ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
@@ -3640,8 +3842,90 @@ class IndentCompression:
                           ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
                 item.set_fontsize(9)
                 
+        
+    def fitFH_Chadwick_fixedH0(self, fitValidationSettings, method = 'Full', mask = []):
+        """
+        
 
+        Parameters
+        ----------
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
 
+        Returns
+        -------
+        None.
+
+        """
+        if len(mask) == 0:
+            mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f, D, H0 = self.hCompr[mask], self.fCompr[mask], self.DIAMETER, self.bestH0
+        
+        params, ses, error = fitChadwick_hf_fixedH0(h, f, D, H0)
+        
+        E = params[0]
+        seE = ses[0]
+        params = (E, H0)
+        ses = (seE, 0)
+        hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
+        x = f
+        y, yPredict = h, hPredict
+        #### err_Chi2 for distance (nm)
+        err_chi2 = 10
+        dictFit = makeDictFit_hf(params, ses, error, 
+                                 x, y, yPredict, 
+                                 err_chi2, fitValidationSettings)
+        print(dictFit)
+        
+
+        self.dictFitFH_Chadwick_fixedH0[method] = dictFit
+               
+        
+    def fitSS_3parts(self, fitValidationSettings):
+        """
+        
+
+        Parameters
+        ----------
+        mask : TYPE
+            DESCRIPTION.
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        N = len(self.stressCompr)
+        idx = np.arange(0, N, dtype = int)
+        for i in range(3):
+            mask = (idx > i * N/3) & (idx < (i+1) * N/3)
+            iStart = ufun.findFirst(1, mask)
+            iStop = iStart + np.sum(mask)
+            # id_range = str(iStart) + '_' + str(iStop)
+            id_range = str(i+1) + '/3'
+            stress, strain = self.stressCompr, self.strainCompr
+            params, ses, error = fitLinear_ss(stress, strain, weights = mask)
+            
+            K, strain0 = params
+            strainPredict = inversedConstitutiveRelation(stress[mask], K, strain0)
+            
+            x = stress[mask]
+            y, yPredict = strain[mask], strainPredict
+            #### err_Chi2 for strain
+            err_chi2 = 0.01
+            center = np.median(x)
+            halfWidth = (np.max(x) - np.min(x))/2
+            
+            dictFit = makeDictFit_ss(params, ses, error, 
+                                     center, halfWidth, x, y, yPredict, 
+                                     err_chi2, fitValidationSettings)
+            self.dictFitsSS_3parts[id_range] = dictFit    
+        
+    
 # %%%% Default settings
 
 #### HOW TO USE:
@@ -3659,11 +3943,13 @@ DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 DEFAULT_fitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
                        'zones_H0':['%f_10', '%f_20'],
-                       'method_bestH0':'Dimitriadis',
+                       'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
+                       'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
@@ -3680,6 +3966,8 @@ DEFAULT_fitSettings = {# H0
                        'doStrainGaussianFits' : True,
                        'centers_StrainFits' : DEFAULT_strainCenters,
                        'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
+                       # TEST - Jojo
+                       'do3partsFits' : False,
                        }
 
 
@@ -3699,7 +3987,7 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
 
 # %%%%% For Plots
 DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
-DEFAULT_plot_stressHalfWidth = 50
+DEFAULT_plot_stressHalfWidth = 75
 
 DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
 DEFAULT_plot_strainHalfWidth = 0.0125
@@ -3730,6 +4018,8 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                                      + '_' + str(DEFAULT_fitSettings['overlapFit']),
                         'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
+                        # TEST
+                        'S(e)_3parts': False,
                         }
         
 # %%%% Main 
@@ -3742,28 +4032,29 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
     Parameters
     ----------
-    f : TYPE
-        DESCRIPTION.
-    tsDf : TYPE
-        DESCRIPTION.
-    expDf : TYPE
-        DESCRIPTION.
-    taskName : TYPE, optional
-        DESCRIPTION. The default is ''.
-    PLOT : TYPE, optional
-        DESCRIPTION. The default is False.
-    SHOW : TYPE, optional
-        DESCRIPTION. The default is False.
-    fitSettings : TYPE, optional
-        DESCRIPTION. The default is {}.
-    fitValidationSettings : TYPE, optional
-        DESCRIPTION. The default is {}.
-    plotSettings : TYPE, optional
-        DESCRIPTION. The default is {}.
+    f : string
+        Name of the analysed file.
+    tsDf : pandas DataFrame
+        DataFrame containing the Time Series data (T, B, F, D3, etc).
+    expDf : pandas DataFrame
+        DataFrame containing the experimental conditions.
+    taskName : string, optional
+        Used as folder name to save the plots. The default is ''.
+    PLOT : boolean, optional
+        Make the plots or not. The default is False.
+    SHOW : boolean, optional
+        Show the plots or not. The default is False.
+    fitSettings : dictionary, optional
+        Modify default fit settings. The default is {} (no modifications).
+    fitValidationSettings : dictionary, optional
+        Modify default fit validation settings. The default is {} (no modifications).
+    plotSettings : dictionary, optional
+        Modify default fit plots settings. The default is {} (no modifications).
 
     Returns
     -------
-    None.
+    res : dictionary
+        Contains the many result pandas DataFrame computed.
 
     """
     top = time.time()
@@ -3843,8 +4134,19 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
             IC.refineStartStop()            
             
-            #### 3.7 Fit with Chadwick model of the force-thickness curve   
-            IC.fitFH_Chadwick(fitValidationSettings)
+            #### 3.7 Fit with Chadwick model of the force-thickness curve
+            if fitSettings['doChadwickFit']:
+                for m in fitSettings['ChadwickFitMethods']:
+                    if m == 'Full':
+                        IC.fitFH_Chadwick(fitValidationSettings, method = m)
+                    else:
+                        if m.startswith('f'):
+                            # try:
+                            mask = ufun.strToMask(IC.fCompr, m)
+                            IC.fitFH_Chadwick(fitValidationSettings, method = m, mask = mask)
+                            # except:
+                            #     pass
+
             
             #### 3.8 Find the best H0
             IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
@@ -3858,14 +4160,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             IC.computeContactRadius(method = 'Chadwick')
             
             #### 3.9.2 Re-Compute the best H0
-            try:
-                IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
-            except:
-                pass
-            try:
-                IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
-            except:
-                pass
+            # try:
+            #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
+            # except:
+            #     pass
+            # try:
+            #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
+            # except:
+            #     pass
             
             #### 3.10 Local fits of stress-strain curves
             
@@ -3922,6 +4224,11 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                         validRange = ((C-HW) > 0)
                         if validRange:
                             IC.fitSS_strainGaussian(C, HW, fitValidationSettings)
+                            
+            #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            #### 3.10.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
+            if fitSettings['do3partsFits']:
+                IC.fitSS_3parts(fitValidationSettings)
                     
             #### 3.10.5 Convert all dictFits into DataFrame that can be concatenated and exported after.
             IC.dictFits_To_DataFrame(fitSettings)
@@ -3948,7 +4255,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     # else:
     #     plt.close('all')
     
-    
+    # print(CC.listIndent[0].dictFitFH_Chadwick)
     if PLOT:        
         CC.plot_and_save(plotSettings, dpi = 150, figSubDir = 'MecaAnalysis_allCells')
         
@@ -3972,6 +4279,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             'results_Log' : CC.df_log,
             'results_H0' : df_H0,
             'results_strainGaussian' : CC.df_strainGaussian,
+            'results_3parts' : CC.df_3parts,
             }
 
     print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
@@ -4094,6 +4402,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                     #### Single cell data are saved here!
                     cellID = ufun.findInfosInFileName(f, 'cellID')
                     fileName = cellID + '_' + k + '.csv' # Example: '22-05-03_M4_P1_C17_results_nPoints.csv'
+                    # print(fileName)
                     if fitsSubDir == '':
                         df_path = os.path.join(cp.DirDataAnalysisFits, fileName)
                     else:
