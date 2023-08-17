@@ -801,21 +801,18 @@ class PincherTimeLapse:
         Nup = self.Nuplet
         nT = self.listTrajectories[0].nT
         status_nUp = self.listTrajectories[0].dict['status_nUp']
+        status_frame = self.listTrajectories[0].dict['status_frame']
         sum_std = np.zeros(nT)
         for i in range(self.NB):
-            # print(nT)
-            # print(i)
-            # print(self.listTrajectories[i].dict['StdDev'])
-            # print(len(self.listTrajectories[i].dict['StdDev']))
             sum_std += np.array(self.listTrajectories[i].dict['StdDev'])
         
         bestStd = np.zeros(nT, dtype = bool)
         i = 0
         while i < nT:
-            if status_nUp[i] == 0:
+            if status_frame[i] == 0:
                 bestStd[i] = True
                 i += 1
-            elif status_nUp[i] > 0:
+            elif status_frame[i] > 0:
                 s2 = status_nUp[i]
                 L = [i]
                 j = 0
@@ -1496,8 +1493,6 @@ class Trajectory:
         self.HWScan_triplets = 1200 # Half width of the scans
         self.HWScan_singlets = 600
         
-        #### NEW
-        self.mapZT = 0
         
     def __str__(self):
         text = 'iS : ' + str(self.series_iS)
@@ -1520,10 +1515,6 @@ class Trajectory:
             iF = self.dict['iF'][0]
             previousZ = -1
             
-            #### Enable new Z plot here
-            computeMapZT = True
-            # nt, nz = np.sum(self.dict['bestStd']), self.deptho.shape[0]
-            mapZT = []
             
             # ###################################################################
             
@@ -1560,20 +1551,10 @@ class Trajectory:
                             jF += 1
                             
                         iF += jF
-                        
-                        
-                    if computeMapZT:
-                        Z, Zscanned, sumFinalD = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                              matchingDirection, plot, computeMapZT)
-                        maxD = np.max(sumFinalD)
-                        newLine = np.zeros(self.deptho.shape[0])
-                        newLine[Zscanned] = (maxD - sumFinalD)
-                        mapZT.append(newLine)
-                        
-                        
-                    else:
-                        Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                              matchingDirection, plot, computeMapZT)
+
+
+                    Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
+                                          matchingDirection, plot)
                         
                         
                     previousZ = Z
@@ -1586,13 +1567,11 @@ class Trajectory:
 
                     mask = np.array([(iF in iFNuplet) for iF in self.dict['iF']])
                     self.dict['Zr'][mask] = Zr
-                    
-            self.mapZT = np.array(mapZT)
-
-
+                
+                
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot = False, computeMapZT = False):
+                     matchingDirection, plot = False):
         # try:
         Nframes = len(framesNuplet)
         listStatus_1 = [F.status_frame for F in framesNuplet]
@@ -1739,8 +1718,6 @@ class Trajectory:
         
         # Z = np.array([i for i in range(Ddz)]) - depthoZFocusHD
         # plt.plot(Z, listZQuality)
-
-
 
 
         #### Important plotting option here
@@ -1917,12 +1894,8 @@ class Trajectory:
             plt.close(fig)
         
         plt.ion()
-        
-        if computeMapZT:
-            return(Z, Zscanned, sumFinalD)    
-            
-        else:
-            return(Z)
+
+        return(Z)
 
         # except Exception:
         #     print(gs.RED + '')
@@ -2432,17 +2405,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             print(gs.BLUE + 'Computing Z...' + gs.NORMAL)
             print(gs.GREEN + 'Z had been already computed :)' + gs.NORMAL)
             
-        #### 4.x - NEW
         
-        for iB in range(PTL.NB):
-            traj = PTL.listTrajectories[iB]
-            try:
-                fig, ax = plt.subplots(1,1)
-                pStart, pStop = np.percentile(traj.mapZT, (1, 99))
-                ax.imshow(traj.mapZT, cmap = 'gray', vmin = pStart, vmax = pStop)
-                plt.show()
-            except:
-                pass
         
 
         #### 4.3 - Save the raw traj (before Std selection)
@@ -2556,7 +2519,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     print(gs.BLUE + str(time.time()-start) + gs.NORMAL)
     print(gs.BLUE + '\n' + gs.NORMAL)
 
-    # plt.close('all')
+    plt.close('all')
 
 
         #### 7.2 - Return the last objects, for optional verifications
