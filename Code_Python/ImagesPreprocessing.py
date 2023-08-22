@@ -59,8 +59,8 @@ import UtilityFunctions as ufun
 #%% Define parameters # Jojo
 
 date = '23.07.17'
-DirExt = 'E:\\23-07-17_3T3Atcc-LaGFP_CalA\\M6-7_de' #'/M4_patterns_ctrl'
-DirSave = os.path.join(cp.DirDataRaw, date  + '_Deptho', 'M6-7') #  + '_Deptho', 'M3'
+DirExt = 'E:\\23-07-17_3T3Atcc-LaGFP_CalA\\' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date) #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
@@ -69,7 +69,7 @@ microscope = 'labview'
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures', 'd'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 

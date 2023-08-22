@@ -235,34 +235,34 @@ class PincherTimeLapse:
         # End of the initialization !
        
     
-    def checkIfBlackFrames(self):
-        """
-        Check if some images in the time lapse are completely black.
-        This happens typically when the computer is not able to save
-        properly a series of large images with a high frequency.
-        To detect them, compute the checkSum = np.sum(self.I[j]).
-        Then modify the 'idx_inNUp' & 'idx_NUp' fields to '-1' in the dictLog.
-        """
-        if self.microscope == 'labview' or self.microscope == 'old-labview':
-            offsets = np.array([np.sum(self.LoopActivations <= kk) 
-                                for kk in range(self.nLoop)])
-            # print(offsets)
-            for i in range(self.nLoop):
-                j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
-                # print(j)
-                checkSum = np.sum(self.I[j])
-                while checkSum == 0:
-                    print('Black image found')
-    #                 self.dictLog['Black'][j] = True
-                    self.dictLog['idx_inNUp'][j] = -1
-                    self.dictLog['idx_NUp'][j] = -1
-                    self.excludedFrames_black[i] += 1
-                    self.excludedFrames_inward[i] += 1 # More general
-                    j -= 1
-                    checkSum = np.sum(self.I[j])
+    # def checkIfBlackFrames(self):
+    #     """
+    #     Check if some images in the time lapse are completely black.
+    #     This happens typically when the computer is not able to save
+    #     properly a series of large images with a high frequency.
+    #     To detect them, compute the checkSum = np.sum(self.I[j]).
+    #     Then modify the 'idx_inNUp' & 'idx_NUp' fields to '-1' in the dictLog.
+    #     """
+    #     if self.microscope == 'labview' or self.microscope == 'old-labview':
+    #         offsets = np.array([np.sum(self.LoopActivations <= kk) 
+    #                             for kk in range(self.nLoop)])
+    #         # print(offsets)
+    #         for i in range(self.nLoop):
+    #             j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
+    #             # print(j)
+    #             checkSum = np.sum(self.I[j])
+    #             while checkSum == 0:
+    #                 print('Black image found')
+    # #                 self.dictLog['Black'][j] = True
+    #                 self.dictLog['idx_inNUp'][j] = -1
+    #                 self.dictLog['idx_NUp'][j] = -1
+    #                 self.excludedFrames_black[i] += 1
+    #                 self.excludedFrames_inward[i] += 1 # More general
+    #                 j -= 1
+    #                 checkSum = np.sum(self.I[j])
             
-        else:
-            pass
+    #     else:
+    #         pass
         
         
     def initializeLogDf(self, statusPath):
@@ -677,41 +677,41 @@ class PincherTimeLapse:
         #     print('\n\n* Filled Log Table:\n')
         #     print(metadataDf[metadataDf['UI']])
             
-    def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
-        actFreq = self.activationFreq
-        actExp = self.activationExp
-        actType = [self.activationType]
-        microscope = self.microscope
-        if microscope == 'labview' or microscope == 'old-labview':
-            idxActivation = ufun.findActivation_V1(fieldDf)[0]
-            actFirst = idxActivation//self.loop_mainSize
-            timeScaleFactor = 1000
-        elif microscope == 'metamorph':
-            actFirst = self.activationFirst
-            #+2 in idxAnalysis because the time included in the timeSeriesfile is the third of the triplet
-            idxActivation = actFirst*self.loop_mainSize-1
-            timeScaleFactor = 1
+    # def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
+    #     actFreq = self.activationFreq
+    #     actExp = self.activationExp
+    #     actType = [self.activationType]
+    #     microscope = self.microscope
+    #     if microscope == 'labview' or microscope == 'old-labview':
+    #         idxActivation = ufun.findActivation_V1(fieldDf)[0]
+    #         actFirst = idxActivation//self.loop_mainSize
+    #         timeScaleFactor = 1000
+    #     elif microscope == 'metamorph':
+    #         actFirst = self.activationFirst
+    #         #+2 in idxAnalysis because the time included in the timeSeriesfile is the third of the triplet
+    #         idxActivation = actFirst*self.loop_mainSize-1
+    #         timeScaleFactor = 1
         
-        actN = ((self.nLoop - actFirst))//actFreq
+    #     actN = ((self.nLoop - actFirst))//actFreq
         
-        metadataDict = {}
-        metadataDict['Total'] = actN*np.ones(actN, dtype = type(actN))
-        metadataDict['Slice'] = idxActivation
-        #timeScaleFactor converts the time to milliseconds for the labview code and keeps it the same if from Metamorph
-        metadataDict['T_abs'] = fieldDf['T_abs'][idxActivation]/timeScaleFactor 
-        metadataDict['T_0'] = fieldDf['T_abs'][0]/timeScaleFactor 
-        # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
-        metadataDict['Type'] = actType*actN
+    #     metadataDict = {}
+    #     metadataDict['Total'] = actN*np.ones(actN, dtype = type(actN))
+    #     metadataDict['Slice'] = idxActivation
+    #     #timeScaleFactor converts the time to milliseconds for the labview code and keeps it the same if from Metamorph
+    #     metadataDict['T_abs'] = fieldDf['T_abs'][idxActivation]/timeScaleFactor 
+    #     metadataDict['T_0'] = fieldDf['T_abs'][0]/timeScaleFactor 
+    #     # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
+    #     metadataDict['Type'] = actType*actN
         
-        metadataDf = pd.DataFrame(metadataDict)
-        if save:
-            metadataDf.to_csv(path, sep='\t')
+    #     metadataDf = pd.DataFrame(metadataDict)
+    #     if save:
+    #         metadataDf.to_csv(path, sep='\t')
         
-        if display == 1:
-            print('\n\n* Initialized Log Table:\n')
-        if display == 2:
-            print('\n\n* Filled Log Table:\n')
-            print(metadataDf[metadataDf['UI']])
+    #     if display == 1:
+    #         print('\n\n* Initialized Log Table:\n')
+    #     if display == 2:
+    #         print('\n\n* Filled Log Table:\n')
+    #         print(metadataDf[metadataDf['UI']])
             
     
     def saveLogDf(self, display = 1, save = False, path = ''):
@@ -773,6 +773,7 @@ class PincherTimeLapse:
             self.log_UIxy[:,i,0] = logDf[xkey].values
             self.log_UIxy[:,i,1] = logDf[ykey].values
             logDf = logDf.drop(columns=[xkey, ykey])
+        logDf['UILog'] = logDf['UILog'].astype(str)
         self.logDf = logDf
             
 
@@ -2194,7 +2195,6 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     #### 0.2 - Begining of the Main Loop (i)
     for i in range(len(fileRoots)):
         f = fileRoots[i]
-        # print(f)
         imagePath, fieldPath, resPath, statusPath = tifImagesPaths[i], txtFieldPaths[i], txtResultsPaths[i], txtStatusPaths[i]
         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
@@ -2239,7 +2239,6 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             pass
         elif os.path.isfile(logFilePath):
             PTL.importLogDf(logFilePath)
-            PTL.dictLog['UILog'] = PTL.dictLog['UILog'].astype(str)
             logFileImported = True
         else:
             pass
