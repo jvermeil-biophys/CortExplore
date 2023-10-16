@@ -328,6 +328,26 @@ class PincherTimeLapse:
         indexMainPhase = logDf[logDf['status_action'].apply(lambda x : x.startswith(mainPhase))].index
         logDf.loc[indexMainPhase, 'idxAnalysis'] = (-1)*logDf.loc[indexMainPhase, 'idxAnalysis']
         
+        # idxAnalysis for loops with repeated compressions
+        previous_idx = 0
+        for i in range(1, self.NLoops+1):
+            indexLoop_i = logDf[logDf['iL'] == i].index
+            maskActionPhase_i = logDf.loc[indexLoop_i, 'status_phase'].apply(lambda x : x.startswith('Action')).values.astype(int)
+            maskMainPhase_i = logDf.loc[indexLoop_i, 'status_action'].apply(lambda x : x.startswith(mainPhase)).values.astype(int)
+            maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
+            # print(maskMainPhase_i)
+            
+            lab_main, nlab_main = ndi.label(maskMainPhase_i)
+            # print(lab, nlab)
+            
+            if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
+                logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
+                lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
+                logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
+                # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
+                previous_idx = np.max(lab_main)
+                
+                
         
         self.logDf = logDf
         self.log_UIxy = log_UIxy
@@ -805,6 +825,7 @@ class PincherTimeLapse:
         iF = 0
         for i in range(self.nS):
             if self.logDf['trackFrame'].values[i]:
+                iL = self.logDf['iL'].values[i]
                 iS = self.logDf['iS'].values[i]
                 idx_NUp = self.logDf['idx_NUp'].values[i]
                 idx_inNUp = self.logDf['idx_inNUp'].values[i]
@@ -813,7 +834,7 @@ class PincherTimeLapse:
                 # Otherwise the image is "alone", like in a compression, and therefore Nup = 1
                 
                 resDf = self.resultsDf.loc[self.resultsDf['Slice'] == iS]
-                frame = Frame(self.I[iS-1], iS, self.NB, Nup, idx_inNUp, idx_NUp, self.scale, resDf)
+                frame = Frame(self.I[iS-1], iL, iS, self.NB, Nup, idx_inNUp, idx_NUp, self.scale, resDf)
                 frame.makeListBeads()
                 
                 self.listFrames.append(frame)
@@ -986,6 +1007,7 @@ class PincherTimeLapse:
             self.listTrajectories[iB].dict['Bead'].append(self.listFrames[init_iF].listBeads[init_iBoi[iB]])
             self.listTrajectories[iB].dict['iF'].append(init_iF)
             self.listTrajectories[iB].dict['iS'].append(self.listFrames[init_iF].iS)
+            self.listTrajectories[iB].dict['iL'].append(self.listFrames[init_iF].iL)
             self.listTrajectories[iB].dict['iB_inFrame'].append(init_iBoi[iB])
             self.listTrajectories[iB].dict['X'].append(init_BoiXY[iB][0])
             self.listTrajectories[iB].dict['Y'].append(init_BoiXY[iB][1])
@@ -1074,7 +1096,7 @@ class PincherTimeLapse:
                     
 
             #### 3.5 If one of the previous steps failed, ask for user input
-            if askUI:        
+            if askUI:
                 iS = self.listFrames[iF].iS
                 
                 #### 3.5.1: Case when the UI has been previously saved in the dictLog.
@@ -1217,6 +1239,7 @@ class PincherTimeLapse:
             for iB in range(self.NB):
                
                 self.listTrajectories[iB].dict['Bead'].append(self.listFrames[iF].listBeads[iBoi[iB]])
+                self.listTrajectories[iB].dict['iL'].append(self.listFrames[iF].iL)
                 self.listTrajectories[iB].dict['iF'].append(iF)
                 self.listTrajectories[iB].dict['iS'].append(self.listFrames[iF].iS)
                 self.listTrajectories[iB].dict['iB_inFrame'].append(iBoi[iB])
@@ -1465,13 +1488,14 @@ class PincherTimeLapse:
 # %%%% Frame
 
 class Frame:
-    def __init__(self, F, iS, NB, Nup, idx_inNUp, idx_NUp, scale, resDf):
+    def __init__(self, F, iL, iS, NB, Nup, idx_inNUp, idx_NUp, scale, resDf):
         ny, nx = F.shape[0], F.shape[1]
         self.F = F # Note : Frame.F points directly to the i-th frame of the image I ! To have 2 different versions one should use np.copy(F)
         self.NBoi = NB
         self.NBdetected = 0
         self.nx = nx
         self.ny = ny
+        self.iL = iL
         self.iS = iS
         self.listBeads = []
         self.trajPoint = []
@@ -1568,7 +1592,7 @@ class Trajectory:
         self.nT = 0
         self.iB = iB
         self.dict = {'X': [],'Y': [],'idxAnalysis': [],'StdDev': [],
-                     'Bead': [],'idx_inNUp': [],'idx_NUp': [],'iF': [],'iS': [],'iB_inFrame' : [],
+                     'iL': [],'Bead': [],'idx_inNUp': [],'idx_NUp': [],'iF': [],'iS': [],'iB_inFrame' : [], 
                      'bestStd' : [], 'Zr' : [], 'Neighbour_L' : [], 'Neighbour_R' : []}
         # iF is the index in the listFrames
         # iS is the index of the slice in the raw image MINUS ONE
@@ -2560,6 +2584,7 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.1 - Create a dict to prepare the export of the results
             timeSeries = {
+                'idxLoop' : np.zeros(nT),
                 'idxAnalysis' : np.zeros(nT),
                 'T' : np.zeros(nT),
                 'Tabs' : np.zeros(nT),
@@ -2574,6 +2599,7 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.2 - Input common values:
             T0 = fieldDf['T_abs'].values[0]/1000 # From ms to s conversion
+            timeSeries['idxLoop'] = traj1.dict['iL']
             timeSeries['idxAnalysis'] = traj1.dict['idxAnalysis']
             timeSeries['Tabs'] = (fieldDf['T_abs'][traj1.dict['iField']])/1000 # From ms to s conversion
             timeSeries['T'] = timeSeries['Tabs'].values - T0*np.ones(nT)
