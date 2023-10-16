@@ -269,11 +269,11 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
         print(resDf)
         
         
-        # OPTIONS OF THE Z TRACKING HERE !
+        #### OPTIONS OF THE Z TRACKING HERE !
         # Get the nUplets
         nz, ny, nx = I.shape[0], I.shape[1], I.shape[2]
-        dZ_nUplets = 0.5 # µm
-        dZ_stack = 0.02 # µm
+        dZ_nUplets = 0.5 # µm # Distance between slices of the Nuplet
+        dZ_stack = 0.02 # µm # Distance between slices of the deptho
         dN_nUplets = int(dZ_nUplets/dZ_stack)
         
         z_max = 200
@@ -284,6 +284,8 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
                 z_max = z
         
         center_Zoffset = [ii for ii in range (-50, 55, 25)]
+        numberOfNupletPerChain = 5
+        aaa = numberOfNupletPerChain//2
         
         
         # center_Zoffset = [0]
@@ -293,7 +295,7 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
         #                    for ii in range(len(center_Zoffset))]
             
         nUpletsIndices = [[z_max + center_Zoffset[ii] + kk*dN_nUplets \
-                            for kk in range(-2,3)] \
+                            for kk in range(-aaa, aaa+1)] \
                             for ii in range(len(center_Zoffset))]
             
         nUpletsIndices = [[z_max]]
@@ -756,8 +758,8 @@ xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.
 
 # %%% (3.2) SCRIPT for deptho chains 2nd try
 
-mainPath = 'D://MagneticPincherData//Raw//22.04.29_CalibrationM450-2023_SecondTry//DepthoChains'
-depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.04.29_CALIBRATION_M450_step20_100X'
+mainPath = 'D://MagneticPincherData//Raw//23.09.21_CalibrationM450-2025_Try02//BSA_chains-depthos'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//23.09.21_CALIBRATION_M450-2025-BSA_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
 
