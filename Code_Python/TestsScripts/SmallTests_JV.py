@@ -26,6 +26,133 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+#%% 2 X-axis
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax2 = ax1.twiny()
+
+X = np.linspace(0,0.2,1000)
+Y = np.cos(X/10)
+
+ax1.plot(X,Y)
+ax1.set_xlabel(r"Original x-axis: $X$")
+
+def tick_function(eps, h0):
+    H = h0 - 3*h0*eps
+    return ["%.1f" % h for h in H]
+
+h0 = 500
+
+ax1.set_xlim(ax1.get_xlim())
+
+ax2.set_xlim(ax1.get_xlim())
+new_tick_locations = np.array(ax1.get_xticks()) # [0, 0.05, 0.1, 0.15, 0.2]
+print(new_tick_locations)
+ax1.set_xticks(new_tick_locations)
+ax2.set_xticks(new_tick_locations)
+ax2.set_xticklabels(tick_function(new_tick_locations, h0))
+ax2.set_xlabel(r"Modified x-axis: $1/(1+X)$")
+# ax1.set_xlim([0, 0.3])
+ax2.grid()
+plt.show()
+
+# %% sth
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import scipy.stats as st
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+X = np.linspace(0, 50, 10000)
+Y = 2 + 10/(1 + np.exp(-0.2*(X-30)))
+
+plt.plot(X,Y)
+plt.show()
+
+# %% idxAnalysis
+
+import numpy as np
+import pandas as pd
+import UtilityFunctions as ufun
+
+A = np.array([0, 1, 2, -1, -2, 3, -5, 2, 4, 1])
+df = pd.DataFrame({'A':A})
+vals = df['A'].unique()
+
+N = np.max(df['A'])
+idx = [i for i in range(N+1) if i in vals]   
+
+
+# %% regions
+
+import numpy as np
+import pandas as pd
+import scipy.ndimage as ndi
+import UtilityFunctions as ufun
+
+A = np.array([0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1])
+A2 = np.array([0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1])
+B, n = ndi.label(A)
+
+C = np.logical_xor(A2, A)
+
+
+
+# %% sth
+
+import numpy as np
+import pandas as pd
+import UtilityFunctions as ufun
+
+def fun(tsDf, i, task):
+    Npts = len(tsDf['idxAnalysis'].values)
+    iStart = ufun.findFirst(np.abs(tsDf['idxAnalysis']), i+1)
+    iStop = iStart + np.sum((np.abs(tsDf['idxAnalysis']) == i+1))
+    
+    if task == 'compression':
+        mask = (tsDf['idxAnalysis'] == i+1).values
+    elif task == 'precompression':
+        mask = (tsDf['idxAnalysis'] == -(i+1)).values
+    elif task == 'compression & precompression':
+        mask = (np.abs(tsDf['idxAnalysis']) == i+1).values
+    elif task == 'previous':
+        i2 = ufun.findFirst_V2(i+1, np.abs(tsDf['idxAnalysis']))
+        if i2 == -1:
+            i2 = tsDf['idxAnalysis'].size
+        i1 = Npts - ufun.findFirst_V2(i, np.abs(tsDf['idxAnalysis'][::-1]))
+        if i == 0:
+            i1 = 0
+        mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+    elif task == 'following':
+        i2 = ufun.findFirst_V2(i+2, np.abs(tsDf['idxAnalysis']))
+        if i2 == -1:
+            i2 = tsDf['idxAnalysis'].size
+        i1 = Npts - ufun.findFirst_V2(i+1, np.abs(tsDf['idxAnalysis'][::-1]))
+        if i1 > Npts:
+            i1 = 0
+        mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+    elif task == 'surrounding':
+        mask = ((np.abs(tsDf['idxLoop']) == i+1) & (np.abs(tsDf['idxAnalysis']) == 0)).values
+    
+    return(mask)
+
+a1 = np.array([1,1,1,1,1,1,1,1,
+               2,2,2,2,2,2,2,2,
+               3,3,3,3,3,3,3,3])
+
+a2 = np.array([0,0,-1,-1,1,1,0,0,
+               0,0,-2,-2,2,2,0,0,
+               0,0,-3,-3,3,3,0,0])
+
+tsDf = pd.DataFrame({'idxLoop' : a1, 'idxAnalysis' : a2})
+
+mask = fun(tsDf, 2, 'compression')
+
 # %% merge
 
 

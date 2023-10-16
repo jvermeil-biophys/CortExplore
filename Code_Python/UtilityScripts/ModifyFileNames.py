@@ -198,8 +198,13 @@ findAndRename(path, 'M1_P2', 'M2_P1',
               target='file', test = True, recursiveAction = False, exceptStrings = [])
 
 
+# %% Script Other renaming
 
-
+path0 = 'E://23-09-06_3T3Atcc-LaGFP_CalA//M1_0.25nM'
+s1 = '-07-20_'
+s2 = '-09-06_'
+findAndRename(path0, s1, s2, 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 
 

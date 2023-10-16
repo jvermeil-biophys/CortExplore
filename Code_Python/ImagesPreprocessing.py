@@ -57,10 +57,9 @@ import UtilityFunctions as ufun
 
 
 #%% Define parameters # Jojo
-
-date = '23.07.17'
-DirExt = 'E:\\23-07-17_3T3Atcc-LaGFP_CalA\\' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date) #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '23.09.19'
+DirExt = 'E:\\2023-09-19_JLY\\M2_JLY\\M2_depthos' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M2') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
@@ -69,19 +68,21 @@ microscope = 'labview'
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures', 'd'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad',
+                                             'film', 'films', 'capture', 'captures', 
+                                             ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
     """
     
+    
     res = []
     exclude = False
     for w in forbiddenWords:
         if w.lower() in Dir.lower(): # compare the lower case strings
             exclude = True # If a forbidden word is in the dir name, don't consider it
-
             
     if exclude or not os.path.isdir(Dir):
         return(res) # Empty list
@@ -100,6 +101,7 @@ def getListOfSourceFolders(Dir,
         
     else:
         listDirs = os.listdir(Dir)
+        print(listDirs)
         for D in listDirs:
             path = os.path.join(Dir, D)
             res += getListOfSourceFolders(path) # Recursive call to the function !
@@ -472,14 +474,14 @@ copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
 
 instructionText = "Draw the ROIs to crop !\n\n(1) Click on the image to define a rectangular selection\n"
 instructionText += "(2) Press 'a' to accept your selection, 'r' to redraw it, "
-instructionText += "or 's' if you have a second selection to make (don't use 's' more than once per stack)\n"
+instructionText += "or 's' if you have a supplementary selection to make (you can use 's' more than once per stack !)\n"
 instructionText += "(3) Make sure to choose the number of files you want to crop at once\nin the variable 'limiter'"
 instructionText += "\n\nC'est parti !\n"
 
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 60
+limiter = 80
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

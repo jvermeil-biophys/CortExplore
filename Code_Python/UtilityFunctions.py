@@ -1266,6 +1266,17 @@ def findFirst(x, A):
     idx = (A==x).view(bool).argmax()
     return(idx)
 
+
+def findFirst_V2(v, arr):
+    """
+    https://stackoverflow.com/questions/432112/is-there-a-numpy-function-to-return-the-first-index-of-something-in-an-array
+    """
+    for idx, val in np.ndenumerate(arr):
+        if val == v:
+            return(idx[0])
+    return(-1)
+
+
 def fitLine(X, Y):
     """
     returns: results.params, results \n

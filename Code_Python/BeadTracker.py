@@ -3126,6 +3126,7 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
         S0 = resDf['Slice'].values
         bestZ = S0[np.argmax(resDf['StdDev'].values)] - 1 # The index of the image with the highest Std
         # This image will be more or less the one with the brightest spot
+    
 
         # Create the BeadDeptho object
         BD = BeadDeptho(I, X0, Y0, S0, bestZ, scale, beadType, f)
