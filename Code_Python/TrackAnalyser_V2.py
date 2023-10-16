@@ -1321,14 +1321,7 @@ class CellCompression:
         minCompField = float(compField[0])
         maxCompField = float(compField[1])
         
-        # Loop structure infos
-        loopStruct = thisExpDf.at[thisExpDf.index.values[0], 'loop structure'].split('_')
         nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
-        
-        loop_totalSize = int(loopStruct[0])
-        loop_rampSize = int(loopStruct[1])
-        loop_ctSize = int((loop_totalSize - loop_rampSize)/nUplet)
-        
         
         self.Ncomp = Ncomp
         self.DIAMETER = D
@@ -1336,11 +1329,27 @@ class CellCompression:
         self.normalField = normalField
         self.minCompField = minCompField
         self.maxCompField = maxCompField
-        self.loopStruct = loopStruct
         self.nUplet = nUplet
-        self.loop_totalSize = loop_totalSize
-        self.loop_rampSize = loop_rampSize
-        self.loop_ctSize = loop_ctSize
+        
+        # Loop structure infos
+        try:
+            loopStruct = thisExpDf.at[thisExpDf.index.values[0], 'loop structure'].split('_')
+            loop_totalSize = int(loopStruct[0])
+            loop_rampSize = int(loopStruct[1])
+            loop_ctSize = int((loop_totalSize - loop_rampSize)/nUplet)
+            
+            self.loopStruct = loopStruct
+            self.loop_totalSize = loop_totalSize
+            self.loop_rampSize = loop_rampSize
+            self.loop_ctSize = loop_ctSize
+        except:
+            try:
+                t1 = self.tsDf['idxLoop'].size/np.max(self.tsDf['idxLoop'])
+                t2 = self.tsDf['idxLoop'].size//np.max(self.tsDf['idxLoop'])
+                # print(t1 == t2)
+            except:
+                print('Loop structure Error :(')
+        
         
         # These fields are to be filled by methods later on
         self.listIndent = []
@@ -1361,29 +1370,60 @@ class CellCompression:
         
         
     def getMaskForCompression(self, i, task = 'compression'):
-        Npts = len(self.tsDf['idxAnalysis'].values)
-        iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
-        iStop = iStart + np.sum((np.abs(self.tsDf['idxAnalysis']) == i+1))
+        try:
+            Npts = len(self.tsDf['idxAnalysis'].values)
+            iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
+            iStop = iStart + np.sum((np.abs(self.tsDf['idxAnalysis']) == i+1))
+            
+            if task == 'compression':
+                mask = (self.tsDf['idxAnalysis'] == i+1).values
+            elif task == 'precompression':
+                mask = (self.tsDf['idxAnalysis'] == -(i+1)).values
+            elif task == 'compression & precompression':
+                mask = (np.abs(self.tsDf['idxAnalysis']) == i+1).values
+            elif task == 'previous':
+                i1 = max(0, iStart-(self.loop_ctSize))
+                i2 = iStart
+                mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
+            elif task == 'following':
+                i1 = iStop
+                i2 = min(Npts, iStop+(self.loop_ctSize))
+                mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
+            elif task == 'surrounding':
+                i1 = max(0,    iStart-(self.loop_ctSize//2))
+                i2 = min(Npts, iStop +(self.loop_ctSize//2))
+                mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
         
-        if task == 'compression':
-            mask = (self.tsDf['idxAnalysis'] == i+1)
-        elif task == 'precompression':
-            mask = (self.tsDf['idxAnalysis'] == -(i+1))
-        elif task == 'compression & precompression':
-            mask = (np.abs(self.tsDf['idxAnalysis']) == i+1)
-        elif task == 'previous':
-            i1 = max(0, iStart-(self.loop_ctSize))
-            i2 = iStart
-            mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
-        elif task == 'following':
-            i1 = iStop
-            i2 = min(Npts, iStop+(self.loop_ctSize))
-            mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
-        elif task == 'surrounding':
-            i1 = max(0,    iStart-(self.loop_ctSize//2))
-            i2 = min(Npts, iStop +(self.loop_ctSize//2))
-            mask = np.array([((i >= i1) and (i < i2)) for i in range(Npts)])
-        
+        except:
+            Npts = len(self.tsDf['idxAnalysis'].values)
+            iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
+            iStop = iStart + np.sum((np.abs(self.tsDf['idxAnalysis']) == i+1))
+            
+            if task == 'compression':
+                mask = (self.tsDf['idxAnalysis'] == i+1).values
+            elif task == 'precompression':
+                mask = (self.tsDf['idxAnalysis'] == -(i+1)).values
+            elif task == 'compression & precompression':
+                mask = (np.abs(self.tsDf['idxAnalysis']) == i+1).values
+            elif task == 'previous':
+                i2 = ufun.findFirst_V2(i+1, np.abs(self.tsDf['idxAnalysis']))
+                if i2 == -1:
+                    i2 = self.tsDf['idxAnalysis'].size
+                i1 = Npts - ufun.findFirst_V2(i, np.abs(self.tsDf['idxAnalysis'][::-1]))
+                if i == 0:
+                    i1 = 0
+                mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+            elif task == 'following':
+                i2 = ufun.findFirst_V2(i+2, np.abs(self.tsDf['idxAnalysis']))
+                if i2 == -1:
+                    i2 = self.tsDf['idxAnalysis'].size
+                i1 = Npts - ufun.findFirst_V2(i+1, np.abs(self.tsDf['idxAnalysis'][::-1]))
+                if i1 > Npts:
+                    i1 = 0
+                mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+            elif task == 'surrounding':
+                mask = ((np.abs(self.tsDf['idxLoop']) == i+1) & (np.abs(self.tsDf['idxAnalysis']) == 0)).values
+                
         return(mask)
         
         
@@ -1399,13 +1439,42 @@ class CellCompression:
                 D3corrected = True
                 jumpD3 = jump
         self.listJumpsD3[i] = jumpD3
+        
+    
+    def correctAllJumpsByLoop(self):
+        colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
+        N = np.max(self.tsDf['idxLoop'])
+        for i in range(1, N+1):
+            idx_loop = self.tsDf[self.tsDf['idxLoop'] == i].index
+            df_loop = self.tsDf.loc[idx_loop]
+            
+            idx_action = df_loop[df_loop['idxAnalysis'] != 0].index
+            iStart = idx_action[0]
+            
+            # print(df_loop)
+            # print(idx_loop)
+            # print(idx_action)
+            # print(iStart)
+            
+            for c in colToCorrect:
+                jump = np.median(df_loop.loc[iStart:iStart+5, c].values) \
+                     - np.median(df_loop.loc[iStart-2:iStart, c].values)
+                # print(jump)     
+                df_loop.loc[idx_action, c] -= jump
+                if c == 'D3':
+                    D3corrected = True
+                    jumpD3 = jump
+                    
+                    
+            self.tsDf.loc[idx_loop] = df_loop
+            self.listJumpsD3[i-1] = jumpD3
 
     
         
     def plot_Timeseries(self, plotSettings):
         fig, ax = plt.subplots(1,1,
                                # figsize = (5,4))
-                               figsize=(self.tsDf.shape[0]*(1/200),4))
+                               figsize=(np.max(self.tsDf['T'])*(1/7),4))
         fig.suptitle(self.cellID)
         
         # Distance axis
@@ -1469,7 +1538,7 @@ class CellCompression:
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
                                  # figsize = (3, 4))
-                                figsize = (3*nColsSubplot, 3*nRowsSubplot))
+                                figsize = (4*nColsSubplot, 4*nRowsSubplot))
         figTitle = 'Thickness-Force of indentations\n'
         if plotH0:
             figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
@@ -1583,10 +1652,11 @@ class CellCompression:
                 
             IC = self.listIndent[i]
             IC.plot_KS(fig, ax, plotSettings, fitType = fitType)
+            ax.grid(axis = 'y')
         
         axes = ufun.setCommonBounds_V2(axes, mode = 'allLines', 
                                        xb = [0, 'auto'], yb = [0, 'auto'],
-                                       Xspace = [0, 5000], Yspace = [0, 25])
+                                       Xspace = [0, 5000], Yspace = [0, 60])
         # axes = ufun.setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'])
             
         fig.tight_layout()
@@ -1705,14 +1775,55 @@ class CellCompression:
         if plotSettings['S(e)_strainGaussian']:
             # try:
             name = self.cellID + '_07-1_S(e)_strainGaussian'
-            fig, ax = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
+            fig, axes = self.plot_SS(plotSettings, plotFit = True, fitType = 'strainGaussian')
+            
+            for i in range(len(axes.flatten())):
+                try:
+                    ax = axes.flatten()[i]
+                    bestH0 = self.listIndent[i].bestH0
+                    new_tick_locations = np.array([0.05, 0.1, 0.15, 0.2, 0.25])
+                    def tick_function(eps, h0):
+                        H = h0 - 3*h0*eps
+                        return(["%.1f" % h for h in H])
+                    ax2 = ax.twiny()
+                    ax2.set_xlim(ax.get_xlim())
+                    ax2.set_xticks(new_tick_locations)
+                    ax2.set_xticklabels(tick_function(new_tick_locations, bestH0), fontdict={'fontsize': 6})
+                    # ax2.set_xlabel(r"h (nm)")
+                    ax2.grid()
+                except:
+                    pass
+                
+            plt.tight_layout()
+            
             ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             # except:
             #     pass
+        
         if plotSettings['K(S)_strainGaussian']:
             # try:
             name = self.cellID + '_07-2_K(S)_strainGaussian'
-            fig, ax = self.plot_KS(plotSettings, fitType = 'strainGaussian')
+            fig, axes = self.plot_KS(plotSettings, fitType = 'strainGaussian')
+            
+            for i in range(len(axes.flatten())):
+                try:
+                    ax = axes.flatten()[i]
+                    bestH0 = self.listIndent[i].bestH0
+                    new_tick_locations = np.array([0.05, 0.1, 0.15, 0.2, 0.25])
+                    def tick_function(eps, h0):
+                        H = h0 - 3*h0*eps
+                        return(["%.1f" % h for h in H])
+                    ax2 = ax.twiny()
+                    ax2.set_xlim(ax.get_xlim())
+                    ax2.set_xticks(new_tick_locations)
+                    ax2.set_xticklabels(tick_function(new_tick_locations, bestH0), fontdict={'fontsize': 6})
+                    # ax2.set_xlabel(r"h (nm)")
+                    ax2.grid()
+                except:
+                    pass
+            
+            plt.tight_layout()
+            
             ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             # except:
             #     pass
@@ -1742,6 +1853,8 @@ class CellCompression:
         ts_H0 = np.full(Nrows, np.nan)
         ts_stress = np.full(Nrows, np.nan)
         ts_strain = np.full(Nrows, np.nan)
+        ts_contactRadius = np.full(Nrows, np.nan)
+        ts_chadwickRatio = np.full(Nrows, np.nan)
         for IC in self.listIndent:
             iStart = IC.i_tsDf + IC.jStart
             iStop = IC.i_tsDf + IC.jMax+1
@@ -1749,6 +1862,8 @@ class CellCompression:
                 ts_H0[iStart:iStop].fill(IC.bestH0)
                 ts_stress[iStart:iStop] = IC.stressCompr
                 ts_strain[iStart:iStop] = IC.strainCompr
+                ts_contactRadius[iStart:iStop] = IC.contactRadius
+                ts_chadwickRatio[iStart:iStop] = IC.ChadwickRatio
                 
         self.tsDf['H0'] = ts_H0
         self.tsDf['Stress'] = ts_stress
@@ -2099,11 +2214,14 @@ class IndentCompression:
         self.normalField = CC.normalField
         self.minCompField = CC.minCompField
         self.maxCompField = CC.maxCompField
-        self.loopStruct = CC.loopStruct
         self.nUplet = CC.nUplet
-        self.loop_totalSize = CC.loop_totalSize
-        self.loop_rampSize = CC.loop_rampSize
-        self.loop_ctSize = CC.loop_ctSize
+        try:
+            self.loopStruct = CC.loopStruct
+            self.loop_totalSize = CC.loop_totalSize
+            self.loop_rampSize = CC.loop_rampSize
+            self.loop_ctSize = CC.loop_ctSize
+        except:
+            pass
         
         # These fields are to be modified or filled by methods later on
         
@@ -2203,7 +2321,6 @@ class IndentCompression:
     
     
     
-    
     def refineStartStop(self):
         """
         
@@ -2224,23 +2341,27 @@ class IndentCompression:
 
         offsetStart, offsetStop = 0, 0
         minB, maxB = min(listB), max(listB)
-        thresholdB = (maxB-minB)/50
-        thresholdDeltaB = (maxB-minB)/400 # NEW CONDITION for the beginning of the compression : 
+        thresholdB = 0.5
+        # thresholdDeltaB = (maxB-minB)/400 # NEW CONDITION for the beginning of the compression : 
         # remove the first points where the steps in B are very very small
-
+        
         k = 0
-        while (listB[k] < minB+thresholdB) or (listB[k+1]-listB[k] < thresholdDeltaB):
-            offsetStart += int((listB[k] < minB+thresholdB) or ((listB[k+1]-listB[k]) < thresholdDeltaB))
+        while (listB[k] < minB+thresholdB):
+            offsetStart += 1
             k += 1
+        
+        # k = 0
+        # while (listB[k] < minB+thresholdB) or (listB[k+1]-listB[k] < thresholdDeltaB):
+        #     offsetStart += int((listB[k] < minB+thresholdB) or ((listB[k+1]-listB[k]) < thresholdDeltaB))
+        #     k += 1
 
-        k = 0
-        while (listB[-1-k] < minB+thresholdB):
-            offsetStop += int(listB[-1-k] < minB+thresholdB)
-            k += 1
+        # k = 0
+        # while (listB[-1-k] < minB+thresholdB):
+        #     offsetStop += int(listB[-1-k] < minB+thresholdB)
+        #     k += 1
 
         jMax = np.argmax(self.rawDf.B) # End of compression, beginning of relaxation
 
-        #
         hCompr_raw = (self.rawDf.D3.values[:jMax+1] - self.DIAMETER)
 
         # Refinement of the compression delimitation.
@@ -3147,6 +3268,19 @@ class IndentCompression:
                                 y = d['yPredict']
                                 color = gs.colorList30[k]
                                 ax.plot(x, y, color = color, ls = ls, lw = lw)
+                                
+                                # new_tick_locations = np.array([0.05, 0.1, 0.15])
+
+                                # def tick_function(eps, h0):
+                                #     H = h0 - 3*h0*eps
+                                #     return(["%.1f" % h for h in H])
+                                
+                                # ax2 = ax.twiny()
+                                # ax2.set_xlim(ax.get_xlim())
+                                # ax2.set_xticks(new_tick_locations)
+                                # ax2.set_xticklabels(tick_function(new_tick_locations, self.bestH0))
+                                # ax2.set_xlabel(r"h (nm)")
+                                # ax2.grid()
                         except:
                             pass
                 
@@ -3348,8 +3482,7 @@ class IndentCompression:
                         
                     if (not pd.isnull(Y)) and (Y > 0):
                         ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
-                                    ms = 5, mec = mec, ecolor = color) 
-                
+                                    ms = 5, mec = mec, ecolor = color)
             
             if fitType == 'Log':
                 df = self.df_log
@@ -3959,7 +4092,7 @@ DEFAULT_fitSettings = {# H0
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
                        # NEW - Numi
-                       'doLogFits' : True,
+                       'doLogFits' : False,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
                        # NEW - Jojo
@@ -4068,6 +4201,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     #### 0.1 Fits settings
     fitSettings = ufun.updateDefaultSettingsDict(fitSettings, 
                                                  DEFAULT_fitSettings)
+    
+
+    
     method_bestH0 = fitSettings['method_bestH0']
     zone_bestH0 = fitSettings['zone_bestH0']
     
@@ -4096,6 +4232,10 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     plotSettings = ufun.updateDefaultSettingsDict(plotSettings, 
                                                   DEFAULT_plotSettings)
     plotSettings['subfolder_suffix'] = taskName
+    plotSettings['plotPoints'] = str(fitSettings['nbPtsFit']) \
+                                 + '_' + str(fitSettings['overlapFit'])
+    plotSettings['plotLog'] = str(fitSettings['nbPtsFitLog']) \
+                                 + '_' + str(fitSettings['overlapFitLog'])
 
 
     
@@ -4109,13 +4249,24 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     #### 2. Create CellCompression object
     CC = CellCompression(cellID, tsDf, thisExpDf, f)
     CC.method_bestH0 = method_bestH0
-
     
+    #### 2.1 Test - Correct jumps
+    doJumpCorr = True
+    try:
+        CC.correctAllJumpsByLoop()
+        doJumpCorr = False
+    except:
+        doJumpCorr = True
+
+    # idxAnalysisVals = tsDf['idxAnalysis'].unique()
+    # idxComps = [i-1 for i in range(1, Ncomp+1) if i in idxAnalysisVals]    
+
     #### 3. Start looping over indents
     for i in range(Ncomp):
         
         #### 3.1 Correct jumps
-        CC.correctJumpForCompression(i)
+        if doJumpCorr:
+            CC.correctJumpForCompression(i)
             
         #### 3.2 Segment the i-th compression
         maskComp = CC.getMaskForCompression(i, task = 'compression')
@@ -4536,12 +4687,12 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     if source == 'Matlab':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-                      and (('R40' in f) or ('R80' in f) or ('L40' in f)) and not (suffixPython in f))]
+                      and (('R40' in f) or ('R80' in f) or ('L40' in f) or ('L50' in f)) and not (suffixPython in f))]
         
     elif source == 'Python':
         list_mecaFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                       if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv") \
-                      and (('R40' in f) or ('R80' in f) or ('L40' in f)) and (suffixPython in f))]
+                      and (('R40' in f) or ('R80' in f) or ('L40' in f) or ('L50' in f) or ('repeats' in f) or ('mT' in f)) and (suffixPython in f))]
     
     #### 2. Get the existing table if necessary
     imported_mecaDf = False
@@ -4566,7 +4717,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     
     #### 3. Select the files to analyse from the list according to the task
     list_taskMecaFiles = []
-    
+    print(list_mecaFiles)
     # 3.1
     if task == 'all':
         list_taskMecaFiles = list_mecaFiles
@@ -4579,7 +4730,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
                 if t in currentCellID:
                     list_taskMecaFiles.append(f)
                     break
-                
+    print(list_taskMecaFiles)
     list_selectedMecaFiles = []
     # 3.3
     if mode == 'fromScratch':
