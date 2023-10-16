@@ -149,12 +149,12 @@ Drugs. 3T3-Atcc-2023;23-04-20;M2;compressionsLowStart;blebbistatin;250.0;20um fi
 Drugs. 3T3-Atcc-2023;23-04-20;M3;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.015;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
 Drugs. 3T3-Atcc-2023;23-04-20;M4;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
 Drugs. 3T3-Atcc-2023;23-04-20;M5;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.012;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-26;M1;compressionsLowStart;ck666;50;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.07;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-26;M2;compressionsLowStart;dmso;0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.02;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-26;M3;compressionsLowStart;ck666;100;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-28;M1;compressionsLowStart;dmso;0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-28;M2;compressionsLowStart;ck666;100;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
-Drugs. 3T3-Atcc-2023;23-04-28;M3;compressionsLowStart;ck666;50;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.991;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M1;compressionsLowStart;ck666;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.07;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M2;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.02;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M3;compressionsLowStart;ck666;100.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M2;compressionsLowStart;ck666;100.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M3;compressionsLowStart;ck666;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.991;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
 Test NewVI. 3T3-Atcc-2023;23-07-06;M1;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
 Test NewVI. 3T3-Atcc-2023;23-07-06;M2;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
 Test NewVI. 3T3-Atcc-2023;23-07-06;M3;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
@@ -163,13 +163,19 @@ Test NewVI. 3T3-Atcc-2023;23-07-06;M5;compressionsRepeated;none;0.0;20um fibrone
 Test NewVI. 3T3-Atcc-2023;23-07-06;M6;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
 Test NewVI. 3T3-Atcc-2023;23-07-06;M7;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;10;2_50;1.5s;False;3;500;NA;Check B corr
 Test NewVI. 3T3-Atcc-2023;23-07-06;M8;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;15;2_50;1.5s;False;3;500;NA;Check B corr
-Drugs. 3T3-Atcc-2023;23-07-17;M1;compressionsLowStart;calyculinA;1;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.015;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M1;compressionsLowStart;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.015;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
 Drugs. 3T3-Atcc-2023;23-07-17;M2;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.003;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
 Drugs. 3T3-Atcc-2023;23-07-17;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.008;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
-Drugs. 3T3-Atcc-2023;23-07-17;M4;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.029;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.029;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
 Drugs. 3T3-Atcc-2023;23-07-17;M5;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.029;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
-Drugs. 3T3-Atcc-2023;23-07-17;M6;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
-Drugs. 3T3-Atcc-2023;23-07-17;M7;compressionsLowStart;calyculinA;2;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
-Drugs. 3T3-Atcc-2023;23-07-20;M1;compressionsLowStart;calyculinA;2;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.988;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M6;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M7;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-20;M1;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.988;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
 Drugs. 3T3-Atcc-2023;23-07-20;M2;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.01;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
-Drugs. 3T3-Atcc-2023;23-07-20;M3;compressionsLowStart;calyculinA;1;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.998;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-20;M3;compressionsLowStart;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.998;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-09-06;M1;compressionsLowStart;calyculinA;0.25;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M2;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.985;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M4;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.985;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M1;constant field;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M2;constant field;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
