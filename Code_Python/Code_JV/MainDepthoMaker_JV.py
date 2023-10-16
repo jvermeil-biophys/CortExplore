@@ -47,6 +47,184 @@ gs.set_default_options_jv()
 
 # %% Next depthos !
 
+# %% Depthos 23.09.21 - CALIBRATION
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.09.21'
+
+subdir = 'depthos'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_CalibrationM450-2025_Try02', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_CALIBRATION_M450-2025-BSA_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+# %% Depthos 23.09.19
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.09.19'
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+# %% Depthos 23.09.11
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.09.11'
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+# %% Depthos 23.09.06
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.09.06'
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'M3'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M3_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'M4'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M4_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+# %% Depthos 23.09.05 - CALIBRATION
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.09.05'
+
+subdir = 'Bare_depthos'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_CalibrationM450-2025_Try01', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_CALIBRATION_M450-2025-Bare_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+subdir = 'Fibro_depthos'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_CalibrationM450-2025_Try01', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_CALIBRATION_M450-2025-Fibro_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+
+
 
 # %% Depthos 23.07.20
 
