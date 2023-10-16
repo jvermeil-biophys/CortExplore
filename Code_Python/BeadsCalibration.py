@@ -104,12 +104,17 @@ def mainChainAnalysis(mainPath, depthoPath, approxDiameter):
     # print('deptho shape check')
     # print(deptho.shape)
     nX, nZ = deptho.shape[1], deptho.shape[0]
-    XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-    # print(XX.shape, ZZ.shape)
-    fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-    ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-    # print(ZZ_HD.shape)
-    depthoHD = fd(XX, ZZ_HD)
+    X, Z = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+    Z_HD = np.arange(0, nZ, 1/HDZfactor)
+    # print(XX.shape, ZZ.shape, deptho.shape, ZZ_HD.shape)
+    
+    # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+    # depthoHD = fd(XX, ZZ_HD)
+    
+    fd = interpolate.RectBivariateSpline(Z, X, deptho)
+    ZZ_HD, XX = np.meshgrid(Z_HD, X, indexing='ij')
+    depthoHD = fd(ZZ_HD, XX, grid=False)
+    
     depthoStepHD = depthoStep/HDZfactor
     depthoZFocusHD = depthoZFocus*HDZfactor
     # print(depthoHD.shape)
@@ -166,8 +171,18 @@ def mainChainAnalysis(mainPath, depthoPath, approxDiameter):
     
     distanceDf = pd.DataFrame(distanceDict)
     xyzDf = pd.DataFrame(XYZdict)
-    out = np.percentile(distanceDf.D3.values, 97)
-    distanceDf = distanceDf.drop(index = distanceDf.loc[distanceDf.D3 >= out].index)
+    
+    #### REMOVING SOME OUTLIERS
+    # 1st mode
+    # out = np.percentile(distanceDf.D3.values, 97)
+    # distanceDf = distanceDf.drop(index = distanceDf.loc[distanceDf.D3 >= out].index)
+    
+    # 2nd mode
+    outUP = np.percentile(distanceDf.D3.values, 99)
+    outDOWN = np.percentile(distanceDf.D3.values, 1)
+    distanceDf = distanceDf.drop(index = distanceDf.loc[distanceDf.D3 >= outUP].index)
+    distanceDf = distanceDf.drop(index = distanceDf.loc[distanceDf.D3 <= outDOWN].index)
+    
     
     # percentile list
     perc =[.10, .25, .50, .75, .90]
@@ -244,12 +259,16 @@ def mainChainNupAnalysis(mainPath, depthoPath, approxDiameter):
     # print('deptho shape check')
     # print(deptho.shape)
     nX, nZ = deptho.shape[1], deptho.shape[0]
-    XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-    # print(XX.shape, ZZ.shape)
-    fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-    ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-    # print(ZZ_HD.shape)
-    depthoHD = fd(XX, ZZ_HD)
+    X, Z = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+    Z_HD = np.arange(0, nZ, 1/HDZfactor)
+    # print(XX.shape, ZZ.shape, deptho.shape, ZZ_HD.shape)
+    
+    # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+    # depthoHD = fd(XX, ZZ_HD)
+    fd = interpolate.RectBivariateSpline(Z, X, deptho)
+    ZZ_HD, XX = np.meshgrid(Z_HD, X, indexing='ij')
+    depthoHD = fd(ZZ_HD, XX, grid=False)
+    
     depthoStepHD = depthoStep/HDZfactor
     depthoZFocusHD = depthoZFocus*HDZfactor
     # print(depthoHD.shape)
@@ -436,19 +455,28 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
     
     #### Loop on the Nuplet
     for i in range(Nframes):
-        xx = np.arange(0, 5)
-        yy = np.arange(0, cleanSize)
-        x, y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1]))
+        X = np.arange(0, 5)
+        Y = np.arange(0, cleanSize)
+        x0, y0 = int(np.round(listXY[i][0])), int(np.round(listXY[i][1]))
         # try:
             
-        # > We could also try to recenter the image to keep a subpixel resolution here
-        profileROI = I[i, y-cleanSize//2:y+cleanSize//2+1, x-2:x+3]
+        # Old behaviour
+        # # > We could also try to recenter the image to keep a subpixel resolution here
+        # profileROI = I[i, y-cleanSize//2:y+cleanSize//2+1, x-2:x+3]
+        # # > line that is 5 pixels wide
+        # f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
+        # # Now use the obtained interpolation function and plot the result:
+        # xxnew = xx
+        # yynew = np.linspace(0, cleanSize, hdSize)
+        # profileROI_hd = f(xxnew, yynew)
+        
+        # New behaviour
+        profileROI = I[i, y0-cleanSize//2:y0+cleanSize//2+1, x0-2:x0+3]
         # > line that is 5 pixels wide
-        f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
-        # Now use the obtained interpolation function and plot the result:
-        xxnew = xx
-        yynew = np.linspace(0, cleanSize, hdSize)
-        profileROI_hd = f(xxnew, yynew)
+        Y_HD = np.linspace(0, cleanSize, hdSize)
+        fd = interpolate.RectBivariateSpline(Y, X, profileROI)
+        YY_HD, XX = np.meshgrid(Y_HD, X, indexing='ij')
+        profileROI_hd = fd(YY_HD, XX, grid=False)
         
         # except: # If the vertical slice doesn't work, try the horizontal one
         #     print(ORANGE + 'error with the vertical slice -> trying with horizontal one')
@@ -572,12 +600,13 @@ def computeZ_V2(I, X, Y, deptho, Zfocus, depthoStep, ImgZStep, D, plot = 0):
     #### Second try with k*x²
        
     dz_fitPoly = int(depthoDepth/32)
+
     Cost_fitPoly = sumFinalD[z - dz_fitPoly : z + dz_fitPoly+1]
     X_fitPoly = np.arange(-dz_fitPoly, dz_fitPoly + 1, dtype=int)
     
     def f_sq(x, k):
         return(k * x**2)
-    
+
     popt, pcov = curve_fit(f_sq, X_fitPoly, Cost_fitPoly - sumFinalD[z], 
                            p0=[1], bounds=(-np.inf, np.inf))
     z_quality = popt[0]*1e3
@@ -703,12 +732,17 @@ def computeDepthoQuality(depthoPath):
     # print('deptho shape check')
     # print(deptho.shape)
     nX, nZ = deptho.shape[1], deptho.shape[0]
-    XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-    # print(XX.shape, ZZ.shape)
-    fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-    ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-    # print(ZZ_HD.shape)
-    depthoHD = fd(XX, ZZ_HD)
+    X, Z = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+    Z_HD = np.arange(0, nZ, 1/HDZfactor)
+    # print(XX.shape, ZZ.shape, deptho.shape, ZZ_HD.shape)
+    
+    # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+    # depthoHD = fd(XX, ZZ_HD)
+    fd = interpolate.RectBivariateSpline(Z, X, deptho)
+    ZZ_HD, XX = np.meshgrid(Z_HD, X, indexing='ij')
+    depthoHD = fd(ZZ_HD, XX, grid=False)
+    
+    
     depthoStepHD = depthoStep/HDZfactor
     depthoZFocusHD = depthoZFocus*HDZfactor
     # print(depthoHD.shape)
@@ -749,8 +783,8 @@ def computeDepthoQuality(depthoPath):
 
 # %%% (3.1) SCRIPT for simple chains
 
-mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationNewM450//Chains'
-depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
+mainPath = 'D://MagneticPincherData//Raw//23.09.08_CalibrationM450-mPEG_Try02//Chains'
+depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//23.09.08_CALIBRATION_M450-mPEG_step20_100X'
 
 
 xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.5)
