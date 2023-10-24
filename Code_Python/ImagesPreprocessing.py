@@ -57,13 +57,14 @@ import UtilityFunctions as ufun
 
 
 #%% Define parameters # Jojo
-date = '23.09.19'
-DirExt = 'E:\\2023-09-19_JLY\\M2_JLY\\M2_depthos' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M2') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '23.10.18'
+DirExt = 'E:\\23-10-18_Cannonballs\\M5_M450-Strept-inwater\\' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M5_M450-Strept-inwater') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
 microscope = 'labview'
+imagePrefix = 'Image'
 
 # %% Functions
 
@@ -259,9 +260,10 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
         allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
     elif microscope == 'labview':
-        allFiles = [path+'/'+string for string in allFiles if 'im' in string]
+        allFiles = [path+'/'+string for string in allFiles if imagePrefix in string]
         
-    idx = slice(0, len(allFiles), 100)
+    idx = slice(0, len(allFiles), 20) 
+    #### 100
     
     allFiles = allFiles[idx]
     frame = cv2.imread(allFiles[0])
@@ -381,7 +383,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
         elif microscope == 'labview':
-            allFiles = [cellPath+'/'+string for string in allFiles if 'im' in string]
+            allFiles = [cellPath+'/'+string for string in allFiles if imagePrefix in string]
         
         print(gs.BLUE + 'Loading '+ cellPath +'...' + gs.NORMAL)
         
@@ -525,7 +527,7 @@ for i in range(min(len(allZimg), limiter)):
         key = cv2.waitKey(20) & 0xFF
         
     # press 'r' to reset the crop
-        if key == ord("r"):
+        if key == ord("r"):  
             img = np.copy(img_backup)  
              
     # if the 'a' key is pressed, break from the loop and move on to t/he next file

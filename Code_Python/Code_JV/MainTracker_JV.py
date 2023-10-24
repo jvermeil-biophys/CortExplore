@@ -390,6 +390,53 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%% Next experiment day
 # %%%% Next manipe
 
+# %%% 23.09.19 JLY
+# M1 - DMSO // M2 - JLY - Jasp 8µM, LatB 5µM, Y27 10µM
+
+# %%%% 23.09.19 M1 - C1 only
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 4
+depthoNames = '23.09.19_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.09.19 M1 - DMSO
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.09.19_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.09.19 M2 - JLY - Jasp 8µM, LatB 5µM, Y27 10µM
+
+dates = '23.09.19'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.09.19_M2_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 23.09.06 CalA low dose
+# M1 = DMSO // M2 = 1nM CalA
+
+# %%%% 23.09.11_M1 C1 Seulement
+
+
+# %%%% 23.09.11_M1
+
+
+# %%%% 23.09.11_M2
+
+
 # %%% 23.09.06 CalA low dose
 # M1 = 0.25nM CalA // M2 = 0.5 CalA // M3 = dmso // M4 = 2.0 CalA
 

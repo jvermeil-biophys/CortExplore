@@ -374,6 +374,9 @@ MecaData_Atcc = taka2.getMergedTable('MecaData_Atcc')
 #### MecaData_Atcc_CalA
 MecaData_Atcc_CalA = taka2.getMergedTable('MecaData_Atcc_CalA')
 
+#### MecaData_Atcc_CalA
+MecaData_Atcc_JLY = taka2.getMergedTable('MecaData_Atcc_JLY')
+
 #### MecaData_MCA
 # MecaData_MCA = taka2.getMergedTable('MecaData_MCA')
 
@@ -9969,3 +9972,368 @@ fig.suptitle('Thickness - Fluctuation')
 plt.show()
 
 
+# %%%% JLY 23-09-19
+
+
+# %%%%% H metrics
+
+data_main = MecaData_Atcc_JLY
+rD = {'dmso' : 'DMSO',
+      'JLY' : 'JLY',
+      'dmso & 0.0' : 'DMSO',
+      'JLY & 8-5-10' : 'JLY\n(8/5/10µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)'}
+
+dates = ['23-09-19'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+
+co_order = ['dmso', 'JLY']
+
+
+# Part 1.1
+
+data = data_main
+thicknessType = 'surroundingThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+Filters = [(data['validatedThickness'] == True), 
+           # (data['surroundingThickness'] <= 800),
+           (data['substrate'] == substrate),
+           (data['date'].apply(lambda x : x in dates)),
+           (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+           # (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+           # (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),
+           ]
+
+
+# fig, ax1 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[thicknessType], Filters=Filters, 
+#                 Boxplot=True, cellID='cellID', co_order=co_order, 
+#                 AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+#                 figSizeFactor = 0.6, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+# renameAxes(ax1, renameDict1)
+# renameAxes(ax1, rD)
+
+# Part 1.2
+
+thicknessType = 'bestH0' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax12 = D1Plot(data, condCols=['drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+renameAxes(ax12, renameDict1)
+renameAxes(ax12, rD)
+
+plt.show()
+
+# Part 1.3
+
+thicknessType = 'ctFieldThickness' # 'bestH0', 'surroundingThickness', 'ctFieldThickness'
+
+fig, ax13 = D1Plot(data, condCols=['drug'], Parameters=[thicknessType], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=1)
+
+renameAxes(ax13, renameDict1)
+renameAxes(ax13, rD)
+
+plt.show()
+
+
+# %%%%% F < 400pN
+
+data_main = MecaData_Atcc_JLY
+
+rD = {'dmso' : 'DMSO',
+      'JLY' : 'JLY',
+      'dmso & 0.0' : 'DMSO',
+      'JLY & 8-5-10' : 'JLY\n(8/5/10µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (kPa)\nfor F < 400pN'}
+
+dates = ['23-09-19'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+
+co_order = ['dmso', 'JLY']
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+            # (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            ]
+
+# box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+fig2, ax2 = D1Plot(data, condCols=['drug'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()
+
+# %%%%% Given stress -> NOT GOOD
+
+data = MecaData_Atcc_JLY
+substrate = '20um fibronectin discs'
+
+dates = ['23-09-19']
+
+# Part 1
+
+fitType = 'stressGaussian'
+fitId = '200_100'
+c, hw = np.array(fitId.split('_')).astype(int)
+fitStr = 'Fit from {:.0f} to {:.0f} Pa'.format(c-hw, c+hw)
+
+rD = {'dmso' : 'DMSO',
+      'JLY' : 'JLY',
+      'dmso & 0.0' : 'DMSO',
+      'JLY & 8-5-10' : 'JLY\n(8/5/10µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+data = taka2.getFitsInTable(data_main, fitType=fitType, filter_fitID=fitId)
+
+
+Filters = [(data['validatedThickness'] == True), 
+            (data['fit_K'] <= 10000),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+            ]
+
+
+co_order = ['dmso', 'JLY']
+
+fig, ax = D1Plot_K(data, condCols=['drug'], Filters=Filters, AvgPerCell=True, 
+            parm = 'fit_K', weightParm = 'fit_ciwK',
+            co_order=co_order, box_pairs=[], stats=True, statMethod='Mann-Whitney', 
+            Boxplot=True, stressBoxPlot = 1, styleDict = styleDict1,
+            figSizeFactor = 1, markersizeFactor = 1.2, scale = 'lin',
+            returnData = 0, returnCount = 0)
+
+renameAxes(ax, renameDict1)
+renameAxes(ax, rD)
+
+ax.set_ylim([0, 10])
+
+plt.show()
+
+# %%%%% K(s) Cell by cell
+
+data = MecaData_Atcc_JLY
+dates = ['23-09-19']
+fW = 100
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['substrate'] == substrate),
+            (data['drug'].apply(lambda x : x in ['dmso'])),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x not in ExcludedCells)),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'cellID'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_xlim([0, 2000])
+ax31.set_ylim([0, 25])
+# ax31.legend().set_visible(False)
+
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['substrate'] == substrate),
+            (data['drug'].apply(lambda x : x in ['JLY'])),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x not in ExcludedCells)),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug', 'cellID'], mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+ax31.set_xlim([0, 2000])
+ax31.set_ylim([0, 25])
+# ax31.legend().set_visible(False)
+
+
+
+plt.show()
+
+
+
+
+# %%%%% K(s)
+
+data = MecaData_Atcc_JLY
+dates = ['23-09-19']
+fW = 100
+
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['substrate'] == substrate),
+            (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+            (data['date'].apply(lambda x : x in dates)),
+          ]
+
+
+out31 = plotPopKS_V2(data, fitType = 'stressGaussian', fitWidth=fW, Filters = Filters, 
+                                condCols = ['drug'], mode = '800_1100', 
+                                scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+fig31, ax31 = out31
+# ax31.set_xlim([0, 3000])
+ax31.set_ylim([0, 25])
+
+
+plt.show()
+
+
+# %%%%% Extremal Stress
+
+
+data = MecaData_Atcc_JLY
+substrate = '20um fibronectin discs'
+
+
+
+dates = ['23-09-19']
+
+# Filters = [(data['validatedThickness'] == True),
+#            (data['UI_Valid'] == True),
+#            (data['substrate'] == substrate),
+#            # (data['drug'].apply(lambda x : x in ['none', 'dmso'])),
+#            (data['date'].apply(lambda x : x in dates)),
+#            (data['minStress'] > 0),
+#            (data['maxStress'] < 10e3),
+#           ]
+
+Filters = [(data['validatedThickness'] == True),
+            (data['UI_Valid'] == True),
+            (data['substrate'] == substrate),
+            (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+            (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, axes = StressRange_2D(data, condCols=['drug'], Filters=Filters, split = True)
+
+for ax in axes:
+    ax.set_ylim([0, 10000])
+    
+# axes.set_ylim([0, 10000])
+
+plt.show()
+
+
+# %%%%% Fluctuations
+
+data = MecaData_Atcc_JLY
+dates = ['23-09-19']
+
+Filters = [(data['validatedThickness'] == True),
+           (data['UI_Valid'] == True),
+           (data['substrate'] == '20um fibronectin discs'),
+           (data['compNum'] >= 4),
+           (data['ctFieldThickness'] <= 800),
+           (data['date'].apply(lambda x : x in dates)),
+          ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+co_order = ['dmso', 'JLY']
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='ctFieldThickness', YCol='ctFieldFluctuAmpli', condCols=['drug'], 
+                        Filters=Filters, cellID='cellID', co_order = co_order,
+                        AvgPerCell=True, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+
+rD = {'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+renameAxes(ax, rD, format_xticks=False)
+# ax.set_xlim([0, 500])
+# ax.set_ylim([0, 300])
+
+fig.suptitle('Thickness - Fluctuation')
+
+plt.show()
+
+
+
+# %%%%% E(h)
+
+data_main = MecaData_Atcc_JLY
+
+rD = {'dmso' : 'DMSO',
+      'JLY' : 'JLY',
+      'dmso & 0.0' : 'DMSO',
+      'JLY & 8-5-10' : 'JLY\n(8/5/10µM)',
+      'Thickness at low force (nm)' : 'Thickness (nm)',
+      'E_f_<_400_kPa' : 'Elastic modulus (kPa)\nfor F < 400pN',
+      'ctFieldThickness':'Median thickness (nm)', 
+      'ctFieldFluctuAmpli' : 'Thickness fluctuations amplitude (nm)'}
+
+dates = ['23-09-19'] # ['22-03-28', '22-03-30', '22-11-23']
+substrate = '20um fibronectin discs'
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['substrate'] == substrate),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in ['dmso', 'JLY'])),
+            # (data['concentration'].apply(lambda x : x in [0, 10, 50])),
+            ]
+
+fig, ax = plt.subplots(1,1, figsize = (10,6))
+
+fig, ax, df = D2Plot_wFit(data, fig = fig, ax = ax, 
+                        XCol='bestH0', YCol=(stiffnessType + '_kPa'), condCols=['drug'], 
+                        Filters=Filters, cellID='cellID', co_order = co_order,
+                        AvgPerCell=False, showManips = True,
+                        modelFit=True, modelType='y=ax+b', writeEqn=True,
+                        xscale = 'lin', yscale = 'lin', 
+                        figSizeFactor = 1, markersizeFactor = 1.4,
+                        returnData = True)
+
+
+
+# renameAxes(ax, rD, format_xticks=False)
+# renameAxes(ax, renameDict1)
+# ax.set_xlim([0, 500])
+# ax.set_ylim([0, 300])
+
+fig.suptitle('E - h')
+
+plt.show()
