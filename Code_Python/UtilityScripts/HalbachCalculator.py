@@ -33,13 +33,17 @@ m_ref = B_ref * (np.pi*R_ref**3) / ((3/8) * N * µ0)
 M_ref = m_ref / (a_ref**3)
 print(M_ref)
 
-
+# Resulting value : M_ref = 1010538.14382896 A/m
+# M_ref is the reference magnetization for N42 supermagnete cubes
+# By definition the magnetic moment m of an N42 magnet is m = M_ref x V (V is the cubic magnet volume)
+# M the magnetization is expressed in A/m
+# m the magnetic moment is expressed in A.m² = N.m/T = J/T
 
 # %% # 2. Compute the B field in the center of a specific geometry
-# Spinning - 5/7 nested - INSIDE ring
-# ID = 42.1
-# MD = 49.5
-# OD = 58.5
+# %%% Halbach Spinning - 5/7 nested - OUTSIDE ring
+# ID = 58.5
+# MD = 66
+# OD =
 
 N = 16
 a = 4e-3 # m
@@ -51,8 +55,11 @@ B = B*1000 # mT
 
 print(B)
 
-# %%
- 
+# %%% Halbach Spinning - 5/7 nested - INSIDE ring
+# ID = 42.1
+# MD = 49.5
+# OD = 58.5
+
 N = 16
 a = 3e-3 # m
 R = 49.5e-3/2 # m
