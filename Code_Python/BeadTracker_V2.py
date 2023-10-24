@@ -2855,21 +2855,7 @@ class BeadDeptho:
         validBead = testImageSize
 
         # If the bead is valid we can proceed
-        if validBead:
-            # Detect or infer the size of the beads we are measuring
-            if self.beadType == 'detect' or self.D0 == 0:
-                counts, binEdges = np.histogram(self.I[self.z_max,my:My,mx:Mx].ravel(), bins=256)
-                peaks, peaksProp = find_peaks(counts, height=100, threshold=None, distance=None, prominence=None, \
-                                   width=None, wlen=None, rel_height=0.5, plateau_size=None)
-                peakThreshVal = 1000
-                if counts[peaks[0]] > peakThreshVal:
-                    self.D0 = 4.5
-                    self.beadType = 'M450'
-                else:
-                    self.D0 = 2.7
-                    self.beadType = 'M270'
-        else:
-            self.validBead = False
+        self.validBead = validBead
 
         if validBead:
             for z in range(self.bestZ, -1, -1):
@@ -2881,12 +2867,11 @@ class BeadDeptho:
                     break
             zLast = z-1
 
-            roughSize = int(np.floor(1.15*self.D0*self.scale))
+            roughSize = int(np.floor(1.05*self.D0*self.scale))
             roughSize += 1 + roughSize%2
             roughCenter = int((roughSize+1)//2)
 
             cleanSize = ufun.getDepthoCleanSize(self.D0, self.scale)
-
             I_cleanROI = np.zeros([self.nz, cleanSize, cleanSize])
 
             try:
@@ -2899,12 +2884,9 @@ class BeadDeptho:
                         if y1 < 0 or y2 > self.ny:
                             self.valid_v = False
 
-        #                 fig, ax = plt.subplots(1,2)
-        #                 ax[0].imshow(self.I[i])
+
                     xm1, ym1 = xmi-x1, ymi-y1
                     I_roughRoi = self.I[i,y1:y2,x1:x2]
-        #                 ax[1].imshow(I_roughRoi)
-        #                 fig.show()
 
                     translation = (xm1-roughCenter, ym1-roughCenter)
 
