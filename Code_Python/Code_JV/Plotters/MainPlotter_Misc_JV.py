@@ -216,7 +216,7 @@ if not tSDF.size == 0:
     axR = ax.twinx()
     axR.plot(tsDFplot['T'], tsDFplot['F'], color = gs.colorList40[23], label = 'Force')
     axR.set_ylabel('Force (pN)', color = gs.colorList40[23])
-    # axR.set_ylim([0, 150])
+    axR.set_ylim([0, 150])
 
     # axes = tSDF[(tSDF['T']>=20) & (tSDF['T']<=60)].plot(x=X, y=Y, kind='line', 
     #                 subplots=True, sharex=True, sharey=False,
