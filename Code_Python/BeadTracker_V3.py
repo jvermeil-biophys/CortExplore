@@ -2001,7 +2001,7 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 # %%%% Wrapper for the stand-alone
 
 def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
-                metaDataFormatting = 'default', redoAllSteps = False, trackAll = False,
+                metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False,
                 DirData = cp.DirData, 
                 DirDataRaw = cp.DirDataRaw, 
                 DirDataRawDeptho = cp.DirDataRawDeptho, 
@@ -2107,7 +2107,8 @@ def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
         
         
         #### 3 - Make the appropriate metaDataFrame
-        if metaDataFormatting == 'default': # ['T_raw', 'B_set', 'iL', 'Status']
+        #### 3.1 - Mode using a status file
+        if metaDataFormatting == 'statusFile': # ['T_raw', 'B_set', 'iL', 'Status']
             
             # Columns from the field file
             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
@@ -2142,6 +2143,11 @@ def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['iL'] = statusDf['iL']
             metaDf['Status'] = statusDf['Status']
             metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
+            
+        #### 3.2 - Mode using loopStruct for legacy data
+        elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
+            pass
+            # TBC
 
         
         #### 4 - Load exp data (manipDict)
@@ -2649,35 +2655,35 @@ class BeadDeptho:
             fig.suptitle('Focus')
         
         # raw
-        # nz, nx = self.depthosDict['deptho_raw'].shape
+        nz, nx = self.depthosDict['deptho_raw'].shape
         
-        # Zm_intensity_raw = np.argmax(self.profileDict['intensity_raw'])
-        # intensity_raw_smooth = savgol_filter(self.profileDict['intensity_raw'], 101, 5)
-        # Zm_intensity_raw_smooth = np.argmax(intensity_raw_smooth)
-        # self.ZfocusDict['Zm_intensity_raw'] = Zm_intensity_raw_smooth
+        Zm_intensity_raw = np.argmax(self.profileDict['intensity_raw'])
+        intensity_raw_smooth = savgol_filter(self.profileDict['intensity_raw'], 101, 5)
+        Zm_intensity_raw_smooth = np.argmax(intensity_raw_smooth)
+        self.ZfocusDict['Zm_intensity_raw'] = Zm_intensity_raw_smooth
         
-        # STD_raw = np.std(self.depthosDict['deptho_raw'], axis = 1)
-        # STD_raw_smooth = savgol_filter(STD_raw, 101, 5)
-        # Zm_STD_raw = np.argmax(STD_raw_smooth)
-        # self.ZfocusDict['Zm_STD_raw'] = Zm_STD_raw
+        STD_raw = np.std(self.depthosDict['deptho_raw'], axis = 1)
+        STD_raw_smooth = savgol_filter(STD_raw, 101, 5)
+        Zm_STD_raw = np.argmax(STD_raw_smooth)
+        self.ZfocusDict['Zm_STD_raw'] = Zm_STD_raw
         
-        # if plot >= 1:
-        #     Z = np.arange(nz)
-        #     ax1 = axes[0]
-        #     ax2 = ax1.twinx()
+        if plot >= 1:
+            Z = np.arange(nz)
+            ax1 = axes[0]
+            ax2 = ax1.twinx()
             
-        #     ax1.plot(Z, self.profileDict['intensity_raw'], label='intensity_raw', color='k', ls='-')
-        #     ax1.plot(Z, intensity_raw_smooth, label='intensity_raw_smooth', color='cyan', ls='-')
-        #     ax1.axvline(Zm_intensity_raw_smooth, label='Zm_intensity_raw', color='b', ls='--')
+            ax1.plot(Z, self.profileDict['intensity_raw'], label='intensity_raw', color='k', ls='-')
+            ax1.plot(Z, intensity_raw_smooth, label='intensity_raw_smooth', color='cyan', ls='-')
+            ax1.axvline(Zm_intensity_raw_smooth, label='Zm_intensity_raw', color='b', ls='--')
             
-        #     ax2.plot([], [], label='intensity_raw', color='k', ls='-')
-        #     ax2.plot([], [], label='intensity_raw_smooth', color='cyan', ls='-')
-        #     ax2.plot([], [], label='Zm_intensity_raw = {:.3f}'.format(Zm_intensity_raw), color='b', ls='--')
-        #     ax2.plot(Z, STD_raw, label='STD_raw', color='orange', ls='-')
-        #     ax2.plot(Z, STD_raw_smooth, label='STD_raw_smooth', color='red', ls='-')
-        #     ax2.axvline(Zm_STD_raw, label='Zm_STD_raw = {:.3f}'.format(Zm_STD_raw), color='darkred', ls='--')
+            ax2.plot([], [], label='intensity_raw', color='k', ls='-')
+            ax2.plot([], [], label='intensity_raw_smooth', color='cyan', ls='-')
+            ax2.plot([], [], label='Zm_intensity_raw = {:.3f}'.format(Zm_intensity_raw), color='b', ls='--')
+            ax2.plot(Z, STD_raw, label='STD_raw', color='orange', ls='-')
+            ax2.plot(Z, STD_raw_smooth, label='STD_raw_smooth', color='red', ls='-')
+            ax2.axvline(Zm_STD_raw, label='Zm_STD_raw = {:.3f}'.format(Zm_STD_raw), color='darkred', ls='--')
             
-        #     ax2.legend()
+            ax2.legend()
         
         # interp
         nz, nx = self.depthosDict['deptho_interp'].shape
@@ -2830,7 +2836,7 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
     
     #### SETTINGS
     bestDetphoType = 'interp'
-    bestFocusType = 'STD_interp'
+    bestFocusType = 'intensity_interp'
 
     for f in listFileNames:
         test1 = (specif in f) or (specif == 'all')

@@ -52,7 +52,7 @@ dictPaths = {'sourceDirPath' : '',
 
 # %%% Define constants
 
-dictConstants = {'microscope' : 'ZEN',
+dictConstants = {'microscope' : 'labview',
                  #
                  'bead type' : 'M450', # 'M450' or 'M270'
                  'bead diameter' : 4500, # nm
@@ -78,7 +78,7 @@ dictOptions = {'redoAllSteps' : False,
                'importTrajFile' : True,
               }
 
-# %%% Make metaDataFrame
+# %%% Make metaDataFrame # NEED TO CODE STH HERE !
 
 # metaDf # ['T_raw', 'B_set', 'iL', 'Status']
 metaDf = pd.DataFrame({})

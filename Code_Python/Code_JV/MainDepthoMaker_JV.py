@@ -82,7 +82,9 @@ saveLabel = date + '_M1_M450_step20_100X'
 scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
-            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0)
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 2)
+
+# %%
 
 subdir = 'M2'
 DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
