@@ -36,7 +36,7 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-from BeadTracker import depthoMaker
+from BeadTracker_V3 import depthoMaker
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment',None)
@@ -63,7 +63,7 @@ saveLabel = date + '_CALIBRATION_M450-2025-BSA_step20_100X'
 scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
-            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
 
 
 # %% Depthos 23.09.19
@@ -82,7 +82,7 @@ saveLabel = date + '_M1_M450_step20_100X'
 scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
-            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0)
 
 subdir = 'M2'
 DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho', subdir)
@@ -95,7 +95,7 @@ saveLabel = date + '_M2_M450_step20_100X'
 scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
-            specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 2)
 
 
 # %% Depthos 23.09.11

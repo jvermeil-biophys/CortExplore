@@ -40,6 +40,7 @@ import UtilityFunctions as ufun
 
 from BeadTracker import mainTracker
 from BeadTracker_V2 import mainTracker_V2
+from BeadTracker_V3 import mainTracker_V3
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment',None)
@@ -80,6 +81,16 @@ plt.close('all')
 # %% TEST NEW VERSION
 
 # %%% 23.07.06
+
+# %%%% TEST
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 4
+depthoName = '23.09.19_M1_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, 
+               metaDataFormatting = 'default', redoAllSteps = True, trackAll = False)
+
 
 # %%%% 23.07.06 Une Cellule Seulement
 
