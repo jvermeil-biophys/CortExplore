@@ -102,16 +102,19 @@ class Depthograph:
         STD = np.std(self.deptho_raw, axis = 1)
         STD_smooth = savgol_filter(STD, 101, 5)
         self.ZFocus_raw = np.argmax(STD_smooth)
+        
         # Z = np.arange(nz)
         # fig, ax = plt.subplots(1, 1)
         # ax.plot(Z, STD)
         # ax.plot(Z, STD_smooth)
         # ax.axvline(ZFocus_raw)
         # hd
+        
         nz, nx = self.deptho_hd.shape
         STD = np.std(self.deptho_hd, axis = 1)
         STD_smooth = savgol_filter(STD, 505, 5)
         self.ZFocus_hd = np.argmax(STD_smooth)
+        
         # Z = np.arange(nz)
         # fig, ax = plt.subplots(1, 1)
         # ax.plot(Z, STD)
