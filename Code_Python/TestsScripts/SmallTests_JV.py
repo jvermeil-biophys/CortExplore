@@ -26,6 +26,27 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+# %% Test new interp function
+
+from skimage import io
+
+import UtilityFunctions as ufun
+
+imagePath = 'C://Users//JosephVermeil//Desktop//cycle.png'
+
+I = io.imread(imagePath)
+
+fig1, ax1 = plt.subplots(1,1)
+ax1.imshow(I, cmap='gray')
+
+I2 = ufun.resize_2Dinterp(I, new_nx=200, new_ny=200, fx=None, fy=None)
+
+fig2, ax2 = plt.subplots(1,1)
+ax2.imshow(I2, cmap='gray')
+
+plt.show()
+
+
 #%% 2 X-axis
 
 import numpy as np
