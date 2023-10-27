@@ -1171,6 +1171,25 @@ def max_entropy_threshold(I):
     T = max_entropy(H)
     return(T)
 
+
+def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
+    
+    nX, nY = I.shape[1], I.shape[0]
+    X, Y = np.arange(0, nX, 1), np.arange(0, nY, 1)
+    try:
+        newX, newY = np.arange(0, nX, nX/new_nx), np.arange(0, nY, nY/new_ny)
+    except:
+        newX, newY = np.arange(0, nX, 1/fx), np.arange(0, nY, 1/fy)
+        
+    # print(X.shape, Y.shape, newX.shape, newY.shape, I.shape)
+    # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+    # depthoHD = fd(XX, ZZ_HD)
+    
+    fd = interpolate.RectBivariateSpline(Y, X, I)
+    newYY, newXX = np.meshgrid(newY, newX, indexing='ij')
+    new_I = fd(newYY, newXX, grid=False)
+    return(new_I)
+
 # %%% Physics
 
 def computeMag_M270(B):
