@@ -1,0 +1,181 @@
+tags;date;manip;experimentType;drug;concentration;substrate;microscope;objective magnification;scale pixel per um;objective immersion;optical index correction;magnetic field correction;cell type;cell subtype;bead type;bead diameter;beads bright spot delta;normal field;ramp field;compression duration;with fluo images;normal field multi images;multi image Z step;loop structure;comments
+;01-01-01;DEFAULT;DEFAULT;DEFAULT;0.0;DEFAULT;labview;100X;15.8;oil;0.875;1.0;DEFAULT;DEFAULT;M450;4500;0;5;3_40;1s;False;3;500;143_95	;
+Valentin. DC.;18-08-28;M1;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-08-28;M2;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-24;M1;compressions;CK666;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-24;M2;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-24;M3;compressions;smifh2;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-25;M1;compressions;latrunculinA;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-25;M2;compressions;smih2;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-25;M3;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-09-25;M4;compressions;CK666;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-10-30;M2;compressions;blebbistatin;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-10-30;M3;compressions;calA;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-10-30;M4;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+Valentin. DC.;18-12-12;M1;compressions;dmso;0.0;BSA coated glass;old-labview;100X;15.8;oil;0.875;1.0;DC;mouse-primary;M450;4453;0;8;8_80;1s;False;3;200;179_95;
+;20-08-04;M1;compressions and constant field;none;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+;20-08-04;M2;compressions and constant field;doxycyclin;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+;20-08-05;M1;compressions and constant field;doxycyclin;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+;20-08-05;M2;compressions and constant field;none;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+;20-08-07;M1;compressions and constant field;doxycyclin;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+;20-08-07;M2;compressions and constant field;none;0.0;BSA coated glass;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;10;3_40;1s;False;3;500;143_95;
+MCA1. StandardLinkerCellLine. ;21-01-18;M1-1;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-18;M1-2;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-18;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-18;M3;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-21;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-21;M2;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-01-21;M3;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.23;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. StandardLinkerCellLine. ;21-02-10;M1;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.2;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-02-10;M2;constant field;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.2;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+Anumita. ;21-02-15;M1;constant field;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450;4503;0;5;;;False;3;500;352_0;Anumita data
+Anumita. ;21-02-15;M2;constant field;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450;4503;0;5;;;False;3;500;90_0;Anumita data
+Anumita. ;21-02-15;M3;constant field;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450;4503;0;5;;;False;3;500;90_0;Anumita data
+;20-12-16;M1;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.26;3T3;aSFL-A11;M450;4503;0;5;;;False;3;500;36;
+;20-12-16;M2;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.26;3T3;aSFL-A11;M450;4503;0;5;;;False;3;500;36;
+MCA1. StandardLinkerCellLine. ;21-03-25;M1;constant field;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.12;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-03-25;M2;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.12;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-04-21;M1;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-04-21;M2;constant field;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-04-23;M1;constant field;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. StandardLinkerCellLine. ;21-04-23;M2;constant field;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A11;M450;4503;0;5;;;True;3;500;298_0_1;
+MCA1. LongLinkerCellLine. ;21-04-27;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. LongLinkerCellLine. ;21-04-27;M2;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. LongLinkerCellLine. ;21-04-28;M1;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;False;3;500;169_133;fluo images taken separetely
+MCA1. LongLinkerCellLine. ;21-04-28;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-E4;M450;4503;0;5;3_40;1s;False;3;500;169_133;no fluo images taken
+MCA1. HighExpressorCellLine. ;21-06-16;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. HighExpressorCellLine. ;21-06-16;M2;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. HighExpressorCellLine. ;21-06-17;M1;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA1. HighExpressorCellLine. ;21-06-17;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+Asymetric;21-05-21;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450_M270;4503_2691;400;5;3_40;1s;True;3;500;169_133;
+Asymetric;21-07-08;M1-1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M270_M450;2691_4503;400;5;3_40;1s;False;3;500;169_133;
+Asymetric;21-07-08;M1-2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M270;2691;0;5;3_40;1s;False;3;500;169_133;
+Asymetric;21-07-08;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M270;2691;0;5;3_40;1s;False;3;500;169_133;
+Asymetric;21-07-08;M3;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450_M270;4503_2691;400;5;3_40;1s;False;3;500;169_133;
+Asymetric;21-07-08;M4;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-01;M1;compressions;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.095;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-01;M2;compressions;smifh2;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-02;M1;compressions;smifh2;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-02;M2;compressions;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-02;M3;compressions;smifh2. doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA2. Drugs. StandardLinkerCellLine. ;21-09-02;M4;compressions;dmso. doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA2. LongLinkerCellLine. ;21-09-08;M1;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.102;3T3;aSFL-F8;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. LongLinkerCellLine. ;21-09-08;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.14;3T3;aSFL-F8;M450;4503;0;5;3_40;1s;False;3;500;169_133;
+MCA2. LongLinkerCellLine. ;21-09-08;M3;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.112;3T3;aSFL-F8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA2. LongLinkerCellLine. ;21-09-08;M4;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.112;3T3;aSFL-F8;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA2. HighExpressorCellLine. ;21-09-09;M1;compressions;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.15;3T3;aSFL-A8-2;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+MCA2. HighExpressorCellLine. ;21-09-09;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.154;3T3;aSFL-A8-2;M450;4503;0;5;3_40;1s;True;3;500;169_133;
+BeadSizes;21-10-18;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.114;3T3;aSFL-A11;M270;2691;0;5;5_40;1s;False;3;500;169_133;
+BeadSizes;21-10-18;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M450;4503;0;1;1_10;1s;False;3;500;169_133;
+BeadSizes;21-10-25;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.14;3T3;aSFL-A11;M450;4503;0;1;1_10;1s;False;3;500;169_133;
+BeadSizes;21-10-25;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M270;2691;0;5;5_40;1s;False;3;500;169_133;
+NonLin;21-12-08;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.094;3T3;aSFL-A11;M270;2691;0;14;14_54;1s;False;3;500;169_133;
+NonLin;21-12-08;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.094;3T3;aSFL-A11;M450;4503;0;5;5_13;1s;False;3;500;169_133;
+NonLin;21-12-16;M1;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.094;3T3;aSFL-A11;M450;4503;0;5;5_13;1s;False;3;500;169_133;
+NonLin;21-12-16;M2;compressions;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.094;3T3;aSFL-A11;M270;2691;0;14;14_54;1s;False;3;500;169_133;
+NonLin;22-01-12;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.1;3T3;aSFL-A11;M270;2691;0;14;2_54;1s;False;3;500;302_133;
+NonLin;22-01-12;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;1_13;1s;False;3;500;302_133;
+NonLin;22-01-12;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.11;3T3;aSFL-A11;M450;4503;0;5;1_13;1s;False;3;500;302_133;
+NonLin;22-02-09;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.08;3T3;aSFL-A11;M450;4503;0;5;0.5_50;1.5s;False;3;500;436_200;
+NonLin;22-02-09;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.062;3T3;aSFL-A11;M450;4503;0;5;0.5_50;1.5s;False;3;500;436_200;
+NonLin;22-02-09;M3;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.04;3T3;aSFL-A11;M450;4503;0;5;0.5_50;1.5s;False;3;500;436_200;
+NonLin;22-03-21;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.034;3T3;aSFL-LG+++;M450;4503;0;5;0.5_54;1.5s;False;3;500;436_200;
+NonLin;22-03-21;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.034;3T3;aSFL-LG+++;M450;4503;0;5;0.5_54;1.5s;False;3;500;436_200;
+Oscillatory. Test.;22-03-21;M3;sinus;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.034;3T3;aSFL-LG+++;M450;4503;0;;;;False;1;0;0_;test
+BrokenRamp. Test. ;22-03-21;M4;brokenRamp;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.034;3T3;aSFL-LG+++;M450;4503;0;1;1_50;;False;1;0;0_;test
+Drugs. Test.;22-03-28;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.074;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;
+Drugs. Test.;22-03-28;M2;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.074;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;old blebbistatin
+Drugs. Test.;22-03-28;M3;compressionsLowStart;latrunculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.074;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;latA may not have worked
+Drugs. Test.;22-03-30;M1;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.04;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;newer blebbistatin
+Drugs. Test.;22-03-30;M2;compressionsLowStart;latrunculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.04;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;latA may not have worked
+Drugs. Test.;22-03-30;M3;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.048;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;
+Drugs. Test.;22-03-30;M4;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.034;3T3;aSFL-LG+++;M450;4477;0;5;0.5_50;1.5s;False;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-03;M1-1;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.97;HoxB8-Macro;ctrl;M450;4477;0;5;1_50;1.5s;False;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-03;M1-2;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.97;HoxB8-Macro;ctrl;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-03;M2;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.97;HoxB8-Macro;tko;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-03;M3;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.97;HoxB8-Macro;tko;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-03;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.97;HoxB8-Macro;ctrl;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-04;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.992;HoxB8-Macro;ctrl;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-04;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.954;HoxB8-Macro;tko;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-04;M3;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.96;HoxB8-Macro;tko;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-04;M4;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.96;HoxB8-Macro;ctrl;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-05;M1;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.96;HoxB8-Macro;tko;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Macrophages. Poincloux. ERM ko;22-05-05;M2;compressionsLowStart;none;0.0;bare glass;labview;100X;15.8;oil;0.875;0.96;HoxB8-Macro;ctrl;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-15;M1;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.94;3T3;aSFL-F8;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-15;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.97;3T3;aSFL-F8;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. StandardLinkerCellLine. ;22-07-15;M3;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.964;3T3;aSFL-A11;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. StandardLinkerCellLine. ;22-07-15;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.948;3T3;aSFL-A11;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. StandardLinkerCellLine. ;22-07-20;M1;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-A11;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. StandardLinkerCellLine. ;22-07-20;M2;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.992;3T3;aSFL-A11;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-20;M3;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;aSFL-E4;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-20;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;aSFL-E4;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-27;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-F8;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-27;M2;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;aSFL-F8;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-27;M3;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;aSFL-E4;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+MCA3. LongLinkerCellLine. ;22-07-27;M4;compressionsLowStart;doxycyclin;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;3T3;aSFL-E4;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-06-10;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.992;3T3;aSFL-LG+++;M450;4490;0;5;1_50;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-06-16;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-06;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;aSFL-LG+++;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-06;M2;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.984;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-12;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.02;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-12;M2;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.996;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-22;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;1.014;3T3;aSFL-LG+++;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;
+Duya. PatternSize.;22-07-29;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_50;1.5s;True;3;500;436_200;maybe incorrect B corr
+Duya. PatternSize.;22-08-24;M1;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;maybe incorrect B corr
+Duya. PatternSize.;22-08-24;M2;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;maybe incorrect B corr
+Duya. PatternSize.;22-08-24;M3;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;maybe incorrect B corr
+Duya. PatternSize.;22-08-24;M4;compressionsLowStart;none;0.0;diverse fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;aSFL-LG+++;M450;4477;0;5;1_54;1.5s;True;3;500;436_200;maybe incorrect B corr
+Drugs. Test.;22-11-23;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.995;3T3;aSFL-LG+++;M450;4477;0;5;1_40;1.5s;True;3;500;436_200;
+Drugs. Test.;22-11-23;M2;compressionsLowStart;latrunculinA;2.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.995;3T3;aSFL-LG+++;M450;4477;0;5;1_40;1.5s;True;3;500;436_200;
+Drugs. Test.;22-11-23;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;3T3;aSFL-LG+++;M450;4477;0;5;1_40;1.5s;True;3;500;436_200;
+Drugs. 3T3-Atcc-2023;23-02-16;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.94;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-02-16;M2;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200	;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-02-23;M1;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-02-23;M2;compressionsLowStart;PNB;250.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.066;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-02-23;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-02-23;M4;compressionsLowStart;PNB;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.97;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-03-08;M1;compressionsLowStart;Y27;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-03-08;M2;compressionsLowStart;Y27;10.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in
+Drugs. 3T3-Atcc-2023;23-03-08;M3;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in. Glass bottom broken after C7
+Drugs. 3T3-Atcc-2023;23-03-09;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200	;PEG-beads out. fibro-beads in. Same box batch as the day before. intended to complete M3 (control)
+Drugs. 3T3-Atcc-2023;23-03-09;M5;compressionsLowStart;none;0.0;15um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in. Same dish as M4
+Drugs. 3T3-Atcc-2023;23-03-09;M6;compressionsLowStart;none;0.0;25um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in. Same dish as M4
+Drugs. 3T3-Atcc-2023;23-03-16;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.995;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-03-16;M2;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.994;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-03-17;M3;compressionsLowStart;blebbistatin;10.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.95;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in. Same box batch as the day before.
+Drugs. 3T3-Atcc-2023;23-03-17;M4;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.99;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in. Same box batch as the day before.
+Drugs. 3T3-Atcc-2023;23-04-20;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.025;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-20;M2;compressionsLowStart;blebbistatin;250.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.025;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-20;M3;compressionsLowStart;blebbistatin;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.015;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-20;M4;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-20;M5;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.012;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M1;compressionsLowStart;ck666;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.07;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M2;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.02;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-26;M3;compressionsLowStart;ck666;100.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M1;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M2;compressionsLowStart;ck666;100.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Drugs. 3T3-Atcc-2023;23-04-28;M3;compressionsLowStart;ck666;50.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.991;3T3;Atcc-2023;M450;4477;0;5;2.5_50;1.5s;False;3;500;436_200;PEG-beads out. fibro-beads in.
+Test NewVI. 3T3-Atcc-2023;23-07-06;M1;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M2;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M3;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M4;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M5;compressionsRepeated;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M6;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;5;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M7;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;10;2_50;1.5s;False;3;500;NA;Check B corr
+Test NewVI. 3T3-Atcc-2023;23-07-06;M8;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1;3T3;Atcc-2023;M450;4477;0;15;2_50;1.5s;False;3;500;NA;Check B corr
+Drugs. 3T3-Atcc-2023;23-07-17;M1;compressionsLowStart;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.015;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M2;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.003;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M3;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.008;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M4;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.029;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M5;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.029;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M6;compressionsLowStart;none;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-17;M7;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.042;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-20;M1;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.988;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-20;M2;compressionsLowStart;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.01;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-07-20;M3;compressionsLowStart;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.998;3T3;Atcc-2023-LaGFP;M450;4477;0;5;2_50;1.5s;False;3;500;NA;
+Drugs. 3T3-Atcc-2023;23-09-06;M1;compressionsLowStart;calyculinA;0.25;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M2;compressionsLowStart;calyculinA;0.5;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.985;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M3;compressionsLowStart;calyculinA;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.975;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M4;compressionsLowStart;calyculinA;2.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.985;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M1;constant field;dmso;0.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"
+Drugs. 3T3-Atcc-2023;23-09-06;M2;constant field;calyculinA;1.0;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.98;3T3;Atcc-2023-LaGFP;M450;4493;0;5;2_50;1.5s;False;3;500;NA;"M450-Epoxy-2025 ; Still the same PEG beads out !"

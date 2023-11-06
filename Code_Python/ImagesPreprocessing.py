@@ -78,6 +78,9 @@ microscope = 'labview'
 
 
 #%% Define parameters # Jojo
+date = '23.10.18'
+DirExt = 'E:\\23-10-18_Cannonballs\\M5_M450-Strept-inwater\\' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M5_M450-Strept-inwater') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # date = '23.03.17'
 # DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
@@ -85,7 +88,8 @@ microscope = 'labview'
 
 # prefix = ''
 # channel = ''
-# microscope = 'labview'
+microscope = 'labview'
+imagePrefix = 'Image'
 
 # %% Functions
 
@@ -97,12 +101,12 @@ def getListOfSourceFolders(Dir,
     and whose name do not contains any of the forbiddenWords.
     """
     
+    
     res = []
     exclude = False
     for w in forbiddenWords:
         if w.lower() in Dir.lower(): # compare the lower case strings
             exclude = True # If a forbidden word is in the dir name, don't consider it
-
             
     if exclude or not os.path.isdir(Dir):
         return(res) # Empty list
@@ -121,6 +125,7 @@ def getListOfSourceFolders(Dir,
         
     else:
         listDirs = os.listdir(Dir)
+        print(listDirs)
         for D in listDirs:
             path = os.path.join(Dir, D)
             res += getListOfSourceFolders(path) # Recursive call to the function !
@@ -278,7 +283,7 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
         allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
     elif microscope == 'labview':
-        allFiles = [path+'/'+string for string in allFiles if 'im' in string]
+        allFiles = [path+'/'+string for string in allFiles if imagePrefix in string]
         
     elif microscope == 'zen':
         allFiles = [path+'/'+string for string in allFiles if '.czi' in string]
@@ -403,7 +408,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
         elif microscope == 'labview':
-            allFiles = [cellPath+'/'+string for string in allFiles if '.tif' in string]
+            allFiles = [cellPath+'/'+string for string in allFiles if imagePrefix in string]
         
         print(gs.BLUE + 'Loading '+ cellPath +'...' + gs.NORMAL)
         
@@ -488,13 +493,15 @@ for i in range(len(allCellsRaw)):
 #### DO THIS !
 copyFieldFiles(allCells, DirSave)
 
+copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
+
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
 
 #%% Main function 2/2
 
 instructionText = "Draw the ROIs to crop !\n\n(1) Click on the image to define a rectangular selection\n"
 instructionText += "(2) Press 'a' to accept your selection, 'r' to redraw it, "
-instructionText += "or 's' if you have a second selection to make (don't use 's' more than once per stack)\n"
+instructionText += "or 's' if you have a supplementary selection to make (you can use 's' more than once per stack !)\n"
 instructionText += "(3) Make sure to choose the number of files you want to crop at once\nin the variable 'limiter'"
 instructionText += "\n\nC'est parti !\n"
 
@@ -545,7 +552,7 @@ for i in range(min(len(allZimg), limiter)):
         key = cv2.waitKey(20) & 0xFF
         
     # press 'r' to reset the crop
-        if key == ord("r"):
+        if key == ord("r"):  
             img = np.copy(img_backup)  
              
     # if the 'a' key is pressed, break from the loop and move on to t/he next file

@@ -147,11 +147,11 @@ path0 = 'D://MagneticPincherData//Raw//'
 
 # %% Script Other renaming
 
-path0 = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\'
-sub = 'M4_dmso'
+path0 = 'E:\\2023-04-28_3T3atcc2023_CK666\\'
+sub = 'M2_CK666_100uM'
 path = path0 + sub
 
-findAndRename(path, '_M1_', '_M4_', 
+findAndRename(path, '_M1_', '_M2_', 
               target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 
@@ -198,8 +198,13 @@ findAndRename(path, 'M1_P2', 'M2_P1',
               target='file', test = True, recursiveAction = False, exceptStrings = [])
 
 
+# %% Script Other renaming
 
-
+path0 = 'E://23-09-06_3T3Atcc-LaGFP_CalA//M1_0.25nM'
+s1 = '-07-20_'
+s2 = '-09-06_'
+findAndRename(path0, s1, s2, 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 
 

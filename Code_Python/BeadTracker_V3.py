@@ -60,6 +60,7 @@ import UtilityFunctions as ufun
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment', None)
+pd.set_option('display.max_columns', None)
 
 # 3. Plot settings
 gs.set_default_options_jv()
@@ -80,41 +81,7 @@ gs.set_default_options_jv()
 
 class PincherTimeLapse:
     """
-    This class is initialised for each new .tif file analysed.
 
-    It requires the following inputs :
-    > I : the timelapse analysed.
-    > cellID : the id of the cell currently analysed.
-    > manipDict : the line of the experimental data table that concerns the current experiment.
-    > NB : the number of beads of interest that will be tracked.
-
-    It contains:
-    * data about the 3D image I (dimensions = time, height, width),
-    * a list of Frame objects listFrames, 1 per frame in the timelapse,
-    * a list of Trajectory objects listTrajectories, 1 per bead of interest (Boi) in the timelapse,
-    * a dictionnary dictLog, saving the status_frame of each frame (see below)
-                             and all of the user inputs (points and clicks) during the tracking,
-    * a pandas DataFrame detectBeadsResult, that contains the raw output of the bead tracking,
-    * metadata about the experiment (cellID, expType, loopStruct, loop_mainSize, loop_rampSize,
-                                        loop_excludedSize, nLoop, Nuplet, excludedFrames_inward).
-
-    When a PincherTimeLapse is initialised, most of these variables are initialised to zero values.
-    In order to compute the different fields, the following methods should be called in this order:
-    - ptl.checkIfBlackFrames() : detect if there are black images at the end of each loop in the time lapse and
-                                 classify them as not relevant by filling the appropriate fields.
-    - ptl.saveFluoAside() : save the fluo images in an other folder and classify them as not relevant
-                            for the rest of the image analysis.
-    - ptl.determineFramesStatus_R40() : fill the status_frame and status_nUp column of the dictLog.
-                                    in the status_frame field: -1 means excluded ; 0 means ramp ; >0 means *position in* the n-uplet
-                                    in the status_nUp field: -1 means excluded ; 0 means ramp ; >0 means *number of* the n-uplet
-    - ptl.uiThresholding() : Compute the threshold that will be used for segmentation in an interractive way.
-    - ptl.saveMetaData() : Save the computed threshold along with a few other data.
-    - ptl.makeFramesList() : Initialize the frame list.
-    - ptl.detectBeads() : Detect all the beads or load their positions from a pre-existing '_Results.txt' file.
-    - ptl.buildTrajectories() : Do the tracking of the beads of interest, with the user help, or load pre-existing trajectories.
-      [In the meantime, Z computations and neighbours detections are performed on the Trajectory objects]
-    - ptl.computeForces() : when the Trajectory objects are complete (with Z and neighbours), compute the forces.
-                            Include recent corrections to the formula [October 2021].
     """
 
     def __init__(self, I, cellID, manipDict, NB = 2):
@@ -128,433 +95,180 @@ class PincherTimeLapse:
         # 2. Infos about the experimental conditions, mainly from the DataFrame 'manipDict'.
         self.NB = NB # The number of beads of interest ! Typically 2 for a normal experiment, 4 for a triple pincher !
         self.cellID = cellID
-        self.wFluoEveryLoop = manipDict['with fluo images']
-        self.expType = manipDict['experimentType']
+        # self.wFluoEveryLoop = manipDict['with fluo images']
         self.scale = manipDict['scale pixel per um']
         self.OptCorrFactor = manipDict['optical index correction']
         self.MagCorrFactor = manipDict['magnetic field correction']
         self.Nuplet = manipDict['normal field multi images']
         self.Zstep = manipDict['multi image Z step']
-        self.MagField = manipDict['normal field']
-
         self.BeadsZDelta = manipDict['beads bright spot delta']
-        # self.BeadTypeStr = manipDict['bead type']
         self.beadTypes = [bT for bT in str(manipDict['bead type']).split('_')]
         self.beadDiameters = [int(bD) for bD in str(manipDict['bead diameter']).split('_')]
         self.dictBeadDiameters = {}
+        
         for k in range(len(self.beadTypes)):
             self.dictBeadDiameters[self.beadTypes[k]] = self.beadDiameters[k]
-
+            
         self.microscope = manipDict['microscope']
-        
-
-        loopStruct = manipDict['loop structure'].split('_')
-
-        #### Exp type dependance here
-
-        # This is an ugly but necessary part of the code
-        # This loopStruct field contains from 1 to 3 numbers, separated by a '_'
-        # The convention for now is : 'totalLoopSize_rampSize_excludedSize'
-        # loop_mainSize > compulsary. The size of an entire loop of images, WO the fluo at the end !!!!
-        # loop_rampSize > compulsary only for compressions exp. The number of images belonging to the compression per loop.
-        # excludedSize > deprecated. Indicates if some images (eg. fluorescence ones) should be systematically excluded at the end of each loop.
-        if 'compressions' in self.expType or 'constant field' in self.expType:
-            self.loop_mainSize = int(loopStruct[0])
-
-            if self.expType == 'compressions':
-                self.loop_rampSize = int(loopStruct[1])
-            elif self.expType == 'compressionsLowStart':
-                self.loop_rampSize = int(loopStruct[1])
-            else:
-                self.loop_rampSize = 0
-
-
-            # if len(loopStruct) == 3: # This 3rd part of the 'loopStruct' field is the nb of frames at the end
-            # # of each loop which are not part of the main analysis and should be excluded. Typically fluo images.
-            #     self.loop_excludedSize = int(loopStruct[2])
-            # else:
-            #     self.loop_excludedSize = 0
-            
-            self.nLoop = int(np.round(nS/self.loop_mainSize))
-
-        elif 'optoGen' in self.expType:
-            self.loop_mainSize = int(loopStruct[0])
-
-            if self.expType == 'compressions':
-                self.loop_rampSize = int(loopStruct[1])
-            elif self.expType == 'compressionsLowStart':
-                self.loop_rampSize = int(loopStruct[1])//2
-            else:
-                self.loop_rampSize = 0
-
-
-            # if len(loopStruct) == 3: # This 3rd part of the 'loopStruct' field is the nb of frames at the end
-            # of each loop which are not part of the main analysis and should be excluded. Typically fluo images.
-                # self.loop_excludedSize = int(loopStruct[2])
-            # else:
-                # self.loop_excludedSize = 0
-                
-            self.nLoop = int(np.round(nS/self.loop_mainSize))
-            
-        #### Broken ramp and sinus. TBC !!!! for the BR
-        elif 'sinus' in self.expType:
-            self.loop_mainSize = nS
-            self.loop_rampSize = 0
-            # self.loop_excludedSize = 0
-            self.nLoop = 1
-            
-        
-        elif 'brokenRamp' in self.expType:
-            self.loop_mainSize = nS
-            self.loop_rampSize = 0
-            # self.loop_excludedSize = 0
-            self.nLoop = 1
-            
-        self.excludedFrames_inward = np.zeros(self.nLoop, dtype = int)
-        self.excludedFrames_black = np.zeros(self.nLoop, dtype = int) 
-        self.excludedFrames_outward = np.zeros(self.nLoop, dtype = int)
-
-        
-        #### Import data from the optogen condition columns, if they exist
-
-        fluo = False
-        
-        try:
-            print(gs.ORANGE + 'Reading optogen parameters...' + gs.NORMAL)
-            
-            # "activationFirst" is the number of the loop 
-            # at the end of which the first activ is
-            # when you count the loop starting from 1
-            
-            
-            self.activationFirst = int(manipDict['first activation'])
-            self.activationLast = (manipDict['last activation'])
-            self.activationFreq = int(manipDict['activation frequency'])
-            self.activationExp = manipDict['activation exp']
-            self.activationType = manipDict['activation type']
-            
-                
-            if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
-                # k-1 here cause we counted the loops starting from 1 but python start from 0.
-            elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
-            else:
-                self.LoopActivations = np.array([self.activationFirst-1])
-            
-            
-            fluo = True
-                
-        except:
-            print(gs.ORANGE + 'No optogen parameters found' + gs.NORMAL)
-            if self.wFluoEveryLoop:
-                print(gs.ORANGE + 'Fluo every loop detection...' + gs.NORMAL)
-                self.LoopActivations = np.arange(self.nLoop, dtype = int)
-                
-                fluo = True
-        
-        if fluo == False:
-            print(gs.ORANGE + 'No fluo !' + gs.NORMAL)
-            self.LoopActivations = np.array([])
-            
-        if self.microscope == 'labview':
-            self.totalActivationImages = np.array([np.sum(self.LoopActivations < kk) 
-                                               for kk in range(self.nLoop)])
-            
-            # print('total activation images')
-            # print(self.totalActivationImages)
-            self.excludedFrames_outward += self.totalActivationImages
-            
-            # print('excludedFrames_outward')
-            # print(self.excludedFrames_outward)
-            
-        else:
-            pass
-
 
         # 3. Field that are just initialized for now and will be filled by calling different methods.
-        self.threshold = 0
         self.listFrames = []
         self.listTrajectories = []
-
-        self.dictLog = {'Slice' : np.array([i+1 for i in range(nS)]),
-                        'status_frame' : np.zeros(nS, dtype = float),  # in the status_frame field: -1 means excluded ; 0 means ramp ; >0 means position in the n-uplet
-                        'status_nUp' : np.zeros(nS, dtype = int), # in the status_nUp field: -1 means excluded ; 0 means ramp ; >0 means number of the n-uplet
-                        'UI' : np.zeros(nS, dtype = bool),
-                        'UILog' : np.array(['' for i in range(nS)], dtype = '<U16'),
-                        'UIxy' : np.zeros((nS,NB,2), dtype = int)}
-
-        self.detectBeadsResult = pd.DataFrame({'Area' : [],
-                                               'StdDev' : [],
-                                               'XM' : [],
-                                               'YM' : [],
-                                               'Slice' : []})
-
+        self.NLoops = 0
+        self.logDf = pd.DataFrame({})
+        self.log_UIxy = np.zeros((self.nS, self.NB, 2), dtype = int)
         
+        self.nullFramesPerLoop = []
+        self.fluoFramesPerLoop = []
+
+        self.resultsDf = pd.DataFrame({'Area' : [],
+                                    'StdDev' : [],
+                                    'XM' : [],
+                                    'YM' : [],
+                                    'Slice' : []})
+
         self.modeNoUIactivated = False
         # End of the initialization !
-       
+        
     
-    def checkIfBlackFrames(self):
+    def initializeLogDf(self, metaDf):
+        # Setting
+        
+        # Import status file
+        logDf = metaDf[['iL', 'Status']]
+        
+        #
+        logDf['iField'] = np.arange(self.nS, dtype = int)
+        logDf['iS'] = logDf['iField'].values + 1
+        #
+        logDf['idx_NUp'] = np.zeros(self.nS, dtype = int)
+        logDf['idx_inNUp'] = np.zeros(self.nS, dtype = int)
+        #
+        logDf['nullFrame'] = np.zeros(self.nS, dtype = int)
+        logDf['trackFrame'] = np.ones(self.nS, dtype = bool)
+        #
+        logDf['idxAnalysis'] = np.zeros(self.nS, dtype = int)
+        #
+        logDf['UI'] = np.zeros(self.nS, dtype = bool)
+        logDf['UILog'] = np.array(['' for i in range(self.nS)], dtype = '<U16')
+        #
+        log_UIxy = np.zeros((self.nS, self.NB, 2), dtype = int)
+        #
+        
+        self.NLoops = np.max(logDf['iL'])
+        Nuplet = self.Nuplet
+        
+        # Passive Part
+        NPassive = logDf[logDf['Status'] == 'Passive'].shape[0]
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)])
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)])
+        
+        # Fluo Part
+        logDf[logDf['Status'] == 'Fluo']['idxAnalysis'] = -1
+        
+        # Action Part
+        indexAction = logDf[logDf['Status'].apply(lambda x : x.startswith('Action'))].index
+        
+        # idxAnalysis
+        logDf.loc[indexAction, 'idxAnalysis'] = (-1)*logDf.loc[indexAction, 'iL']
+        indexMainPhase = logDf[logDf['Status'].apply(lambda x : x.startswith('Action_main'))].index
+        logDf.loc[indexMainPhase, 'idxAnalysis'] = (-1)*logDf.loc[indexMainPhase, 'idxAnalysis']
+        
+        # idxAnalysis for loops with repeated compressions
+        previous_idx = 0
+        for i in range(1, self.NLoops+1):
+            indexLoop_i = logDf[logDf['iL'] == i].index
+            maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
+            maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
+            maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
+            # print(maskMainPhase_i)
+            
+            lab_main, nlab_main = ndi.label(maskMainPhase_i)
+            # print(lab, nlab)
+            
+            if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
+                logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
+                lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
+                logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
+                # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
+                previous_idx = np.max(lab_main)
+
+        self.logDf = logDf
+        self.log_UIxy = log_UIxy
+        
+        
+        
+    def detectNullFrames(self, fastestPhase = 'Action_main'):
         """
         Check if some images in the time lapse are completely black.
         This happens typically when the computer is not able to save
         properly a series of large images with a high frequency.
-        To detect them, compute the checkSum = np.sum(self.I[j]).
-        Then modify the 'status_frame' & 'status_nUp' fields to '-1' in the dictLog.
         """
+        # print(self.nullFramesPerLoop)
+        
         if self.microscope == 'labview' or self.microscope == 'old-labview':
-            offsets = np.array([np.sum(self.LoopActivations <= kk) 
-                                for kk in range(self.nLoop)])
-            # print(offsets)
-            for i in range(self.nLoop):
+            # logDf = self.logDf
+            NLoops = self.NLoops
+            for i in range(1, NLoops+1):
+                nullFrames = []
+                logDf_loop = self.logDf[self.logDf['iL'] == i]
+                iS = logDf_loop['iS'].values[-1]
+                
+                logDf_fast = logDf_loop[logDf_loop['Status'].apply(lambda x : x.startswith(fastestPhase))]
+                iS_fast = logDf_fast['iS'].values[-1]
+                
+                while np.sum(self.I[iS-1]) == 0:
+                    nullFrames.append(iS_fast)
+                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
+                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
+                    iS -= 1
+                    iS_fast -= 1
+                if len(nullFrames) > 0:
+                    print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
                     
-                j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
-                # print(j)
-                checkSum = np.sum(self.I[j])
-                while checkSum == 0:
-                    print('Black image found')
-    #                 self.dictLog['Black'][j] = True
-                    self.dictLog['status_frame'][j] = -1
-                    self.dictLog['status_nUp'][j] = -1
-                    self.excludedFrames_black[i] += 1
-                    self.excludedFrames_inward[i] += 1 # More general
-                    j -= 1
-                    checkSum = np.sum(self.I[j])
+                A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
+                self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
+                # logDf_loop = self.logDf[self.logDf['iL'] == i]
+                # A = np.cumsum(logDf_loop['nullFrame'].values)
+                # logDf_loop['iS'] = logDf_loop['iS'] - A
+                    
+                self.nullFramesPerLoop.append(nullFrames[::-1])
+                # print(self.nullFramesPerLoop)
+
+    
+        else:
+            pass
+        
             
+    def detectFluoFrames(self, save = True, fluoDirPath = '', f = ''):
+        """
+        Find and save all of the fluo images.
+        """
+        # Setting
+        self.fluoFramesPerLoop = [[] for i in range(self.NLoops)]
+        
+        if self.microscope == 'labview' or self.microscope == 'old-labview':
+            indexFluo = self.logDf['Status'].apply(lambda x : x.startswith('Fluo'))
+            fluoFrames_iS = self.logDf.loc[indexFluo, 'iS'].values
+            fluoFrames_iL = self.logDf.loc[indexFluo, 'iL'].values
+            for k in range(len(fluoFrames_iS)):
+                iL, iS = fluoFrames_iL[k], fluoFrames_iS[k]
+                self.fluoFramesPerLoop[iL].append(iS)
+                self.logDf.loc[self.logDf['iS'] == iS, 'trackFrame'] = False
+                
+            if save:
+                if not os.path.exists(fluoDirPath):
+                    os.makedirs(fluoDirPath)
+                for fluoFrames_iS in self.fluoFramesPerLoop:
+                    for iS in fluoFrames_iS:
+                        Ifluo = self.I[iS-1]
+                        path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(iS) + '.tif')
+                        io.imsave(path, Ifluo, check_contrast=False)
         else:
             pass
 
 
-    def saveFluoAside(self, fluoDirPath, f):
-        """
-        If wFluo = True in the expDf, modify the 'status_frame' & 'status_nUp' fields to '-1' in the dictLog.
-        And if the directory for the fluo images has not be created yet,
-        find and save all of the fluo images there.
-        """
-        
-        if self.microscope == 'labview' or self.microscope == 'old-labview':
-            # print('excludedFrames_black')
-            # print(self.excludedFrames_black)
-            try:
-                
-                if self.activationFirst > 0:
-                    for iLoop in self.LoopActivations:
-                        totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
-                        
-                        j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
-                        print(j)
-                        self.dictLog['status_frame'][j] = -1
-                        self.dictLog['status_nUp'][j] = -1
-    
-            except:
-                if self.wFluoEveryLoop:
-                    for iLoop in self.LoopActivations:
-                        totalExcludedOutward = self.excludedFrames_outward[iLoop]
-                        j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
-                        self.dictLog['status_frame'][j] = -1
-                        self.dictLog['status_nUp'][j] = -1
-                    
-                        
-                    
-        if not os.path.exists(fluoDirPath):
-            os.makedirs(fluoDirPath)
-            for iLoop in self.LoopActivations:
-                totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
-                j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
-                Ifluo = self.I[j]
 
-                path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j+1) + '.tif')
-                io.imsave(path, Ifluo, check_contrast=False)
-            
-                print('excludedFrames_outward')
-                print(self.excludedFrames_outward)
-            # 
-            # try: # Optogenetic activations behaviour
-            #     print(gs.ORANGE + 'Trying optogen fluo detection...' + gs.NORMAL)
-            #     if self.activationFirst > 0 and not self.wFluoEveryLoop:
-            #         if (not pd.isna(self.activationFreq)) and self.activationFreq > 0: # Meaning there is a repetition of activation
-            #         # self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])    
-            #             for iLoopActivation in self.LoopActivations:
-            #                 totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoopActivation])
-            #                 j = int(((iLoopActivation+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoopActivation])
-            #                 self.dictLog['status_frame'][j] = -1
-            #                 self.dictLog['status_nUp'][j] = -1
-            #             print('Total excluded fluoro: '+str(totalExcludedOutward))
-                        
-                            
-            #         else: # Set self.activationFreq = 0 to only detect one single activation
-            #             iLoopActivation = self.activationFirst-1
-            #             totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoopActivation])
-            #             # LoopActivations = [iLoopActivation]
-                        
-            #             j = int(((iLoopActivation+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoopActivation])
-            #             self.dictLog['status_frame'][j] = -1
-            #             self.dictLog['status_nUp'][j] = -1
-                        
-            #         if not os.path.exists(fluoDirPath):
-            #             os.makedirs(fluoDirPath)
-            #             for iLoopActivation in self.LoopActivations:
-            #                 totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoopActivation])
-            #                 j = int(((iLoopActivation+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoopActivation])
-            #                 Ifluo = self.I[j]
-            #                 path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j) + '.tif')
-            #                 io.imsave(path, Ifluo)
-                            
-            #     print(gs.ORANGE + '...success' + gs.NORMAL)
-    
-            # except: 
-            #     print(gs.ORANGE + '...failure' + gs.NORMAL)
-            
-            
-            # if self.wFluoEveryLoop: # Behaviour when fluo check every loop => Not Optogen
-            #     print(gs.ORANGE + 'Doing classic fluo detection' + gs.NORMAL)
-            #     for i in range(self.nLoop):
-            #         j = int(((i+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[i])
-            #         self.dictLog['status_frame'][j] = -1
-            #         self.dictLog['status_nUp'][j] = -1
-            #         print(j)
-    
-            #     if not os.path.exists(fluoDirPath):
-            #         os.makedirs(fluoDirPath)
-            #         for i in range(self.nLoop):
-            #             j = int(((i+1)*self.loop_mainSize) - self.excludedFrames_black[i])
-            #             Ifluo = self.I[j]
-            #             path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j) + '.tif')
-            #             io.imsave(path, Ifluo)
-                        
-
-    def determineFramesStatus_R40(self):
-        #### Exp type dependance here
-        """
-        Fill the status_frame and status_nUp column of the dictLog, in the case of a compression (R40) or constant field (thickness) experiment
-        > in the status_frame field: -1 means excluded ; 0 means ramp ; 10 > x > 0 means *position in* the n-uplet.
-        > in the status_nUp field: -1 means excluded ; 0 means ramp ; >0 means *number of* the n-uplet.
-        Not very elegant but very confortable to work with.
-        """
-        N0 = self.loop_mainSize
-        Nramp0 = self.loop_rampSize
-        # Nexclu = self.loop_excludedSize
-        nUp = self.Nuplet
-        # N = N0 - Nexclu
-        Nct = N0 - Nramp0 # N
-        i_nUp = 1
-        # print(N0,Nramp0,nUp)
-
-        for i in range(self.nLoop):
-            totalExcludedOutward = np.sum(self.excludedFrames_outward[i])
-            jstart = int(i*N0 + totalExcludedOutward)
-            if Nramp0 == 0:
-                for j in range(N0): # N
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-            else:
-                Nramp = Nramp0-self.excludedFrames_black[i]
-                for j in range(Nct//2): # Ct field before ramp
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-                jstart += int(Nct//2 + Nramp) # In the ramp it self, the two status stay equal to 0
-                for j in range(Nct//2): # Ct field after ramp
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-                
-
-    def determineFramesStatus_L40(self):
-        #### Exp type dependance here
-        """
-        Fill the status_frame and status_nUp column of the dictLog, in the case of a compression with an initial decrease (L40)
-        > in the status_frame field: -1 means excluded ; 0 means ramp ; 0.1 means pre-ramp ; 10 > x > 0 means *position in* the n-uplet.
-        > in the status_nUp field: -1 means excluded ; 0 means not in a n-uplet ; x > 0 means *number of* the n-uplet.
-        Not very elegant but very confortable to work with.
-        """
-        
-        N0 = self.loop_mainSize
-        Nramp0 = self.loop_rampSize
-        # Nexclu = self.loop_excludedSize
-        nUp = self.Nuplet
-        # N = N0 - Nexclu
-        Nct = N0 - 2*Nramp0 # N
-        i_nUp = 1
-        
-        
-        # if not self.wFluoEveryLoop:
-        #     mask_notAlreadyExcluded = self.dictLog['status_frame'] >= 0
-        #     print(mask_notAlreadyExcluded)
-        # else:
-        #     mask_notAlreadyExcluded = np.ones(len(self.dictLog['status_frame']), dtype = bool)
-        
-        for i in range(self.nLoop):
-            totalExcludedOutward = self.excludedFrames_outward[i]
-            jstart = int(i*N0 + totalExcludedOutward)
-            # print(jstart)
-            if Nramp0 == 0:
-                for j in range(N0): # N
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                    
-            else:
-                Nramp = Nramp0-self.excludedFrames_black[i]
-                for j in range(Nct//2): # Ct field before ramp
-                    if self.dictLog['status_frame'][jstart + j] != 0:
-                        print(gs.ORANGE + 'Careful ! Rewriting on some data in position {:.0f} (starting from 0)'.format(jstart + j) + '' + gs.NORMAL)
-                        print(gs.ORANGE + 'Writing {:.1f} instead of {:.1f}'.format(1 + j%self.Nuplet, self.dictLog['status_frame'][jstart + j]) + '' + gs.NORMAL)
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                    
-                jstart += int(Nct//2)
-                for j in range(Nramp0): # Pre-ramp
-                    self.dictLog['status_frame'][jstart + j] = 0.1 
-                    self.dictLog['status_nUp'][jstart + j] = 0
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-                jstart += int(Nramp0 + Nramp) # In the ramp itself, the two status stay equal to 0
-                
-                for j in range(Nct//2): # Ct field after ramp
-                    if self.dictLog['status_frame'][jstart + j] != 0:
-                        print(gs.ORANGE + 'Careful ! Rewriting on some data in position {:.0f} (starting from 0)'.format(jstart + j) + '' + gs.NORMAL)
-                        print(gs.ORANGE + 'Writing {:.1f} instead of {:.1f}'.format(1 + j%self.Nuplet, self.dictLog['status_frame'][jstart + j]) + '' + gs.NORMAL)
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-                    
-
-    def determineFramesStatus_optoGen(self):
-    #### Exp type dependance here
-        N0 = self.loop_mainSize
-        Nramp0 = self.loop_rampSize
-        # Nexclu = self.loop_excludedSize
-        nUp = self.Nuplet
-        # N = N0 - Nexclu
-        i_nUp = 1
-
-        # print(N0,Nramp0,Nexclu,nUp)
-        if self.microscope == 'metamorph':
-            for i in range(self.nLoop):
-                jstart = int(i*N0)
-                for j in range(N0): # N
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-                
-        elif self.microscope == 'labview' or self.microscope == 'old-labview':
-            for i in range(self.nLoop):
-                totalExcludedOutward = (self.excludedFrames_outward[i])
-                jstart = int(i*N0 + totalExcludedOutward)
-                for j in range(N0): # N
-                    self.dictLog['status_frame'][jstart + j] = 1 + j%self.Nuplet
-                    self.dictLog['status_nUp'][jstart + j] = i_nUp + j//self.Nuplet
-                i_nUp = max(self.dictLog['status_nUp']) + 1
-            
-        
-                
-    def determineFramesStatus_Sinus(self):
-        #### Exp type dependance here
-        pass
-        
-    def determineFramesStatus_BR(self):
-        #### Exp type dependance here
-        pass
     
     def makeOptoMetadata(self, fieldDf, display = 1, save = False, path = ''):
         try:
@@ -566,6 +280,8 @@ class PincherTimeLapse:
                 allActivationIndices = ufun.findActivation(fieldDf)[0]
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
+                
+                print(fieldDf)
                 actN = len(allActivationIndices)
                 fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
                 metadataDict = {}
@@ -576,215 +292,91 @@ class PincherTimeLapse:
                 metadataDict['T_0'] = [fieldDf['T_abs'][0]/timeScaleFactor]*actN
                 # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
                 metadataDict['Type'] = actType*actN
-                # print(len(fieldToMeta))
-                # print(len(metadataDict['activationNo']))
-                # print(len(metadataDict['Slice']))
-                # print(len(metadataDict['T_abs']))
-                # print(len(metadataDict['T_0']))
+                print(len(fieldToMeta))
+                print(len(metadataDict['activationNo']))
+                print(len(metadataDict['Slice']))
+                print(len(metadataDict['T_abs']))
+                print(len(metadataDict['T_0']))
                 
                 metadataDf = pd.DataFrame(metadataDict)
                 if save:
                     metadataDf.to_csv(path, sep='\t')
         except:
             pass
-        
-        # if display == 1:
-        #     print('\n\n* Initialized Log Table:\n')
-        # if display == 2:
-        #     print('\n\n* Filled Log Table:\n')
-        #     print(metadataDf[metadataDf['UI']])
             
-    def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
-        actFreq = self.activationFreq
-        actExp = self.activationExp
-        actType = [self.activationType]
-        microscope = self.microscope
-        if microscope == 'labview' or microscope == 'old-labview':
-            idxActivation = ufun.findActivation_V1(fieldDf)[0]
-            actFirst = idxActivation//self.loop_mainSize
-            timeScaleFactor = 1000
-        elif microscope == 'metamorph':
-            actFirst = self.activationFirst
-            #+2 in idxAnalysis because the time included in the timeSeriesfile is the third of the triplet
-            idxActivation = actFirst*self.loop_mainSize-1
-            timeScaleFactor = 1
-        
-        actN = ((self.nLoop - actFirst))//actFreq
-        
-        metadataDict = {}
-        metadataDict['Total'] = actN*np.ones(actN, dtype = type(actN))
-        metadataDict['Slice'] = idxActivation
-        #timeScaleFactor converts the time to milliseconds for the labview code and keeps it the same if from Metamorph
-        metadataDict['T_abs'] = fieldDf['T_abs'][idxActivation]/timeScaleFactor 
-        metadataDict['T_0'] = fieldDf['T_abs'][0]/timeScaleFactor 
-        # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
-        metadataDict['Type'] = actType*actN
-        
-        metadataDf = pd.DataFrame(metadataDict)
-        if save:
-            metadataDf.to_csv(path, sep='\t')
-        
-        if display == 1:
-            print('\n\n* Initialized Log Table:\n')
-        if display == 2:
-            print('\n\n* Filled Log Table:\n')
-            print(metadataDf[metadataDf['UI']])
-                
-    def saveLog(self, display = 1, save = False, path = ''):
+    
+    def saveLogDf(self, display = 1, save = False, path = ''):
         """
         Save the dictLog so that next time it can be directly reloaded to save time.
         """
         dL = {}
-        dL['Slice'], dL['status_frame'], dL['status_nUp'] = \
-            self.dictLog['Slice'], self.dictLog['status_frame'], self.dictLog['status_nUp']
-
-        dL['UI'], dL['UILog'] = \
-            self.dictLog['UI'], self.dictLog['UILog']
         for i in range(self.NB):
-            dL['UIx'+str(i+1)] = self.dictLog['UIxy'][:,i,0]
-            dL['UIy'+str(i+1)] = self.dictLog['UIxy'][:,i,1]
-        dfLog = pd.DataFrame(dL)
+            dL['UIx'+str(i+1)] = self.log_UIxy[:,i,0]
+            dL['UIy'+str(i+1)] = self.log_UIxy[:,i,1]
+        df = pd.DataFrame(dL)
+        logDf = pd.concat([self.logDf, df], axis = 1)
+        
         if save:
-            dfLog.to_csv(path, sep='\t')
+            logDf.to_csv(path, sep='\t', index=False)
 
         if display == 1:
             print('\n\n* Initialized Log Table:\n')
-            print(dfLog)
+            print(logDf)
         if display == 2:
             print('\n\n* Filled Log Table:\n')
-            print(dfLog[dfLog['UI']])
+            print(logDf[logDf['UI']])
 
-    def importLog(self, path):
+
+    
+    
+            
+    def importLogDf(self, path):
         """
         Import the dictLog.
         """
-        dfLog = pd.read_csv(path, sep='\t')
-        dL = dfLog.to_dict()
-        self.dictLog['Slice'], self.dictLog['status_frame'], self.dictLog['status_nUp'] = \
-            dfLog['Slice'].values, dfLog['status_frame'].values, dfLog['status_nUp'].values
-        self.dictLog['UI'], self.dictLog['UILog'] = \
-            dfLog['UI'].values, dfLog['UILog'].values
+        logDf = pd.read_csv(path, sep='\t')
         for i in range(self.NB):
             xkey, ykey = 'UIx'+str(i+1), 'UIy'+str(i+1)
-            self.dictLog['UIxy'][:,i,0] = dfLog[xkey].values
-            self.dictLog['UIxy'][:,i,1] = dfLog[ykey].values
-
-    def computeThreshold(self, method, factorT):
-        """
-        Compute the threshold with the chosen method, multiply it with factorT, and then save it as a field.
-        CURRENTLY NOT USED IN THE MAIN FUNCTION.
-        """
-        threshold = 0
-        end_z = 2*self.loop_mainSize
-        if method == 'otsu':
-            threshold = factorT*filters.threshold_otsu(self.I[:end_z])
-        elif method == 'max_entropy':
-            bitDepth = util.dtype_limits(self.I[:end_z])[1]+1
-            I8 = util.img_as_ubyte(self.I[:end_z])
-            threshold = factorT*ufun.max_entropy_threshold(I8)*(bitDepth/(2**8))
-        self.threshold = threshold
+            self.log_UIxy[:,i,0] = logDf[xkey].values
+            self.log_UIxy[:,i,1] = logDf[ykey].values
+            logDf = logDf.drop(columns=[xkey, ykey])
+        logDf['UILog'] = logDf['UILog'].astype(str)
+        self.logDf = logDf
         
-
-    def saveMetaData(self, path):
-        """
-        Save the computed threshold along with a few other data.
         
-        Currently not used.
-        """
-        dMD = {}
-        dMD['cellID'] = self.cellID
-        # dMD['threshold'] = self.threshold
-        dMD['NB'] = self.NB
-        f = open(path, 'w')
-        for k in dMD.keys():
-            f.write(str(k))
-            f.write('\t')
-            f.write(str(dMD[k]))
-            f.write('\n')
-        f.close()
-
-    def readMetaData(self, path, infoType):
-        """
-        Read the metadata file, containing the computed threshold along with a few other data.
         
-        Currently not used.
-        """
-        f = open(path, 'r')
-        f_lines = f.readlines()
-        dMD = {}
-        for line in f_lines:
-            splitLine = line.split('\t')
-            try:
-                dMD[splitLine[0]] = int(splitLine[1])
-            except:
-                try:
-                    dMD[splitLine[0]] = float(splitLine[1])
-                except:
-                    dMD[splitLine[0]] = splitLine[1]
-        f.close()
-        return(dMD[infoType])
-
 
     def makeFramesList(self):
         """
         Initialize the Frame objects and add them to the PTL.listFrames list.
         """
+        self.logDf['iF'] = np.ones(self.nS, dtype = int) * (-1)
+        iF = 0
         for i in range(self.nS):
-            status_frame = self.dictLog['status_frame'][i]
-            status_nUp = self.dictLog['status_nUp'][i]
-            # The Nup field of a slice is = to self.Nuplet if the status_frame indicates that the frmae is part of a multi image n-uplet
-            # Otherwise the image is "alone", like in a compression, and therefore Nup = 1
-            Nup = (self.Nuplet * (status_nUp > 0))  +  (1 * (status_nUp <= 0))
-            if self.dictLog['status_frame'][i] >= 0:
-                self.listFrames.append(Frame(self.I[i], i, self.NB, self.threshold, Nup, status_frame, status_nUp, self.scale))
+            if self.logDf['trackFrame'].values[i]:
+                iL = self.logDf['iL'].values[i]
+                iS = self.logDf['iS'].values[i]
+                idx_NUp = self.logDf['idx_NUp'].values[i]
+                idx_inNUp = self.logDf['idx_inNUp'].values[i]
+                Nup = (self.Nuplet * (idx_NUp > 0))  +  (1 * (idx_NUp <= 0))
+                # The Nup field of a slice is = to self.Nuplet if the idx_inNUp indicates that the frame is part of a multi image n-uplet
+                # Otherwise the image is "alone", like in a compression, and therefore Nup = 1
+                
+                resDf = self.resultsDf.loc[self.resultsDf['Slice'] == iS]
+                frame = Frame(self.I[iS-1], iL, iS, self.NB, Nup, idx_inNUp, idx_NUp, self.scale, resDf)
+                frame.makeListBeads()
+                
+                self.listFrames.append(frame)
+                self.logDf.loc[i, 'iF'] = iF
+                iF += 1
+                
+        iF_column = self.logDf.pop('iF')
+        self.logDf.insert(7, iF_column.name, iF_column)
 
-    def detectBeads(self, resFileImported):
-        """
-        If no '_Results.txt' file has been previously imported, ask each Frame
-        object in the listFrames to run its Frame.detectBeads() method.
-        Then concatenate the small 'Frame.resDf' to the big 'PTL.detectBeadsResult' DataFrame,
-        so that in the end you'll get a DataFrame that has exactly the shape of a '_Results.txt' file made from IJ.
-        *
-        If a '_Results.txt' file has been previously imported, just assign to each Frame
-        object in the listFrames the relevant resDf DataFrame
-        (each resDf is, as said earlier, just a fragment of the PTL.detectBeadsResult).
-        """
-        for frame in self.listFrames: #[:3]:
-            if not resFileImported:
-                plot = 0
-                frame.detectBeads(plot)
-                self.detectBeadsResult = pd.concat([self.detectBeadsResult, frame.resDf])
-            else:
-                resDf = self.detectBeadsResult.loc[self.detectBeadsResult['Slice'] == frame.iS+1]
-                frame.resDf = resDf
-
-            frame.makeListBeads()
-
-        if not resFileImported:
-            self.detectBeadsResult = self.detectBeadsResult.convert_dtypes()
-            self.detectBeadsResult.reset_index(inplace=True)
-            self.detectBeadsResult.drop(['index'], axis = 1, inplace=True)
-            
-
-    def saveBeadsDetectResult(self, path):
-        """
-        Save the 'PTL.detectBeadsResult' DataFrame.
-        """
-        self.detectBeadsResult.to_csv(path, sep='\t', index = False)
-
-    def importBeadsDetectResult(self, path=''):
-        """
-        Import the 'PTL.detectBeadsResult' DataFrame.
-        """
-        df = pd.read_csv(path, sep='\t')
-        for c in df.columns:
-            if 'Unnamed' in c:
-                df.drop([c], axis = 1, inplace=True)
-        self.detectBeadsResult = df
 
     def findBestStd(self):
         """
-        Simpler and better than findBestStd_V0 using the status_nUp column of the dictLog.
+        Simpler and better than findBestStd_V0 using the idx_NUp column of the dictLog.
         ---
         For each frame of the timelapse that belongs to a N-uplet, I want to reconsititute this N-uplet
         (meaning the list of 'Nup' consecutive images numbered from 1 to Nup,
@@ -792,13 +384,13 @@ class PincherTimeLapse:
         Then for each N-uplet of images, i want to find the max standard deviation
         and report its position because it's for the max std that the X and Y detection is the most precise.
         ---
-        This is very easy thanks to the 'status_nUp', because it contains a different number for each N-Uplet.
+        This is very easy thanks to the 'idx_NUp', because it contains a different number for each N-Uplet.
         """
 
         Nup = self.Nuplet
         nT = self.listTrajectories[0].nT
-        status_nUp = self.listTrajectories[0].dict['status_nUp']
-        status_frame = self.listTrajectories[0].dict['status_frame']
+        idx_NUp = self.listTrajectories[0].dict['idx_NUp']
+        idx_inNUp = self.listTrajectories[0].dict['idx_inNUp']
         sum_std = np.zeros(nT)
         for i in range(self.NB):
             sum_std += np.array(self.listTrajectories[i].dict['StdDev'])
@@ -806,17 +398,17 @@ class PincherTimeLapse:
         bestStd = np.zeros(nT, dtype = bool)
         i = 0
         while i < nT:
-            if status_frame[i] == 0:
+            if idx_inNUp[i] == 0:
                 bestStd[i] = True
                 i += 1
-            elif status_frame[i] > 0:
-                s2 = status_nUp[i]
+            elif idx_inNUp[i] > 0:
+                s2 = idx_NUp[i]
                 L = [i]
                 j = 0
-                while i+j < nT-1 and status_nUp[i+j+1] == s2: # lazy evaluation of booleans
+                while i+j < nT-1 and idx_NUp[i+j+1] == s2: # lazy evaluation of booleans
                     j += 1
                     L.append(i+j)
-                #print(L)
+
                 loc_std = sum_std[L]
                 i_bestStd = i + int(np.argmax(loc_std))
                 bestStd[i_bestStd] = True
@@ -825,7 +417,6 @@ class PincherTimeLapse:
 
         return(bestStd)
         
-    
     
     def buildTrajectories(self, trackAll = False):
         """
@@ -843,25 +434,24 @@ class PincherTimeLapse:
         init_ok = False
         while not init_ok:
             init_iS = self.listFrames[init_iF].iS
-
-            if not self.dictLog['UI'][init_iS]: # Nothing in the log yet
+            if not self.logDf.loc[self.logDf['iS'] == init_iS, 'UI'].values[0]: # Nothing in the log yet
                 self.listFrames[init_iF].show()
                 mngr = plt.get_current_fig_manager()
                 mngr.window.setGeometry(720, 50, 1175, 1000)
                 QA = pyautogui.confirm(
-                    text='Can you point the beads of interest\nin the image ' + str(init_iS + 1) + '?',
+                    text='Can you point the beads of interest\nin the image ' + str(init_iS) + '?',
                     title='Initialise tracker',
                     buttons=['Yes', 'Next Frame', 'Quit'])
                 if QA == 'Yes':
                     init_ok = True
                     ui = plt.ginput(self.NB, timeout=0)
                     uiXY = ufun.ui2array(ui)
-                    self.dictLog['UI'][init_iS] = True
-                    self.dictLog['UILog'][init_iS] = 'init_' + QA
-                    self.dictLog['UIxy'][init_iS] = uiXY
+                    self.logDf.loc[self.logDf['iS'] == init_iS, 'UI'] = True
+                    self.logDf.loc[self.logDf['iS'] == init_iS, 'UILog'] = 'init_' + QA
+                    self.log_UIxy[init_iS-1] = uiXY
                 elif QA == 'Next Frame':
-                    self.dictLog['UI'][init_iS] = True
-                    self.dictLog['UILog'][init_iS] = 'init_' + QA
+                    self.logDf.loc[self.logDf['iS'] == init_iS, 'UI'] = True
+                    self.logDf.loc[self.logDf['iS'] == init_iS, 'UILog'] = 'init_' + QA
                     init_iF += 1
                 else:
                     fig = plt.gcf()
@@ -872,10 +462,10 @@ class PincherTimeLapse:
                 plt.close(fig)
 
             else: # Action to do already in the log
-                QA = self.dictLog['UILog'][init_iS]
+                QA = self.logDf.loc[self.logDf['iS'] == init_iS, 'UILog'].values[0]
                 if QA == 'init_Yes':
                     init_ok = True
-                    uiXY = self.dictLog['UIxy'][init_iS]
+                    uiXY = self.log_UIxy[init_iS-1]
                 elif QA == 'init_Next Frame':
                     init_iF += 1
                 else:
@@ -903,34 +493,17 @@ class PincherTimeLapse:
             self.listTrajectories[iB].dict['Bead'].append(self.listFrames[init_iF].listBeads[init_iBoi[iB]])
             self.listTrajectories[iB].dict['iF'].append(init_iF)
             self.listTrajectories[iB].dict['iS'].append(self.listFrames[init_iF].iS)
+            self.listTrajectories[iB].dict['iL'].append(self.listFrames[init_iF].iL)
             self.listTrajectories[iB].dict['iB_inFrame'].append(init_iBoi[iB])
             self.listTrajectories[iB].dict['X'].append(init_BoiXY[iB][0])
             self.listTrajectories[iB].dict['Y'].append(init_BoiXY[iB][1])
             self.listTrajectories[iB].dict['StdDev'].append(self.listFrames[init_iF].beadsStdDevarray()[init_iBoi[iB]])
-            self.listTrajectories[iB].dict['status_frame'].append(self.listFrames[init_iF].status_frame)
-            self.listTrajectories[iB].dict['status_nUp'].append(self.listFrames[init_iF].status_nUp)
-            
-            #### >>> Exp type dependance here (01)
-            if 'compressions' in self.expType or 'constant field' in self.expType:
-                self.listTrajectories[iB].dict['idxAnalysis'].append((self.listFrames[init_iF].status_frame == 0))
-                
-            #### TBC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            elif 'sinus' in self.expType:
-                 print('Passed expt type')
-                 self.listTrajectories[iB].dict['idxAnalysis'].append(0)
-                 
-            elif 'brokenRamp' in self.expType:
-                 self.listTrajectories[iB].dict['idxAnalysis'].append(0)
-                 
-            elif 'optoGen' in self.expType:
-                 self.listTrajectories[iB].dict['idxAnalysis'].append(0)
 
         #### 3. Start the tracking
         previous_iF = init_iF
         previous_iBoi = init_iBoi
         previous_BXY = init_BXY
         previous_BoiXY = init_BoiXY
-        
         
         for iF in range(init_iF+1, len(self.listFrames)):
             validFrame = True
@@ -960,7 +533,6 @@ class PincherTimeLapse:
                                    
             
             #### 3.3 Assess if asking user input is necessary
-            
             highCost = ((np.max(costs)**0.5) * (1/self.scale) > 0.5)
             # True if the distance travelled by one of the BoI is greater than 0.5 um
             
@@ -971,7 +543,6 @@ class PincherTimeLapse:
                 askUI = True
                 
             #### 3.4 If not, automatically assign the positions of the next beads
-
             if not askUI:
                 try:
                     iBoi = [col_ind[iB] for iB in foundBoi]
@@ -991,15 +562,16 @@ class PincherTimeLapse:
                     
 
             #### 3.5 If one of the previous steps failed, ask for user input
-            if askUI:        
+            if askUI:
                 iS = self.listFrames[iF].iS
                 
                 #### 3.5.1: Case when the UI has been previously saved in the dictLog.
                 # Then just import the previous answer from the dictLog
-                if self.dictLog['UI'][iS]:
-                    QA = self.dictLog['UILog'][iS]
+                
+                if self.logDf.loc[self.logDf['iS'] == iS, 'UI'].values[0]:
+                    QA = self.logDf.loc[self.logDf['iS'] == iS, 'UILog'].values[0]
                     if QA == 'Yes':
-                        uiXY = self.dictLog['UIxy'][iS]
+                        uiXY = self.log_UIxy[iS-1]
                     elif QA == 'No' or QA == 'No to all':
                         validFrame = False
                         #fig = plt.gcf()
@@ -1008,7 +580,7 @@ class PincherTimeLapse:
                 
                 #### 3.5.2: Case when the UI has NOT been previously saved in the dictLog
                 # Then ask for UI ; and save it in the dictLog
-                elif not self.dictLog['UI'][iS]:
+                elif not self.logDf.loc[self.logDf['iS'] == iS, 'UI'].values[0]:
                     if self.modeNoUIactivated == False:
                         # Display the image, plot beads positions and current trajectories & ask the question
                         self.listFrames[iF].show()
@@ -1028,13 +600,13 @@ class PincherTimeLapse:
                         if QA == 'Yes':
                             ui = plt.ginput(self.NB, timeout=0)
                             uiXY = ufun.ui2array(ui)
-                            self.dictLog['UI'][iS] = True
-                            self.dictLog['UILog'][iS] = QA
-                            self.dictLog['UIxy'][iS] = uiXY
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UI'] = True
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UILog'] = QA
+                            self.log_UIxy[iS-1] = uiXY
                         elif QA == 'No':
                             validFrame = False
-                            self.dictLog['UI'][iS] = True
-                            self.dictLog['UILog'][iS] = QA
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UI'] = True
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UILog'] = QA
                         elif QA == 'Abort!':
                             validFrame = False
                             fig = plt.gcf()
@@ -1043,8 +615,8 @@ class PincherTimeLapse:
                         elif QA == 'No to all':
                             validFrame = False
                             self.modeNoUIactivated = True
-                            self.dictLog['UI'][iS] = True
-                            self.dictLog['UILog'][iS] = QA
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UI'] = True
+                            self.logDf.loc[self.logDf['iS'] == iS, 'UILog'] = QA
                         fig = plt.gcf()
                         plt.close(fig)
                         
@@ -1054,8 +626,8 @@ class PincherTimeLapse:
                         iS = self.listFrames[iF].iS
                         QA = 'No'
                         validFrame = False
-                        self.dictLog['UI'][iS] = True
-                        self.dictLog['UILog'][iS] = QA
+                        self.logDf.loc[self.logDf['iS'] == iS, 'UI'] = True
+                        self.logDf.loc[self.logDf['iS'] == iS, 'UILog'] = QA
                 
                 #### 3.5.3: Outcome of the user input case
                 if not validFrame: # -> Next Frame
@@ -1080,69 +652,19 @@ class PincherTimeLapse:
                     
                     iBoi = [col_ind[i] for i in col_ind2]
                     BoiXY = np.array([BXY[iB] for iB in iBoi])
-
-                    
-            #### 3.6 Create the 'idxAnalysis' field
-            #### >>> Exp type dependance here (02)
-            if 'compressions' in self.expType or 'constant field' in self.expType:
-                # idxAnalysis = 0 if not in a ramp, and = number of ramp else. Basically increase by 1 each time you have an interval between two ramps.
-                
-                if self.expType == 'compressions':
-                    idxAnalysis = (self.listFrames[iF].status_frame == 0) \
-                        * (max(self.listTrajectories[iB].dict['idxAnalysis']) \
-                           + 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0))
-                            
-                elif self.expType == 'compressionsLowStart': 
-                # a pre-ramp has the same idxAnalysis than a ramp but in negative.
-                    idxAnalysis = (self.listFrames[iF].status_frame == 0) \
-                        * (max(self.listTrajectories[iB].dict['idxAnalysis']) + 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] <= 0)) \
-                            - (self.listFrames[iF].status_frame == 0.1) \
-                        * (abs(min(self.listTrajectories[iB].dict['idxAnalysis']) - 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0)))
-                        
-                elif self.expType == 'constant field':
-                    idxAnalysis = 0
-                        
-            #### TBC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            elif 'sinus' in self.expType:
-                 idxAnalysis = 0
-                 
-            elif 'brokenRamp' in self.expType:
-                 idxAnalysis = 0
-            
-            elif 'optoGen' in self.expType:
-                # idxFirstActivation = findFirstActivation(fieldDf)
-                # if self.expType == 'optoGen_compressions':
-                # #idxAnalysis = 0 if not in a ramp, and = number of ramp else. Basically increase by 1 each time you have an interval between two ramps.
-                #     idxAnalysis = (self.listFrames[iF].status_frame == 0) \
-                #         * (max(self.listTrajectories[iB].dict['idxAnalysis']) \
-                #            + (self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0))
-                            
-                # elif self.expType == 'optoGen_compressionsLowStart': 
-                # # a pre-ramp has the same idxAnalysis than a ramp but in negative.
-                #     idxAnalysis = (self.listFrames[iF].status_frame == 0) \
-                #         * (max(self.listTrajectories[iB].dict['idxAnalysis']) + (self.listTrajectories[iB].dict['idxAnalysis'][-1] <= 0)) \
-                #             - (self.listFrames[iF].status_frame == 0.1) \
-                #         * (abs(min(self.listTrajectories[iB].dict['idxAnalysis']) - (self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0))) \
-                #             + self.listTrajectories[iB].dict['idxAnalysis']
-                        
-                # elif self.expType == 'optoGen_constant field':
-                idxAnalysis = 0
             
             
             #### 3.7 Append the different lists of listTrajectories[iB].dict
             for iB in range(self.NB):
                
                 self.listTrajectories[iB].dict['Bead'].append(self.listFrames[iF].listBeads[iBoi[iB]])
+                self.listTrajectories[iB].dict['iL'].append(self.listFrames[iF].iL)
                 self.listTrajectories[iB].dict['iF'].append(iF)
                 self.listTrajectories[iB].dict['iS'].append(self.listFrames[iF].iS)
                 self.listTrajectories[iB].dict['iB_inFrame'].append(iBoi[iB])
                 self.listTrajectories[iB].dict['X'].append(BoiXY[iB][0])
                 self.listTrajectories[iB].dict['Y'].append(BoiXY[iB][1])
-                self.listTrajectories[iB].dict['StdDev'].append(self.listFrames[iF].beadsStdDevarray()[iBoi[iB]])
-                self.listTrajectories[iB].dict['status_frame'].append(self.listFrames[iF].status_frame)
-                self.listTrajectories[iB].dict['status_nUp'].append(self.listFrames[iF].status_nUp)
-                self.listTrajectories[iB].dict['idxAnalysis'].append(idxAnalysis)
-            
+                self.listTrajectories[iB].dict['StdDev'].append(self.listFrames[iF].beadsStdDevarray()[iBoi[iB]])            
 
             #### 3.8 Initialize the next passage in the loop
             previous_iF = iF
@@ -1171,56 +693,22 @@ class PincherTimeLapse:
         # In that case you have to skip the X lines corresponding to the end of the ramp part, X being the nb of black images at the end of the current loop
         # This is because when black images occurs, they do because of the high frame rate during ramp parts and thus replace these last ramp images.
 
-        # For now : excludedFrames_inward = excludedFrames_black
-        # For now : excludedFrames_outward = excludedFrames_fluo # self.excludedFrames_outward[iLoop] +
-
-        Nct = (self.loop_mainSize-self.loop_rampSize)//2
-
         for iB in range(self.NB):
             self.listTrajectories[iB].dict['Zr'] = np.zeros(nT)
             self.listTrajectories[iB].nT = nT
-            iField = []
-            for i in range(nT):
-                iF = self.listTrajectories[iB].dict['iF'][i]
-                iLoop = ((iF)//self.loop_mainSize)
-                try:
-                    offset = self.excludedFrames_black[iLoop]
-                except:
-                    print(iF)
-                    print(iLoop)
-                    print(self.excludedFrames_black)
-
-                i_lim = iLoop*self.loop_mainSize + (self.loop_mainSize - (Nct) - (offset))
-
-                # i_lim is the first index after the end of the ramp
-                addOffset = (iF >= i_lim) # Is this ramp going further than it should, considering the black images ?
-                
-                
-                # 'optoGen' or 'compressions' but probably necessary in all cases actually
-                if 'optoGen' in self.expType or 'compressions' in self.expType:
-                    # print(iLoop)
-                    SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
-                else:
-                    SField = iF + int(addOffset*offset)
-                    # if i < 350:
-                    #     print(iF)
-                    #     # print(SField)
-                
-                
-                iField.append(SField)
-                
-                
-                # except:
-                #     print(i, nT, offset)
-                #     iF = self.listTrajectories[iB].dict['iF'][i]
-                #     iLoop = ((iF+1)//self.loop_mainSize)
-                #     print(iF, self.loop_mainSize, iLoop)
-                #     [].concat()
-
-            self.listTrajectories[iB].dict['iField'] = iField
-
-        
             
+            array_iF = np.array(self.listTrajectories[iB].dict['iF'])
+            
+            Series_iF = pd.Series(array_iF, name='iF')
+            cols_to_merge = ['iField',  'idx_inNUp', 'idx_NUp', 'idxAnalysis']
+            df2 = self.logDf[['iF'] + cols_to_merge]
+            df_merge = pd.merge(left=Series_iF, right=df2, how='inner', on='iF')
+
+            for col in cols_to_merge:
+                array = df_merge[col].values
+                # print(array.shape)
+                self.listTrajectories[iB].dict[col] = array
+
         #### 4.2 Find the image with the best std within each n-uplet
             
         bestStd = self.findBestStd()
@@ -1368,22 +856,22 @@ class PincherTimeLapse:
 # %%%% Frame
 
 class Frame:
-    def __init__(self, F, iS, NB, threshold, Nup, status_frame, status_nUp, scale):
+    def __init__(self, F, iL, iS, NB, Nup, idx_inNUp, idx_NUp, scale, resDf):
         ny, nx = F.shape[0], F.shape[1]
         self.F = F # Note : Frame.F points directly to the i-th frame of the image I ! To have 2 different versions one should use np.copy(F)
-        self.threshold = threshold
         self.NBoi = NB
         self.NBdetected = 0
         self.nx = nx
         self.ny = ny
+        self.iL = iL
         self.iS = iS
         self.listBeads = []
         self.trajPoint = []
         self.Nuplet = Nup
-        self.status_frame = status_frame
-        self.status_nUp = status_nUp
+        self.idx_inNUp = idx_inNUp
+        self.idx_NUp = idx_NUp
         self.scale = scale
-        self.resDf = pd.DataFrame({'Area' : [], 'StdDev' : [], 'XM' : [], 'YM' : [], 'Slice' : []})
+        self.resDf = resDf
 
     def __str__(self):
         text = 'a'
@@ -1402,6 +890,23 @@ class Frame:
             for B in self.listBeads:
                 ax.plot([B.x], [B.y], c='orange', marker='+', markersize = 15)
         fig.show()
+        
+    def pointBeads(self, strech = True, buttons = ['Yes', 'Next Frame', 'Quit']):
+        self.show(strech = strech)
+        mngr = plt.get_current_fig_manager()
+        mngr.window.setGeometry(720, 50, 1175, 1000)
+        QA = pyautogui.confirm(
+            text='Can you point the beads of interest\nin the image ' + str(self.iS) + '?',
+            title='Tracker',
+            buttons=['Yes', 'Next Frame', 'Quit'])
+        if QA == 'Yes':
+            ui = plt.ginput(self.NBoi, timeout=0)
+            uiXY = ufun.ui2array(ui)
+        else:
+            uiXY = []
+        fig = plt.gcf()
+        plt.close(fig)
+        return(QA, uiXY)
 
     def makeListBeads(self):
         self.NBdetected = self.resDf.shape[0]
@@ -1426,8 +931,6 @@ class Frame:
         return(A)
 
 
-
-
 # %%%% Bead
 
 class Bead:
@@ -1438,11 +941,10 @@ class Bead:
         self.area = d['Area']
         self.std = d['StdDev']
         self.iS = d['Slice']-1
-        self.status_frame = ''
+        self.idx_inNUp = ''
         self.Neighbour_L = ''
         self.Neighbour_R = ''
         self.F = F
-
 
     def show(self, strech = True):
         fig, ax = plt.subplots(1,1)
@@ -1472,7 +974,7 @@ class Trajectory:
         self.nT = 0
         self.iB = iB
         self.dict = {'X': [],'Y': [],'idxAnalysis': [],'StdDev': [],
-                     'Bead': [],'status_frame': [],'status_nUp': [],'iF': [],'iS': [],'iB_inFrame' : [],
+                     'iL': [],'Bead': [],'idx_inNUp': [],'idx_NUp': [],'iF': [],'iS': [],'iB_inFrame' : [], 
                      'bestStd' : [], 'Zr' : [], 'Neighbour_L' : [], 'Neighbour_R' : []}
         # iF is the index in the listFrames
         # iS is the index of the slice in the raw image MINUS ONE
@@ -1502,7 +1004,6 @@ class Trajectory:
         df.to_csv(path, sep = '\t', index = False)
 
     def computeZ(self, matchingDirection, plot = 0):
-        
 
         if len(self.deptho) == 0:
             return('Error, no depthograph associated with this trajectory')
@@ -1539,7 +1040,7 @@ class Trajectory:
                         framesNuplet = [F]
                         iFNuplet = [iF]
                         jF = 1
-                        while iF+jF <= max(self.dict['iF']) and self.listFrames[iF+jF].status_nUp == F.status_nUp:
+                        while iF+jF <= max(self.dict['iF']) and self.listFrames[iF+jF].idx_NUp == F.idx_NUp:
                             if iF+jF in self.dict['iF']: # One of the images of the triplet may be invalid,
                                 # and we don't want to take it. With this test we won't
                                 nextF = self.listFrames[iF+jF]
@@ -1571,7 +1072,7 @@ class Trajectory:
                      matchingDirection, plot = False):
         # try:
         Nframes = len(framesNuplet)
-        listStatus_1 = [F.status_frame for F in framesNuplet]
+        listStatus_1 = [F.idx_inNUp for F in framesNuplet]
         listXY = [[self.dict['X'][np.where(self.dict['iF']==iF)][0],
                    self.dict['Y'][np.where(self.dict['iF']==iF)][0]] for iF in iFNuplet]
         listiS = [self.dict['iS'][np.where(self.dict['iF']==iF)][0] for iF in iFNuplet]
@@ -1582,18 +1083,23 @@ class Trajectory:
         listROI = []
         listWholeROI = []
         for i in range(Nframes):
+            if np.sum(framesNuplet[i].F) == 0:
+                print('illegal')
             xx = np.arange(0, 5)
             yy = np.arange(0, cleanSize)
             try:
-                X, Y, iS = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])), listiS[i] # > We could also try to recenter the image to keep a subpixel resolution here
+                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) # > We could also try to recenter the image to keep a subpixel resolution here
                 # line that is 5 pixels wide
                 wholeROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
                 profileROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-2:X+3]
-                f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
-                # Now use the obtained interpolation function and plot the result:
-                xxnew = xx
-                yynew = np.linspace(0, cleanSize, hdSize)
-                profileROI_hd = f(xxnew, yynew)
+                # f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
+                # # Now use the obtained interpolation function and plot the result:
+                # xxnew = xx
+                # yynew = np.linspace(0, cleanSize, hdSize)
+                # profileROI_hd = f(xxnew, yynew)
+                
+                profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize)
+                
 
             except: # If the vertical slice doesn't work, try the horizontal one
                 print(gs.ORANGE + 'error with the vertical slice -> trying with horizontal one')
@@ -1604,15 +1110,17 @@ class Trajectory:
                 print('' + gs.NORMAL)
 
                 xx, yy = yy, xx
-                X, Y, iS = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])), listiS[i] # > We could also try to recenter the image to keep a subpixel resolution here
+                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) # > We could also try to recenter the image to keep a subpixel resolution here
                 # line that is 5 pixels wide
                 wholeROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
                 profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1]
-                f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
-                # Now use the obtained interpolation function and plot the result:
-                xxnew = np.linspace(0, cleanSize, hdSize)
-                yynew = yy
-                profileROI_hd = f(xxnew, yynew).T
+                # f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
+                # # Now use the obtained interpolation function and plot the result:
+                # xxnew = np.linspace(0, cleanSize, hdSize)
+                # yynew = yy
+                # profileROI_hd = f(xxnew, yynew).T
+                
+                profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize).T
 
             listROI.append(profileROI)
             listWholeROI.append(wholeROI)
@@ -1660,8 +1168,8 @@ class Trajectory:
             listDistances[i] = ufun.squareDistance(subDeptho, listProfiles[i], normalize = True) # Utility functions
             listZ[i] = Ztop + np.argmin(listDistances[i])
 
-        # Translate the profiles that must be translated (status_frame 1 & 3 if Nup = 3)
-        # and don't move the others (status_frame 2 if Nup = 3 or the 1 profile when Nup = 1)
+        # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
+        # and don't move the others (idx_inNUp 2 if Nup = 3 or the 1 profile when Nup = 1)
         if Nup > 1:
             finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
                                         nVoxels, direction = matchingDirection)
@@ -1685,37 +1193,6 @@ class Trajectory:
             limInf = max(previousZ - maxDz, 0) - Ztop
             limSup = min(previousZ + maxDz, depthoDepth) - Ztop
             Z = Ztop + limInf + np.argmin(sumFinalD[limInf:limSup])
-
-
-
-        #### Fit quality
-        # Ddz, Ddx = depthoHD.shape[0], depthoHD.shape[1]
-        # print(Ddz, Ddx)
-        # dz_fitPoly = int(Ddz/32)
-        
-        # def f_sq(x, k):
-        #     return(k * x**2)
-        
-        # listDistances = np.zeros((Ddz, Ddz))
-        # listZQuality = np.zeros(Ddz)
-        
-        # for z in range(Ddz):
-            
-        #     profile_z = depthoHD[z, :]
-        #     listDistances[z] = ufun.squareDistance(depthoHD, profile_z, normalize = True) # Utility functions
-        #     z_start = max(0, z - dz_fitPoly)
-        #     z_stop = min(Ddz - 1, z + dz_fitPoly)
-        #     # print(z, z_start, z_stop)
-        #     Cost_fitPoly = listDistances[z][z_start : z_stop + 1]
-        #     X_fitPoly = np.arange(z_start - z, z_stop - z + 1, dtype=int)
-        #     popt, pcov = curve_fit(f_sq, X_fitPoly, Cost_fitPoly - listDistances[z][z], 
-        #                            p0=[1], bounds=(-np.inf, np.inf))
-        #     z_quality = popt[0]*1e3
-        #     listZQuality[z] = z_quality
-        
-        # Z = np.array([i for i in range(Ddz)]) - depthoZFocusHD
-        # plt.plot(Z, listZQuality)
-
 
         #### Important plotting option here
         if plot >= 1:
@@ -1770,15 +1247,15 @@ class Trajectory:
             
             
             for i in range(Nframes):
-                status_frame = int(framesNuplet[i].status_frame)
-                status_frame += (status_frame == 0)
+                idx_inNUp = int(framesNuplet[i].idx_inNUp)
+                idx_inNUp += (idx_inNUp == 0)
                 
                 # Show the bead appearence
                 axes[1,i].imshow(listWholeROI[i], cmap = cmap)
                 images_ticks_loc = ticker.MultipleLocator(10)
                 axes[1,i].xaxis.set_major_locator(images_ticks_loc)
                 axes[1,i].yaxis.set_major_locator(images_ticks_loc)
-                axes[1,i].set_title('Image {:.0f}/{:.0f} - '.format(status_frame, Nup) + direction, 
+                axes[1,i].set_title('Image {:.0f}/{:.0f} - '.format(idx_inNUp, Nup) + direction, 
                                     fontsize = 14)
                 axes[1,i].plot([cleanSize//2,cleanSize//2],[0,cleanSize-1], c=color_Nup[i], ls='--', lw = 1)
                 
@@ -1788,7 +1265,7 @@ class Trajectory:
                                      fontsize = 9)
                 axes[2,i].set_ylabel('Pixel intensity', 
                                      fontsize = 9)
-                axes[2,i].set_title('Profile {:.0f}/{:.0f} - '.format(status_frame, Nup), 
+                axes[2,i].set_title('Profile {:.0f}/{:.0f} - '.format(idx_inNUp, Nup), 
                                     fontsize = 11)
                 
                 # Show the distance map to the deptho
@@ -1803,7 +1280,7 @@ class Trajectory:
                                      fontsize = 9)
                 axes[3,i].set_ylabel('Cost\n(Squared diff to deptho)', 
                                      fontsize = 9)
-                axes[3,i].set_title('Cost curve {:.0f}/{:.0f}'.format(status_frame, Nup), 
+                axes[3,i].set_title('Cost curve {:.0f}/{:.0f}'.format(idx_inNUp, Nup), 
                                     fontsize = 11)
                 
                 limy3 = axes[3,i].get_ylim()
@@ -1824,7 +1301,7 @@ class Trajectory:
                                      fontsize = 9)
                 axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
                                      fontsize = 9)
-                axes[4,i].set_title('Cost curve with corrected position {:.0f}/{:.0f}'.format(status_frame, Nup), 
+                axes[4,i].set_title('Cost curve with corrected position {:.0f}/{:.0f}'.format(idx_inNUp, Nup), 
                                     fontsize = 11)
                 
                 limy4 = axes[4,i].get_ylim()
@@ -1868,7 +1345,7 @@ class Trajectory:
                 ax.tick_params(axis='y', labelsize=9)
             
             Nfig = plt.gcf().number
-            iSNuplet = [F.iS+1 for F in framesNuplet]
+            iSNuplet = [F.iS for F in framesNuplet]
             
             fig.tight_layout()
             fig.subplots_adjust(top=0.94)
@@ -1894,25 +1371,6 @@ class Trajectory:
 
         return(Z)
 
-        # except Exception:
-        #     print(gs.RED + '')
-        #     traceback.print_exc()
-        #     print('\n')
-        #     print(gs.ORANGE + 'Error with the Z detection')
-        #     print('iFNuplet')
-        #     print(iFNuplet)
-        #     print('Roi')
-        #     print(Y-2,Y+3, X-cleanSize//2,X+cleanSize//2+1)
-        #     print('Deptho shape')
-        #     print(self.deptho.shape)
-        #     print('Shapes of listDistances, finalDists, sumFinalD')
-        #     print(listDistances.shape)
-        #     print(finalDists.shape)
-        #     print(sumFinalD.shape)
-        #     print('previousZ, previousZ-maxDz, previousZ+maxDz')
-        #     print(previousZ, previousZ-maxDz, previousZ+maxDz)
-        #     print('' + gs.NORMAL)
-
 
     def keepBestStdOnly(self):
         dictBestStd = {}
@@ -1925,29 +1383,21 @@ class Trajectory:
         self.nT = nT
 
 
-    def detectNeighbours_ui(self, Nimg, frequency, beadType): # NOT VERY WELL MADE FOR NOW
+    def detectNeighbours_ui(self, beadType): # NOT VERY WELL MADE FOR NOW
         # Plots to help the user to see the neighbour of each bead
-        ncols = 4
-        nrows = ((Nimg-1) // ncols) + 1
-        fig, ax = plt.subplots(nrows, ncols)
-        for i in range(Nimg):
-            try:
-                pos = np.searchsorted(self.dict['iS'], i*frequency, 'left')
-                iS = self.dict['iS'][pos]
-                iF = self.dict['iF'][pos]
-                pStart, pStop = np.percentile(self.I[iS], (1, 99))
-                if nrows > 1:
-                    ax[i//ncols,i%ncols].imshow(self.I[iS], cmap = 'gray', vmin = pStart, vmax = pStop)
-                    ax[i//ncols,i%ncols].set_title('Loop ' + str(i+1))
-                    ax[i//ncols,i%ncols].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
-                elif nrows == 1:
-                    ax[i].imshow(self.I[iS], cmap = 'gray', vmin = pStart, vmax = pStop)
-                    ax[i].set_title('Loop ' + str(i+1))
-                    ax[i].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
-            except:
-                print(gs.RED  + 'ptit probleme dans le detectNeighbours_ui' + gs.NORMAL)
-                
+        fig, axes = plt.subplots(1, 2)
+        positions = [0, -1]
+        titles = ['First', 'Last']
+        for i in range(2):
+            pos = positions[i]
+            iS = self.dict['iS'][pos]
+            iF = self.dict['iF'][pos]
+            pStart, pStop = np.percentile(self.I[iS-1], (1, 99))
+            axes[i].imshow(self.I[iS-1], cmap = 'gray', vmin = pStart, vmax = pStop)
+            axes[i].set_title(titles[i] + ' image')
+            axes[i].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
         plt.show()
+
         # Ask the question
         mngr = plt.get_current_fig_manager()
         mngr.window.setGeometry(720, 50, 1175, 1000)
@@ -1955,8 +1405,7 @@ class Trajectory:
             text='Neighbours of the selected bead?',
             title='',
             buttons=['1', '2'])
-
-
+        
         # According to the question's answer:
         if QA == '1':
             if self.iB%2 == 0: # the bead is on the left of a pair
@@ -1979,30 +1428,22 @@ class Trajectory:
         self.dict['Neighbour_R'] = arrayNeighbours[:,1]
 
 
-    def detectInOut_ui(self, Nimg, frequency): # NOT VERY WELL MADE FOR NOW
-        # Almost copy paste of detectNeighbours_ui
-        ncols = 4
-        nrows = ((Nimg-1) // ncols) + 1
 
-        fig, ax = plt.subplots(nrows, ncols)
-        for i in range(Nimg):
-            try:
-                pos = np.searchsorted(self.dict['iS'], i*frequency, 'left')
-                iS = self.dict['iS'][pos]
-                iF = self.dict['iF'][pos]
-                pStart, pStop = np.percentile(self.I[iS], (1, 99))
-                if nrows > 1:
-                    ax[i//ncols,i%ncols].imshow(self.I[iS], cmap = 'gray', vmin = pStart, vmax = pStop)
-                    ax[i//ncols,i%ncols].set_title('Loop ' + str(i+1))
-                    ax[i//ncols,i%ncols].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
-                elif nrows == 1:
-                    ax[i].imshow(self.I[iS], cmap = 'gray', vmin = pStart, vmax = pStop)
-                    ax[i].set_title('Loop ' + str(i+1))
-                    ax[i].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
-            except:
-                print(gs.RED  + 'error in detectInOut_ui' + gs.NORMAL)
-        
+    def detectInOut_ui(self): # NOT VERY WELL MADE FOR NOW
+        # Almost copy paste of detectNeighbours_ui
+        fig, axes = plt.subplots(1, 2)
+        positions = [0, -1]
+        titles = ['First', 'Last']
+        for i in range(2):
+            pos = positions[i]
+            iS = self.dict['iS'][pos]
+            iF = self.dict['iF'][pos]
+            pStart, pStop = np.percentile(self.I[iS-1], (1, 99))
+            axes[i].imshow(self.I[iS-1], cmap = 'gray', vmin = pStart, vmax = pStop)
+            axes[i].set_title(titles[i] + ' image')
+            axes[i].plot([self.dict['X'][pos]],[self.dict['Y'][pos]], 'ro')
         plt.show()
+        
         # Ask the question
         mngr = plt.get_current_fig_manager()
         mngr.window.setGeometry(720, 50, 1175, 1000)
@@ -2016,15 +1457,14 @@ class Trajectory:
         return(QA)
 
 
-
     def plot(self, ax, i_color):
         colors = ['cyan', 'red', 'blue', 'orange']
         c = colors[i_color]
         ax.plot(self.dict['X'], self.dict['Y'], color=c, lw=0.5)
 
-# %%%% Main
+# %%%% Former Main Function
 
-def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
+def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 sourceField = 'default', redoAllSteps = False, trackAll = False,
                 DirData = cp.DirData, 
                 DirDataRaw = cp.DirDataRaw, 
@@ -2035,17 +1475,20 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     
     start = time.time()
 
-    #### 0. Load different data sources & Preprocess : fluo, black images, sort slices (ct/ramp ; down/middle/up)
-        #### 0.1 - Make list of files to analyse
+    #### 0. Initialization
+    #### 0.1 - Make list of files to analyse
 
     fileRoots = []
     tifImagesPaths = []
-    txtfieldPaths = []
+    txtFieldPaths = []
+    txtStatusPaths = []
     txtResultsPaths = []
     if not isinstance(dates, str):
         rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
     else:
         rawDirList = [os.path.join(DirDataRaw, dates)]
+
+        
     for rd in rawDirList:
         fileList = os.listdir(rd)
         for f in fileList:
@@ -2060,12 +1503,15 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 
                 test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
                 test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
-                if test_image and test_field:
+                test_status = os.path.isfile(os.path.join(rd, f_root_simple + '_Status.txt'))
+                if test_image and test_field and test_status:
                     f_Tif = f_root_simple + '.tif'
                     f_Field = f_root_simple + '_Field.txt'
+                    f_Status = f_root_simple + '_Status.txt'
                     fileRoots.append(f_root)
                     tifImagesPaths.append(os.path.join(rd, f_Tif))
-                    txtfieldPaths.append(os.path.join(rd, f_Field))
+                    txtFieldPaths.append(os.path.join(rd, f_Field))
+                    txtStatusPaths.append(os.path.join(rd, f_Status))
                     txtResultsPaths.append(os.path.join(rd, f_Res))
                     validFileGroup = True
                 
@@ -2073,24 +1519,25 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 # No call to the function that simplifies the names
                     test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
                     test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
-                    if test_image and test_field:
+                    test_status = os.path.isfile(os.path.join(rd, f_root + '_Status.txt'))
+                    if test_image and test_field and test_status:
                         f_Tif = f_root + '.tif'
                         f_Field = f_root + '_Field.txt'
+                        f_Status = f_root + '_Status.txt'
                         fileRoots.append(f_root)
                         tifImagesPaths.append(os.path.join(rd, f_Tif))
-                        txtfieldPaths.append(os.path.join(rd, f_Field))
+                        txtFieldPaths.append(os.path.join(rd, f_Field))
+                        txtStatusPaths.append(os.path.join(rd, f_Status))
                         txtResultsPaths.append(os.path.join(rd, f_Res))
                         validFileGroup = True
                 
                 if not validFileGroup:
                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be a lonely Results.txt file!' + gs.NORMAL)
-                        
     
-        #### 0.2 - Begining of the Main Loop
+    #### 0.2 - Begining of the Main Loop (i)
     for i in range(len(fileRoots)):
         f = fileRoots[i]
-        # print(f)
-        imagePath, fieldPath, resPath = tifImagesPaths[i], txtfieldPaths[i], txtResultsPaths[i]
+        imagePath, fieldPath, resPath, statusPath = tifImagesPaths[i], txtFieldPaths[i], txtResultsPaths[i], txtStatusPaths[i]
         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
 
@@ -2098,120 +1545,134 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         print(gs.BLUE + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
         print('Loading image and experimental data...' + gs.NORMAL)
 
-        #### 0.3 - Load exp data
+        #### 0.3 - Load exp data (manipDict)
         if manipID not in expDf['manipID'].values:
             print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
             break
-        
         else:
             expDf_line = expDf.loc[expDf['manipID'] == manipID]
             manipDict = {}
             for c in expDf_line.columns.values:
                 manipDict[c] = expDf_line[c].values[0]
-    
 
         #### 0.4 - Load image and init PTL
         I = io.imread(imagePath) # Approx 0.5s per image
         PTL = PincherTimeLapse(I, cellID, manipDict, NB)
     
-        #### 0.5 - Load field file
+        #### 0.5 - Load field file (fieldDf)
         if sourceField == 'default':
             fieldCols = ['B_set', 'T_abs', 'B', 'Z']
             fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
         elif sourceField == 'fastImagingVI':
             fieldCols = ['B_set', 'B', 'T_abs']
             fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
+            
+        #### 0.6 - Load results file (PTL.resultsDf)
+        resultsDf = pd.read_csv(resPath, sep='\t')
+        for c in resultsDf.columns:
+            if 'Unnamed' in c:
+                resultsDf.drop([c], axis = 1, inplace=True)
+        PTL.resultsDf = resultsDf
+            
+        #### 0.7 - Make the log table (PTL.logDf)
+        logFilePath = resPath[:-12] + '_LogPY.txt'
+        logFileImported = False
+        if redoAllSteps:
+            pass
+        elif os.path.isfile(logFilePath):
+            PTL.importLogDf(logFilePath)
+            logFileImported = True
+        else:
+            pass
         
-        #### 0.51 Find index of first activation
-        #### Anumita's stuff
+        if not logFileImported:
+            PTL.initializeLogDf(statusPath, mainPhase = 'power')
+        
+        ## 0.51 Find index of first activation
+        # Anumita's stuff
         # try:
         #     optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
         #     PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
         # except:
         #     pass
-        
-        #### 0.6 - Check if a log file exists and load it if required
-        logFilePath = resPath[:-12] + '_LogPY.txt'
-        logFileImported = False
-        if redoAllSteps:
-            logFileImported = False
-            
-        elif os.path.isfile(logFilePath):
-            PTL.importLog(logFilePath)
-            PTL.dictLog['UILog'] = PTL.dictLog['UILog'].astype(str)
-            logFileImported = True
 
         print(gs.BLUE + 'OK!')
-
         print(gs.BLUE + 'Pretreating the image...' + gs.NORMAL)
         
-        #### 0.7 - Detect fluo & black images
+        #### 0.8 - Detect fluo & black images
+        
         current_date = ufun.findInfosInFileName(f, 'date')
         current_date = current_date.replace("-", ".")
         fluoDirPath = os.path.join(DirDataRaw, current_date + '_Fluo', f)
+        
+        PTL.detectNullFrames()
+        PTL.detectFluoFrames(save = True, fluoDirPath = fluoDirPath, f = f)
+        
+        ## 0.8 - Detect fluo & black images
+        # current_date = ufun.findInfosInFileName(f, 'date')
+        # current_date = current_date.replace("-", ".")
+        
+        # fluoDirPath = os.path.join(DirDataRaw, current_date + '_Fluo', f)
 
-        PTL.checkIfBlackFrames()
-        PTL.saveFluoAside(fluoDirPath, f + '.tif')
+        # PTL.checkIfBlackFrames()
+        # PTL.saveFluoAside(fluoDirPath, f + '.tif')
 
 
-        #### 0.8 - Sort slices
-        #### ! Exp type dependance here !
-        if not logFileImported:
-            if ('R40' in f) or ('R80' in f):
-                PTL.determineFramesStatus_R40()
-                if PTL.expType == 'compressions and constant field':
-                    PTL.expType = 'compressions'
-            if ('thickness' in f):
-                PTL.determineFramesStatus_R40()
-                if PTL.expType == 'compressions and constant field':
-                    PTL.expType = 'constant field'
-            elif 'L40' in f:
-                PTL.determineFramesStatus_L40()
-                if PTL.expType == 'compressions and constant field':
-                    PTL.expType = 'compressions'
+        ## 0.8 - Sort slices
+        ## ! Exp type dependance here !
+        # if not logFileImported:
+        #     # 1. Import values from status file
+        #     for col in statusCols:
+        #         PTL.dictLog[col] = statusDf[col].values
+        #     PTL.dictLog['iField'] = np.arange(PTL.nS, dtype = int)
+            
+            # if ('R40' in f) or ('R80' in f):
+            #     PTL.determineFramesStatus_R40()
+            #     if PTL.expType == 'compressions and constant field':
+            #         PTL.expType = 'compressions'
+            # if ('thickness' in f):
+            #     PTL.determineFramesStatus_R40()
+            #     if PTL.expType == 'compressions and constant field':
+            #         PTL.expType = 'constant field'
+            # elif 'L40' in f:
+            #     PTL.determineFramesStatus_L40()
+            #     if PTL.expType == 'compressions and constant field':
+            #         PTL.expType = 'compressions'
                     
-            elif 'sin' in f:
-                PTL.determineFramesStatus_Sinus()
-            elif 'brokenRamp' in f:
-                PTL.determineFramesStatus_BR()
-            elif 'disc20um' in f:
-                PTL.determineFramesStatus_optoGen()
+            # elif 'sin' in f:
+            #     PTL.determineFramesStatus_Sinus()
+            # elif 'brokenRamp' in f:
+            #     PTL.determineFramesStatus_BR()
+            # elif 'disc20um' in f:
+            #     PTL.determineFramesStatus_optoGen()
                 
 
-        PTL.saveLog(display = False, save = (not logFileImported), path = logFilePath)
 
-
-        #### 0.11 - Create list of Frame objects
+        #### 0.9 - Create list of Frame objects
         PTL.makeFramesList()
         
-        # Test the 
-        expected_frames_per_loop = PTL.loop_mainSize
-        actual_frames_per_loop = PTL.loop_mainSize
-        print(expected_frames_per_loop, actual_frames_per_loop, 
-              'Correct struct for listFrame : ' + str(expected_frames_per_loop == actual_frames_per_loop))
+        PTL.saveLogDf(display = False, save = (not logFileImported), path = logFilePath)
 
         print(gs.BLUE + 'OK!' + gs.NORMAL)
 
 
-    #### 1. Detect beads
+    # #### 1. Detect beads
 
-        print(gs.BLUE + 'Detecting all the bead objects...' + gs.NORMAL)
+    #     print(gs.BLUE + 'Detecting all the bead objects...' + gs.NORMAL)
         Td = time.time()
 
-        #### 1.1 - Check if a _Results.txt exists and import it if it's the case
-        # resFilePath = imagePath[:-4] + '_Results.txt'
-        resFileImported = False
-        try:
-            PTL.importBeadsDetectResult(resPath)
-            resFileImported = True
-        except:
-            pass
+    #     #### 1.1 - Check if a _Results.txt exists and import it if it's the case
+    #     # resFilePath = imagePath[:-4] + '_Results.txt'
+    #     resFileImported = False
+    #     try:
+    #         PTL.importBeadsDetectResult(resPath)
+    #         resFileImported = True
+    #     except:
+    #         pass
         
-        
-        
-        #### 1.2 - Detect the beads
-        # Input the results in each Frame objects [if the results have been loaded at the previous step]
-        PTL.detectBeads(resFileImported)
+#         #### 1.2 - Detect the beads
+#         # Input the results in each Frame objects [if the results have been loaded at the previous step]
+#         PTL.detectBeads(resFileImported)
 
         print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Td) + gs.NORMAL)
 
@@ -2257,7 +1718,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 pass
 
         #### 2.4 - Save the user inputs
-        PTL.saveLog(display = 0, save = True, path = logFilePath)
+        PTL.saveLogDf(display = 0, save = True, path = logFilePath)
 
         print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tt) + gs.NORMAL)
 
@@ -2303,16 +1764,15 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                     beadType = PTL.beadTypes[0] # M270 or M450
                 else:
                     beadType = 'detect'
-                traj.detectNeighbours_ui(Nimg = PTL.nLoop, frequency = PTL.loop_mainSize, beadType = beadType)
+                traj.detectNeighbours_ui(Nimg = PTL.NLoops, frequency = PTL.nS//PTL.NLoops, beadType = beadType)
 
 
         #### 3.3 - Detect in/out bead
 
-
         if redoAllSteps or not trajFilesImported:
             for iB in range(PTL.NB):
                 traj = PTL.listTrajectories[iB]
-                InOut = traj.detectInOut_ui(Nimg = PTL.nLoop, frequency = PTL.loop_mainSize)
+                InOut = traj.detectInOut_ui(Nimg = PTL.NLoops, frequency = PTL.nS//PTL.NLoops)
 
 
     #### 4. Compute dz
@@ -2331,13 +1791,17 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             # increase the resolution of the deptho with interpolation
             # print('deptho shape check')
             # print(deptho.shape)
-            nX, nZ = deptho.shape[1], deptho.shape[0]
-            XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-            # print(XX.shape, ZZ.shape)
-            fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-            ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-            # print(ZZ_HD.shape)
-            depthoHD = fd(XX, ZZ_HD)
+            # nX, nZ = deptho.shape[1], deptho.shape[0]
+            # XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+            
+            # # print(XX.shape, ZZ.shape)
+            # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+            # ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
+            # # print(ZZ_HD.shape)
+            # depthoHD = fd(XX, ZZ_HD)
+            
+            depthoHD = ufun.resize_2Dinterp(deptho, fx=1, fy=HDZfactor)
+            
             depthoStepHD = depthoStep/HDZfactor
             depthoZFocus = depthoZFocus*HDZfactor
             # print(depthoHD.shape)
@@ -2359,11 +1823,14 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 depthoZFocus = depthoMetadata.loc[0,'focus']
 
                 # increase the resolution of the deptho with interpolation
-                nX, nZ = deptho.shape[1], deptho.shape[0]
-                XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-                fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-                ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-                depthoHD = fd(XX, ZZ_HD)
+                # nX, nZ = deptho.shape[1], deptho.shape[0]
+                # XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+                # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+                # ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
+                # depthoHD = fd(XX, ZZ_HD)
+                
+                
+                depthoHD = ufun.resize_2Dinterp(deptho, fx=1, fy=HDZfactor)
                 depthoStepHD = depthoStep/HDZfactor
                 depthoZFocusHD = depthoZFocus*HDZfactor
                 #
@@ -2404,7 +1871,6 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             
         
         
-
         #### 4.3 - Save the raw traj (before Std selection)
         if redoAllSteps or not trajFilesImported:
             for iB in range(PTL.NB):
@@ -2443,6 +1909,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.1 - Create a dict to prepare the export of the results
             timeSeries = {
+                'idxLoop' : np.zeros(nT),
                 'idxAnalysis' : np.zeros(nT),
                 'T' : np.zeros(nT),
                 'Tabs' : np.zeros(nT),
@@ -2457,6 +1924,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.2 - Input common values:
             T0 = fieldDf['T_abs'].values[0]/1000 # From ms to s conversion
+            timeSeries['idxLoop'] = traj1.dict['iL']
             timeSeries['idxAnalysis'] = traj1.dict['idxAnalysis']
             timeSeries['Tabs'] = (fieldDf['T_abs'][traj1.dict['iField']])/1000 # From ms to s conversion
             timeSeries['T'] = timeSeries['Tabs'].values - T0*np.ones(nT)
@@ -2524,43 +1992,314 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     for iB in range(PTL.NB):
         listTrajDicts.append(PTL.listTrajectories[iB].dict)
         
-    return(timeSeries_DF, dfLogF)
+
+    #### output
+    
+    return(PTL.logDf, PTL.log_UIxy)
 
 
-# %%%% Stand-alone functions
+# %%%% Wrapper for the stand-alone
 
-# Tracker stand-Alone Functions
+def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
+                metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False,
+                DirData = cp.DirData, 
+                DirDataRaw = cp.DirDataRaw, 
+                DirDataRawDeptho = cp.DirDataRawDeptho, 
+                DirDataTimeseries = cp.DirDataTimeseries,
+                CloudSaving = cp.CloudSaving,
+                DirCloudTimeseries = cp.DirCloudTimeseries):
+    
+    start = time.time()
 
-# 1. XYZtracking do the tracking on any image, given
-def XYZtracking(I, cellID, NB, manipDict, depthoDir, depthoNames):
+    dictOptions = {'redoAllSteps' : redoAllSteps,
+                   'trackAll' : trackAll,
+                   'importLogFile' : True,
+                   'saveLogFile' : True,
+                   'saveFluo' : True,
+                   'importTrajFile' : True,
+                  }
 
-    PTL = PincherTimeLapse(I, cellID, manipDict, NB = NB)
-    PTL.determineFramesStatus_R40()
-    PTL.uiThresholding(method = 'max_entropy', factorT = 1)#, increment = 0.05)
-    PTL.makeFramesList()
-    PTL.detectBeads(resFileImported = False, display = 1)
-    issue = PTL.buildTrajectories()
-    XYZtracking_assignBeadSizes(PTL)
-    for iB in range(PTL.NB):
-        traj = PTL.listTrajectories[iB]
-        beadType = ''
-        if len(PTL.beadTypes) == 1:
-            beadType = PTL.beadTypes[0] # M270 or M450
+    #### 1 - Make list of files to analyse
+    
+    sourceDirsPaths = []
+    fileRoots = []
+    txtResultsNames = []
+    tifImagesNames = []
+    txtFieldNames = []
+    txtStatusNames = []
+    if not isinstance(dates, str):
+        rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
+    else:
+        rawDirList = [os.path.join(DirDataRaw, dates)]
+
+        
+    for rd in rawDirList:
+        fileList = os.listdir(rd)
+        for f in fileList:
+            if ufun.isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = '_Results.txt'): # See Utility Functions > isFileOfInterest
+                validFileGroup = False
+                f_Res = f # A result file was found
+                f_root = '_'.join(f_Res.split('_')[:-1])
+                f_root_simple = ufun.simplifyCellId(f_root) # The common 'root' to the .tif and _Field.txt files.
+                # With a call to ufun.simplifyCellId(), 'M1_P1_C2-1' become 'M1_P1_C2'
+                # This is useful cause like that, the image and field files 
+                # do not have to be duplicated if there are 2 results files.
+                
+                test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+                test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+                test_status = os.path.isfile(os.path.join(rd, f_root_simple + '_Status.txt'))
+                
+                if test_image and test_field and test_status:
+                    f_Tif = f_root_simple + '.tif'
+                    f_Field = f_root_simple + '_Field.txt'
+                    f_Status = f_root_simple + '_Status.txt'
+                    
+                    sourceDirsPaths.append(rd)
+                    fileRoots.append(f_root)
+                    tifImagesNames.append(f_Tif)
+                    txtFieldNames.append(f_Field)
+                    txtStatusNames.append(f_Status)
+                    txtResultsNames.append(f_Res)
+                    validFileGroup = True
+                
+                else: # Retry in case there was a duplicated image
+                # No call to the function that simplifies the names
+                    test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+                    test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+                    test_status = os.path.isfile(os.path.join(rd, f_root + '_Status.txt'))
+                    
+                    if test_image and test_field and test_status:
+                        f_Tif = f_root + '.tif'
+                        f_Field = f_root + '_Field.txt'
+                        f_Status = f_root + '_Status.txt'
+                        
+                        sourceDirsPaths.append(rd)
+                        fileRoots.append(f_root)
+                        tifImagesNames.append(f_Tif)
+                        txtFieldNames.append(f_Field)
+                        txtStatusNames.append(f_Status)
+                        txtResultsNames.append(f_Res)
+                        validFileGroup = True
+                
+                if not validFileGroup:
+                    print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be a lonely Results.txt file!' + gs.NORMAL)
+        
+        
+    #### 2 - Loop over the list of files to analyse
+    for i in range(len(fileRoots)):
+        f = fileRoots[i]
+        print('\n')
+        print(gs.BLUE + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
+        
+        
+        
+        dictPaths = {'sourceDirPath' : sourceDirsPaths[i],
+                     'imageFileName' : tifImagesNames[i],
+                     'resultsFileName' : txtResultsNames[i],
+                     'depthoDir' : DirDataRawDeptho,
+                     'depthoName' : depthoName,
+                     'resultDirPath' : DirDataTimeseries,
+                     }
+        
+        manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
+        cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
+        fieldPath, statusPath = os.path.join(sourceDirsPaths[i], txtFieldNames[i]), os.path.join(sourceDirsPaths[i], txtStatusNames[i])
+        
+        
+        #### 3 - Make the appropriate metaDataFrame
+        #### 3.1 - Mode using a status file
+        if metaDataFormatting == 'statusFile': # ['T_raw', 'B_set', 'iL', 'Status']
+            
+            # Columns from the field file
+            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+            metaDf = fieldDf[['T_raw', 'B_set']]
+            
+            # Format the status file
+            statusDf = pd.read_csv(statusPath, sep='_', names=['iL', 'Status', 'Status details'])
+            Ns = len(statusDf)
+            
+            statusDf['Action type'] = np.array(['' for i in range(Ns)], dtype = '<U16')
+            statusDf['deltaB'] = np.zeros(Ns, dtype = float)
+            statusDf['B_diff'] = np.array(['' for i in range(Ns)], dtype = '<U4')
+            
+            indexAction = statusDf[statusDf['Status'] == 'Action'].index
+            Bstart = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[1]))
+            Bstop = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[2]))
+            
+            statusDf.loc[indexAction, 'deltaB'] =  Bstop - Bstart
+            statusDf.loc[statusDf['deltaB'] == 0, 'B_diff'] =  'none'
+            statusDf.loc[statusDf['deltaB'] > 0, 'B_diff'] =  'up'
+            statusDf.loc[statusDf['deltaB'] < 0, 'B_diff'] =  'down'
+            
+            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('t^')), 'Action type'] = 'power'
+            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('sigmoid')), 'Action type'] = 'sigmoid'
+            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('constant')), 'Action type'] = 'constant'
+            
+            statusDf.loc[indexAction, 'Action type'] = statusDf.loc[indexAction, 'Action type'] + '_' + statusDf.loc[indexAction, 'B_diff']
+            statusDf = statusDf.drop(columns=['deltaB', 'B_diff'])
+            
+            # Columns from the status file
+            mainActionStep = 'power_up'
+            metaDf['iL'] = statusDf['iL']
+            metaDf['Status'] = statusDf['Status']
+            metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
+            
+        #### 3.2 - Mode using loopStruct for legacy data
+        elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
+            pass
+            # TBC
+
+        
+        #### 4 - Load exp data (manipDict)
+        if manipID not in expDf['manipID'].values:
+            print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
+            break
         else:
-            beadType = 'detect'
-        traj.detectNeighbours(frequency = PTL.loop_mainSize, beadType = beadType)
-    XYZtracking_computeZ(PTL, depthoDir, depthoNames, plot = 1)
-    return(PTL)
+            expDf_line = expDf.loc[expDf['manipID'] == manipID]
+            manipDict = {}
+            for c in expDf_line.columns.values:
+                manipDict[c] = expDf_line[c].values[0]
+        
+        #### 5 - Call the smallTracker
+        print('Calling the smallTracker...' + gs.NORMAL)
+        timeSeries_Df = smallTracker(dictPaths, metaDf, manipDict, NB = 2, **dictOptions)
+    
 
-# Subfuctions of XYZtracking
-def XYZtracking_assignBeadSizes(PTL):
+
+# %%%% Better stand-alone
+
+def smallTracker(dictPaths, metaDf, dictConstants, 
+                 NB = 2, **kwargs):
+    
+    #### 0.1 - Initialize default options and update them
+    
+    dictOptions = {'redoAllSteps' : True,
+                   'trackAll' : False,
+                   'importLogFile' : False,
+                   'saveLogFile' : False,
+                   'saveFluo' : False,
+                   'importTrajFile' : False,
+                   }
+    
+    dictOptions.update(kwargs)
+    
+    #### 0.2 - Create path to relevant files
+    
+    f = '_'.join(dictPaths['resultsFileName'].split('_')[:-1])
+    imageFilePath = os.path.join(dictPaths['sourceDirPath'], dictPaths['imageFileName'])
+    resultsPath = os.path.join(dictPaths['sourceDirPath'], dictPaths['resultsFileName'])
+    logFilePath = os.path.join(dictPaths['sourceDirPath'], f + '_LogPY.txt')
+    fluoDirPath = os.path.join(dictPaths['sourceDirPath'], 'FluoImages')
+    
+    cellID = ufun.findInfosInFileName(f, 'cellID')
+    
+    
+
+    #### 0.3 - Load image, results and initialize PTL object
+    
+    print(gs.BLUE + '**** smallTracker of cell {} ****'.format(cellID) + gs.NORMAL)
+    I = io.imread(imageFilePath)
+    resultsDf = pd.read_csv(resultsPath, usecols=[1, 2, 3, 4, 5], sep=None, engine='python')   
+    PTL = PincherTimeLapse(I, cellID, dictConstants, NB)
+    PTL.resultsDf = resultsDf
+        
+    #### 0.4 - Make the log table (PTL.logDf)
+    logFileImported = False
+    if dictOptions['redoAllSteps']:
+        pass
+    elif dictOptions['importLogFile']:
+        if os.path.isfile(logFilePath):
+            PTL.importLogDf(logFilePath)
+            logFileImported = True
+    else:
+        pass
+    
+    if not logFileImported:
+        PTL.initializeLogDf(metaDf)
+
+    print(gs.BLUE + 'OK!' + gs.NORMAL)
+    
+    
+    
+    #### 0.5 - Detect fluo & black images
+    
+    print(gs.BLUE + 'Checking the image frames...' + gs.NORMAL)
+    Tc = time.time()
+    PTL.detectNullFrames()
+    PTL.detectFluoFrames(save = dictOptions['saveFluo'], fluoDirPath = fluoDirPath, f = f)
+
+    #### 0.6 - Create list of Frame objects
+    PTL.makeFramesList()
+    
+    #### 0.7 - If specified, save log
+    if dictOptions['saveLogFile']:
+        PTL.saveLogDf(display = False, save = dictOptions['saveLogFile'], path = logFilePath)    
+        
+    print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tc) + gs.NORMAL)
+
+
+
+    #### 1. Make trajectories for beads of interest
+    # One of the main steps ! The tracking of the beads happens here !
+    print(gs.BLUE + 'Tracking the beads of interest...' + gs.NORMAL)
+    Tt = time.time()
+
+    #### 1.1 - Check if some trajectories exist already
+    
+    trajFilesImported = False
+    if dictOptions['redoAllSteps'] or not dictOptions['importTrajFile']:
+        pass
+    
+    else:
+        trajRawDir = os.path.join(dictPaths['resultDirPath'], 'Trajectories_raw')
+        trajFilesExist_global = False
+        trajFilesImported = False
+        trajFilesExist_sum = 0
+        
+        allTrajPaths = [os.path.join(trajRawDir, f + '_rawTraj' + str(iB) + '' + '_PY.csv') for iB in range(PTL.NB)]
+        allTrajPaths += [os.path.join(trajRawDir, f + '_rawTraj' + str(iB) + '_In' + '_PY.csv') for iB in range(PTL.NB)]
+        allTrajPaths += [os.path.join(trajRawDir, f + '_rawTraj' + str(iB) + '_Out' + '_PY.csv') for iB in range(PTL.NB)]
+        allTrajPaths = np.array(allTrajPaths)
+        trajFilesExist = np.array([os.path.isfile(trajPath) for trajPath in allTrajPaths])
+        trajFilesExist_sum = np.sum(trajFilesExist)
+
+        #### 1.2 - If yes, load them
+        if trajFilesExist_sum == PTL.NB:
+            trajPaths = allTrajPaths[trajFilesExist]
+            for iB in range(PTL.NB):
+                PTL.importTrajectories(trajPaths[iB], iB)
+                # print(PTL.listTrajectories[iB].dict['X'][0], PTL.listTrajectories[iB].dict['X'][1])
+            trajFilesImported = True
+            print(gs.GREEN + 'Raw traj files found and imported :)' + gs.NORMAL)
+
+    #### 1.3 - If no, compute them by tracking the beads
+    if not trajFilesImported:
+        issue = PTL.buildTrajectories(trackAll = dictOptions['trackAll']) 
+        # Main tracking function !
+        if issue == 'Bug':
+            return()
+        else:
+            pass
+
+    #### 1.4 - Save the user inputs
+    if dictOptions['saveLogFile']:
+        PTL.saveLogDf(display = False, save = dictOptions['saveLogFile'], path = logFilePath)
+
+    print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tt) + gs.NORMAL)
+    
+    
+
+    #### 2. Qualify - Detect boi sizes and neighbours
+    #### 2.1 - Infer Boi sizes in the first image
     if len(PTL.beadTypes) == 1:
-            if 'M450' in PTL.beadTypes[0]:
-                D = 4.5
-            elif 'M270' in PTL.beadTypes[0]:
-                D = 2.7
-            for B in PTL.listFrames[0].listBeads:
-                B.D = D
+        if 'M450' in PTL.beadTypes[0]:
+            D = 4.5
+        elif 'M270' in PTL.beadTypes[0]:
+            D = 2.7
+
+        first_iF = PTL.listTrajectories[0].dict['iF'][0]
+        for B in PTL.listFrames[first_iF].listBeads:
+            B.D = D
     else:
         PTL.listFrames[0].detectDiameter(plot = 0)
 
@@ -2573,83 +2312,179 @@ def XYZtracking_assignBeadSizes(PTL):
         for B in traj.dict['Bead']:
             B.D = D
 
-def XYZtracking_computeZ(PTL, depthoDir, depthoNames, plot = 0):
-    HDZfactor = 10
-    if len(PTL.beadTypes) == 1:
-        depthoPath = os.path.join(depthoDir, depthoNames)
-#             depthoExist = os.path.exists(depthoPath+'_Deptho.tif')
-        deptho = io.imread(depthoPath+'_Deptho.tif')
-        depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
-        depthoStep = depthoMetadata.loc[0,'step']
-        depthoZFocus = depthoMetadata.loc[0,'focus']
+    #### 2.2 - Detect neighbours
 
-        # increase the resolution of the deptho with interpolation
-        nX, nZ = deptho.shape[1], deptho.shape[0]
-        XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-        fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-        ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-        depthoHD = fd(XX, ZZ_HD)
-        depthoStepHD = depthoStep/HDZfactor
-        depthoZFocusHD = depthoZFocus*HDZfactor
-        #
+    # Current way, with user input
+    if dictOptions['redoAllSteps'] or not trajFilesImported:
         for iB in range(PTL.NB):
             traj = PTL.listTrajectories[iB]
-            traj.deptho = depthoHD
-            traj.depthoPath = depthoPath
-            traj.depthoStep = depthoStepHD
-            traj.depthoZFocus = depthoZFocusHD
-            plt.imshow(depthoHD)
+            beadType = ''
+            if len(PTL.beadTypes) == 1:
+                beadType = PTL.beadTypes[0] # M270 or M450
+            elif len(PTL.beadTypes) == 2 and PTL.beadTypes[0] == PTL.beadTypes[1]:
+                beadType = PTL.beadTypes[0] # M270 or M450
+            else:
+                beadType = 'detect'
+            traj.detectNeighbours_ui(beadType = beadType)
 
-    if len(PTL.beadTypes) > 1:
-        for dN in depthoNames:
-            depthoPath = os.path.join(depthoDir, dN)
-            deptho = io.imread(depthoPath+'_Deptho.tif')
-            depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
-            depthoStep = depthoMetadata.loc[0,'step']
-            depthoZFocus = depthoMetadata.loc[0,'focus']
 
-            # increase the resolution of the deptho with interpolation
-            nX, nZ = deptho.shape[1], deptho.shape[0]
-            XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-            fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-            ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-            depthoHD = fd(XX, ZZ_HD)
-            depthoStepHD = depthoStep/HDZfactor
-            depthoZFocusHD = depthoZFocus*HDZfactor
-            #
-            if 'M450' in dN:
-                depthoD = 4.5
-            elif 'M270' in dN:
-                depthoD = 2.7
-            for iB in range(PTL.NB):
-                traj = PTL.listTrajectories[iB]
-                if traj.D == depthoD:
-                    traj.deptho = depthoHD
-                    traj.depthoPath = depthoPath
-                    traj.depthoStep = depthoStepHD
-                    traj.depthoZFocus = depthoZFocusHD
+    #### 2.3 - Detect in/out bead
 
-    # Compute z for each traj
-    matchingDirection = 'downward'
+    if dictOptions['redoAllSteps'] or not trajFilesImported:
+        for iB in range(PTL.NB):
+            traj = PTL.listTrajectories[iB]
+            InOut = traj.detectInOut_ui()
+
+
+    #### 3. Compute dz
+
+    #### 3.1 - Import depthographs
+    HDZfactor = PTL.listTrajectories[0].HDZfactor
+    
+    depthoPathRoot = os.path.join(dictPaths['depthoDir'], dictPaths['depthoName'])
+    depthoMetadata = pd.read_csv(depthoPathRoot+'_Metadata.csv', sep=';')
+    deptho = io.imread(depthoPathRoot+'_Deptho.tif')
+    depthoStep = depthoMetadata.loc[0,'step']
+    depthoZFocus = depthoMetadata.loc[0,'focus']
+    
+    depthoHD = ufun.resize_2Dinterp(deptho, fx=1, fy=HDZfactor)    
+    depthoStepHD = depthoStep/HDZfactor
+    depthoZFocus = depthoZFocus*HDZfactor
 
     for iB in range(PTL.NB):
-        np.set_printoptions(threshold=np.inf)
-
-        print('Computing Z in traj  {:.0f}...'.format(iB+1))
-
-        Tz = time.time()
         traj = PTL.listTrajectories[iB]
-        traj.computeZ(matchingDirection, plot)
-        print('OK! dT = {:.3f}'.format(time.time()-Tz))
+        traj.deptho = depthoHD
+        traj.depthoPath = depthoPathRoot+'_Deptho.tif'
+        traj.depthoStep = depthoStepHD
+        traj.depthoZFocus = depthoZFocus
+        traj.HDZfactor = HDZfactor
 
-    # Keep only the best std data in the trajectories
+    #### 3.2 - Compute z for each traj
+    if dictOptions['redoAllSteps'] or not trajFilesImported:
+        matchingDirection = dictConstants['multi image Z direction']
+        print(gs.ORANGE + "Deptho detection in '{}' mode".format(matchingDirection) + gs.NORMAL)
+        for iB in range(PTL.NB):
+            np.set_printoptions(threshold=np.inf)
+
+            print(gs.CYAN + 'Computing Z in traj  {:.0f}...'.format(iB+1) + gs.NORMAL)
+            Tz = time.time()
+            traj = PTL.listTrajectories[iB]
+            traj.computeZ(matchingDirection, plot = 0)
+            print(gs.CYAN + 'OK! dT = {:.3f}'.format(time.time()-Tz) + gs.NORMAL)
+
+    else:
+        print(gs.GREEN + 'Z had been already computed :)' + gs.NORMAL)
+        
+    #### 3.3 - Save the raw traj (before Std selection)
+    if dictOptions['redoAllSteps'] or not trajFilesImported:
+        for iB in range(PTL.NB):
+            traj = PTL.listTrajectories[iB]
+            traj_df = pd.DataFrame(traj.dict)
+            trajRawDir = os.path.join(dictPaths['resultDirPath'], 'Trajectories_raw')
+            trajRawPath = os.path.join(trajRawDir, f + '_rawTraj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+            traj_df.to_csv(trajRawPath, sep = '\t', index = False)
+
+    #### 3.4 - Keep only the best std data in the trajectories
     for iB in range(PTL.NB):
-        print('Picking the images with the best StdDev in traj  {:.0f}...'.format(iB+1))
-
-        Tstd = time.time()
         traj = PTL.listTrajectories[iB]
         traj.keepBestStdOnly()
-        print('OK! dT = {:.3f}'.format(time.time()-Tstd))
+
+    #### 3.5 - The trajectories won't change from now on. We can save their '.dict' field.
+    if dictOptions['redoAllSteps'] or not trajFilesImported:
+        for iB in range(PTL.NB):
+            traj = PTL.listTrajectories[iB]
+            traj_df = pd.DataFrame(traj.dict)
+            trajDir = os.path.join(dictPaths['resultDirPath'], 'Trajectories')
+            trajPath = os.path.join(trajDir, f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+            traj_df.to_csv(trajPath, sep = '\t', index = False)
+            
+            # save in ownCloud
+            # if ownCloud_timeSeriesDataDir != '':
+            #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
+            #     traj_df.to_csv(OC_trajPath, sep = '\t', index = False)
+
+
+    #### 4. Define pairs and compute distances
+    print(gs.BLUE + 'Computing distances...' + gs.NORMAL)
+
+    #### 4.1 - In case of 1 pair of beads
+    if PTL.NB == 2:
+        traj1 = PTL.listTrajectories[0]
+        traj2 = PTL.listTrajectories[1]
+        nT = traj1.nT
+
+        #### 4.1.1 - Create a dict to prepare the export of the results
+        timeSeries = {
+            'idxLoop' : np.zeros(nT),
+            'idxAnalysis' : np.zeros(nT),
+            'T' : np.zeros(nT),
+            'Tabs' : np.zeros(nT),
+            'B' : np.zeros(nT),
+            'F' : np.zeros(nT),
+            'dx' : np.zeros(nT),
+            'dy' : np.zeros(nT),
+            'dz' : np.zeros(nT),
+            'D2' : np.zeros(nT),
+            'D3' : np.zeros(nT),
+        }
+
+        #### 4.1.2 - Input common values:
+        T0 = metaDf['T_raw'].values[0]/1000 # From ms to s conversion
+        timeSeries['idxLoop'] = traj1.dict['iL']
+        timeSeries['idxAnalysis'] = traj1.dict['idxAnalysis']
+        timeSeries['Tabs'] = (metaDf['T_raw'][traj1.dict['iField']])/1000 # From ms to s conversion
+        timeSeries['T'] = timeSeries['Tabs'].values - T0*np.ones(nT)
+        timeSeries['B'] = metaDf['B_set'][traj1.dict['iField']].values
+        timeSeries['B'] *= PTL.MagCorrFactor
+
+        #### 4.1.3 - Compute distances
+        timeSeries['dx'] = (traj2.dict['X'] - traj1.dict['X'])/PTL.scale
+        timeSeries['dy'] = (traj2.dict['Y'] - traj1.dict['Y'])/PTL.scale
+        timeSeries['D2'] = (timeSeries['dx']**2 +  timeSeries['dy']**2)**0.5
+
+        timeSeries['dz'] = (traj2.dict['Zr']*traj2.depthoStep - traj1.dict['Zr']*traj1.depthoStep)/1000
+        timeSeries['dz'] *= PTL.OptCorrFactor
+        timeSeries['D3'] = (timeSeries['D2']**2 +  timeSeries['dz']**2)**0.5
+
+        #print('\n\n* timeSeries:\n')
+        #print(timeSeries_DF[['T','B','F','dx','dy','dz','D2','D3']])
+        print(gs.BLUE + 'OK!' + gs.NORMAL)
+
+
+    #### 5. Compute forces
+    print(gs.BLUE + 'Computing forces...' + gs.NORMAL)
+    Tf = time.time()
+    if PTL.NB == 2:
+        print(gs.ORANGE + '1 pair force computation' + gs.NORMAL)
+        traj1 = PTL.listTrajectories[0]
+        traj2 = PTL.listTrajectories[1]
+        B0 = timeSeries['B']
+        D3 = timeSeries['D3']
+        dx = timeSeries['dx']
+        F, dfLogF = PTL.computeForces(traj1, traj2, B0, D3, dx)
+        # Main force computation function
+        timeSeries['F'] = F
+
+    print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tf) + gs.NORMAL)
+
+        # Magnetization [A.m^-1]
+        # M270
+        # M = 0.74257*1.05*1600*(0.001991*B.^3+17.54*B.^2+153.4*B)./(B.^2+35.53*B+158.1)
+        # M450
+        # M = 1.05*1600*(0.001991*B.^3+17.54*B.^2+153.4*B)./(B.^2+35.53*B+158.1);
+
+
+    #### 6. Export the results
+
+    #### 6.1 - Save the tables !
+    if PTL.NB == 2:
+        timeSeries_Df = pd.DataFrame(timeSeries)
+        timeSeriesFilePath = os.path.join(dictPaths['resultDirPath'], f + '_PY.csv')
+        timeSeries_Df.to_csv(timeSeriesFilePath, sep = ';', index=False)
+        
+    return(timeSeries_Df)
+
+
 
 
 
@@ -2676,30 +2511,27 @@ class BeadDeptho:
         self.fileName = fileName
 
         self.beadType = beadType
-        self.D0 = 4.5 * (beadType == 'M450') + 2.7 * (beadType == 'M270')
-        # self.threshold = threshold
+        dictD0 = {'M450':4.5, 'M270':2.7}
+        self.D0 = dictD0[beadType]
         self.I_cleanROI = np.array([])
-#         self.cleanROI = np.zeros((self.nz, 4), dtype = int)
 
         self.validBead = True
         self.iValid = -1
 
         self.bestZ = bestZ
-        self.validSlice = np.zeros(nz, dtype = bool)
+        # self.validSlice = np.zeros(nz, dtype = bool)
         self.zFirst = 0
         self.zLast = nz
         self.validDepth = nz
 
         self.valid_v = True
-        self.valid_h = True
         self.depthosDict = {}
         self.profileDict = {}
         self.ZfocusDict = {}
 
-
     def buildCleanROI(self, plot):
         # Determine if the bead is to close to the edge on the max frame
-        D0 = self.D0 + 4.5*(self.D0 == 0)
+        D0 = self.D0
         roughSize = np.floor(1.1*D0*self.scale)
         mx, Mx = np.min(self.X0 - 0.5*roughSize), np.max(self.X0 + 0.5*roughSize)
         my, My = np.min(self.Y0 - 0.5*roughSize), np.max(self.Y0 + 0.5*roughSize)
@@ -2709,21 +2541,7 @@ class BeadDeptho:
         validBead = testImageSize
 
         # If the bead is valid we can proceed
-        if validBead:
-            # Detect or infer the size of the beads we are measuring
-            if self.beadType == 'detect' or self.D0 == 0:
-                counts, binEdges = np.histogram(self.I[self.z_max,my:My,mx:Mx].ravel(), bins=256)
-                peaks, peaksProp = find_peaks(counts, height=100, threshold=None, distance=None, prominence=None, \
-                                   width=None, wlen=None, rel_height=0.5, plateau_size=None)
-                peakThreshVal = 1000
-                if counts[peaks[0]] > peakThreshVal:
-                    self.D0 = 4.5
-                    self.beadType = 'M450'
-                else:
-                    self.D0 = 2.7
-                    self.beadType = 'M270'
-        else:
-            self.validBead = False
+        self.validBead = validBead
 
         if validBead:
             for z in range(self.bestZ, -1, -1):
@@ -2735,206 +2553,173 @@ class BeadDeptho:
                     break
             zLast = z-1
 
-            roughSize = int(np.floor(1.15*self.D0*self.scale))
+            roughSize = int(np.floor(1.05*self.D0*self.scale))
             roughSize += 1 + roughSize%2
             roughCenter = int((roughSize+1)//2)
 
             cleanSize = ufun.getDepthoCleanSize(self.D0, self.scale)
-
             I_cleanROI = np.zeros([self.nz, cleanSize, cleanSize])
 
-            try:
-                for i in range(zFirst, zLast):
-                    xmi, ymi = self.XYm[i,0], self.XYm[i,1]
-                    x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
-                    if not validBead:
-                        if x1 < 0 or x2 > self.nx:
-                            self.valid_h = False
-                        if y1 < 0 or y2 > self.ny:
-                            self.valid_v = False
-
-        #                 fig, ax = plt.subplots(1,2)
-        #                 ax[0].imshow(self.I[i])
-                    xm1, ym1 = xmi-x1, ymi-y1
-                    I_roughRoi = self.I[i,y1:y2,x1:x2]
-        #                 ax[1].imshow(I_roughRoi)
-        #                 fig.show()
-
-                    translation = (xm1-roughCenter, ym1-roughCenter)
-
-                    tform = transform.EuclideanTransform(rotation=0, \
-                                                         translation = (xm1-roughCenter, ym1-roughCenter))
-
-                    I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
-
-                    I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
-                                                  roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
-
-                if not self.valid_v and not self.valid_h:
-                    self.validBead = False
-
-                else:
-                    self.zFirst = zFirst
-                    self.zLast = zLast
-                    self.validDepth = zLast-zFirst
-                    self.I_cleanROI = I_cleanROI.astype(np.uint16)
-
-                # VISUALISE
-                if plot >= 2:
-                    for i in range(zFirst, zLast, 50):
-                        self.plotROI(i)
-
-            except:
-                print('Error for the file: ' + self.fileName)
+            # try:
+            for i in range(zFirst, zLast):
+                xmi, ymi = self.XYm[i,0], self.XYm[i,1]
+                x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
+                if not validBead:
+                    if y1 < 0 or y2 > self.ny:
+                        self.valid_v = False
 
 
-    def buildDeptho(self, plot):
+                xm1, ym1 = xmi-x1, ymi-y1
+                I_roughRoi = self.I[i,y1:y2,x1:x2]
+
+                translation = (xm1-roughCenter, ym1-roughCenter)
+
+                tform = transform.EuclideanTransform(rotation=0, \
+                                                     translation = (xm1-roughCenter, ym1-roughCenter))
+
+                I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+
+                I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                              roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+
+            if not self.valid_v:
+                self.validBead = False
+
+            else:
+                self.zFirst = zFirst
+                self.zLast = zLast
+                self.validDepth = zLast-zFirst
+                self.I_cleanROI = I_cleanROI.astype(np.uint16)
+                
+            if self.validDepth < self.nz * (2/3):
+                self.validBead = False
+
+            # VISUALISE
+            if plot >= 2:
+                self.plotROI()
+                # for i in range(zFirst, zLast, 50):
+                #     self.plotROI(i)
+
+            # except:
+            #     print('Error for the file: ' + self.fileName)
+
+
+    def buildDeptho(self, nbPixToAvg = 5, interpolationFactor = 5):
         preferedDeptho = 'v'
         side_ROI = self.I_cleanROI.shape[1]
         mid_ROI = side_ROI//2
-        nbPixToAvg = 3 # Have to be an odd number
-        deptho_v = np.zeros([self.nz, side_ROI], dtype = np.float64)
-        deptho_h = np.zeros([self.nz, side_ROI], dtype = np.float64)
-        deptho_HD = np.zeros([self.nz, side_ROI*5], dtype = np.float64)
+        deptho_raw = np.zeros([self.nz, side_ROI], dtype = np.float64)
+        deptho_interp = np.zeros([self.nz, side_ROI*interpolationFactor], dtype = np.float64)
 
-        if self.valid_v:
+        if self.validBead:
             for z in range(self.zFirst, self.zLast):
                 templine = side_ROI
-                deptho_v[z] = self.I_cleanROI[z,:,mid_ROI] * (1/nbPixToAvg)
-                for i in range(1, 1 + nbPixToAvg//2):
-                    deptho_v[z] += self.I_cleanROI[z,:,mid_ROI - i] * (1/nbPixToAvg)
-                    deptho_v[z] += self.I_cleanROI[z,:,mid_ROI + i] * (1/nbPixToAvg)
-            deptho_v = deptho_v.astype(np.uint16)
-            self.depthosDict['deptho_v'] = deptho_v
+                deptho_raw[z] = self.I_cleanROI[z,:,mid_ROI] * (1/nbPixToAvg) # nbPixToAvg has to be an odd number
+                for i in range(1, 1 + nbPixToAvg//2): # nbPixToAvg has to be an odd number
+                    deptho_raw[z] += self.I_cleanROI[z,:,mid_ROI - i] * (1/nbPixToAvg)
+                    deptho_raw[z] += self.I_cleanROI[z,:,mid_ROI + i] * (1/nbPixToAvg)
+            deptho_raw = deptho_raw.astype(np.uint16)
+            self.depthosDict['deptho_raw'] = deptho_raw
 
-        if self.valid_h:
+
             for z in range(self.zFirst, self.zLast):
-                templine = side_ROI
-                deptho_h[z] = self.I_cleanROI[z,mid_ROI,:] * (1/nbPixToAvg)
+                xmin, xmax = mid_ROI - nbPixToAvg//2, mid_ROI + nbPixToAvg//2 + 1 # width = nbPixToAvg
+                vals = self.I_cleanROI[z, :, xmin:xmax] # width = nbPixToAvg
+    
+                vals_new = ufun.resize_2Dinterp(vals, fx=1, fy=interpolationFactor) # height = cleanSize * interpolationFactor
+                
+                deptho_interp[z] = vals_new[:,nbPixToAvg//2] * (1/nbPixToAvg)
                 for i in range(1, 1 + nbPixToAvg//2):
-                    deptho_h[z] += self.I_cleanROI[z,mid_ROI - i,:] * (1/nbPixToAvg)
-                    deptho_h[z] += self.I_cleanROI[z,mid_ROI + i,:] * (1/nbPixToAvg)
-            deptho_h = deptho_h.astype(np.uint16)
-            self.depthosDict['deptho_h'] = deptho_h
+                    deptho_interp[z] += vals_new[:,nbPixToAvg//2-i] * (1/nbPixToAvg)
+                    deptho_interp[z] += vals_new[:,nbPixToAvg//2+i] * (1/nbPixToAvg)
 
-        if preferedDeptho == 'v' and not self.valid_v:
-            hdDeptho = 'h'
-        elif preferedDeptho == 'h' and not self.valid_h:
-            hdDeptho = 'v'
-        else:
-            hdDeptho = preferedDeptho
-
-        if hdDeptho == 'v':
-            for z in range(self.zFirst, self.zLast):
-                x = np.arange(mid_ROI - 2, mid_ROI + 3)
-                y = np.arange(0, side_ROI)
-#                 xx, yy = np.meshgrid(x, y)
-                vals = self.I_cleanROI[z, :, mid_ROI-2:mid_ROI+3]
-                f = interpolate.interp2d(x, y, vals, kind='cubic')
-                # Now use the obtained interpolation function and plot the result:
-
-                xnew = x
-                ynew = np.arange(0, side_ROI, 0.2)
-                vals_new = f(xnew, ynew)
-                deptho_HD[z] = vals_new[:,5//2] * (1/nbPixToAvg)
-                for i in range(1, 1 + nbPixToAvg//2):
-                    deptho_HD[z] += vals_new[:,5//2-i] * (1/nbPixToAvg)
-                    deptho_HD[z] += vals_new[:,5//2+i] * (1/nbPixToAvg)
-#                 if z == self.z_max:
-#                     figInterp, axesInterp = plt.subplots(1,2)
-#                     axesInterp[0].imshow(vals)
-#                     axesInterp[0].plot([5//2, 5//2], [0, vals.shape[0]], 'r--')
-#                     axesInterp[1].imshow(vals_new)
-#                     axesInterp[1].plot([5//2, 5//2], [0, vals_new.shape[0]], 'r--')
-#                     figInterp.show()
-            deptho_HD = deptho_HD.astype(np.uint16)
-            self.depthosDict['deptho_HD'] = deptho_HD
-
-        elif hdDeptho == 'h':
-            for z in range(self.zFirst, self.zLast):
-                x = np.arange(0, side_ROI)
-                y = np.arange(mid_ROI - 2, mid_ROI + 3)
-#                 xx, yy = np.meshgrid(x, y)
-                vals = self.I_cleanROI[z, mid_ROI-2:mid_ROI+3, :]
-                f = interpolate.interp2d(x, y, vals, kind='cubic')
-                # Now use the obtained interpolation function and plot the result:
-
-                xnew = np.arange(0, side_ROI, 0.2)
-                ynew = y
-                vals_new = f(xnew, ynew)
-                deptho_HD[z] = vals_new[5//2,:] * (1/nbPixToAvg)
-                for i in range(1, 1 + nbPixToAvg//2):
-                    deptho_HD[z] += vals_new[5//2-i,:] * (1/nbPixToAvg)
-                    deptho_HD[z] += vals_new[5//2+i,:] * (1/nbPixToAvg)
-#                 if z == self.z_max:
-#                     figInterp, axesInterp = plt.subplots(1,2)
-#                     axesInterp[0].imshow(vals)
-#                     axesInterp[0].plot([0, vals.shape[1]], [5//2, 5//2], 'r--')
-#                     axesInterp[1].imshow(vals_new)
-#                     axesInterp[1].plot([0, vals_new.shape[1]], [5//2, 5//2], 'r--')
-#                     figInterp.show()
-            deptho_HD = deptho_HD.astype(np.uint16)
-            self.depthosDict['deptho_HD'] = deptho_HD
-
-        # 3D caracterisation
-#         I_binary = np.zeros([self.I_cleanROI.shape[0], self.I_cleanROI.shape[1], self.I_cleanROI.shape[2]])
-#         I_binary[self.zFirst:self.zLast] = (self.I_cleanROI[self.zFirst:self.zLast] > self.threshold)
-#         Zm3D, Ym3D, Xm3D = ndi.center_of_mass(self.I_cleanROI, labels=I_binary, index=1)
-#         self.ZfocusDict['Zm3D'] = Zm3D
+            deptho_interp = deptho_interp.astype(np.uint16)
+            self.depthosDict['deptho_interp'] = deptho_interp
 
         # Raw profiles
-        mid_ROI_HD = deptho_HD.shape[1]//2
         Z = np.array([z for z in range(self.I_cleanROI.shape[0])])
-#         intensity_tot = np.array([np.sum(self.I_cleanROI[z][I_binary[z].astype(bool)])/(1+np.sum(I_binary[z])) for z in range(self.I_cleanROI.shape[0])]).astype(np.float64)
-        intensity_v = np.array([np.sum(deptho_v[z,:])/side_ROI for z in range(deptho_v.shape[0])]).astype(np.float64)
-        intensity_h = np.array([np.sum(deptho_h[z,:])/side_ROI for z in range(deptho_h.shape[0])]).astype(np.float64)
-        intensity_HD = np.array([np.sum(deptho_HD[z,mid_ROI_HD-5:mid_ROI_HD+6])/11 for z in range(deptho_HD.shape[0])]).astype(np.float64)
-#
-        Zm_v, Zm_h = np.argmax(intensity_v), np.argmax(intensity_h)
-#         Zm_tot = np.argmax(intensity_tot)
-        Zm_HD = np.argmax(intensity_HD)
+        mid_ROI_raw = deptho_raw.shape[1]//2
+        intensity_raw = np.array([np.sum(deptho_raw[z,mid_ROI_raw-2:mid_ROI_raw+3])/5 
+                                  for z in range(deptho_raw.shape[0])]).astype(np.float64)
+        mid_ROI_interp = deptho_interp.shape[1]//2
+        intensity_interp = np.array([np.sum(deptho_interp[z,mid_ROI_interp-2:mid_ROI_interp+3])/5 
+                                     for z in range(deptho_interp.shape[0])]).astype(np.float64)
+        
+        self.profileDict['intensity_raw'] = intensity_raw
+        self.profileDict['intensity_interp'] = intensity_interp
+            
+    
+    def computeFocus(self, plot = 0):
+        if plot >= 1:
+            fig, axes = plt.subplots(1, 2)
+            fig.suptitle('Focus')
+        
+        # raw
+        nz, nx = self.depthosDict['deptho_raw'].shape
+        
+        Zm_intensity_raw = np.argmax(self.profileDict['intensity_raw'])
+        intensity_raw_smooth = savgol_filter(self.profileDict['intensity_raw'], 101, 5)
+        Zm_intensity_raw_smooth = np.argmax(intensity_raw_smooth)
+        self.ZfocusDict['Zm_intensity_raw'] = Zm_intensity_raw_smooth
+        
+        STD_raw = np.std(self.depthosDict['deptho_raw'], axis = 1)
+        STD_raw_smooth = savgol_filter(STD_raw, 101, 5)
+        Zm_STD_raw = np.argmax(STD_raw_smooth)
+        self.ZfocusDict['Zm_STD_raw'] = Zm_STD_raw
+        
+        if plot >= 1:
+            Z = np.arange(nz)
+            ax1 = axes[0]
+            ax2 = ax1.twinx()
+            
+            ax1.plot(Z, self.profileDict['intensity_raw'], label='intensity_raw', color='k', ls='-')
+            ax1.plot(Z, intensity_raw_smooth, label='intensity_raw_smooth', color='cyan', ls='-')
+            ax1.axvline(Zm_intensity_raw_smooth, label='Zm_intensity_raw', color='b', ls='--')
+            
+            ax2.plot([], [], label='intensity_raw', color='k', ls='-')
+            ax2.plot([], [], label='intensity_raw_smooth', color='cyan', ls='-')
+            ax2.plot([], [], label='Zm_intensity_raw = {:.3f}'.format(Zm_intensity_raw), color='b', ls='--')
+            ax2.plot(Z, STD_raw, label='STD_raw', color='orange', ls='-')
+            ax2.plot(Z, STD_raw_smooth, label='STD_raw_smooth', color='red', ls='-')
+            ax2.axvline(Zm_STD_raw, label='Zm_STD_raw = {:.3f}'.format(Zm_STD_raw), color='darkred', ls='--')
+            
+            ax2.legend()
+        
+        # interp
+        nz, nx = self.depthosDict['deptho_interp'].shape
+        
+        Zm_intensity_interp = np.argmax(self.profileDict['intensity_interp'])
+        intensity_interp_smooth = savgol_filter(self.profileDict['intensity_interp'], 101, 5)
+        Zm_intensity_interp_smooth = np.argmax(intensity_interp_smooth)
+        self.ZfocusDict['Zm_intensity_interp'] = Zm_intensity_interp_smooth
+        
+        STD_interp = np.std(self.depthosDict['deptho_interp'], axis = 1)
+        STD_interp_smooth = savgol_filter(STD_interp, 101, 5)
+        Zm_STD_interp = np.argmax(STD_interp_smooth)
+        self.ZfocusDict['Zm_STD_interp'] = Zm_STD_interp        
+        
+        if plot >= 1:
+            Z = np.arange(nz)
+            ax1 = axes[1]
+            ax2 = ax1.twinx()
+            
+            ax1.plot(Z, self.profileDict['intensity_interp'], label='intensity_interp', color='k', ls='-')           
+            ax1.plot(Z, intensity_interp_smooth, label='intensity_interp_smooth', color='cyan', ls='-')
+            ax1.axvline(Zm_intensity_interp_smooth, label='Zm_intensity_raw', color='b', ls='--')
+            
+            ax2.plot([], [], label='intensity_interp', color='k', ls='-')
+            ax2.plot([], [], label='intensity_interp_smooth', color='cyan', ls='-')
+            ax2.plot([], [], label='Zm_intensity_interp = {:.3f}'.format(Zm_intensity_interp), color='b', ls='--')
+            ax2.plot(Z, STD_interp, label='STD_interp', color='orange', ls='-')
+            ax2.plot(Z, STD_interp_smooth, label='STD_interp_smooth', color='red', ls='-')
+            ax2.axvline(Zm_STD_interp, label='Zm_STD_interp = {:.3f}'.format(Zm_STD_interp), color='darkred', ls='--')
+            
+            ax2.legend()
+            plt.tight_layout()
+            plt.show()
 
-        self.profileDict['intensity_v'] = intensity_v
-        self.profileDict['intensity_h'] = intensity_h
-        self.profileDict['intensity_HD'] = intensity_HD
-#         self.profileDict['intensity_tot'] = intensity_tot
-        self.ZfocusDict['Zm_v'] = Zm_v
-        self.ZfocusDict['Zm_h'] = Zm_h
-        self.ZfocusDict['Zm_HD'] = Zm_HD
-#         self.ZfocusDict['Zm_tot'] = Zm_tot
 
-
-        # Smoothed profiles
-        Z_hd = np.arange(0, self.I_cleanROI.shape[0], 0.2)
-        intensity_v_hd = np.interp(Z_hd, Z, intensity_v)
-        intensity_h_hd = np.interp(Z_hd, Z, intensity_h)
-        intensity_HD_hd = np.interp(Z_hd, Z, intensity_HD)
-#         intensity_tot_hd = np.interp(Z_hd, Z, intensity_tot)
-
-        intensity_v_smooth = savgol_filter(intensity_v_hd, 101, 5)
-        intensity_h_smooth = savgol_filter(intensity_h_hd, 101, 5)
-        intensity_HD_smooth = savgol_filter(intensity_HD_hd, 101, 5)
-#         intensity_tot_smooth = savgol_filter(intensity_tot_hd, 101, 5)
-
-        Zm_v_hd, Zm_h_hd = Z_hd[np.argmax(intensity_v_smooth)], Z_hd[np.argmax(intensity_h_smooth)]
-#         Zm_tot_hd = Z_hd[np.argmax(intensity_tot_smooth)]
-        Zm_HD_hd = Z_hd[np.argmax(intensity_HD_smooth)]
-
-        self.profileDict['intensity_v_smooth'] = intensity_v_smooth
-        self.profileDict['intensity_h_smooth'] = intensity_h_smooth
-        self.profileDict['intensity_HD_smooth'] = intensity_HD_smooth
-#         self.profileDict['intensity_tot_smooth'] = intensity_tot_smooth
-        self.ZfocusDict['Zm_v_hd'] = Zm_v_hd
-        self.ZfocusDict['Zm_h_hd'] = Zm_h_hd
-        self.ZfocusDict['Zm_HD_hd'] = Zm_HD_hd
-#         self.ZfocusDict['Zm_tot_hd'] = Zm_tot_hd
-
-        # VISUALISE
-        if plot >= 2:
-            self.plotProfiles()
-
-
-    def saveBeadDeptho(self, path, ID, step, bestDetphoType = 'HD', bestFocusType = 'HD_hd'):
+    def saveBeadDeptho(self, path, ID, step, bestDetphoType = 'interp', bestFocusType = 'STD_interp'):
         supDataDir = ID + '_supData'
         supDataDirPath = os.path.join(path, supDataDir)
         if not os.path.exists(supDataDirPath):
@@ -2944,15 +2729,10 @@ class BeadDeptho:
         cleanROIPath = os.path.join(path, cleanROIName)
         io.imsave(cleanROIPath, self.I_cleanROI, check_contrast=False)
 
-        profilesRaw_keys = ['intensity_v', 'intensity_h', 'intensity_HD'] #, 'intensity_tot']
+        profilesRaw_keys = ['intensity_raw', 'intensity_interp'] #, 'intensity_tot']
         profileDictRaw = {k: self.profileDict[k] for k in profilesRaw_keys}
         profileDictRaw_df = pd.DataFrame(profileDictRaw)
         profileDictRaw_df.to_csv(os.path.join(supDataDirPath, 'profiles_raw.csv'))
-
-        profilesSmooth_keys = ['intensity_v_smooth', 'intensity_h_smooth', 'intensity_HD_smooth'] #, 'intensity_tot_smooth']
-        profileDictSmooth = {k: self.profileDict[k] for k in profilesSmooth_keys}
-        profileDictSmooth_df = pd.DataFrame(profileDictSmooth)
-        profileDictSmooth_df.to_csv(os.path.join(supDataDirPath, 'profiles_smooth.csv'))
 
         ZfocusDict_df = pd.DataFrame(self.ZfocusDict, index = [1])
         ZfocusDict_df.to_csv(os.path.join(supDataDirPath, 'Zfoci.csv'))
@@ -2982,18 +2762,18 @@ class BeadDeptho:
         fig, ax = plt.subplots(1,1)
         pStart, pStop = np.percentile(self.I[self.z_max], (1, 99))
         ax.imshow(self.I[self.z_max], cmap = 'gray', vmin = pStart, vmax = pStop)
-        ax.plot(self.XYm[self.validSlice,0],self.XYm[self.validSlice,1],'r-')
+        ax.plot(self.XYm[self.zFirst:self.zLast, 0], self.XYm[self.zFirst:self.zLast, 1],'r-')
         fig.show()
 
     def plotROI(self, i = 'auto'):
         if i == 'auto':
-            i = self.z_max
+            i = self.bestZ
 
-        fig, ax = plt.subplots(1,3, figsize = (16,4))
+        fig, ax = plt.subplots(1,2, figsize = (16,4))     
 
-        xm, ym = np.mean(self.XYm[self.validSlice,0]),  np.mean(self.XYm[self.validSlice,1])
-        ROIsize_x = self.D*1.25*self.scale + (max(self.XYm[self.validSlice,0])-min(self.XYm[self.validSlice,0]))
-        ROIsize_y = self.D*1.25*self.scale + (max(self.XYm[self.validSlice,1])-min(self.XYm[self.validSlice,1]))
+        xm, ym = np.mean(self.XYm[self.zFirst:self.zLast,0]),  np.mean(self.XYm[self.zFirst:self.zLast,1])
+        ROIsize_x = self.D0*1.25*self.scale + (max(self.XYm[self.zFirst:self.zLast, 0]) - min(self.XYm[self.zFirst:self.zLast, 0]))
+        ROIsize_y = self.D0*1.25*self.scale + (max(self.XYm[self.zFirst:self.zLast, 1]) - min(self.XYm[self.zFirst:self.zLast, 1]))
         x1_ROI, y1_ROI, x2_ROI, y2_ROI = int(xm - ROIsize_x//2), int(ym - ROIsize_y//2), int(xm + ROIsize_x//2), int(ym + ROIsize_y//2)
 
         pStart, pStop = np.percentile(self.I[i], (1, 99))
@@ -3006,80 +2786,34 @@ class BeadDeptho:
         I_ROI = self.I[i,y1_ROI:y2_ROI,x1_ROI:x2_ROI]
         pStart, pStop = np.percentile(I_ROI, (1, 99))
         ax[1].imshow(I_ROI, cmap = 'gray', vmin = pStart, vmax = pStop)
-        ax[1].plot(self.XYm[self.validSlice,0]-x1_ROI, self.XYm[self.validSlice,1]-y1_ROI, 'r-', lw=0.75)
+        ax[1].plot(self.XYm[self.zFirst:self.zLast,0]-x1_ROI, self.XYm[self.zFirst:self.zLast,1]-y1_ROI, 'r-', lw=0.75)
         ax[1].plot(self.XYm[i,0]-x1_ROI, self.XYm[i,1]-y1_ROI, 'b+', lw=0.75)
-
-        pStart, pStop = np.percentile(self.I_cleanROI[i], (1, 99))
-        mid = self.I_cleanROI[i].shape[0]//2
-        I_cleanROI_binary = (self.I_cleanROI[i] > self.threshold)
-        y, x = ndi.center_of_mass(self.I_cleanROI[i], labels=I_cleanROI_binary, index=1)
-        ax[2].imshow(self.I_cleanROI[i], cmap = 'gray', vmin = pStart, vmax = pStop)
-        ax[2].plot([0,2*mid],[mid, mid], 'r--', lw = 0.5)
-        ax[2].plot([mid, mid],[0,2*mid], 'r--', lw = 0.5)
-        ax[2].plot([x],[y], 'b+')
+        
         fig.show()
 
-    def plotProfiles(self):
-        Z = np.array([z for z in range(self.I_cleanROI.shape[0])])
-        Z_hd = np.arange(0, self.I_cleanROI.shape[0], 0.2)
-        intensity_v = self.profileDict['intensity_v']
-        intensity_h = self.profileDict['intensity_h']
-        intensity_HD = self.profileDict['intensity_HD']
-        # intensity_tot = self.profileDict['intensity_tot']
-        Zm_v = self.ZfocusDict['Zm_v']
-        Zm_h = self.ZfocusDict['Zm_h']
-        Zm_HD = self.ZfocusDict['Zm_HD']
-        # Zm_tot = self.ZfocusDict['Zm_tot']
-        intensity_v_smooth = self.profileDict['intensity_v_smooth']
-        intensity_h_smooth = self.profileDict['intensity_h_smooth']
-        intensity_HD_smooth = self.profileDict['intensity_HD_smooth']
-        intensity_tot_smooth = self.profileDict['intensity_tot_smooth']
-        Zm_v_hd = self.ZfocusDict['Zm_v_hd']
-        Zm_h_hd = self.ZfocusDict['Zm_h_hd']
-        Zm_HD_hd = self.ZfocusDict['Zm_HD_hd']
-        # Zm_tot_hd = self.ZfocusDict['Zm_tot_hd']
+    # def plotProfiles(self):
+    #     Z = np.array([z for z in range(self.I_cleanROI.shape[0])])
+    #     Z_hd = np.arange(0, self.I_cleanROI.shape[0], 0.2)
+    #     intensity_raw = self.profileDict['intensity_raw']
+    #     intensity_interp = self.profileDict['intensity_interp']
+    #     Zm_raw = self.ZfocusDict['Zm_raw']
+    #     Zm_interp = self.ZfocusDict['Zm_interp']
 
-        fig, ax = plt.subplots(1,2, figsize = (12, 4))
-        ax[0].plot(Z, intensity_v)
-        ax[1].plot(Z, intensity_h)
-        # ax[2].plot(Z, (intensity_tot))
-        ax[0].plot([Zm_v, Zm_v], [0, ax[0].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_v = {:.2f}'.format(Zm_v))
-        ax[1].plot([Zm_h, Zm_h], [0, ax[1].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_h = {:.2f}'.format(Zm_h))
-        # ax[2].plot([Zm_tot, Zm_tot], [0, ax[2].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_tot = {:.2f}'.format(Zm_tot))
-        ax[0].legend(loc = 'lower right')
-        ax[1].legend(loc = 'lower right')
-        # ax[2].legend(loc = 'lower right')
+    #     fig, ax = plt.subplots(1,2, figsize = (12, 4))
+    #     ax[0].plot(Z, intensity_raw)
+    #     ax[1].plot(Z, intensity_interp)
+    #     ax[0].plot([Zm_raw, Zm_raw], [0, ax[0].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_raw = {:.2f}'.format(Zm_raw))
+    #     ax[1].plot([Zm_interp, Zm_interp], [0, ax[1].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_interp = {:.2f}'.format(Zm_interp))
+    #     ax[0].legend(loc = 'lower right')
+    #     ax[1].legend(loc = 'lower right')
 
-        # fig, ax = plt.subplots(1,4, figsize = (16, 4))
-        # ax[0].plot(Z, intensity_v, 'b-')
-        # ax[1].plot(Z, intensity_h, 'b-')
-        # ax[2].plot(Z, intensity_HD, 'b-')
-        # ax[3].plot(Z, (intensity_tot), 'b-')
-        # ax[0].plot(Z_hd, intensity_v_smooth, 'k--')
-        # ax[1].plot(Z_hd, intensity_h_smooth, 'k--')
-        # ax[2].plot(Z_hd, intensity_HD_smooth, 'k--')
-        # ax[3].plot(Z_hd, intensity_tot_smooth, 'k--')
-        # ax[0].plot([Zm_v_hd, Zm_v_hd], [0, ax[0].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_v_hd = {:.2f}'.format(Zm_v_hd))
-        # ax[1].plot([Zm_h_hd, Zm_h_hd], [0, ax[1].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_h_hd = {:.2f}'.format(Zm_h_hd))
-        # ax[2].plot([Zm_HD_hd, Zm_HD_hd], [0, ax[2].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_HD_hd = {:.2f}'.format(Zm_HD_hd))
-        # ax[3].plot([Zm_tot_hd, Zm_tot_hd], [0, ax[3].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_tot_hd = {:.2f}'.format(Zm_tot_hd))
-        # ax[0].legend(loc = 'lower right')
-        # ax[1].legend(loc = 'lower right')
-        # ax[2].legend(loc = 'lower right')
-        # ax[3].legend(loc = 'lower right')
-
-        #         print('Zm_v = {:.2f}, Zm_h = {:.2f}, Zm_tot = {:.2f}'\
-        #               .format(Zm_v, Zm_h, Zm_tot))
-        #         print('Zm_v_hd = {:.2f}, Zm_h_hd = {:.2f}, Zm_tot_hd = {:.2f}'\
-        #               .format(Zm_v_hd, Zm_h_hd, Zm_tot_hd))
-
-        fig.show()
+    #     fig.show()
 
 
-    def plotDeptho(self, d = 'HD'):
+    def plotDeptho(self, d = '_interp'):
         fig, ax = plt.subplots(1,1, figsize = (4, 6))
         D = self.depthosDict['deptho_' + d]
-        z_focus = self.ZfocusDict['Zm_' + d + '_hd']
+        z_focus = self.ZfocusDict['Zm_' + d + '_interp']
         ny, nx = D.shape[0], D.shape[1]
         pStart, pStop = np.percentile(D, (1, 99))
         pStop = pStop + 0.3 * (pStop-pStart)
@@ -3095,10 +2829,14 @@ class BeadDeptho:
 
 # %%%% depthoMaker
 
-def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', step = 20, d = 'HD', plot = 0):
+def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', step = 20, plot = 0):
     rawFileList = os.listdir(dirPath)
     listFileNames = [f[:-4] for f in rawFileList if (os.path.isfile(os.path.join(dirPath, f)) and f.endswith(".tif"))]
     L = []
+    
+    #### SETTINGS
+    bestDetphoType = 'interp'
+    bestFocusType = 'intensity_interp'
 
     for f in listFileNames:
         test1 = (specif in f) or (specif == 'all')
@@ -3123,7 +2861,6 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
         S0 = resDf['Slice'].values
         bestZ = S0[np.argmax(resDf['StdDev'].values)] - 1 # The index of the image with the highest Std
         # This image will be more or less the one with the brightest spot
-    
 
         # Create the BeadDeptho object
         BD = BeadDeptho(I, X0, Y0, S0, bestZ, scale, beadType, f)
@@ -3138,71 +2875,57 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
 
         # Else, we can proceed.
         else:
-            print(gs.BLUE + 'Job done for the file: ' + f + gs.NORMAL)
-
             # Creation of the z profiles
-            BD.buildDeptho(plot)
-
-        listBD.append(BD)
+            BD.buildDeptho()
+            BD.computeFocus(plot)
+            listBD.append(BD)
+            print(gs.BLUE + 'Job done for the file: ' + f + gs.NORMAL)
+            
         i = 1
         for BD in listBD:
 #             BD_manipID = findInfosInFileName(BD.fileName, 'manipID')
             subFileSavePath = os.path.join(savePath, 'Intermediate_Py', saveLabel + '_step' + str(step))
             # BD.saveBeadDeptho(subFileSavePath, specif +  '_' + str(i), step = step, bestDetphoType = 'HD', bestFocusType = 'HD_hd')
-            BD.saveBeadDeptho(subFileSavePath, f, step = step, bestDetphoType = 'HD', bestFocusType = 'HD_hd')
+            BD.saveBeadDeptho(subFileSavePath, f, step = step, bestDetphoType = bestDetphoType, bestFocusType = bestFocusType)
             i += 1
-
-#
-## If different sizes of bead at once #
-#
-#         for BD in listBD:
-#             if BD.D0 not in dictBD.keys():
-#                 dictBD[BD.D0] = [BD]
-#             else:
-#                 dictBD[BD.D0].append(BD)
-#
-#     for size in dictBD.keys():
-#         listBD = dictBD[size]
-#     ... go on with the code below with an indent added !
-
 
     maxAboveZm, maxBelowZm = 0, 0
     for BD in listBD:
-        Zm = int(np.round(BD.ZfocusDict['Zm_' + d + '_hd']))
+        Zm = int(np.round(BD.ZfocusDict['Zm_' + bestFocusType]))
         if Zm - BD.zFirst > maxAboveZm:
             maxAboveZm = Zm - BD.zFirst
         if BD.zLast - Zm > maxBelowZm:
             maxBelowZm = BD.zLast - Zm
     maxAboveZm, maxBelowZm = int(maxAboveZm), int(maxBelowZm)
     Zfocus = maxAboveZm
-    depthoWidth = listBD[0].depthosDict['deptho_' + d].shape[1]
+    depthoWidth = listBD[0].depthosDict['deptho_' + bestDetphoType].shape[1]
     depthoHeight = maxAboveZm + maxBelowZm
     finalDeptho = np.zeros([depthoHeight, depthoWidth], dtype = np.float64)
 
     for z in range(1, maxAboveZm+1):
         count = 0
         for BD in listBD:
-            Zm = int(np.round(BD.ZfocusDict['Zm_' + d + '_hd']))
-            currentDeptho = BD.depthosDict['deptho_' + d]
+            Zm = int(np.round(BD.ZfocusDict['Zm_' + bestFocusType]))
+            currentDeptho = BD.depthosDict['deptho_' + bestDetphoType]
             if Zm-z >= 0 and np.sum(currentDeptho[Zm-z,:] != 0):
                 count += 1
         for BD in listBD:
-            Zm = int(np.round(BD.ZfocusDict['Zm_' + d + '_hd']))
-            currentDeptho = BD.depthosDict['deptho_' + d]
+            Zm = int(np.round(BD.ZfocusDict['Zm_' + bestFocusType]))
+            currentDeptho = BD.depthosDict['deptho_' + bestDetphoType]
             if Zm-z >= 0 and np.sum(currentDeptho[Zm-z,:] != 0):
                 finalDeptho[Zfocus-z,:] += currentDeptho[Zm-z,:]/count
 
     for z in range(0, maxBelowZm):
         count = 0
         for BD in listBD:
-            Zm = int(np.round(BD.ZfocusDict['Zm_' + d + '_hd']))
-            currentDeptho = BD.depthosDict['deptho_' + d]
+            Zm = int(np.round(BD.ZfocusDict['Zm_' + bestFocusType]))
+            currentDeptho = BD.depthosDict['deptho_interp']
 #             print(currentDeptho.shape)
             if Zm+z >= 0 and Zm+z < currentDeptho.shape[0] and np.sum(currentDeptho[Zm+z,:] != 0):
                 count += 1
         for BD in listBD:
-            Zm = int(np.round(BD.ZfocusDict['Zm_' + d + '_hd']))
-            currentDeptho = BD.depthosDict['deptho_' + d]
+            Zm = int(np.round(BD.ZfocusDict['Zm_' + bestFocusType]))
+            currentDeptho = BD.depthosDict['deptho_' + bestDetphoType]
             if Zm+z >= 0 and Zm+z < currentDeptho.shape[0] and np.sum(currentDeptho[Zm+z,:] != 0):
                 finalDeptho[Zfocus+z,:] += currentDeptho[Zm+z,:]/count
 

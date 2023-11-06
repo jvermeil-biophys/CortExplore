@@ -39,10 +39,12 @@ import GlobalConstants as gc
 import UtilityFunctions as ufun
 
 from BeadTracker import mainTracker
-
+from BeadTracker_V2 import mainTracker_V2
+from BeadTracker_V3 import mainTracker_V3
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment',None)
+pd.set_option('display.max_columns', None)
 
 # 3. Graphical settings
 gs.set_default_options_jv()
@@ -72,6 +74,54 @@ plt.close('all')
 # %%% Next experiment day
 # %%%% Next manipe
 # %%%% Next manipe
+
+
+
+
+# %% TEST NEW VERSION
+
+# %%% 23.07.06
+
+# %%%% TEST
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 4
+depthoName = '23.09.19_M1_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, 
+               metaDataFormatting = 'default', redoAllSteps = True, trackAll = False)
+
+
+# %%%% 23.07.06 Une Cellule Seulement
+
+dates = '23.07.06'
+manips, wells, cells = 1, 1, 5
+depthoNames = '23.07.06_M1-5_M450_step20_100X'
+
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.07.06 M1-5
+
+dates = '23.07.06'
+manips, wells, cells = [1,2,3,4,5], 1, 'all'
+depthoNames = '23.07.06_M1-5_M450_step20_100X'
+
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+# %%%% 23.07.06 M6-8
+
+dates = '23.07.06'
+manips, wells, cells = [6,7,8], 1, 'all'
+depthoNames = '23.07.06_M6-8_M450_step20_100X'
+
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
 
 
 # %% Re-analyze Valentin's experiments on DC with drugs
@@ -347,8 +397,399 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 
 # %% Drugs & perturbation
 
+
 # %%% Next experiment day
 # %%%% Next manipe
+
+# %%% 23.09.19 JLY
+# M1 - DMSO // M2 - JLY - Jasp 8µM, LatB 5µM, Y27 10µM
+
+# %%%% 23.09.19 M1 - C1 only
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 4
+depthoNames = '23.09.19_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.09.19 M1 - DMSO
+
+dates = '23.09.19'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.09.19_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.09.19 M2 - JLY - Jasp 8µM, LatB 5µM, Y27 10µM
+
+dates = '23.09.19'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.09.19_M2_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 23.09.06 CalA low dose
+# M1 = DMSO // M2 = 1nM CalA
+
+# %%%% 23.09.11_M1 C1 Seulement
+
+
+# %%%% 23.09.11_M1
+
+
+# %%%% 23.09.11_M2
+
+
+# %%% 23.09.06 CalA low dose
+# M1 = 0.25nM CalA // M2 = 0.5 CalA // M3 = dmso // M4 = 2.0 CalA
+
+# %%%% 23.09.06_M1 C1 Seulement
+
+dates = '23.09.06'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.09.06_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.09.06_M1
+
+dates = '23.09.06'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.09.06_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.09.06_M2
+
+dates = '23.09.06'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.09.06_M2_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.09.06_M3
+
+dates = '23.09.06'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.09.06_M3_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.09.06_M4
+
+dates = '23.09.06'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '23.09.06_M4_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 23.07.20
+# M1 = 2nM CalA // M2 = ctrl (dmso) // M3 = 1nM CalA
+
+# %%%% 23.07.20_M1 C1 Seulement
+
+dates = '23.07.20'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.07.20_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.07.20_M1
+
+dates = '23.07.20'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.07.20_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.20_M2
+
+dates = '23.07.20'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.07.20_M2_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.20_M3
+
+dates = '23.07.20'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.07.20_M3_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 23.07.17
+# M1 = 1nM CalA // M2 = 0.5nM CalA // M3 = ctrl (dmso)
+# M4 = ctrl (no drug) --> M5 = 0.5nM CalA time-dep
+# M6 = ctrl (no drug) --> M7 = 2nM CalA time-dep
+
+# %%%% 23.07.17_M1 C1 Seulement
+
+dates = '23.07.17'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.07.17_M1
+
+dates = '23.07.17'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.17_M2
+
+dates = '23.07.17'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.17_M3
+
+dates = '23.07.17'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.07.17_M4
+
+dates = '23.07.17'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.17_M5
+
+dates = '23.07.17'
+manips, wells, cells = 5, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.07.17_M6
+
+dates = '23.07.17'
+manips, wells, cells = 6, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.07.17_M7
+
+dates = '23.07.17'
+manips, wells, cells = 7, 1, 'all'
+depthoNames = '23.07.17_M1_M450_step20_100X'
+
+output = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%% 23.04.26 + 23.04.28, compressionsLowStart of 3T3-ATCC-2023, M450, 
+# 1st day
+# M1 = ck666 50µM, M2 = dmso 4µL, M3 = ck666 100µM
+# 2nd day
+# M1 = dmso 4µL, M2 = ck666 100µM, M3 = ck666 50µM
+
+# %%%% 23.04.26_M1 C1 Seulement
+
+dates = '23.04.26'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.04.26_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.26_M1
+
+dates = '23.04.26'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.04.26_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.26_M2
+
+dates = '23.04.26'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.04.26_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.04.26_M3
+
+dates = '23.04.26'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.04.26_M3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.28_M1
+
+dates = '23.04.28'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.04.28_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.28_M2
+
+dates = '23.04.28'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.04.28_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.04.28_M3
+
+dates = '23.04.28'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.04.28_M3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%% 23.04.20, compressionsLowStart of 3T3-ATCC-2023, M450, 
+# 1st day
+# M1 = dmso, M2 = Fresh blebbi 250uM, M3 = Fresh blebbi 50uM, M4 = dmso, M5 = dmso
+
+
+# %%%% 23.04.20_M1 C1 Seulement
+
+dates = '23.04.20'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.04.20_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.20_M1
+
+dates = '23.04.20'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.04.20_M1_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.20_M2
+
+dates = '23.04.20'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '23.04.20_M2_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.20_M3
+
+dates = '23.04.20'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.04.20_M3_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% 23.04.20_M4
+
+dates = '23.04.20'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '23.04.20_M4_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
+# %%%% 23.04.20_M5
+
+dates = '23.04.20'
+manips, wells, cells = 5, 1, 'all'
+depthoNames = '23.04.20_M5_M450_step20_100X'
+
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+
 
 # %%% 23.03.16 + 23.03.17, compressionsLowStart of 3T3-ATCC-2023, M450, 
 # 1st day
@@ -359,7 +800,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% 23.03.16_M1 C1 Seulement
 
 dates = '23.03.16'
-manips, wells, cells = 1, 1, 1
+manips, wells, cells = 1, 1, 3
 depthoNames = '23.03.16_M1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 

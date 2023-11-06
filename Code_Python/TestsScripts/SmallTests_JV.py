@@ -4,16 +4,292 @@ Created on Thu Nov 25 13:37:51 2021
 
 @author: JosephVermeil
 """
+# %% statannotations 1/2
 
-# %%
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import scipy.stats as st
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+import os
+import re
+import sys
+import time
+import random
+import numbers
+import warnings
+import itertools
+import matplotlib
+
+from statannotations.Annotator import Annotator
+from statannotations.stats.StatTest import StatTest
+
+# %% Test new interp function
+
+from skimage import io
+
+import UtilityFunctions as ufun
+
+imagePath = 'C://Users//JosephVermeil//Desktop//cycle.png'
+
+I = io.imread(imagePath)
+
+fig1, ax1 = plt.subplots(1,1)
+ax1.imshow(I, cmap='gray')
+
+I2 = ufun.resize_2Dinterp(I, new_nx=200, new_ny=200, fx=None, fy=None)
+
+fig2, ax2 = plt.subplots(1,1)
+ax2.imshow(I2, cmap='gray')
+
+plt.show()
+
+
+#%% 2 X-axis
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+ax2 = ax1.twiny()
+
+X = np.linspace(0,0.2,1000)
+Y = np.cos(X/10)
+
+ax1.plot(X,Y)
+ax1.set_xlabel(r"Original x-axis: $X$")
+
+def tick_function(eps, h0):
+    H = h0 - 3*h0*eps
+    return ["%.1f" % h for h in H]
+
+h0 = 500
+
+ax1.set_xlim(ax1.get_xlim())
+
+ax2.set_xlim(ax1.get_xlim())
+new_tick_locations = np.array(ax1.get_xticks()) # [0, 0.05, 0.1, 0.15, 0.2]
+print(new_tick_locations)
+ax1.set_xticks(new_tick_locations)
+ax2.set_xticks(new_tick_locations)
+ax2.set_xticklabels(tick_function(new_tick_locations, h0))
+ax2.set_xlabel(r"Modified x-axis: $1/(1+X)$")
+# ax1.set_xlim([0, 0.3])
+ax2.grid()
+plt.show()
+
+# %% sth
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import scipy.stats as st
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+X = np.linspace(0, 50, 10000)
+Y = 2 + 10/(1 + np.exp(-0.2*(X-30)))
+
+plt.plot(X,Y)
+plt.show()
+
+# %% idxAnalysis
 
 import numpy as np
 import pandas as pd
 import UtilityFunctions as ufun
 
-d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14], 
-     'coeff':[2, 1, 5, 4, 1, 7, 3, 2], 
-     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l']}
+A = np.array([0, 1, 2, -1, -2, 3, -5, 2, 4, 1])
+df = pd.DataFrame({'A':A})
+vals = df['A'].unique()
+
+N = np.max(df['A'])
+idx = [i for i in range(N+1) if i in vals]   
+
+
+# %% regions
+
+import numpy as np
+import pandas as pd
+import scipy.ndimage as ndi
+import UtilityFunctions as ufun
+
+A = np.array([0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1])
+A2 = np.array([0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1])
+B, n = ndi.label(A)
+
+C = np.logical_xor(A2, A)
+
+
+
+# %% sth
+
+import numpy as np
+import pandas as pd
+import UtilityFunctions as ufun
+
+def fun(tsDf, i, task):
+    Npts = len(tsDf['idxAnalysis'].values)
+    iStart = ufun.findFirst(np.abs(tsDf['idxAnalysis']), i+1)
+    iStop = iStart + np.sum((np.abs(tsDf['idxAnalysis']) == i+1))
+    
+    if task == 'compression':
+        mask = (tsDf['idxAnalysis'] == i+1).values
+    elif task == 'precompression':
+        mask = (tsDf['idxAnalysis'] == -(i+1)).values
+    elif task == 'compression & precompression':
+        mask = (np.abs(tsDf['idxAnalysis']) == i+1).values
+    elif task == 'previous':
+        i2 = ufun.findFirst_V2(i+1, np.abs(tsDf['idxAnalysis']))
+        if i2 == -1:
+            i2 = tsDf['idxAnalysis'].size
+        i1 = Npts - ufun.findFirst_V2(i, np.abs(tsDf['idxAnalysis'][::-1]))
+        if i == 0:
+            i1 = 0
+        mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+    elif task == 'following':
+        i2 = ufun.findFirst_V2(i+2, np.abs(tsDf['idxAnalysis']))
+        if i2 == -1:
+            i2 = tsDf['idxAnalysis'].size
+        i1 = Npts - ufun.findFirst_V2(i+1, np.abs(tsDf['idxAnalysis'][::-1]))
+        if i1 > Npts:
+            i1 = 0
+        mask = np.array([((j >= i1) and (j < i2)) for j in range(Npts)])
+    elif task == 'surrounding':
+        mask = ((np.abs(tsDf['idxLoop']) == i+1) & (np.abs(tsDf['idxAnalysis']) == 0)).values
+    
+    return(mask)
+
+a1 = np.array([1,1,1,1,1,1,1,1,
+               2,2,2,2,2,2,2,2,
+               3,3,3,3,3,3,3,3])
+
+a2 = np.array([0,0,-1,-1,1,1,0,0,
+               0,0,-2,-2,2,2,0,0,
+               0,0,-3,-3,3,3,0,0])
+
+tsDf = pd.DataFrame({'idxLoop' : a1, 'idxAnalysis' : a2})
+
+mask = fun(tsDf, 2, 'compression')
+
+# %% merge
+
+
+d1 = {'i1':[1,2,3,4,5,6,7,8,9], 
+     'i2':[0,1,2,3,4,5,6,7,8], 
+     'i3':[11,12,13,14,15,16,17,18,19]}
+
+df1 = pd.DataFrame(d1)
+
+# d2 = [1,2,3,6,7,8,9]
+# df2 = pd.Series(d2, name = 'i1')
+
+d2 = {'i1':[1,2,3,6,7,8,9]}
+df2 = pd.DataFrame(d2)
+
+df3 = pd.merge(left=df1, right=df2, how='left', on='i1')
+
+# Filter1 = (df['course'] == 'l')
+# Filter2 = (df['grade'] > 10)
+
+# gF = Filter1 & Filter2
+
+
+
+# %% bool ops
+
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 20, 18, 19, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
+
+df = pd.DataFrame(d)
+
+# Filter1 = (df['course'] == 'l')
+# Filter2 = (df['grade'] > 10)
+
+# gF = Filter1 & Filter2
+
+df.at[(df['grade'] == 20), 'course']
+
+
+# %% statannotations 2/2
+
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 20, 18, 19, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
+
+df = pd.DataFrame(d)
+
+fig, ax = plt.subplots(1,1)
+
+swarmplot_parameters = {'ax' : ax,
+                        'data':    df,
+                        'x':       'course',
+                        'y':       'grade',
+                        'edgecolor'    : 'k', 
+                        'linewidth'    : 1,
+                        'orient' : 'v'
+                        }
+
+# sns.boxplot(data = df, ax=ax,
+#             x = 'course', y = 'grade',
+#             showfliers=False, color = 'w')
+
+sns.swarmplot(**swarmplot_parameters)
+
+ax.set_ylim([0, 20])
+
+# annotator = Annotator(ax, box_pairs, **plotting_parameters)
+# annotator.configure(test=test, verbose=verbose).apply_and_annotate()
+
+def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plotting_parameters):
+    listTests = ['t-test_ind', 't-test_welch', 't-test_paired', 
+                 'Mann-Whitney', 'Mann-Whitney-gt', 'Mann-Whitney-ls', 
+                 'Levene', 'Wilcoxon', 'Kruskal', 'Brunner-Munzel']
+    if test in listTests:
+        annotator = Annotator(ax, box_pairs, **plotting_parameters)
+        annotator.configure(test=test, verbose=verbose).apply_and_annotate()
+    else:
+        print(gs.BRIGHTORANGE + 'Dear Madam, dear Sir, i am the eternal god and i command that you have to define this stat test cause it is not in the list !' + gs.NORMAL)
+    return(ax)
+
+plt.show()
+
+# %%
+
+import seaborn as sns
+
+from statannotations.Annotator import Annotator
+
+df = sns.load_dataset("tips")
+x = "day"
+y = "total_bill"
+order = ['Sun', 'Thur', 'Fri', 'Sat']
+
+fig, ax = plt.subplots(1,1, figsize=(5,5))
+ax = sns.boxplot(data=df, x=x, y=y, order=order)
+
+pairs=[("Thur", "Fri"), ("Thur", "Sat"), ("Fri", "Sun")]
+
+annotator = Annotator(ax, pairs, data=df, x=x, y=y, order=order)
+annotator.configure(test='Mann-Whitney', text_format='star', loc='outside')
+annotator.apply_and_annotate()
+
+plt.tight_layout()
+
+# %% Pandas tests
+
+import numpy as np
+import pandas as pd
+import UtilityFunctions as ufun
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 4, 18, 4, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
 
 df = pd.DataFrame(d)
 
@@ -25,11 +301,55 @@ wAvgCol = valCol + '_wAvg'
 df['A'] = df[valCol] * df[weightCol]
 grouped1 = df.groupby(by=groupCols)
 data_agg = grouped1.agg({'A': ['count', 'sum'], 
-                         weightCol: 'sum'}).reset_index()
+                         weightCol: 'sum',
+                         'grade' : [np.var, np.std, ufun.interDeciles]}).reset_index()
+
+data_agg.columns = ufun.flattenPandasIndex(data_agg.columns)
 # data_agg.columns = ['_'.join(col) for col in data_agg.columns.values]
 
 # data_id2 = df.groupby('course').agg('first')
 
+df['id_within_co'] = [np.sum(df.loc[:i,'course'] == df.loc[i,'course']) for i in range(df.shape[0])]
+
+# %% Regex test
+
+import re
+
+joker = r'[\.\d]{2,6}'
+s = '0.2_' + joker
+
+text = '0.2_0.0125'
+
+if re.match(s, text):
+    print('ok')
+    
+print(re.match(s, text))
+
+# %% Regex test
+
+import re
+
+template = 'Merci_Monsieur'
+s1 = 'Monsieur'
+s2 = 'Madame'
+
+if re.search(s1, template):
+    res = re.sub(s1, s2, template)
+    print(res)
+    
+print(re.search(s1, template))
+
+# %% Dicts
+
+d1 = {'a':1, 'b':2}
+
+d2 = d1
+
+print(d1, d2)
+
+d2.pop('b')
+
+print(d1, d2)
 
 # %%
 
