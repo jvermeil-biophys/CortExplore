@@ -2376,7 +2376,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
         #### 4.2 - Compute z for each traj
         #### ! Expt dependence here !
-        if PTL.microscope == 'metamorph':
+        if PTL.microscope == 'metamorph' or PTL.microscope == 'zen':
             matchingDirection = 'downward' # Change when needed !!
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
         elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
@@ -2694,8 +2694,8 @@ class BeadDeptho:
         # Determine if the bead is to close to the edge on the max frame
         D0 = self.D0 + 4.5*(self.D0 == 0)
         roughSize = np.floor(1.1*D0*self.scale)
-        mx, Mx = np.min(self.X0 - 0.5*roughSize), np.max(self.X0 + 0.5*roughSize)
-        my, My = np.min(self.Y0 - 0.5*roughSize), np.max(self.Y0 + 0.5*roughSize)
+        mx, Mx = np.min(self.X0 - 0.2*roughSize), np.max(self.X0 + 0.2*roughSize)
+        my, My = np.min(self.Y0 - 0.2*roughSize), np.max(self.Y0 + 0.2*roughSize)
         testImageSize = mx > 0 and Mx < self.nx and my > 0 and My < self.ny
 
         # Aggregate the different validity test (for now only 1)
@@ -2728,57 +2728,60 @@ class BeadDeptho:
                     break
             zLast = z-1
 
-            roughSize = int(np.floor(1.15*self.D0*self.scale))
+            roughSize = int(np.floor(1*self.D0*self.scale))
             roughSize += 1 + roughSize%2
             roughCenter = int((roughSize+1)//2)
+            print(roughSize)
 
             cleanSize = ufun.getDepthoCleanSize(self.D0, self.scale)
+            print(cleanSize)
 
             I_cleanROI = np.zeros([self.nz, cleanSize, cleanSize])
 
-            try:
-                for i in range(zFirst, zLast):
-                    xmi, ymi = self.XYm[i,0], self.XYm[i,1]
-                    x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
-                    if not validBead:
-                        if x1 < 0 or x2 > self.nx:
-                            self.valid_h = False
-                        if y1 < 0 or y2 > self.ny:
-                            self.valid_v = False
+            # try:
+            for i in range(zFirst, zLast):
+                xmi, ymi = self.XYm[i,0], self.XYm[i,1]
+                x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
+                print(validBead)
+                if not validBead:
+                    if x1 < 0 or x2 > self.nx:
+                        self.valid_h = False
+                    if y1 < 0 or y2 > self.ny:
+                        self.valid_v = False
 
-        #                 fig, ax = plt.subplots(1,2)
-        #                 ax[0].imshow(self.I[i])
-                    xm1, ym1 = xmi-x1, ymi-y1
-                    I_roughRoi = self.I[i,y1:y2,x1:x2]
-        #                 ax[1].imshow(I_roughRoi)
-        #                 fig.show()
+                # fig, ax = plt.subplots(1,2)
+                # ax[0].imshow(self.I[i])
+                xm1, ym1 = xmi-x1, ymi-y1
+                I_roughRoi = self.I[i,y1:y2,x1:x2]
+                # ax[1].imshow(I_roughRoi)
+                # fig.show()
 
-                    translation = (xm1-roughCenter, ym1-roughCenter)
+                translation = (xm1-roughCenter, ym1-roughCenter)
 
-                    tform = transform.EuclideanTransform(rotation=0, \
-                                                         translation = (xm1-roughCenter, ym1-roughCenter))
+                tform = transform.EuclideanTransform(rotation=0, \
+                                                     translation = (xm1-roughCenter, ym1-roughCenter))
 
-                    I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+                I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
 
-                    I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
-                                                  roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+                I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                              roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
 
-                if not self.valid_v and not self.valid_h:
-                    self.validBead = False
+            if not self.valid_v and not self.valid_h:
+                self.validBead = False
 
-                else:
-                    self.zFirst = zFirst
-                    self.zLast = zLast
-                    self.validDepth = zLast-zFirst
-                    self.I_cleanROI = I_cleanROI.astype(np.uint16)
+            else:
+                self.zFirst = zFirst
+                self.zLast = zLast
+                self.validDepth = zLast-zFirst
+                self.I_cleanROI = I_cleanROI.astype(np.uint16)
 
-                # VISUALISE
-                if plot >= 2:
-                    for i in range(zFirst, zLast, 50):
-                        self.plotROI(i)
+            # VISUALISE
+            if plot >= 2:
+                for i in range(zFirst, zLast, 50):
+                    self.plotROI(i)
 
-            except:
-                print('Error for the file: ' + self.fileName)
+            # except:
+            #     print('Error for the file: ' + self.fileName)
 
 
     def buildDeptho(self, plot):

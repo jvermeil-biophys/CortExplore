@@ -933,11 +933,12 @@ def getROI(roiSize, x0, y0, nx, ny):
     Note : the ROI is done so that the final width (= height) 
     of the ROI will always be an odd number.
     """
+    factor = 0.5
     roiSize += roiSize%2
-    x1 = int(np.floor(x0) - roiSize*0.5) - 1
-    x2 = int(np.floor(x0) + roiSize*0.5)
-    y1 = int(np.floor(y0) - roiSize*0.5) - 1
-    y2 = int(np.floor(y0) + roiSize*0.5)
+    x1 = int(np.floor(x0) - roiSize*factor) - 1
+    x2 = int(np.floor(x0) + roiSize*factor)
+    y1 = int(np.floor(y0) - roiSize*factor) - 1
+    y2 = int(np.floor(y0) + roiSize*factor)
     if min([x1,nx-x2,y1,ny-y2]) < 0:
         validROI = False
     else:
@@ -1441,38 +1442,42 @@ def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'aut
         y_bounds.append([0.85*np.percentile(data[1], 5), 
                          1.15*np.percentile(data[1], 95)])
     
-    x_bounds = np.array(x_bounds)
-    y_bounds = np.array(y_bounds)
+    try:
+        x_bounds = np.array(x_bounds)
+        y_bounds = np.array(y_bounds)
+        
+        X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
+        Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
     
-    X_BOUND = [np.percentile(x_bounds[:,0], 5), np.percentile(x_bounds[:,1], 95)]
-    Y_BOUND = [np.percentile(y_bounds[:,0], 5), np.percentile(y_bounds[:,1], 95)]
-
-    if xb[0] == 'auto':
-        X_BOUND[0] = max(X_BOUND[0], Xspace[0])
-    else:
-        X_BOUND[0] = xb[0]
-        
-    if xb[1] == 'auto':
-        X_BOUND[1] = min(X_BOUND[1], Xspace[1])
-    else:
-        X_BOUND[1] = xb[1]
-
-
-    if yb[0] == 'auto':
-        Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
-    else:
-        Y_BOUND[0] = yb[0]
-        
-    if yb[1] == 'auto':
-        Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
-    else:
-        Y_BOUND[1] = yb[1]
+        if xb[0] == 'auto':
+            X_BOUND[0] = max(X_BOUND[0], Xspace[0])
+        else:
+            X_BOUND[0] = xb[0]
             
+        if xb[1] == 'auto':
+            X_BOUND[1] = min(X_BOUND[1], Xspace[1])
+        else:
+            X_BOUND[1] = xb[1]
+    
+    
+        if yb[0] == 'auto':
+            Y_BOUND[0] =  max(Y_BOUND[0], Yspace[0])
+        else:
+            Y_BOUND[0] = yb[0]
+            
+        if yb[1] == 'auto':
+            Y_BOUND[1] =  min(Y_BOUND[1], Yspace[1])
+        else:
+            Y_BOUND[1] = yb[1]
+    
     
         
-    for ax in axes_f:
-        ax.set_xlim(X_BOUND)
-        ax.set_ylim(Y_BOUND)
+        for ax in axes_f:
+            ax.set_xlim(X_BOUND)
+            ax.set_ylim(Y_BOUND)
+    
+    except:
+         pass 
     
     return(axes)
 

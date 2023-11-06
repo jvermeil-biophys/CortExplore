@@ -126,7 +126,7 @@ def getCellTimeSeriesData(cellID, fromPython = True, fromCloud = False):
                     timeSeriesDataFrame = timeSeriesDataFrame.drop([c], axis=1)
     return(timeSeriesDataFrame)
 
-def plotCellTimeSeriesData(cellID, save = False, savePath = '', fromPython = True):
+def plotCellTimeSeriesData(cellID, fromPython = True):
     """
     Plot a time series file given its cellID from cp.DirDataTimeseries.
 
@@ -156,21 +156,14 @@ def plotCellTimeSeriesData(cellID, save = False, savePath = '', fromPython = Tru
         axes = timeSeriesDataFrame.plot(x=X, y=Y, kind='line', ax=None, subplots=True, sharex=True, sharey=False, layout=None, \
                        figsize=(8,10), use_index=True, title = cellID + ' - f(t)', grid=None, legend=False, style=None, logx=False, logy=False, \
                        loglog=False, xticks=None, yticks=None, xlim=None, ylim=None, rot=None, fontsize=None, colormap=None, \
-                       table=False, yerr=None, xerr=None, secondary_y=False)
+                       table=False, yerr=None, xerr=None, secondary_y=False, sort_columns=False)
         plt.gcf().tight_layout()
         for i in range(len(Y)):
             axes[i].set_ylabel(Y[i] + units[i])
         # plt.gcf().show()
-    
-        if save == True:
-            plt.savefig(savePath + '/' + cellID + '.png')
-            plt.show()
-        else:
-            plt.show()
+        plt.show()
     else:
         print('cell not found')
-        
-    return axes
     # plt.rcParams['axes.prop_cycle'] = my_default_color_cycle
         
     
@@ -611,20 +604,19 @@ def fitChadwick_hf(h, f, D):
     def inversedChadwickModel(f, E, H0):
         h = H0 - ((3*H0*f)/(np.pi*E*R))**0.5
         return(h)
-    # print(h)
     
     # some initial parameter values - must be within bounds
     initH0 = max(h) # H0 ~ h_max
     initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
     
     initialParameters = [initE, initH0]
-
-    # bounds on parameters - initial parameters must be within these
-    lowerBounds = (0, 0)
-    upperBounds = (np.Inf, np.Inf)
-    parameterBounds = [lowerBounds, upperBounds]
+    
 
     try:
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, 0)
+        upperBounds = (np.Inf, np.Inf)
+        parameterBounds = [lowerBounds, upperBounds]
     # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
@@ -1346,12 +1338,10 @@ class CellCompression:
         
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
-            
             compValid = IC.isValidForAnalysis
-            print((compValid))
-            # fitError = IC.dictFitFH_Chadwick['error']
+            fitError = IC.dictFitFH_Chadwick['error']
             
-            if compValid:                
+            if (not fitError) and compValid:                
                 ax.plot(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, 
                         color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
                 
@@ -2265,8 +2255,10 @@ class IndentCompression:
             mask = (self.ChadwickRatio > thresh1) & (self.ChadwickRatio < thresh2)
         else:
             mask = np.ones_like(self.hCompr, dtype = bool)
-
+        
+        
         if method == 'Chadwick':
+            print(mask)
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
             params, covM, error = fitChadwick_hf(h, f, D)
             H0, E = params[1], params[0]
@@ -2464,7 +2456,7 @@ class IndentCompression:
         
 
         self.dictFitFH_Chadwick = dictFit
-
+        
 
                 
     def fitFH_Dimitriadis(self, fitValidationSettings, mask = []):
@@ -2779,22 +2771,23 @@ class IndentCompression:
                     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
 
                     
-                # if 'H0_Chadwick_' + 'ratio_2-3' in self.dictH0.keys():
-                #     H0_ratio = self.dictH0['H0_Chadwick_ratio_2-3']
-                #     E_ratio = self.dictH0['E_Chadwick_ratio_2-3']
-                #     str_m_z = 'Chadwick_ratio_2-3'
-                #     max_h = np.max(self.hCompr)
-                #     high_h = np.linspace(max_h, H0_ratio, 20)
-                #     low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+                if 'H0_Chadwick_' + 'ratio_2-3' in self.dictH0.keys():
+                    H0_ratio = self.dictH0['H0_Chadwick_ratio_2-3']
+                    E_ratio = self.dictH0['E_Chadwick_ratio_2-3']
+                    str_m_z = 'Chadwick_ratio_2-3'
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, H0_ratio, 20)
+                    low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
 
-                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
-                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
-                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+                    # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
-                #             # label = legendText)
-                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                            # label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
+                # darkslateblue
                 ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
                 
@@ -3176,8 +3169,8 @@ class IndentCompression:
                     #         color = color, zorder = 4)
                     fitX = np.linspace(np.min(XtoFit), np.max(XtoFit), 100)
                     fitY = k * fitX**a
-                    # ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
-                    # ax.legend(loc = 'upper left', prop={'size': 6})
+                    ax.plot(fitX, fitY, '--', lw = '1', color = 'red', zorder = 4, label = legendText)
+                    ax.legend(loc = 'upper left', prop={'size': 6})
         
             for item in ([ax.title, ax.xaxis.label, \
                           ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
@@ -3821,9 +3814,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
             IC.computeContactRadius(method = 'Chadwick')
             
-            #### 3.9.2 IN DEV : Re-Compute the best H0 
-            # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
-            # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
+            #### 3.9.2 Re-Compute the best H0
+            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
+            IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
             
             #### 3.10 Local fits of stress-strain curves
             
@@ -4489,7 +4482,7 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         )
         
     df = ufun.removeColumnsDuplicate(df)
-    
+        
     if mergeUMS:
         if 'ExpDay' in df.columns:
             dateColumn = 'ExpDay'
@@ -4498,7 +4491,6 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
         listDates = df[dateColumn].unique()
         
         listFiles_UMS = os.listdir(cp.DirDataAnalysisUMS)
-        print(cp.DirDataAnalysisUMS)
         listFiles_UMS_matching = []
         # listPaths_UMS = [os.path.join(DirDataAnalysisUMS, f) for f in listFiles_UMS]
         

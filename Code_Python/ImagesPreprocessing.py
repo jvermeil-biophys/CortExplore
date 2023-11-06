@@ -44,23 +44,44 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-#%% Define parameters # Numi
+#%% Define parameters # Pelin
 
-date = '23.03.24'
-DirSave = os.path.join(cp.DirDataRaw, date)
-DirExt = 'E:/Cortex Experiments/20230324_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ date
-# DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+date = '23.10.25'
+
+
+DirSave = os.path.join(cp.DirDataRaw, date) 
+DirExt = 'E:/20231025_Hela-FUCCI_100xoil_Mechanics/23.10.25'
+
+# DirDeptho = '23.10.25_Deptho'
+# DirExt  = 'E:/Cortex Experiments/20230712_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ DirDeptho
+# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'
 
 
+#%% Define parameters # Numi
+
+# date = '23.10.25'
+# # DirDeptho = '23.09.08_BeadCalibration_Deptho'
+
+# DirSave = os.path.join(cp.DirDataRaw, date) 
+# DirExt = 'E:/20231025_Hela-FUCCI_100xoil_Mechanics/23.10.25'
+
+# # DirExt  = 'E:/Cortex Experiments/20230712_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ DirDeptho
+# # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+
+# # prefix = 'cell'
+# # channel = 'w1TIRF DIC'
+# microscope = 'labview'
+
+
 #%% Define parameters # Jojo
 
-date = '23.03.17'
-DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
-DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
+# date = '23.03.17'
+# DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
+# DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
 
 # prefix = ''
 # channel = ''
@@ -70,7 +91,7 @@ DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
 
 def getListOfSourceFolders(Dir, 
                            forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
-                           compulsaryWords = ['db3']): # 
+                           compulsaryWords = []): # 
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -259,6 +280,9 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
     elif microscope == 'labview':
         allFiles = [path+'/'+string for string in allFiles if 'im' in string]
         
+    elif microscope == 'zen':
+        allFiles = [path+'/'+string for string in allFiles if '.czi' in string]
+        
     idx = slice(0, len(allFiles), 100)
     
     allFiles = allFiles[idx]
@@ -379,7 +403,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
         elif microscope == 'labview':
-            allFiles = [cellPath+'/'+string for string in allFiles if 'im' in string]
+            allFiles = [cellPath+'/'+string for string in allFiles if '.tif' in string]
         
         print(gs.BLUE + 'Loading '+ cellPath +'...' + gs.NORMAL)
         
@@ -477,7 +501,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 60
+limiter = 30
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 
