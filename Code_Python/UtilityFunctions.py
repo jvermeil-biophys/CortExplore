@@ -1192,13 +1192,50 @@ def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
 
 # %%% Physics
 
-def computeMag_M270(B):
-    M = 0.74257*1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+
+
+def computeMag_M270(B, k_batch = 1):
+    M = 1.05 * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
-def computeMag_M450(B):
-    M = 1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+def computeMag_M450(B, k_batch = 1):
+    M = 1.05 * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
+
+def computeForce_M450(B, D, d):
+    M = computeMag_M450(B)
+    R = D/2
+    V = (4*np.pi/3)*(R**3)
+    m = M*V
+    dist = D + d
+    F = (3e5 * 2 * m**2) / (dist**4)
+    # plt.plot(B, M)
+    return(F)
+
+def plotForce(d = 200e-9):
+    fig, axes = plt.subplots(1, 2, figsize = (10,5)) 
+    ax = axes[0]
+    B = np.linspace(1, 1000, 1000)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    ax = axes[1]
+    B = np.linspace(0, 100, 101)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
+    plt.tight_layout()
+    plt.show()
+
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
