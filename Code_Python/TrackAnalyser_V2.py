@@ -620,7 +620,8 @@ def fitChadwick_hf(h, f, D):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, 
+                                 p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -703,7 +704,8 @@ def fitDimitriadis_hf(h, f, D, order = 2):
 
     
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(dimitriadisModel, h, f, 
+                                 p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -926,7 +928,8 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, 
+                                 p0=initialParameters, bounds = parameterBounds)
         
         ses = np.array([covM[0,0]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
@@ -989,7 +992,7 @@ def makeDictFit_hf(params, ses, error,
     
     2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
         i) from scipy import stats
-        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
+        ii) dof = nb_pts - nb_parms ; se = diag(cov)**0.5
         iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
         iv) ConfInt = [params - q*se, params + q*se]
 
@@ -4450,7 +4453,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 
-# f = '23-02-23_M1_P1_C7_L40_disc20um_PY.csv'
+# f = '23-11-01_M1_P1_C2-2_L50_disc20um_nanoIndent_PY.csv'
 
 # stressCenters = [ii for ii in range(50, 1550, 25)]
 # stressHalfWidths = [25]
@@ -4460,9 +4463,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # fitSettings = {# H0
 #                 'methods_H0':['Chadwick', 'Dimitriadis'],
-#                 'zones_H0':['%f_5', '%f_10', '%f_20'],
+#                 'zones_H0':['%f_5', '%f_10', '%f_15'],
 #                 'method_bestH0':'Chadwick',
-#                 'zone_bestH0':'%f_10',
+#                 'zone_bestH0':'%f_15',
 #                 # Stress regions
 #                 'doStressRegionFits' : False,
 #                 'doStressGaussianFits' : True,

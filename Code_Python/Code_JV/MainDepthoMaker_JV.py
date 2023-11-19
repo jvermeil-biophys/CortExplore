@@ -44,8 +44,52 @@ pd.set_option('mode.chained_assignment',None)
 # 3. Graphical settings
 gs.set_default_options_jv()
 
-
 # %% Next depthos !
+
+# %% Depthos 23.01.11 - Tests Nano-Indent !
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.11.01'
+
+subdir = 'Depthos_CompareIn&Out'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_NanoIndent_PincherData', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_In&Out_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+subdir = 'Depthos_TipIn'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_NanoIndent_PincherData', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_In_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+subdir = 'Depthos_TipOut'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_NanoIndent_PincherData', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_Out_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
 
 # %% Depthos 23.09.21 - CALIBRATION
 

@@ -57,9 +57,9 @@ import UtilityFunctions as ufun
 
 
 #%% Define parameters # Jojo
-date = '23.10.18'
-DirExt = 'E:\\23-10-18_Cannonballs\\M5_M450-Strept-inwater\\' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M5_M450-Strept-inwater') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '23.10.28'
+DirExt = 'E:\\23-10-28_Cannonballs\\M2_M450-2023_BSA_inPBS\\' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M2_M450-2023_BSA_inPBS') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
