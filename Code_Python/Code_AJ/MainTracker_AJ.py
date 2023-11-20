@@ -38,6 +38,8 @@ import GlobalConstants as gc
 import UtilityFunctions as ufun
 
 from BeadTracker import mainTracker
+from BeadTracker_V2 import mainTracker_V2
+
 from BeadTracker import XYZtracking
 
 
@@ -1400,3 +1402,42 @@ depthoNames = '23.10.19_P'+str(wells)+'_M450_step20_100X'
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = True, trackAll = False, 
                      sourceField = 'default')
+
+#%% #%% Deptho from experiment 23-10-25 - Experiment in HeLa with Pelin
+
+# %%%% M1 : 
+
+dates = '23.10.25'
+manips, wells, cells = 1, 3, 3
+depthoNames = '23.10.25_P'+str(2)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% #%% Deptho from experiment 23-10-29 - Experiment with 3T3 optoRhoA LIMKi3
+
+# %%%% M1 : 
+
+dates = '23.10.29'
+manips, wells, cells = 1, 1, 6
+depthoNames = '23.10.29_P'+str(wells)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+
+#%% #%% Deptho from experiment 23-10-31 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+
+# %%%% M1 : 
+
+dates = '23.10.31'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.10.31_P'+str(1)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+

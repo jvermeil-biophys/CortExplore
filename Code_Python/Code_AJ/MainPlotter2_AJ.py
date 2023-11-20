@@ -428,7 +428,7 @@ def plot2Params(data, Filters, fitSubDir, fitType, interceptStress, FIT_MODE, pa
     data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
     data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
     data_ff = data_ff.drop(data_ff[data_ff['fit_K'] > 80000].index)
-    data_ff = data_ff.drop(data_ff[data_ff['E_Chadwick'] > 80000].index)
+    # data_ff = data_ff.drop(data_ff[data_ff['E_Chadwick'] > 80000].index)
     data_ff = data_ff.dropna(subset = ['fit_ciwK'])
 
     cells = data_ff['cellID'].unique()
@@ -1039,13 +1039,12 @@ newFitSettings = {# H0
 newfitValidationSettings = {'crit_nbPts': 6}
 
 
-Task = '23-10-25'
+Task = "23-10-29"
 
 #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
-fitsSubDir = 'Chad_f15_23-10-25_23-11-06_HeLa'
+fitsSubDir = 'Chad_f15_23-10-29_23-11-13'
 
-GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', \
-                            fileName = fitsSubDir,
+GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, fileName = fitsSubDir,
                             save = True, PLOT = True, source = 'Python', fitSettings = newFitSettings,\
                                fitValidationSettings = newfitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -3607,3 +3606,130 @@ plt.ylim(0,10)
 plt.tight_layout()
 # plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
 plt.show()
+
+#%% Plots for 23-11-29 : LIMKi3 experiments with 3T3 optoRhoA
+
+fitsSubDir = 'Chad_f15_23-10-29_23-11-13'
+
+GlobalTable = taka.getMergedTable(fitsSubDir)
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+
+
+fitType = 'stressGaussian'
+# fitType = 'nPoints'
+fitId = '_75'
+fitWidth = 75
+
+
+#%%%% Non linearity
+
+########## Declare variables ##########
+dates = ['23-10-29']
+manips = ['M1', 'M2', 'M3'] #, 'M3'] 
+labels = []
+
+stressRange = '200_550'
+interceptStress = 250
+plot = False
+FIT_MODE = 'loglog'
+condCol = 'manip'
+order = None
+
+condSelection = manips
+
+styleDict1 =  {'M1':{'color': "#5c337f",'marker':'o', 'label' : "20nM LIMKi"},
+                'M2':{'color': gs.colorList40[23],'marker':'o', 'label' : "DMSO"},
+                'M3':{'color': gs.colorList40[20],'marker':'o', 'label' : "10nM LIMKi"},
+                }
+
+###########################################
+
+if not os.path.exists(todayFigDir):
+    os.mkdir(todayFigDir)
+
+pathSubDir = todayFigDir+'/'+fitsSubDir
+if not os.path.exists(pathSubDir):
+    os.mkdir(pathSubDir)
+
+    
+pathFits = pathSubDir + '/' + FIT_MODE
+if not os.path.exists(pathFits):
+    os.mkdir(pathFits)
+    
+pathBoxPlots = pathFits + '/BoxPlots'
+if not os.path.exists(pathBoxPlots):
+    os.mkdir(pathBoxPlots)
+
+
+pathNonlinDir = pathSubDir+'/NonLinPlots'
+if not os.path.exists(pathNonlinDir):
+    os.mkdir(pathNonlinDir)
+
+# plt.style.use('seaborn')
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            # (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1000),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
+            (data['manip'].apply(lambda x : x in manips)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig1.patch.set_facecolor('black')
+
+
+out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                   condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+plt.legend(fontsize = 20, loc = 'upper left')
+
+
+mainFig2, mainAx2 = plt.subplots(1,1)
+mainFig2.patch.set_facecolor('black')
+
+
+out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                  fitWidth=75, Filters = Filters, condCol = condCol, mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.legend(fontsize = 15, loc = 'upper left')
+
+plt.ylim(0,10)
+plt.tight_layout()
+# plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
+plt.show()
+
+dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
+
+#%%%% Box plots, thickness
+measure = 'ctFieldFluctuAmpli'
+order = ['M1', 'M3', 'M2']
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, average = False)
+
+#%%%% Fluctuations vs Thickness
+y = 'ctFieldFluctuAmpli'
+x = 'ctFieldThickness'
+sns.lmplot(data = dfAllCells, x = x, y = y, hue = 'manipId')
+plt.legend(fontsize = 15, loc = 'upper left')
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.show()
+
+    

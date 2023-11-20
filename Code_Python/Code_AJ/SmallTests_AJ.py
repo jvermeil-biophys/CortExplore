@@ -647,12 +647,12 @@ plt.loglog(magFields, F)
 
 #%% Create folders for each field of view during Cannonball experiment
 
-filesPath = 'F:/20231006_Cannonball/BSA_Epoxy_2023/2.5V'
+filesPath = 'H:/Pelin_Sar_PMMH_Stage/23.10.31'
 
 allFiles = os.listdir(filesPath)
-allFiles = np.asarray([i for i in allFiles if i.endswith('.tif')])
+allFiles = np.asarray([i for i in allFiles if i.endswith('.czi')])
 
-allRegs = np.unique(np.asarray([i.split('_')[0] for i in allFiles]))
+allRegs = np.unique(np.asarray([i.split('_disc20um')[0] for i in allFiles]))
 
 for i in allRegs:
     if not os.path.exists(os.path.join(filesPath, i)):

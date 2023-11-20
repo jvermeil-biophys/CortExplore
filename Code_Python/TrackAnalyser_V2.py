@@ -3132,12 +3132,12 @@ class IndentCompression:
                 #             # label = legendText)
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
-<<<<<<<
+# <<<<<<<
                 ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
-=======
+# =======
                 # darkslateblue
->>>>>>>
+# >>>>>>>
                 
                 
             ax = ufun.setAllTextFontSize(ax, size = 9)
@@ -4324,11 +4324,11 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
             IC.computeContactRadius(method = 'Chadwick')
             
-<<<<<<<
+# <<<<<<<
             #### 3.9.2 IN DEV : Re-Compute the best H0 
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
-=======
+# =======
             #### 3.9.2 Re-Compute the best H0
             # try:
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
@@ -4338,7 +4338,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
             # except:
             #     pass
->>>>>>>
+# >>>>>>>
             
             #### 3.10 Local fits of stress-strain curves
             
@@ -4737,7 +4737,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     
     #### 3. Select the files to analyse from the list according to the task
     list_taskMecaFiles = []
-    print(list_mecaFiles)
+    # print(list_mecaFiles)
     # 3.1
     if task == 'all':
         list_taskMecaFiles = list_mecaFiles

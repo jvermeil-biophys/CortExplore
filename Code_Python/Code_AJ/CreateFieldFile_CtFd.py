@@ -11,9 +11,9 @@ import CortexPaths as cp
 import calendar, time
 from datetime import datetime
 
-filesPath = 'E:/20230921_3t3optorhoa_4.5StreptBeads_Mechanics/23.09.21'
-fieldValue = 15.0
-date = '23.09.21'
+filesPath = 'F:/20231031-HeLa-FUCCI_100xoil_4.5Fibro-PEGBeads_ConstantField/23.10.31_Czi'
+fieldValue = 3.60
+date = '23.10.31'
 savePath = os.path.join(cp.DirDataRaw+'/'+date)
 allFiles = os.listdir(filesPath)
 allComp = np.unique(np.asarray([i.split('_disc20um')[0] for i in allFiles]))
@@ -22,6 +22,7 @@ utc_time_epoch = datetime.utcfromtimestamp(0)
 for j in allComp:
     fieldFile = []
     files = [i for i in allFiles if j in i]
+    # cellPath = os.path.join(filesPath,j)
     for file in files:
         print(file)
         with open(os.path.join(filesPath,file), errors="ignore") as f:
@@ -41,7 +42,8 @@ for j in allComp:
             
     fieldFile = np.asarray(fieldFile)        
     np.savetxt(savePath + '/' + j + '_disc20um_Field.txt', fieldFile,  fmt='%2.2f\t%2.2f\t%2.2f\t%2.2f')
-    
+    np.savetxt(savePath + '/' + j + '_Field.txt', fieldFile,  fmt='%2.2f\t%2.2f\t%2.2f\t%2.2f')
+
 
 #%% Placing .czi files in their right folders to make import to fiji easy
 

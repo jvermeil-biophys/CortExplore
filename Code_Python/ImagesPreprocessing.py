@@ -44,52 +44,37 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-#%% Define parameters # Pelin
 
-date = '23.10.25'
+#%% Define parameters # Numi
 
+date = '23.10.29'
+DirDeptho = '23.10.29_Deptho/Deptho_P3'
 
-DirSave = os.path.join(cp.DirDataRaw, date) 
-DirExt = 'E:/20231025_Hela-FUCCI_100xoil_Mechanics/23.10.25'
+# DirSave = os.path.join(cp.DirDataRaw, date) 
+# DirExt = 'F:/20231029_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/23.10.29_Deptho'
 
-# DirDeptho = '23.10.25_Deptho'
-# DirExt  = 'E:/Cortex Experiments/20230712_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ DirDeptho
-# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+DirExt  = 'F:/20231029_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
+DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
 microscope = 'labview'
-
-
-#%% Define parameters # Numi
-
-# date = '23.10.25'
-# # DirDeptho = '23.09.08_BeadCalibration_Deptho'
-
-# DirSave = os.path.join(cp.DirDataRaw, date) 
-# DirExt = 'E:/20231025_Hela-FUCCI_100xoil_Mechanics/23.10.25'
-
-# # DirExt  = 'E:/Cortex Experiments/20230712_3t3optorhoa_100xobjective_4.5StreptBeads_Mechanics/'+ DirDeptho
-# # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
-
-# # prefix = 'cell'
-# # channel = 'w1TIRF DIC'
-# microscope = 'labview'
+imagePrefix = 'im'
 
 
 #%% Define parameters # Jojo
-date = '23.10.18'
-DirExt = 'E:\\23-10-18_Cannonballs\\M5_M450-Strept-inwater\\' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M5_M450-Strept-inwater') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+# date = '23.10.18'
+# DirExt = 'E:\\23-10-18_Cannonballs\\M5_M450-Strept-inwater\\' #'/M4_patterns_ctrl' // \\M6-7_de
+# DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M5_M450-Strept-inwater') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
-# date = '23.03.17'
-# DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
-# DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
+# # date = '23.03.17'
+# # DirExt = 'E:\\2023-03-17_3T3atcc2023_Blebbi2023_step2\\M3_depthos' #'/M4_patterns_ctrl'
+# # DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho', 'M3')
 
-# prefix = ''
-# channel = ''
-microscope = 'labview'
-imagePrefix = 'Image'
+# # prefix = ''
+# # channel = ''
+# microscope = 'labview'
+# imagePrefix = 'Image'
 
 # %% Functions
 
