@@ -121,11 +121,12 @@ ax.legend()
 
 plt.show()
 
-# %% Merging 23.10.18 and 23.10.18 results
+# %% Merging all october 2023 cannonball measurments
 
-dirMerge = "D://MagneticPincherData//Raw//23.10.28_Cannonballs//AttemptAtMergingResults"
+dirMerge = "D://MagneticPincherData//Raw//23.10_CannonBalls_Merging-all-results"
 path2023 = os.path.join(dirMerge, "23-10_ALL_M450-2023_Results.csv")
 path2025 = os.path.join(dirMerge, "23-10_ALL_M450-2025_Results.csv")
+pathStrept = os.path.join(dirMerge, "23-10_ALL_M450-STREPT_Results.csv")
 
 df_CB_2023 = pd.read_csv(path2023)
 # group = df_CB_2023.groupby('B')
@@ -136,6 +137,10 @@ df_CB_2025 = pd.read_csv(path2025)
 # group = df_CB_2025.groupby('B')
 # df_CB_2025 = group.agg({'M':'mean','date':'first','expt':'first'}).reset_index()
 
+df_CB_Strept = pd.read_csv(pathStrept)
+# group = df_CB_Strept.groupby('B')
+# df_CB_Strept = group.agg({'M':'mean','date':'first','expt':'first'}).reset_index()
+
 
 B0 = np.linspace(0, np.max(df_CB_2023.B), 100)
 M0 = 1600 * (0.001991*B0**3 + 17.54*B0**2 + 153.4*B0) / (B0**2 + 35.53*B0 + 158.1) 
@@ -145,7 +150,7 @@ def B2M(x, k):
     return(M)
 
 
-fig, axes = plt.subplots(1, 2, sharey = True)
+fig, axes = plt.subplots(1, 3, figsize = (15,5), sharey = True)
 # fig.sharey()
 
 # 2023
@@ -190,6 +195,29 @@ print(q*ste)
 ax.set_title(manip)
 ax.plot(B0, M0, 'r-', label='Litterature formula', zorder = 4)
 ax.scatter(df_CB_2025['B'], df_CB_2025['M'], c=df_CB_2025['expt'], marker = '+', cmap='Set2', label='Measured - Nexp = 2')
+ax.plot(B0, B2M(B0, k_exp), 'g--', label='Fit: k = {:.3f} +/- {:.3f}'.format(k_exp, q*ste), zorder = 5)
+ax.set_xlabel('B (mT)')
+ax.set_ylabel('M (A/m)')
+ax.legend()
+
+# M450-Strept
+ax = axes[2]
+ax.grid()
+ax.set_xlim([0, 32])
+ax.set_ylim([0, 18000])
+manip = "M450-Strept"
+
+[k_exp], covM = curve_fit(B2M, df_CB_Strept['B'], df_CB_Strept['M'], absolute_sigma=False)
+ste = (covM[0,0]**0.5) * len(df_CB_Strept['B'].unique())/len(df_CB_Strept['B'].unique())
+alpha = 0.975
+dof = len(df_CB_2025['B'])-1
+q = st.t.ppf(alpha, dof) # Student coefficient
+# print(ste, q, q*ste)
+print(q*ste)
+
+ax.set_title(manip)
+ax.plot(B0, M0, 'r-', label='Litterature formula', zorder = 4)
+ax.scatter(df_CB_Strept['B'], df_CB_Strept['M'], c=df_CB_Strept['expt'], marker = '+', cmap='Set1', label='Measured - Nexp = 1')
 ax.plot(B0, B2M(B0, k_exp), 'g--', label='Fit: k = {:.3f} +/- {:.3f}'.format(k_exp, q*ste), zorder = 5)
 ax.set_xlabel('B (mT)')
 ax.set_ylabel('M (A/m)')
