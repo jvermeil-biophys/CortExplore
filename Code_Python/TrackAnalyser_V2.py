@@ -222,12 +222,13 @@ def analyseTimeSeries_ctField(f, tsDf, expDf):
     
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
-    # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
+    # Deal with the asymmetric pair case
+    try:
+        DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+    except:
+        D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+        D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+        DIAMETER = (D1 + D2)/2.
     
     results['duration'] = np.max(tsDf['T'])
     results['medianRawB'] = np.median(tsDf.B)
@@ -1309,11 +1310,12 @@ class CellCompression:
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
         
-        diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-        if len(diameters) == 2:
-            D = (int(diameters[0]) + int(diameters[1]))/2.
-        else:
-            D = int(diameters[0])
+        try:
+            DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+        except:
+            D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+            D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+            DIAMETER = (D1 + D2)/2.
         
         EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
         
@@ -1327,7 +1329,7 @@ class CellCompression:
         nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
         
         self.Ncomp = Ncomp
-        self.DIAMETER = D
+        self.DIAMETER = DIAMETER
         self.EXPTYPE = EXPTYPE
         self.normalField = normalField
         self.minCompField = minCompField
@@ -4277,8 +4279,13 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         i_tsDf = ufun.findFirst(1, maskComp)
         
         #### 3.3 Create IndentCompression object
-        IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
-        CC.listIndent.append(IC)
+        try:
+            IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
+            CC.listIndent.append(IC)
+        except:
+            print(cellID, i)
+            return(thisCompDf)
+            
 
         #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
@@ -4720,7 +4727,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     
     #### 3. Select the files to analyse from the list according to the task
     list_taskMecaFiles = []
-    print(list_mecaFiles)
+    # print(list_mecaFiles)
     # 3.1
     if task == 'all':
         list_taskMecaFiles = list_mecaFiles
@@ -4733,7 +4740,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
                 if t in currentCellID:
                     list_taskMecaFiles.append(f)
                     break
-    print(list_taskMecaFiles)
+    # print(list_taskMecaFiles)
     list_selectedMecaFiles = []
     # 3.3
     if mode == 'fromScratch':
