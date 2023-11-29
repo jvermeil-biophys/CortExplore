@@ -35,7 +35,8 @@ import time
 import numpy as np
 import pandas as pd
 
-from BeadTracker_V3 import smallTracker
+# from BeadTracker_V3 import smallTracker
+from BeadTracker_V4 import smallTracker
 
 # %% General template
 
@@ -109,8 +110,16 @@ dictPaths = {'sourceDirPath' : 'D://MagneticPincherData//Raw//23.11.01_NanoInden
 
 dictConstants = {'microscope' : 'labview',
                  #
-                 'bead type' : 'M450', # 'M450' or 'M270'
-                 'bead diameter' : 4992, # nm
+                  # 'bead type' : 'M450', # 'M450' or 'M270'
+                  # 'bead diameter' : 4493, # nm
+                  # 'bead magnetization correction' : 0.969, # nm
+                 #
+                 'inside bead type' : 'M450-2025', # 'M450' or 'M270'
+                 'inside bead diameter' : 4493, # nm
+                 'inside bead magnetization correction' : 0.969, # nm
+                 'outside bead type' : 'M450-Strept', # 'M450' or 'M270'
+                 'outside bead diameter' : 4506, # nm
+                 'outside bead magnetization correction' : 1.056, # nm
                  #
                  'normal field multi images' : 3, # Number of images
                  'multi image Z step' : 500, # nm
@@ -179,14 +188,11 @@ metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
 tsDf = smallTracker(dictPaths, metaDf, dictConstants, NB = 2, **dictOptions)
 
 
-
-# %%% Call mainTracker()
+# %%% Plot stuff
 
 iL = 1
 tsDf_i = tsDf[(tsDf['idxLoop'] == iL)] #  & (tsDf['idxAnalysis'] == iL)
-tsDf_i.plot('D3', 'F')
-
-
+tsDf.plot('T', 'D3')
 
 
 # %% Test for Anumita's files
