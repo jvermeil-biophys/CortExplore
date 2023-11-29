@@ -2831,9 +2831,10 @@ class BeadDeptho:
 
 def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', step = 20, plot = 0):
     rawFileList = os.listdir(dirPath)
+
     listFileNames = [f[:-4] for f in rawFileList if (os.path.isfile(os.path.join(dirPath, f)) and f.endswith(".tif"))]
     L = []
-    
+
     #### SETTINGS
     bestDetphoType = 'interp'
     bestFocusType = 'intensity_interp'
@@ -2898,6 +2899,8 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
             maxBelowZm = BD.zLast - Zm
     maxAboveZm, maxBelowZm = int(maxAboveZm), int(maxBelowZm)
     Zfocus = maxAboveZm
+    # print(listBD)
+    # print(listBD[0].depthosDict['deptho_' + bestDetphoType])
     depthoWidth = listBD[0].depthosDict['deptho_' + bestDetphoType].shape[1]
     depthoHeight = maxAboveZm + maxBelowZm
     finalDeptho = np.zeros([depthoHeight, depthoWidth], dtype = np.float64)

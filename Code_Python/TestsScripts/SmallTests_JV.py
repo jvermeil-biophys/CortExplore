@@ -26,6 +26,12 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+# %% Test sorting
+
+A = np.array([3.2, 1.6, 6.4, 0.8])
+r = np.argsort(A)
+B = list(A[r])
+
 # %% Test new interp function
 
 from skimage import io
@@ -258,6 +264,22 @@ def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plottin
     return(ax)
 
 plt.show()
+
+# %%
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 20, 18, 19, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'l', 'l', 'l_0','l_0','l_0','l', 'm'],
+     'iL':[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+     'idxAnalysis':[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+
+df = pd.DataFrame(d)
+indexAction = df[df['course'].apply(lambda x : x.startswith('l'))].index
+df.loc[indexAction, 'idxAnalysis'] = df.loc[indexAction, 'iL'] * (-1)
+i_startOfSpike = ufun.findFirst('l_0', df['course'].values)
+i_endOfSpike = ufun.findLast('l', df['course'].values)
+# indexMainPhase = logDf[logDf['Status'].apply(lambda x : x.startswith('Action_main'))].index
+df.loc[i_startOfSpike:i_endOfSpike+1, 'idxAnalysis'] *= (-1) # *logDf.loc[i_startOfSpike:i_endOfSpike+1, 'idxAnalysis']
 
 # %%
 

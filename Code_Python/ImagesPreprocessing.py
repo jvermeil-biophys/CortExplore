@@ -57,20 +57,20 @@ import UtilityFunctions as ufun
 
 
 #%% Define parameters # Jojo
-date = '23.10.28'
-DirExt = 'E:\\23-10-28_Cannonballs\\M2_M450-2023_BSA_inPBS\\' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date + '_CannonBalls', 'M2_M450-2023_BSA_inPBS') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '23.11.13'
+DirExt = 'E:\\23.11.13_NanoIndent\\M2_depthos' #'/M4_patterns_ctrl' // \\M6-7_de
+DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M2') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
 microscope = 'labview'
-imagePrefix = 'Image'
+imagePrefix = 'im' # 'Image'
 
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad',
-                                             'film', 'films', 'capture', 'captures', 
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie',
+                                             'film', 'films', 'capture', 'captures'
                                              ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """

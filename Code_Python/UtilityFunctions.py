@@ -1322,6 +1322,14 @@ def findFirst(x, A):
     idx = (A==x).view(bool).argmax()
     return(idx)
 
+def findLast(x, A):
+    """
+    Find first occurence of x in array A, in a VERY FAST way.
+    If you like weird one liners, you will like this function.
+    """
+    idx = (A[::-1]==x).view(bool).argmax()
+    return(len(A)-idx-1)
+
 
 def findFirst_V2(v, arr):
     """
