@@ -36,7 +36,7 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-from BeadTracker_V3 import depthoMaker
+from BeadTracker_V4 import depthoMaker
 
 # 2. Pandas settings
 pd.set_option('mode.chained_assignment',None)
@@ -44,9 +44,83 @@ pd.set_option('mode.chained_assignment',None)
 # 3. Graphical settings
 gs.set_default_options_jv()
 
+
 # %% Next depthos !
 
-# %% Depthos 23.01.11 - Tests Nano-Indent !
+# %% Depthos 23.11.21 - PELIN
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.11.21'
+
+subdir = 'Try2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_PelinDepthos', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = 7.5 # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+
+# %% Next depthos !
+
+# %% Depthos 23.11.15 - Nano-Indent !
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.11.15'
+
+# subdir = 'Depthos_CompareIn&Out'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_NanoIndent_depthos')
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+# %% Depthos 23.11.13 - Nano-Indent !
+
+DirDataRaw = 'D://MagneticPincherData//Raw'
+date = '23.11.13'
+
+
+subdir = 'M1'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_depthos', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+
+subdir = 'M2'
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_depthos', subdir)
+DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date + '_M2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = gc.SCALE_100X # pix/µm
+
+depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
+            specif, saveLabel, scale, beadType = beadType, step = 20, plot = 0) # , d = 'HD'
+
+
+# %% Depthos 23.11.01 - Tests Nano-Indent !
 
 DirDataRaw = 'D://MagneticPincherData//Raw'
 date = '23.11.01'
