@@ -10,6 +10,7 @@ Created on Tue Oct 10 16:22:07 2023
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 import os
 import re
@@ -24,8 +25,213 @@ gs.set_default_options_jv()
 
 # %% Combine the data from the nanoIndent & the Pincher
 
+dataDir = "D://MagneticPincherData//Data_Analysis"
 
 
+# %%% Format the pincher table
+
+df_pincher = pd.read_csv(os.path.join(dataDir, 'MecaData_NanoIndent_23-11.csv'), sep=';')
+
+df_pincher.insert(5, 'compressionSet', df_pincher['cellName'].apply(lambda x : int(x.split('-')[0][-1])))
+df_pincher['cellRawNum'] = df_pincher['cellName'].apply(lambda x : x.split('_')[-1])
+df_pincher['cellName'] = df_pincher['cellName'].apply(lambda x : x.split('-')[0][:-1])
+df_pincher['cellID'] = df_pincher['date'] + '_' + df_pincher['cellName']
+df_pincher['cellCode'] = df_pincher['cellRawNum'].apply(lambda x : x[:2] + x[3:])
+
+dates = ['23-11-15']
+Filters = np.array([df_pincher['date'].apply(lambda x : x in dates).values,
+                    (df_pincher['cellName'] != 'M1_P1_C1').values,
+                    (df_pincher['valid_Full'] == True).values,
+                    ])
+totalFilter = np.all(Filters, axis = 0)
+df_pincher_f = df_pincher[totalFilter]
+
+
+# %%% Format the indenter table
+
+df_indenter = pd.read_csv(os.path.join(dataDir, 'ChiaroData_NanoIndent_23-11.csv'), sep=';')
+
+df_indenter['cellName'] = df_indenter['manip'] + '_P1_' + df_indenter['cell']
+df_indenter['cellID'] = df_indenter['date'] + '_' + df_indenter['cellName']
+
+df_indenter['indentName'] = df_indenter['cellName'] + '_' + df_indenter['indent']
+df_indenter['indentID'] = df_indenter['cellID'] + '_' + df_indenter['indent']
+
+dates = ['23-11-15']
+Filters = np.array([df_indenter['date'].apply(lambda x : x in dates).values,
+                    (df_indenter['cellName'] != 'M1_P1_C1').values,
+                    (df_indenter['Rsq2'] >= 0.7).values,
+                    ])
+totalFilter = np.all(Filters, axis = 0)
+df_indenter_f = df_indenter[totalFilter]
+
+# %%% Start plotting
+
+# %%%% First Plot
+
+fig1, axes1 = plt.subplots(2,1, figsize = (8, 6))
+fig = fig1
+
+parm = 'bestH0'
+ax = axes1[0]
+dictPlot = {'data' : df_pincher_f,
+            'ax' : ax,
+            'x' : 'cellCode',
+            'y' : parm,
+            'hue' : 'compressionSet'
+            }
+sns.boxplot(**dictPlot, fliersize = 0, width=0.6)
+sns.swarmplot(**dictPlot, dodge = True, size=4, edgecolor='black', linewidth=1)
+ax.set_ylim([0, ax.get_ylim()[1]])
+ax.get_legend().remove()
+
+parm = 'K2'
+ax = axes1[1]
+dictPlot = {'data' : df_indenter_f,
+            'ax' : ax,
+            'x' : 'cell',
+            'y' : parm,
+            }
+# sns.boxplot(**dictPlot, fliersize = 0, width=0.6)
+sns.swarmplot(**dictPlot, dodge = True, size=6, edgecolor='black', linewidth=1)
+ax.set_ylim([0, ax.get_ylim()[1]])
+# ax.get_legend().remove()
+
+plt.show()
+
+# %%%% Second Plot
+
+fig2, axes2 = plt.subplots(2,1, figsize = (8, 6))
+fig = fig2
+
+parm = 'E_Full'
+ax = axes2[0]
+dictPlot = {'data' : df_pincher_f,
+            'ax' : ax,
+            'x' : 'cellCode',
+            'y' : parm,
+            'hue' : 'compressionSet'
+            }
+sns.boxplot(**dictPlot, fliersize = 0, width=0.6)
+sns.swarmplot(**dictPlot, dodge = True, size=4, edgecolor='black', linewidth=1)
+ax.set_ylim([0, ax.get_ylim()[1]])
+ax.get_legend().remove()
+
+parm = 'K2'
+ax = axes2[1]
+dictPlot = {'data' : df_indenter_f,
+            'ax' : ax,
+            'x' : 'cell',
+            'y' : parm,
+            }
+sns.boxplot(**dictPlot, fliersize = 0, width=0.6)
+sns.swarmplot(**dictPlot, dodge = True, size=4, edgecolor='black', linewidth=1)
+ax.set_ylim([0, ax.get_ylim()[1]])
+# ax.get_legend().remove()
+
+plt.show()
+
+# %%% Second style of plots : Average shit together
+
+
+# %%%% Format the pincher table
+
+df_pincher = pd.read_csv(os.path.join(dataDir, 'MecaData_NanoIndent_23-11.csv'), sep=';')
+
+df_pincher.insert(5, 'compressionSet', df_pincher['cellName'].apply(lambda x : int(x.split('-')[0][-1])))
+df_pincher['cellRawNum'] = df_pincher['cellName'].apply(lambda x : x.split('_')[-1])
+df_pincher['cellName'] = df_pincher['cellName'].apply(lambda x : x.split('-')[0][:-1])
+df_pincher['cellID'] = df_pincher['date'] + '_' + df_pincher['cellName']
+df_pincher['cellCode'] = df_pincher['cellRawNum'].apply(lambda x : x[:2] + x[3:])
+
+dates = ['23-11-15']
+Filters = np.array([df_pincher['date'].apply(lambda x : x in dates).values,
+                    (df_pincher['cellName'] != 'M1_P1_C1').values,
+                    (df_pincher['valid_Full'] == True).values,
+                    (df_pincher['compressionSet'] == 1).values,
+                    ])
+totalFilter = np.all(Filters, axis = 0)
+df_pincher_f = df_pincher[totalFilter]
+
+g = df_pincher_f.groupby('cellName')
+df_pincher_g = g.agg({'bestH0':'mean', 'E_Full':'mean', 'compNum': 'count'}).reset_index()
+
+# %%%% Format the indenter table
+
+df_indenter = pd.read_csv(os.path.join(dataDir, 'ChiaroData_NanoIndent_23-11.csv'), sep=';')
+
+df_indenter['cellName'] = df_indenter['manip'] + '_P1_' + df_indenter['cell']
+df_indenter['cellID'] = df_indenter['date'] + '_' + df_indenter['cellName']
+
+df_indenter['indentName'] = df_indenter['cellName'] + '_' + df_indenter['indent']
+df_indenter['indentID'] = df_indenter['cellID'] + '_' + df_indenter['indent']
+
+dates = ['23-11-15']
+Filters = np.array([df_indenter['date'].apply(lambda x : x in dates).values,
+                    (df_indenter['cellName'] != 'M1_P1_C1').values,
+                    (df_indenter['Rsq2'] >= 0.7).values,
+                    ])
+totalFilter = np.all(Filters, axis = 0)
+df_indenter_f = df_indenter[totalFilter]
+
+g = df_indenter_f.groupby('cellName')
+df_indenter_g = g.agg({'K2':'mean', 'indent': 'count'}).reset_index()
+
+
+
+# %%%% Merge
+
+df_merge_g = df_pincher_g.merge(df_indenter_g, on='cellName')
+df_merge_g['k'] = df_merge_g['bestH0'] * df_merge_g['E_Full']
+
+# %%% Start plotting
+
+fig3, axes3 = plt.subplots(1,3, figsize = (15, 6))
+fig = fig3
+
+ax = axes3[0]
+dictPlot = {'data' : df_merge_g,
+            'ax' : ax,
+            'x' : 'bestH0',
+            'y' : 'K2',
+            'hue' : 'cellName',
+            'sizes':(10,10),
+            'edgecolor':'k'
+            }
+sns.scatterplot(**dictPlot)
+
+ax.set_xlim([0, ax.get_xlim()[1]])
+ax.set_ylim([0, ax.get_ylim()[1]])
+
+ax = axes3[1]
+dictPlot = {'data' : df_merge_g,
+            'ax' : ax,
+            'x' : 'E_Full',
+            'y' : 'K2',
+            'hue' : 'cellName',
+            'sizes':(10,10),
+            'edgecolor':'k'
+            }
+sns.scatterplot(**dictPlot)
+
+ax.set_xlim([0, ax.get_xlim()[1]])
+ax.set_ylim([0, ax.get_ylim()[1]])
+
+ax = axes3[2]
+dictPlot = {'data' : df_merge_g,
+            'ax' : ax,
+            'x' : 'k',
+            'y' : 'K2',
+            'hue' : 'cellName',
+            'sizes':(10,10),
+            'edgecolor':'k'
+            }
+sns.scatterplot(**dictPlot)
+
+ax.set_xlim([0, ax.get_xlim()[1]])
+ax.set_ylim([0, ax.get_ylim()[1]])
+
+plt.show()
 
 # %% Cell indents
 
@@ -33,7 +239,7 @@ gs.set_default_options_jv()
 
 # %%%% Pick a folder and open the indentations inside
 
-C = 'C2'
+C = 'C9'
 dataDir = "D://MagneticPincherData//Raw//23.11.15_NanoIndent_ChiaroData//M1//" + C + "//Indentations"
 
 R = 24.5
@@ -262,7 +468,7 @@ for I in listIndent[:]:
 
 # %%%% Function 
 
-def FitHertz_V1(Z, F, R, fraction = 0.4):
+def FitHertz_V1(Z, F, R, mode = 'dZmax', fractionF = 0.4, dZmax = 3):
     early_points = 1000
     F_moy = np.average(F[:early_points])
     F_std = np.std(F[:early_points])
@@ -280,36 +486,45 @@ def FitHertz_V1(Z, F, R, fraction = 0.4):
         return(f)
     
     #### First Fit Zone
-    i_start1 = len(F) - ufun.findFirst(True, F[::-1] < F_moy + 1 * F_std)
+    # i_start1 = len(F) - ufun.findFirst(True, F[::-1] < F_moy + 1 * F_std)
     # i_start1 = len(F) - ufun.findFirst(True, F[::-1] < 0 + 1 * F_std)
-    Z0_sup = Z[i_start1]
-
-    # upper_threshold = F_moy + fraction * (F_max - F_moy)
-    upper_threshold = F_moy + fraction * (F_max - F_moy)
-    i_stop = ufun.findFirst(True, F >= upper_threshold)
+    # Z0_sup = Z[i_start1]
+    Z0_sup = np.max(Z)
+    
+    if mode == 'fractionF':
+        # upper_threshold = F_moy + fraction * (F_max - F_moy)
+        upper_threshold = F_moy + fractionF * (F_max - F_moy)
+        i_stop = ufun.findFirst(True, F >= upper_threshold)
     
     #### First Fit
     binf = [0, 0]
     bsup = [5000, Z0_sup]
     p0=[100, 1] # 0.99*Z0_sup
-    Z1, F1 = Z[i_start1:i_stop], F[i_start1:i_stop]
+    # Z1, F1 = Z[i_start1:i_stop], F[i_start1:i_stop]
+    Z1, F1 = Z, F
     [K1, Z01], covM1 = curve_fit(HertzFit, Z1, F1, p0=p0, bounds=(binf, bsup))
-    Z_fit1 = np.linspace(Z01, Z[i_stop], 100)
+    Z_fit1 = np.linspace(np.min(Z), np.max(Z), 200)
     F_fit1 = HertzFit(Z_fit1, K1, Z01)
     Rsq1 = ufun.get_R2(F1, HertzFit(Z1, K1, Z01))
     
     #### Second Fit Zone
-    i_start2 = ufun.findFirst(True, Z >= Z01)
+    i_start = ufun.findFirst(True, Z >= Z01-0.5)
+    if mode == 'fractionF':
+        upper_threshold = F_moy + fractionF * (F_max - F_moy)
+        i_stop = ufun.findFirst(True, F >= upper_threshold)
+    elif mode == 'dZmax':
+        i_stop = len(Z) - ufun.findFirst(True, Z[::-1] < Z01 + dZmax) - 1
     
     #### Second Fit
     binf = [0, 0]
     bsup = [5000, Z0_sup]
     p0=[K1, 1]
-    Z2, F2 = Z[i_start2:i_stop], F[i_start2:i_stop]
+    
+    Z2, F2 = Z[i_start:i_stop], F[i_start:i_stop]
     [K2, Z02], covM2 = curve_fit(HertzFit, Z2, F2, p0=p0, bounds=(binf, bsup))
     Z_fit2 = np.linspace(Z02, Z[i_stop], 100)
     F_fit2 = HertzFit(Z_fit2, K2, Z02)
-    Rsq2 = ufun.get_R2(F2, HertzFit(Z2, K1, Z01))
+    Rsq2 = ufun.get_R2(F2, HertzFit(Z2, K2, Z02))
     
     
     #### Third Fit
@@ -345,8 +560,9 @@ def FitHertz_V1(Z, F, R, fraction = 0.4):
                'F_moy':F_moy,
                'F_std':F_std,
                'F_max':F_max,
-               'i_start1':i_start1,
-               'i_start2':i_start2,
+               # 'i_start1':i_start1,
+               # 'i_start2':i_start2,
+               'i_start':i_start,
                'i_stop':i_stop,
                'K1':K1,
                'Z01':Z01,
@@ -396,21 +612,24 @@ def plotFitHertz_V1(dictIndent, fitResults, show = True, save = False, savePath 
     ax.set_xlabel('Distance (nm)')
     ax.set_ylabel('Load (uN)')
     
-    ax.axvline(Z[fitResults['i_start1']], ls = '--', color = 'yellow', zorder = 4)
-    ax.axvline(Z[fitResults['i_start2']], ls = '--', color = 'orange', zorder = 4)
+    # ax.axvline(Z[fitResults['i_start1']], ls = '--', color = 'yellow', zorder = 4)
+    # ax.axvline(Z[fitResults['i_start2']], ls = '--', color = 'orange', zorder = 4)
+    ax.axvline(fitResults['Z01']*1000, ls = '--', color = 'orange', zorder = 4)
     ax.axvline(Z[fitResults['i_stop']], ls = '--', color = 'red', zorder = 4)
     ax.axhline((fitResults['F_moy'])*1e-6, ls = '-', color = 'k', zorder = 4)
     ax.axhline((fitResults['F_moy']+fitResults['F_std'])*1e-6, ls = '--', color = 'k', zorder = 4)
-    labelFit1 = 'First fit\nZ0 = {:.2f} +/- {:.2f} µm\nEeff = {:.0f} +/- {:.0f} Pa'.format(fitResults['Z01'], 
-                                                                                           fitResults['covM1'][1,1]**0.5,
-                                                                                           fitResults['K1'], 
-                                                                                           fitResults['covM1'][0,0]**0.5)
+    labelFit1 = 'First fit\nZ0 = {:.2f} +/- {:.2f} µm\nEeff = {:.0f} +/- {:.0f} Pa\nR² = {:.3f}'.format(fitResults['Z01'], 
+                                                                                                   fitResults['covM1'][1,1]**0.5,
+                                                                                                   fitResults['K1'], 
+                                                                                                   fitResults['covM1'][0,0]**0.5,
+                                                                                                   fitResults['Rsq1'],)
     ax.plot(fitResults['Z_fit1']*1e3, fitResults['F_fit1']*1e-6, 
             ls = '-', color = 'orange', zorder = 5, label = labelFit1)
-    labelFit2 = 'First fit\nZ0 = {:.2f} +/- {:.2f} µm\nEeff = {:.0f} +/- {:.0f} Pa'.format(fitResults['Z02'], 
+    labelFit2 = 'First fit\nZ0 = {:.2f} +/- {:.2f} µm\nEeff = {:.0f} +/- {:.0f} Pa\nR² = {:.3f}'.format(fitResults['Z02'], 
                                                                                            fitResults['covM2'][1,1]**0.5,
                                                                                            fitResults['K2'], 
-                                                                                           fitResults['covM2'][0,0]**0.5)
+                                                                                           fitResults['covM2'][0,0]**0.5,
+                                                                                           fitResults['Rsq2'],)
     ax.plot(fitResults['Z_fit2']*1e3, fitResults['F_fit2']*1e-6, 
             ls = '-', color = 'red', zorder = 5, label = labelFit2)
     
@@ -447,11 +666,11 @@ def plotFitHertz_V1(dictIndent, fitResults, show = True, save = False, savePath 
 # %%%% Script
 
 
-mainDir = 'D://MagneticPincherData//Raw//23.11.13_NanoIndent_ChiaroData//M2//'
+mainDir = 'D://MagneticPincherData//Raw//23.11.15_NanoIndent_ChiaroData//M1//'
 fileList = [f for f in os.listdir(mainDir) if (os.path.isdir(mainDir + '//' + f) and len(f) == 2)]
 
-date = '23-11-13'
-manip = 'M2'
+date = '23-11-15'
+manip = 'M1'
 
 resDir = {'date':[],
           'manip':[],
@@ -540,7 +759,7 @@ for f in fileList:
             compression_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
             Z = df.loc[step_indices, 'Z Tip (nm)'].values
             F = df.loc[step_indices, 'Load (uN)'].values
-            fitResults = FitHertz_V1(Z * 1e-3, F * 1e6, R, fraction = 0.4)  # nm to µm # µN to pN
+            fitResults = FitHertz_V1(Z * 1e-3, F * 1e6, R, mode = 'dZmax', dZmax = 3)  # nm to µm # µN to pN
             
             plotFitHertz_V1(dI, fitResults, show=True, save=True, savePath=mainDir)
             

@@ -81,7 +81,7 @@ plt.close('all')
 # %%% 23-11-15
 
 dates = '23.11.15'
-manips, wells, cells = 1, 1, 'all'
+manips, wells, cells = 1, 1, 42
 depthoName = '23.11.15_M1_M450_step20_100X'
 
 output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
