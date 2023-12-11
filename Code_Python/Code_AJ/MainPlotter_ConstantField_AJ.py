@@ -29,15 +29,16 @@ def makeMergedDf(expDf, date):
     allFiles = os.listdir(tsPath)
     date2 = date.replace('.', '-')
     allFiles = [tsPath+'/'+i for i in allFiles if date2 in i]
+    # print(allFiles)
     
     expDf = expDf[expDf['date'] == date2]
-    pathCC = 'C:/Users/anumi/OneDrive/Desktop/CortExplore/Data_Experimental_AJ/HeLa_Fucci/'
+    pathCC = 'C:/Users/anumi/OneDrive/Desktop/CortExplore/Data_Experimental_AJ/HeLa_Fucci'
     ccdf = pd.read_csv(os.path.join(pathCC, date2 + '_CellCyclePhase.csv'), sep=None, engine = 'python')
     
     for file in allFiles:
-        # print(file)
+        print(file)
         cellID = file.split('Data_TimeSeries/')[1]
-        cellID = cellID.split('_PY.csv')[0]
+        cellID = cellID.split('_disc20um')[0]
         
         tsdf = pd.read_csv(file, sep = ';')
         beadDia = expDf['bead diameter'].values.astype(float)[0] / 1000
@@ -58,7 +59,7 @@ def makeMergedDf(expDf, date):
                 'cell phase' : cellphase,
                 'color' : cellcolor})
         
-        # df_results = df_results[df_results['medianThickness'] < 1200]
+        df_results = df_results[df_results['medianThickness'] < 1.2]
         
         df_final = pd.concat([df_final, df_results])
     return df_final
@@ -69,7 +70,7 @@ def makeMergedDf(expDf, date):
 #%%%% 23.10.31 : Constant field, with Pelin Sar
 
 df = makeMergedDf(expDf, '23.10.31')
-y = 'medianThickness'
+y = 'medianThifckness'
 x = 'cell phase'
 
 sns.swarmplot(data = df, x = x, y = y, 
@@ -79,6 +80,6 @@ sns.boxplot(data = df, x = x, y = y,
             medianprops={"color": 'darkred', "linewidth": 2},\
             boxprops={"edgecolor": 'k',"linewidth": 2, 'alpha' : 1})
     
-# plt.show()
+plt.ylim(0, 1)
 
 # sns.lmplot(data = df, x = 'medianThickness', y = 'fluctuations', hue = 'cell phase')    

@@ -39,6 +39,9 @@ import UtilityFunctions as ufun
 
 from BeadTracker import mainTracker
 from BeadTracker_V2 import mainTracker_V2
+from BeadTracker_V3 import mainTracker_V3
+
+
 
 from BeadTracker import XYZtracking
 
@@ -1434,10 +1437,50 @@ logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf
 # %%%% M1 : 
 
 dates = '23.10.31'
-manips, wells, cells = 1, 1, 'all'
+manips, wells, cells = 1, 2, 15
 depthoNames = '23.10.31_P'+str(1)+'_M450_step20_100X'
   
 logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False, 
                                  sourceField = 'default')
+
+
+#%% #%% Deptho from experiment 23-11-22 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+#Experiment titled 23-10-22 because of an error
+
+# %%%% M1 : 
+
+dates = '23.10.22'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.11.22_P'+str(1)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -388,6 +388,30 @@ for file in files:
     oldName = '_'.join(oldName)
     os.rename(os.path.join(path, file), os.path.join(newPath, oldName))  
         
+#%% Changing the names of some mis-named files #2
+
+path = 'D:/Anumita/MagneticPincherData/Raw/23.10.22/'
+newPath = 'D:/Anumita/MagneticPincherData/Raw/23.10.22/newName'
+
+files = os.listdir(path)
+
+for file in files:
+    if '.tif' in file:
+        oldName = file.split('.')
+        oldName.insert(1, '_disc20um_thickness')
+        oldName[2] = '.tif'
+        newName = ''.join(oldName)
+        os.rename(os.path.join(path, file), os.path.join(newPath, newName))  
+    
+    # if 'Results' in file:
+        
+    #     oldName = file.split('_Results')
+    #     oldName.insert(1, '_disc20um_thickness')
+    #     oldName[2] = '_Results.txt'
+    #     newName = ''.join(oldName)
+    #     os.rename(os.path.join(path, file), os.path.join(newPath, newName)) 
+        
+        
         
 #%% Code to deleted some xtra triplets that arise when you use activations with different 
 #exposure times (prob with labview)

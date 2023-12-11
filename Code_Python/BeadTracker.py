@@ -434,6 +434,8 @@ class PincherTimeLapse:
         """
         N0 = self.loop_mainSize
         Nramp0 = self.loop_rampSize
+        print('Nramp0')
+        print(Nramp0)
         # Nexclu = self.loop_excludedSize
         nUp = self.Nuplet
         # N = N0 - Nexclu
@@ -529,7 +531,7 @@ class PincherTimeLapse:
         i_nUp = 1
 
         # print(N0,Nramp0,Nexclu,nUp)
-        if self.microscope == 'metamorph':
+        if self.microscope == 'metamorph' or self.microscope == 'zen':
             for i in range(self.nLoop):
                 jstart = int(i*N0)
                 for j in range(N0): # N
@@ -2163,7 +2165,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'compressions'
             if ('thickness' in f):
-                PTL.determineFramesStatus_R40()
+                PTL.determineFramesStatus_optoGen()
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'constant field'
             elif 'L40' in f:
@@ -2387,6 +2389,8 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
         elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
             matchingDirection = 'upward'
+            #### !!!!!!!!! REMEMBER TO CHANGE BACK
+            # matchingDirection = 'downward'
             print(gs.ORANGE + "Deptho detection 'upward' mode" + gs.NORMAL)
             
         if redoAllSteps or not trajFilesImported:
