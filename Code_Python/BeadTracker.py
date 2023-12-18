@@ -367,8 +367,8 @@ class PincherTimeLapse:
                 path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j+1) + '.tif')
                 io.imsave(path, Ifluo, check_contrast=False)
             
-                print('excludedFrames_outward')
-                print(self.excludedFrames_outward)
+                # print('excludedFrames_outward')
+                # print(self.excludedFrames_outward)
             # 
             # try: # Optogenetic activations behaviour
             #     print(gs.ORANGE + 'Trying optogen fluo detection...' + gs.NORMAL)
@@ -434,8 +434,8 @@ class PincherTimeLapse:
         """
         N0 = self.loop_mainSize
         Nramp0 = self.loop_rampSize
-        print('Nramp0')
-        print(Nramp0)
+        # print('Nramp0')
+        # print(Nramp0)
         # Nexclu = self.loop_excludedSize
         nUp = self.Nuplet
         # N = N0 - Nexclu

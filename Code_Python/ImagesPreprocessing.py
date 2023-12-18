@@ -47,13 +47,13 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.10.31'
-# DirDeptho = '23.10.29_Deptho/Deptho_P3'
+date = '23.11.21/Status'
+# DirDeptho = '23.11.21_Deptho/Deptho_P3'
 
 DirSave = os.path.join(cp.DirDataRaw, date) 
-DirExt = 'F:/20231031-HeLa-FUCCI_100xoil_4.5Fibro-PEGBeads_ConstantField/23.10.31'
+DirExt = 'E:/20231121_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/23.11.21'
 
-# DirExt  = 'F:/20231029_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
+# DirExt  = 'E:/20231121_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
@@ -478,7 +478,7 @@ for i in range(len(allCellsRaw)):
 #### DO THIS !
 # copyFieldFiles(allCells, DirSave)
 
-copyFieldFiles(allCells, DirSave, suffix = '_Field.txt')
+copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
 

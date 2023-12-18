@@ -1459,9 +1459,31 @@ logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
                                  sourceField = 'default')
 
 
+#%% #%% Deptho from experiment 23-11-21 - Experiment with LIMKi3, optoRhoa (1um dose of LIMKi3)
+
+# %%%% M1 : 
+
+dates = '23.11.21'
+manips, wells, cells = 2, 3, 'all'
+depthoNames = '23.11.21_P'+str(wells)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False, 
+                                 sourceField = 'default')
 
 
 
+#%% #%% Deptho from experiment 23-11-13 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+
+# %%%% M1 : 
+
+dates = '23.12.13'
+manips, wells, cells = 1, 1, 2
+depthoNames = '23.12.13_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
 
 
 
