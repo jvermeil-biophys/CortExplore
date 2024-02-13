@@ -853,6 +853,7 @@ def copyFile(DirSrc, DirDst, filename):
     """
     PathSrc = os.path.join(DirSrc, filename)
     PathDst = os.path.join(DirDst, filename)
+    print(PathDst)
     shutil.copyfile(PathSrc, PathDst)
     
 def copyFolder(DirSrc, DirDst, folderName):
@@ -870,6 +871,7 @@ def copyFilesWithString(DirSrc, DirDst, stringInName):
     SrcFilesList = os.listdir(DirSrc)
     for SrcFile in SrcFilesList:
         if stringInName in SrcFile:
+            print(SrcFile)
             copyFile(DirSrc, DirDst, SrcFile)
             
 def containsFilesWithExt(Dir, ext):

@@ -3469,7 +3469,7 @@ class IndentCompression:
                 centers = plotSettings['plotStrainCenters']
                 # N = len(centers)
                 # colors = gs.colorList30[:N]
-                
+                print('passed')
                 fltr = (df['center_x'].apply(lambda x : x in centers)) & \
                        (df['halfWidth_x'] == HW)
                 

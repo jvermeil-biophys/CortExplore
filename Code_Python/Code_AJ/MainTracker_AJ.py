@@ -1049,11 +1049,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M5 :
 
 dates = '22.12.07'
-manips, wells, cells = 5, 3, 17
+manips, wells, cells = 5, 3, 1
 depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, trackAll = False, 
                      sourceField = 'default')
 
 #%% Deptho from experiment 21-04-21. Experiments from Filipe
@@ -1387,7 +1387,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '23.07.12'
-manips, wells, cells = 3, 3, 'all'
+manips, wells, cells = 5, 'all', 'all'
 depthoNames = '23.07.12_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -1487,7 +1487,28 @@ logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 
 
 
+#%% #%% Deptho from experiment 24-01-02 - Experiment with 3T3 UTH-Cry2
 
+# %%%% M1 : 
+
+dates = '24.01.02'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '24.01.02_M450_step20_100X'
+  
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+#%% #%% Deptho from experiment 24-01-02 - Experiment with MCF-10a, with Yohalie Kalukula
+
+# %%%% M1 : 
+
+dates = '24.01.25'
+manips, wells, cells = 2, 1, 1
+depthoNames = '24.01.25_M450_step20_100X'
+  
+mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
 
 
 

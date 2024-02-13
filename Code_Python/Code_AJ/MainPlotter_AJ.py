@@ -90,31 +90,91 @@ plotLegend = 25
 fontColour = '#000000'
 
 
-#%% DEFAULT settings
+# #%% DEFAULT settings
 
-DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
-DEFAULT_halfWidths = [50, 75, 100]
+# DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
+# DEFAULT_halfWidths = [50, 75, 100]
+
+# DEFAULT_fitSettings = {# H0
+#                        'methods_H0':['Dimitriadis'],
+#                        'zones_H0':['%f_20'],
+#                        'method_bestH0':'Dimitriadis',
+#                        'zone_bestH0':'%f_20',
+#                        # Global fits
+#                        'doChadwickFit' : True,
+#                        'doDimitriadisFit' : False,
+#                        # Local fits
+#                        'doStressRegionFits' : True,
+#                        'doStressGaussianFits' : True,
+#                        'centers_StressFits' : DEFAULT_centers,
+#                        'halfWidths_StressFits' : DEFAULT_halfWidths,
+#                        'doNPointsFits' : True,
+#                        'nbPtsFit' : 13,
+#                        'overlapFit' : 3,
+#                        'doLogFits' : True,
+#                        'nbPtsFitLog' : 10,
+#                        'overlapFitLog' : 5,
+#                        }
+
+# DEFAULT_crit_nbPts = 8 # sup or equal to
+# DEFAULT_crit_R2 = 0.6 # sup or equal to
+# DEFAULT_crit_Chi2 = 1 # inf or equal to
+# DEFAULT_str_crit = 'nbPts>{:.0f} - R2>{:.2f} - Chi2<{:.1f}'.format(DEFAULT_crit_nbPts, 
+#                                                                    DEFAULT_crit_R2, 
+#                                                                    DEFAULT_crit_Chi2)
+
+# DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts, 
+#                                  'crit_R2': DEFAULT_crit_R2, 
+#                                  'crit_Chi2': DEFAULT_crit_Chi2,
+#                                  'str': DEFAULT_str_crit}
+
+# %%%% Default settings for mechanics analysis
+
+#### HOW TO USE    
+# Example : I don't want to do a whole curve Chawick Fit anymore, but I want a Dimitriadis one.
+# I can create a dict fitSettings = {'doChadwickFit' : False, 'doDimitriadisFit' : True}
+# And pass it as an argument in computeGlobalTable_meca
+
+#### DETAILS
+# See ufun.updateDefaultSettingsDict(settingsDict, defaultSettingsDict)
+# And the 'Settings' flag in analyseTimeSeries_meca() 
+
+#### AS REFERENCE ONLY, here is a copy of the default settings.
+
+#### 1. For Fits
+DEFAULT_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_stressHalfWidths = [50, 75, 100]
+
+DEFAULT_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 
 DEFAULT_fitSettings = {# H0
-                       'methods_H0':['Dimitriadis'],
-                       'zones_H0':['%f_20'],
-                       'method_bestH0':'Dimitriadis',
-                       'zone_bestH0':'%f_20',
+                       'methods_H0':['Chadwick', 'Dimitriadis'],
+                       'zones_H0':['%f_10', '%f_20'],
+                       'method_bestH0':'Chadwick',
+                       'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
                        'doDimitriadisFit' : False,
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
-                       'centers_StressFits' : DEFAULT_centers,
-                       'halfWidths_StressFits' : DEFAULT_halfWidths,
+                       'centers_StressFits' : DEFAULT_stressCenters,
+                       'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       # NEW - Numi
                        'doLogFits' : True,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
+                       # NEW - Jojo
+                       'doStrainGaussianFits' : True,
+                       'centers_StrainFits' : DEFAULT_strainCenters,
+                       'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
                        }
+
+#### 2. For Validation
 
 DEFAULT_crit_nbPts = 8 # sup or equal to
 DEFAULT_crit_R2 = 0.6 # sup or equal to
@@ -127,6 +187,44 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
                                  'crit_R2': DEFAULT_crit_R2, 
                                  'crit_Chi2': DEFAULT_crit_Chi2,
                                  'str': DEFAULT_str_crit}
+
+
+#### 3. For Plots
+
+DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_plot_stressHalfWidth = 75
+
+DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_plot_strainHalfWidth = 0.0125
+
+DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':True,
+                        'K(S)_stressRegion':True,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_Log':True, # NEW - Numi
+                        'K(S)_Log':True, # NEW - Numi
+                        'S(e)_strainGaussian':True, # NEW - Jojo
+                        'K(S)_strainGaussian':True, # NEW - Jojo
+                        'Plot_Ratio':True, # NEW
+                        # Fits plotting parameters
+                        # Stress
+                        'plotStressCenters':DEFAULT_plot_stressCenters,
+                        'plotStressHW':DEFAULT_plot_stressHalfWidth,
+                        # Strain
+                        'plotStrainCenters':DEFAULT_plot_strainCenters,
+                        'plotStrainHW':DEFAULT_plot_strainHalfWidth,
+                        # Points
+                        'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFit']),
+                        'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
+                        }
+
 
 
 #%% Functions
@@ -742,61 +840,100 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
 
 # %%%% Specific experiments
 
-newFitSettings = {# H0
-                       'methods_H0':['Chadwick', 'Dimitriadis'],
-                       'zones_H0':['%f_15'],
-                       'method_bestH0':'Chadwick',
-                       'zone_bestH0':'%f_15',
-                       # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
-                       #  'halfWidths_StressFits' : [75],
-                       }
+# newFitSettings = {# H0
+#                        'methods_H0':['Chadwick', 'Dimitriadis'],
+#                        'zones_H0':['%f_15'],
+#                        'method_bestH0':'Chadwick',
+#                        'zone_bestH0':'%f_15',
+#                        # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
+#                        #  'halfWidths_StressFits' : [75],
+#                        }
 
-newfitValidationSettings = {'crit_nbPts': 6}
+# newfitValidationSettings = {'crit_nbPts': 6}
 
-fitSettings = ufun.updateDefaultSettingsDict(newFitSettings, DEFAULT_fitSettings)
-fitValidationSettings = ufun.updateDefaultSettingsDict(newfitValidationSettings, \
-                                                        DEFAULT_fitValidationSettings)
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : True,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
     
 # Task = '22-10-06 & 22-10-05 & 22-12-07'
 # Task = '22-12-07 & 23-02-02'
 # Task = '23-02-02 & 23-01-23 & 22-12-07 & 22-12-07 & 23-03-28 & 23-03-24'
-Task = '23-05-10'
+Task = '23-11-21 & 23-10-29'
 
 
 #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
-fitsSubDir = 'Chad_f15_All_23-05-10_23-05-16'
+fitsSubDir = 'Chad_f15_LIMKi3_23-11-21_23-10-29'
 
-GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', \
-                            fileName = 'Chad_f15_All_23-05-10_23-05-16', 
-                            save = True, PLOT = True, source = 'Python', fitSettings = fitSettings,\
-                               fitValidationSettings = fitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
+GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
+                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
+                            fitSettings = fitSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 # %%%% Specific experiments
 
-newFitSettings = {# H0
-                       'methods_H0':['Chadwick', 'Dimitriadis'],
-                       'zones_H0':['%f_15'],
-                       'method_bestH0':'Chadwick',
-                       'zone_bestH0':'%f_15',
-                       # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
-                       #  'halfWidths_StressFits' : [75],
-                       }
+# newFitSettings = {# H0
+#                        'methods_H0':['Chadwick', 'Dimitriadis'],
+#                        'zones_H0':['%f_15'],
+#                        'method_bestH0':'Chadwick',
+#                        'zone_bestH0':'%f_15',
+#                        # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
+#                        #  'halfWidths_StressFits' : [75],
+#                        }
 
-newfitValidationSettings = {'crit_nbPts': 6}
+# newfitValidationSettings = {'crit_nbPts': 6}
 
-fitSettings = ufun.updateDefaultSettingsDict(newFitSettings, DEFAULT_fitSettings)
-fitValidationSettings = ufun.updateDefaultSettingsDict(newfitValidationSettings, \
-                                                        DEFAULT_fitValidationSettings)
+# fitSettings = ufun.updateDefaultSettingsDict(newFitSettings, DEFAULT_fitSettings)
+# fitValidationSettings = ufun.updateDefaultSettingsDict(newfitValidationSettings, \
+#                                                         DEFAULT_fitValidationSettings)
     
-Task = '23-03-28 & 22-12-07 & 23-02-02'
+# Task = '23-03-28 & 22-12-07 & 23-02-02'
 
-#'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
-fitsSubDir = 'Chad_f15_23-03-28 & 22-12-07 & 23-02-02_23-05-03'
+# #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
+# fitsSubDir = 'Chad_f15_23-03-28 & 22-12-07 & 23-02-02_23-05-03'
 
-GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', \
-                            fileName = 'Global_MecaData_Chad_f15_23-03-2822-12-07&23-02-02_23-05-03', 
-                            save = True, PLOT = False, source = 'Python', fitSettings = fitSettings,\
-                               fitValidationSettings = fitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
+# GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', \
+#                             fileName = 'Global_MecaData_Chad_f15_23-03-2822-12-07&23-02-02_23-05-03', 
+#                             save = True, PLOT = False, source = 'Python', fitSettings = fitSettings,\
+#                                fitValidationSettings = fitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
  # %%%% Precise dates (to plot)
 
@@ -4137,13 +4274,13 @@ data_f = data[globalFilter]
 allCells = data_f['cellID'].unique()
 dateDir = date.replace('-', '.')
 
-# for cell in allCells:
-#     try:
-#         meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
-#         times = meta['T_abs'] - meta['T_0']
-#         activationTime.append(times.values)
-#     except:
-#         print('No activation data')
+for cell in allCells:
+    try:
+        meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
+        times = meta['T_abs'] - meta['T_0']
+        activationTime.append(times.values)
+    except:
+        print('No activation data')
 
 fig1, axes = plt.subplots(1,1, figsize=(15,10))
 
@@ -7738,8 +7875,8 @@ if not os.path.exists(pathNonlinDir):
 #                 'M4':{'color': "#008fb1",'marker':'o'},
 #                 }
 
-styleDict1 =  {'23-05-10_M3':{'color': "#5c337f",'marker':'o'},
-                '23-04-25_M1':{'color': gs.colorList40[23],'marker':'o'},
+styleDict1 =  {'23-05-10_M3':{'color': "#5c337f",'marker':'o', 'label' : 'global'},
+                '23-04-25_M1':{'color': gs.colorList40[23],'marker':'o', 'label' : 'global 2'},
                 }
 
 
@@ -7754,7 +7891,7 @@ manipIDs = ['23-04-25_M1',  '23-05-10_M3']
 labels = []
 # labels = ['50uM Y27', 'Control', '10uM Y27', '1uM Y27']
 
-stressRange = '200_550'
+stressRange = '200_500'
 
 # control = manips[0]
 # active = manips[1]
@@ -7774,10 +7911,10 @@ Filters = [(data['validatedThickness'] == True),
             (data['bead type'] == 'M450'),
             # (data['UI_Valid'] == True),
             (data['bestH0'] <= 1900),
-            (data['date'].apply(lambda x : x in dates)),
+            # (data['date'].apply(lambda x : x in dates)),
             # (data['cellID'].apply(lambda x : x in allSelectedCells)),
-            (data['manip'].apply(lambda x : x in manips)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
 
 # selRows = data[(data['manip'] == manips[1]) & (data['compNum'] < 3)].index
@@ -7787,7 +7924,7 @@ mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
 
 
-out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,  legendLabels = labels, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
                    condCol = 'manipId', mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 
@@ -7800,7 +7937,7 @@ mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
 
 
-out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, legendLabels = labels, fitType =  'stressGaussian', 
+out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir,  fitType =  'stressGaussian', 
                   fitWidth=75, Filters = Filters, condCol = 'manipId', mode = stressRange, scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 
@@ -7858,3 +7995,62 @@ out2, cellDf2 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, lege
                             returnData = 1, returnCount = 1)
 
 
+#%% Plots for 23-11-21 and 23-10-29
+
+GlobalTable = taka.getMergedTable('Chad_f15_LIMKi3_23-11-21_23-10-29', mergeUMS = False) #'_tka3_offset15pts')
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+
+fitsSubDir = 'Chad_f15_LIMKi3_23-11-21_23-10-29'
+
+
+fitType = 'stressGaussian'
+# fitType = 'nPoints'
+fitId = '_75'
+fitWidth = 75
+
+#%%%%
+data = data_main
+
+
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27\n(10µM)', 
+#       'Y27 & 50.0' : 'Y27\n(50µM)', 
+#       'dmso & 0.0' : 'DMSO', 
+#       'blebbistatin & 10.0' : 'Blebbi\n(10µM)',  
+#       'blebbistatin & 50.0' : 'Blebbi\n(50µM)', 
+#       'blebbistatin & 250.0' : 'Blebbi\n(250µM)', 
+#       'ck666 & 50.0' : 'CK666\n(50µM)', 
+#       'ck666 & 100.0' : 'CK666\n(100µM)', 
+#       'Thickness at low force (nm)' : 'Thickness (nm)',
+#       'E_f_<_400_kPa' : 'Elastic modulus (Pa)\nfor F < 400pN',
+#       'Tangeantial Modulus (Pa)' : 'Tangeantial Modulus (kPa)\n' + fitStr}
+
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+Filters = [(data['validatedThickness'] == True), 
+           (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 20),
+            (data['date'].apply(lambda x : x in dates)),
+            (data['manipID'].apply(lambda x : x not in ['23-04-20_M1'])),]
+
+# co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 250.0']
+
+# box_pairs = [('none & 0.0', 'Y27 & 10.0'), ('none & 0.0', 'Y27 & 50.0'), ('Y27 & 10.0', 'Y27 & 50.0')]
+
+
+fig2, ax2 = D1Plot(data, condCols=['drug', 'concentration'], Parameters=[stiffnessType + '_kPa'], Filters=Filters, 
+                Boxplot=True, cellID='cellID', co_order=co_order, 
+                AvgPerCell = True, stats=True, statMethod='Mann-Whitney', box_pairs=[], 
+                figSizeFactor = 1.0, markersizeFactor=1.2, orientation = 'h', stressBoxPlot=2)
+
+
+renameAxes(ax2, renameDict1)
+renameAxes(ax2, rD)
+
+plt.show()

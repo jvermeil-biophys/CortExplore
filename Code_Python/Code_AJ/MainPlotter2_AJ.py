@@ -97,31 +97,53 @@ plotLegend = 25
 fontColour = '#000000'
 
 
-#%% DEFAULT settings
+# %%%% Default settings for mechanics analysis
 
-DEFAULT_centers = [ii for ii in range(100, 1550, 50)]
-DEFAULT_halfWidths = [50, 75, 100]
+#### HOW TO USE    
+# Example : I don't want to do a whole curve Chawick Fit anymore, but I want a Dimitriadis one.
+# I can create a dict fitSettings = {'doChadwickFit' : False, 'doDimitriadisFit' : True}
+# And pass it as an argument in computeGlobalTable_meca
+
+#### DETAILS
+# See ufun.updateDefaultSettingsDict(settingsDict, defaultSettingsDict)
+# And the 'Settings' flag in analyseTimeSeries_meca() 
+
+#### AS REFERENCE ONLY, here is a copy of the default settings.
+
+#### 1. For Fits
+DEFAULT_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_stressHalfWidths = [50, 75, 100]
+
+DEFAULT_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 
 DEFAULT_fitSettings = {# H0
-                       'methods_H0':['Dimitriadis'],
-                       'zones_H0':['%f_20'],
-                       'method_bestH0':'Dimitriadis',
-                       'zone_bestH0':'%f_20',
+                       'methods_H0':['Chadwick', 'Dimitriadis'],
+                       'zones_H0':['%f_10', '%f_20'],
+                       'method_bestH0':'Chadwick',
+                       'zone_bestH0':'%f_10',
                        # Global fits
                        'doChadwickFit' : True,
                        'doDimitriadisFit' : False,
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
-                       'centers_StressFits' : DEFAULT_centers,
-                       'halfWidths_StressFits' : DEFAULT_halfWidths,
+                       'centers_StressFits' : DEFAULT_stressCenters,
+                       'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
                        'doNPointsFits' : True,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
+                       # NEW - Numi
                        'doLogFits' : True,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
+                       # NEW - Jojo
+                       'doStrainGaussianFits' : True,
+                       'centers_StrainFits' : DEFAULT_strainCenters,
+                       'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
                        }
+
+#### 2. For Validation
 
 DEFAULT_crit_nbPts = 8 # sup or equal to
 DEFAULT_crit_R2 = 0.6 # sup or equal to
@@ -135,6 +157,42 @@ DEFAULT_fitValidationSettings = {'crit_nbPts': DEFAULT_crit_nbPts,
                                  'crit_Chi2': DEFAULT_crit_Chi2,
                                  'str': DEFAULT_str_crit}
 
+
+#### 3. For Plots
+
+DEFAULT_plot_stressCenters = [ii for ii in range(100, 1550, 50)]
+DEFAULT_plot_stressHalfWidth = 75
+
+DEFAULT_plot_strainCenters = [ii/10000 for ii in range(125, 3750, 125)]
+DEFAULT_plot_strainHalfWidth = 0.0125
+
+DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':True,
+                        'K(S)_stressRegion':True,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_Log':True, # NEW - Numi
+                        'K(S)_Log':True, # NEW - Numi
+                        'S(e)_strainGaussian':True, # NEW - Jojo
+                        'K(S)_strainGaussian':True, # NEW - Jojo
+                        'Plot_Ratio':True, # NEW
+                        # Fits plotting parameters
+                        # Stress
+                        'plotStressCenters':DEFAULT_plot_stressCenters,
+                        'plotStressHW':DEFAULT_plot_stressHalfWidth,
+                        # Strain
+                        'plotStrainCenters':DEFAULT_plot_strainCenters,
+                        'plotStrainHW':DEFAULT_plot_strainHalfWidth,
+                        # Points
+                        'plotPoints':str(DEFAULT_fitSettings['nbPtsFit']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFit']),
+                        'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
+                                     + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
+                        }
 
 #%% Functions
 
@@ -310,7 +368,8 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, col
     condPairs = condSelection
 
     
-    df = df[[measure, condCol, 'cellCode', 'cellId', 'compNum']]
+    # df = df[[measure, condCol, 'cellCode', 'cellId', 'compNum']]
+    df = df[[measure, condCol, 'compNum']]
     df = df.drop_duplicates()
     df = df.dropna()
     
@@ -724,9 +783,8 @@ def plotAllH0(data, fig, ax, fitsSubDir = '', Filters = [], maxH0 = np.Inf, cond
 
     return(output)
 
-def plotPopKS(data, fig, ax, fitsSubDir = '',  fitType = 'stressRegion', fitWidth=75, Filters = [], condCol = '', 
-              c_min = 0, c_max = np.Inf, legendLabels = [],
-              mode = 'wholeCurve', scale = 'lin', printText = True,
+def plotPopKS(data, fig, ax, fitsSubDir = '',  fitType = 'stressGaussian', fitWidth=75, Filters = [], condCol = '', 
+              c_min = 0, c_max = np.Inf, mode = 'wholeCurve', scale = 'lin', printText = True,
               returnData = 0, returnCount = 0):
     
     # fig, ax = plt.subplots(1,1, figsize = (9,6))
@@ -815,9 +873,7 @@ def plotPopKS(data, fig, ax, fitsSubDir = '',  fitType = 'stressRegion', fitWidt
     
     
     # Plot
-    
-    if len(legendLabels) == 0:
-        legendLabels = conditions
+
         
     for i in range(len(conditions)):
         co = conditions[i]
@@ -1026,27 +1082,98 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Mann-Whitney', percentH
 
 # %%%% Specific experiments
 
-newFitSettings = {# H0
-                       'methods_H0':['Chadwick', 'Dimitriadis'],
-                       'zones_H0':['%f_15'],
-                       'method_bestH0':'Chadwick',
-                       'zone_bestH0':'%f_15',
-                        # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
-                        # 'halfWidths_StressFits' : [75],
-                        # 'Plot_Ratio':False,
-                       }
+# newFitSettings = {# H0
+#                        'methods_H0':['Chadwick', 'Dimitriadis'],
+#                        'zones_H0':['%f_15'],
+#                        'method_bestH0':'Chadwick',
+#                        'zone_bestH0':'%f_15',
+#                        # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
+#                        #  'halfWidths_StressFits' : [75],
+#                        }
 
-newfitValidationSettings = {'crit_nbPts': 6}
+# newfitValidationSettings = {'crit_nbPts': 6}
 
 
-Task = "23-10-29"
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : True,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+    
+# Task = '22-10-06 & 22-10-05 & 22-12-07'
+# Task = '22-12-07 & 23-02-02'
+# Task = '23-02-02 & 23-01-23 & 22-12-07 & 22-12-07 & 23-03-28 & 23-03-24'
+Task = '23-11-21 & 23-10-29'
+
 
 #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
-fitsSubDir = 'Chad_f15_23-10-29_23-11-13'
+fitsSubDir = 'Chad_f15_LIMKi3_23-11-21_23-10-29_madeOn_24-01-18'
 
-GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, fileName = fitsSubDir,
-                            save = True, PLOT = True, source = 'Python', fitSettings = newFitSettings,\
-                               fitValidationSettings = newfitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
+GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
+                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
+                            fitSettings = fitSettings, fitsSubDir = fitsSubDir, 
+                            plotSettings = plotSettings) # task = 'updateExisting'
+
+# %%%% Specific experiments
+
+# newFitSettings = {# H0
+#                        'methods_H0':['Chadwick', 'Dimitriadis'],
+#                        'zones_H0':['%f_15'],
+#                        'method_bestH0':'Chadwick',
+#                        'zone_bestH0':'%f_15',
+#                         # 'centers_StressFits' : [ii for ii in range(100, 1550, 20)],
+#                         # 'halfWidths_StressFits' : [75],
+#                         # 'Plot_Ratio':False,
+#                        }
+
+# newfitValidationSettings = {'crit_nbPts': 6}
+
+
+# Task = "23-10-29"
+
+# #'22-08-26_M7 & 22-08-26_M5 & 22-08-26_M10 & 22-08-26_M1 & 22-08-26_M3' # For instance '22-03-30 & '22-03-31'
+# fitsSubDir = 'Chad_f15_23-10-29_23-11-13'
+
+# GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, fileName = fitsSubDir,
+#                             save = True, PLOT = True, source = 'Python', fitSettings = newFitSettings,\
+#                                fitValidationSettings = newfitValidationSettings, fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 #%% Plots for 23-05-10
 GlobalTable = taka.getMergedTable('Chad_f15_23-05-10_23-05-16')
@@ -1070,7 +1197,7 @@ dates = ['23-05-10']
 manips = ['M3', 'M4'] #, 'M3'] 
 labels = ['Not activated', 'Activated']
 
-stressRange = '200_550'
+stressRange = '200_50'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
@@ -1079,10 +1206,10 @@ order = None
 
 condSelection = manips
 
-styleDict1 =  {'M1':{'color': "#5c337f",'marker':'o'},
-                'M2':{'color': gs.colorList40[23],'marker':'o'},
-                'M3':{'color': gs.colorList40[20],'marker':'o'},
-                'M4':{'color': "#008fb1",'marker':'o'},
+styleDict1 =  {'M1':{'color': "#5c337f",'marker':'o', 'label':'Not activated'},
+                'M2':{'color': gs.colorList40[23],'marker':'o', 'label':'activated'},
+                'M3':{'color': gs.colorList40[20],'marker':'o', 'label':'Not activated'},
+                'M4':{'color': "#008fb1",'marker':'o', 'label':'Activated'},
                 }
 
 ###########################################
@@ -1699,36 +1826,37 @@ fitWidth = 75
 
 ########## Declare variables ##########
 # dates = ['23-04-19', '23-05-10']
-stressRange = '200_550'
+stressRange = '200_500'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
-condCol = 'H0_Bin'
+# condCol = 'H0_Bin'
+condCol = 'cell subtype'
 order = None
 plt.style.use('seaborn')
 
-celltypes = ['Atcc-2023']
+celltypes = ['Atcc-2023', 'optoRhoA']
 condSelection = ['Atcc-2023', 'optoRhoA']
 # '23-01-23_M1', '23-04-19_M1', '23-02-02_M1', '23-05-10_M3',
-# manipIDs = ['23-04-19_M1', '23-02-02_M1', '23-05-10_M3', ]
+manipIDs = ['23-05-23_M1', '23-05-10_M3', '23-02-23_M1', '23-03-09_M4']
 
 
 
 # '23-02-02_M1', '23-05-10_M3', '23-05-23_M1'
 # labels = []
-# styleDict1 =  {'optoRhoA':{'color': "#000000",'marker':'o'},
-#                 'Atcc-2023':{'color': "#6f8d68",'marker':'o'},
-#                 'Y27':{'color': gs.colorList40[24],'marker':'o'},
-#                 }
+styleDict1 =  {'optoRhoA':{'color': "#000000",'marker':'o', 'label': '3T3 optoRhoA'},
+                'Atcc-2023':{'color': "#6f8d68",'marker':'o', 'label': '3T3 WT'},
+                'Y27':{'color': gs.colorList40[24],'marker':'o'},
+                }
 
-styleDict1 = {}
-keys = np.rint(np.linspace(1,nBins,nBins)).astype(int)
-values = gs.colorList40[10:nBins+10]
+# styleDict1 = {}
+# keys = np.rint(np.linspace(1,nBins,nBins)).astype(int)
+# values = gs.colorList40[10:nBins+10]
 
-for key, value, label in zip(keys, values, bins):
-    key = int(key)
-    styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : '>' + str(label)}
-print(styleDict1)
+# for key, value, label in zip(keys, values, bins):
+#     key = int(key)
+#     styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : '>' + str(label)}
+# print(styleDict1)
 ###########################################
 
 if not os.path.exists(todayFigDir):
@@ -1768,10 +1896,11 @@ Filters = [(data['validatedThickness'] == True),
             (data['bead type'] == 'M450'),
             # (data['UI_Valid'] == True),
             (data['bestH0'] <= 2000),
+            (data['surroundingThickness'] <= 1000),
             # (data['date'].apply(lambda x : x in dates)),
             # (data['cellID'].apply(lambda x : x in allSelectedCells)),
             # (data['manip'].apply(lambda x : x in manips)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
             (data['cell subtype'].apply(lambda x : x in celltypes))
             ]
 
@@ -1795,7 +1924,7 @@ mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
 
 
-out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, legendLabels = labels, fitType =  'stressGaussian', 
+out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
                   fitWidth=75, Filters = Filters, condCol = condCol, mode = stressRange, scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 
@@ -1803,12 +1932,24 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 
 plt.legend(fontsize = 20, loc = 'upper left')
 
-plt.ylim(0,10)
-plt.tight_layout()
-# plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
-plt.show()
+# plt.ylim(0,8)
+# plt.tight_layout()
+# # plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
+# plt.show()
 
-# dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
+dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
+#%%%% Thickness boxplots
+
+measure = 'surroundingThickness'
+labels = ['3T3 WT', '3T3 optoRhoA']
+order= None
+colorPalette = ["#6f8d68", "#B2B2B2"]
+
+
+savePath = '/Thickness/'+str(1)+'_'+measure+'_boxplot_'+str(1)+'.png'
+
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, stats = False, colorPalette = colorPalette,
+             average = False)
 
 #%%%% Box plots, thickness
 measure = 'surroundingThickness'
@@ -1879,8 +2020,9 @@ manips = ['M1', 'M2']
 condSelection = manips
 
 labels = []
-styleDict1 =  {'M1':{'color': gs.colorList40[21],'marker':'o'},
-                'M2':{'color': "#000000",'marker':'o'},
+styleDict1 =  {'M1':{'color': gs.colorList40[21],'marker':'o', 'label':'No activation'},
+                'M2':{'color': "#000000",'marker':'o', 'label':'Activation 60s'},
+                'M3':{'color': "#000000",'marker':'o', 'label':'Activation 20s'},
                 }
 
 ###########################################
@@ -1977,10 +2119,10 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 
 plt.legend(fontsize = 12, loc = 'upper left')
 
-plt.ylim(0,10)
-plt.tight_layout()
-# plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
-plt.show()
+# plt.ylim(0,10)
+# plt.tight_layout()
+# # plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
+# plt.show()
 
 dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
 
@@ -2001,7 +2143,7 @@ labels = []
 for i in range(len(cells)):
     cell = cells[i]
     
-    styleDict1[cell] = {'color': gs.colorList40[10+i] ,'marker':'o'}
+    styleDict1[cell] = {'color': gs.colorList40[10+i] ,'marker':'o', 'label' : cell}
 
     Filters = Filters
     
@@ -2147,7 +2289,7 @@ for i in cells:
 #%%%% Variable over time (comp number)
 
 palette = ["#000000", "#0000FF"]
-y = 'E_Chadwick'
+y = 'surroundingThickness'
 param1 = 'M1'
 param2 = 'M2'
 
@@ -2193,6 +2335,8 @@ for i in range(len(cells)):
 # mainFig1.text(0.5, 0.04, 'Compression no.', ha='center', color = '#ffffff', size = 20)
 plt.tight_layout()
 plt.show()
+
+
 # %%%% Plotting surrounding thickness / best H0 - manip wise
 
 data = data_main
@@ -2202,6 +2346,7 @@ plt.style.use('seaborn')
 dates = ['23-07-12']
 condCol = 'manip'
 manips = ['M1', 'M2']
+measure = 'surroundingThickness'
 
 Filters = [(data['validatedThickness'] == True),
             # (data['substrate'] == '20um fibronectin discs'), 
@@ -2229,15 +2374,17 @@ fig1.patch.set_facecolor('black')
 palette = ["#000000", "#0000FF"]
 
 x = (data_f['compNum']-1)*20
-sns.lmplot(x = 'bestH0', y = 'E_Chadwick', palette = palette, data = data_f, hue = 'manip')
-# fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
-# plt.xticks(fontsize=30, color = '#ffffff')
-# plt.yticks(fontsize=30, color = '#ffffff')
-# plt.xlabel('Time (secs)', fontsize = 25, color = '#ffffff')
-# plt.ylabel('Surrounding thickness (nm)', fontsize = 25, color = '#ffffff')
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
+
+# sns.lmplot(x = 'bestH0', y = 'E_Chadwick', palette = palette, data = data_f, hue = 'manip')
+fig1.suptitle('[15mT = 500pN] Surrounding Thickness (nm) vs. Time (secs)')
+plt.xticks(fontsize=30, color = '#ffffff')
+plt.yticks(fontsize=30, color = '#ffffff')
+plt.xlabel('Time (secs)', fontsize = 25, color = '#ffffff')
+plt.ylabel('Surrounding thickness (nm)', fontsize = 25, color = '#ffffff')
 # axes.get_legend().remove()
 
-plt.ylim(0,30000)
+plt.ylim(0,1500)
 
 plt.show()
 
@@ -3607,43 +3754,59 @@ plt.tight_layout()
 # plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
 plt.show()
 
-#%% Plots for 23-11-29 : LIMKi3 experiments with 3T3 optoRhoA
+#%% Plots for 23-11-21 : LIMKi3 experiments with 3T3 optoRhoA
 
-fitsSubDir = 'Chad_f15_23-10-29_23-11-13'
 
-GlobalTable = taka.getMergedTable(fitsSubDir)
+#%% Plots for 23-11-21 and 23-10-29
+
+GlobalTable = taka.getMergedTable('Chad_f15_LIMKi3_23-11-21_23-10-29') 
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
 data_main['cellId'] = GlobalTable['cellID']
 
 
+fitsSubDir = 'Chad_f15_LIMKi3_23-11-21_23-10-29'
 
 fitType = 'stressGaussian'
 # fitType = 'nPoints'
 fitId = '_75'
 fitWidth = 75
 
-
 #%%%% Non linearity
 
 ########## Declare variables ##########
-dates = ['23-10-29']
-manips = ['M1', 'M2', 'M3'] #, 'M3'] 
-labels = []
+data = data_main
 
-stressRange = '200_550'
+dates = ['23-11-21']
+stressRange = '200_500'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
-condCol = 'manip'
+condCol = 'manipId'
 order = None
 
-condSelection = manips
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+labels = []
 
-styleDict1 =  {'M1':{'color': "#5c337f",'marker':'o', 'label' : "20nM LIMKi"},
-                'M2':{'color': gs.colorList40[23],'marker':'o', 'label' : "DMSO"},
-                'M3':{'color': gs.colorList40[20],'marker':'o', 'label' : "10nM LIMKi"},
+
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+# manips = ['M1', 'M2']
+# condSelection = manips
+# styleDict1 =  {'M1':{'color': gs.colorList40[21],'marker':'o', 'label':'1uM LIMKI3'},
+#                 'M2':{'color': gs.colorList40[22],'marker':'o', 'label':'DMSO'},
+#                 }
+
+
+manipIDs = ['23-10-29_M1', '23-10-29_M2', '23-10-29_M3', '23-11-21_M1', '23-11-21_M2']
+condSelection = manipIDs
+styleDict1 =  {'23-10-29_M1':{'color': gs.colorList40[21],'marker':'o', 'label':'20nM LIMKI3'},
+               '23-10-29_M3':{'color': gs.colorList40[11],'marker':'o', 'label':'10nM LIMKI3'},
+               '23-10-29_M2':{'color': gs.colorList40[20],'marker':'o', 'label':'DMSO_29/10'},
+               '23-11-21_M1':{'color': gs.colorList40[31],'marker':'o', 'label':'1uM LIMKI3'},
+               '23-11-21_M2':{'color': gs.colorList40[30],'marker':'o', 'label':'DMSO_21/11'},
                 }
 
 ###########################################
@@ -3668,31 +3831,38 @@ if not os.path.exists(pathBoxPlots):
 pathNonlinDir = pathSubDir+'/NonLinPlots'
 if not os.path.exists(pathNonlinDir):
     os.mkdir(pathNonlinDir)
-
-# plt.style.use('seaborn')
+    
+pathSSPlots = pathSubDir+'/Stress-strain Plots'
+if not os.path.exists(pathSSPlots):
+    os.mkdir(pathSSPlots)
+    
+pathKSPlots = pathSubDir+'/KvsS Plots'
+if not os.path.exists(pathKSPlots):
+    os.mkdir(pathKSPlots)
 
 data = data_main
 
 Filters = [(data['validatedThickness'] == True),
+           (data['valid_' + method] == True),
+           (data[stiffnessType + '_kPa'] <= 20),
             # (data['substrate'] == '20um fibronectin discs'), 
             # (data['drug'] == 'none'), 
             (data['bead type'] == 'M450'),
+            # (data['E_full'] < 40000),
             # (data['UI_Valid'] == True),
-            (data['bestH0'] <= 1000),
-            (data['date'].apply(lambda x : x in dates)),
-            # (data['cellID'].apply(lambda x : x in allSelectedCells)),
-            (data['manip'].apply(lambda x : x in manips)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['bestH0'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
 
 mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
 
 
-out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,  fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir,   fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
                    condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
-
 
 mainFig1, mainAx1, exportDf1, countDf1 = out1
 
@@ -3709,18 +3879,33 @@ out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitT
 
 mainFig2, mainAx2, exportDf2, countDf2 = out2
 
-plt.legend(fontsize = 15, loc = 'upper left')
+plt.legend(fontsize = 12, loc = 'upper left')
 
-plt.ylim(0,10)
+plt.ylim(0,8)
 plt.tight_layout()
 # plt.savefig(pathNonlinDir + '/' + str(dates) + '_'+str(manips) + '_' + mode+'250-600.png')  
 plt.show()
 
 dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
 
+
+#%%%% E_F_<_400pN
+
+measure = stiffnessType
+labels = []
+# order= None
+
+measureName = 'E_400pN'
+
+# savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
+order = ['23-11-21_M1', '23-10-29_M1', '23-10-29_M3', '23-11-21_M2', '23-10-29_M2']
+
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, stats = False, average = False)
+
 #%%%% Box plots, thickness
-measure = 'ctFieldFluctuAmpli'
-order = ['M1', 'M3', 'M2']
+measure = 'surroundingThickness'
+# order = ['23-11-21_M1', '23-10-29_M1', '23-10-29_M3', '23-11-21_M2', '23-10-29_M2']
+order =None
 makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, average = False)
 
 #%%%% Fluctuations vs Thickness
@@ -3731,5 +3916,7 @@ plt.legend(fontsize = 15, loc = 'upper left')
 plt.xticks(fontsize=10)
 plt.yticks(fontsize=10)
 plt.show()
+
+#%%%% Raw stress-strain of all curves
 
     

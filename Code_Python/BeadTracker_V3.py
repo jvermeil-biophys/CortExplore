@@ -251,9 +251,11 @@ class PincherTimeLapse:
             indexFluo = self.logDf['Status'].apply(lambda x : x.startswith('Fluo'))
             fluoFrames_iS = self.logDf.loc[indexFluo, 'iS'].values
             fluoFrames_iL = self.logDf.loc[indexFluo, 'iL'].values
+            # print(self.logDf.loc[indexFluo,:])
             for k in range(len(fluoFrames_iS)):
                 iL, iS = fluoFrames_iL[k], fluoFrames_iS[k]
-                self.fluoFramesPerLoop[iL].append(iS)
+                #### Recent Correction: iL -> iL-1
+                self.fluoFramesPerLoop[iL-1].append(iS)
                 self.logDf.loc[self.logDf['iS'] == iS, 'trackFrame'] = False
                 
             if save:
@@ -1021,7 +1023,7 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
+                # if (iF >= 0 and iF <= 30) or (iF > 230 and iF <= 266):
                 #     plot = 1
 
             # ###################################################################
@@ -2199,7 +2201,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     
     print(gs.BLUE + '**** smallTracker of cell {} ****'.format(cellID) + gs.NORMAL)
     I = io.imread(imageFilePath)
-    resultsDf = pd.read_csv(resultsPath, usecols=[1, 2, 3, 4, 5], sep=None, engine='python')   
+    resultsDf = pd.read_csv(resultsPath, usecols=[1, 2, 3, 4, 5, 6], sep=None, engine='python')   
     PTL = PincherTimeLapse(I, cellID, dictConstants, NB)
     PTL.resultsDf = resultsDf
         

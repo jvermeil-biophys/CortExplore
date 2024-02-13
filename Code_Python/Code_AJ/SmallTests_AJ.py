@@ -641,13 +641,16 @@ def computeMag_M450(B):
     return(M)
 
 V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
-m = computeMag_M450(30 * 10**(-3))*V
-d = 300 * 10**-9
+m = computeMag_M450(21.8 * 10**(-3))*V
+
+d = 1.3 * 10**-6
+
 F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
 
 f = F * 10**12 # in pN
 
 print(f)
+
 #%%%% Plotting a graph of field vs. distance between beads
 
 V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
@@ -684,3 +687,23 @@ for i in allRegs:
     selectedFiles = [k for k in allFiles if i in k]
     for j in selectedFiles:
         os.rename(os.path.join(filesPath, j), os.path.join(filesPath + '/' + i, j))
+        
+#%% Manipulate status file
+
+path = "D:/Anumita/MagneticPincherData/Raw/24.01.25/Status"
+files = os.listdir(path)
+
+for file in files:
+    if '_Status' in file:
+        txt = pd.read_csv(os.path.join(path,file), sep = '_')
+        txt['Passive'] = ['Action']*len(txt['Passive'])
+        txt = txt.rename(columns={'Passive':'Action'})
+        
+        txt['5.00'] = ['constant-5.00-5.00']*len(txt['5.00'])
+        txt = txt.rename(columns={'5.00':'constant-5.00-5.00'})
+        
+        
+        
+        np.savetxt(os.path.join(path,file), txt, fmt='%s', delimiter = '_')
+        
+        

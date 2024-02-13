@@ -343,7 +343,7 @@ class PincherTimeLapse:
                         totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
                         
                         j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
-                        print(j)
+                        # print(j)
                         self.dictLog['status_frame'][j] = -1
                         self.dictLog['status_nUp'][j] = -1
     
@@ -559,12 +559,12 @@ class PincherTimeLapse:
         pass
     
     def makeOptoMetadata(self, fieldDf, display = 1, save = False, path = ''):
-        try:
             actFreq = self.activationFreq
             actExp = self.activationExp
             actType = [self.activationType]
             microscope = self.microscope
-            if microscope == 'labview':
+            if microscope == 'labview' and actType != []:
+            # if microscope == 'labview':
                 allActivationIndices = ufun.findActivation(fieldDf)[0]
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
@@ -584,11 +584,9 @@ class PincherTimeLapse:
                 # print(len(metadataDict['T_abs']))
                 # print(len(metadataDict['T_0']))
                 
-                metadataDf = pd.DataFrame(metadataDict)
-                if save:
-                    metadataDf.to_csv(path, sep='\t')
-        except:
-            pass
+                metadataDf = pd.DataFrame(metadataDict)    
+                metadataDf.to_csv(path, sep='\t')
+
         
         # if display == 1:
         #     print('\n\n* Initialized Log Table:\n')
@@ -918,7 +916,6 @@ class PincherTimeLapse:
                 
             #### TBC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             elif 'sinus' in self.expType:
-                 print('Passed expt type')
                  self.listTrajectories[iB].dict['idxAnalysis'].append(0)
                  
             elif 'brokenRamp' in self.expType:
@@ -1200,7 +1197,6 @@ class PincherTimeLapse:
                 
                 # 'optoGen' or 'compressions' but probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
-                    # print(iLoop)
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)
@@ -2127,11 +2123,13 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         
         #### 0.51 Find index of first activation
         #### Anumita's stuff
-        # try:
-        #     optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
-        #     PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
-        # except:
-        #     pass
+        try:
+            optoMetaPath = cp.DirDataRaw + '/' + dates
+            optoMetaName = os.path.join(optoMetaPath, cellID + '_OptoMetadata.txt')
+            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaName)
+        except:
+            print(gs.RED + 'Not saving any OptoMetaData for: ' + manipID + gs.NORMAL)
+            pass
         
         #### 0.6 - Check if a log file exists and load it if required
         logFilePath = resPath[:-12] + '_LogPY.txt'

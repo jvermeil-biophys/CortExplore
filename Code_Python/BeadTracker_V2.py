@@ -152,46 +152,46 @@ class PincherTimeLapse:
 
         
         #### Import data from the optogen condition columns, if they exist
-        fluo = False
-        try:
-            print(gs.ORANGE + 'Reading optogen parameters...' + gs.NORMAL)
+        # fluo = False
+        # try:
+        #     print(gs.ORANGE + 'Reading optogen parameters...' + gs.NORMAL)
             
-            # "activationFirst" is the number of the loop 
-            # at the end of which the first activ is
-            # when you count the loop starting from 1
+        #     # "activationFirst" is the number of the loop 
+        #     # at the end of which the first activ is
+        #     # when you count the loop starting from 1
             
             
-            self.activationFirst = int(manipDict['first activation'])
-            self.activationLast = (manipDict['last activation'])
-            self.activationFreq = int(manipDict['activation frequency'])
-            self.activationExp = manipDict['activation exp']
-            self.activationType = manipDict['activation type']
+        #     self.activationFirst = int(manipDict['first activation'])
+        #     self.activationLast = (manipDict['last activation'])
+        #     self.activationFreq = int(manipDict['activation frequency'])
+        #     self.activationExp = manipDict['activation exp']
+        #     self.activationType = manipDict['activation type']
             
-            if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                print('case 1')
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
-                # k-1 here cause we counted the loops starting from 1 but python start from 0.
-            elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
-                print('case 2')
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
+        #     if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
+        #         print('case 1')
+        #         self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
+        #         # k-1 here cause we counted the loops starting from 1 but python start from 0.
+        #     elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
+        #         print('case 2')
+        #         self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
             
-            else:
-                print('case 3')
-                self.LoopActivations = np.array([self.activationFirst-1])
+        #     else:
+        #         print('case 3')
+        #         self.LoopActivations = np.array([self.activationFirst-1])
                             
-            fluo = True
+        #     fluo = True
                 
-        except:
-            print(gs.ORANGE + 'No optogen parameters found' + gs.NORMAL)
-            if self.wFluoEveryLoop:
-                print(gs.ORANGE + 'Fluo every loop detection...' + gs.NORMAL)
-                self.LoopActivations = np.arange(self.nLoop, dtype = int)
+        # except:
+        #     print(gs.ORANGE + 'No optogen parameters found' + gs.NORMAL)
+        #     if self.wFluoEveryLoop:
+        #         print(gs.ORANGE + 'Fluo every loop detection...' + gs.NORMAL)
+        #         self.LoopActivations = np.arange(self.nLoop, dtype = int)
                 
-                fluo = True
+        #         fluo = True
         
-        if fluo == False:
-            print(gs.ORANGE + 'No fluo !' + gs.NORMAL)
-            self.LoopActivations = np.array([])
+        # if fluo == False:
+        #     print(gs.ORANGE + 'No fluo !' + gs.NORMAL)
+        #     self.LoopActivations = np.array([])
             
         # if self.microscope == 'labview':
         #     self.totalActivationImages = np.array([np.sum(self.LoopActivations < kk) 
@@ -410,9 +410,11 @@ class PincherTimeLapse:
             indexFluo = self.logDf['status_phase'].apply(lambda x : x.startswith('Fluo'))
             fluoFrames_iS = self.logDf.loc[indexFluo, 'iS'].values
             fluoFrames_iL = self.logDf.loc[indexFluo, 'iL'].values
+           
             for k in range(len(fluoFrames_iS)):
                 iL, iS = fluoFrames_iL[k], fluoFrames_iS[k]
-                self.fluoFramesPerLoop[iL].append(iS)
+                #Correction! iL => k-1
+                self.fluoFramesPerLoop[iL-1].append(iS)
                 self.logDf.loc[self.logDf['iS'] == iS, 'trackFrame'] = False
                 
             if save:

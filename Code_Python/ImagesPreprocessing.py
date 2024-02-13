@@ -47,13 +47,15 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '23.11.21/Status'
-# DirDeptho = '23.11.21_Deptho/Deptho_P3'
+date = '24.01.02'
+# DirDeptho = '24.01.02_Deptho'
 
-DirSave = os.path.join(cp.DirDataRaw, date) 
-DirExt = 'E:/20231121_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/23.11.21'
+# DirSave = os.path.join(cp.DirDataRaw, date) 
+DirSave = 'D:/Anumita/MagneticPincherData/Raw/24.01.25'
 
-# DirExt  = 'E:/20231121_3t3optoRhoA_LIMKi3_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
+DirExt = 'F:/20240125_mcf7_100xoil_4.5Fibro-PEGBeads'
+
+# DirExt  = 'E:/20240102_3t3UTHCry2_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
@@ -132,7 +134,6 @@ def copyFieldFiles(ListDirSrc, DirDst, suffix = '_Field.txt'):
     Calls the copyFilesWithString from ufun with suffix = '_Field.txt'
     
     """
-    
     for DirSrc in ListDirSrc:
         ufun.copyFilesWithString(DirSrc, DirDst, suffix)
 
@@ -476,9 +477,9 @@ for i in range(len(allCellsRaw)):
         #     print(gs.BRIGHTRED + '/!\ Unexpected error during file handling' + gs.NORMAL)
 
 #### DO THIS !
-# copyFieldFiles(allCells, DirSave)
+copyFieldFiles(allCells, DirSave)
 
-copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
+# copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
 
