@@ -26,6 +26,214 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+# %%
+
+from statsmodels.robust.norms import HuberT
+
+H = HuberT(t=6)
+# H1 = HuberT(t=1)
+# H2 = HuberT(t=2)
+
+X = np.linspace(-10, 10, 1000)
+Y = H.rho(X)
+d = H.psi_deriv(X)
+
+plt.plot(X, Y)
+plt.plot(X, d)
+plt.show()
+
+
+
+# %% Test image translation
+import scipy.ndimage as ndi
+import UtilityFunctions as ufun
+from skimage import io, filters, exposure, measure, transform, util, color
+import matplotlib.patches as patches
+
+
+def gaussian2D(size, sigma=1, center=(0, 0)):
+    muu=0
+    x0, y0 = center
+    x, y = np.meshgrid(np.linspace(-1, 1, size),
+                       np.linspace(-1, 1, size))
+    dst = np.sqrt((x-x0)**2+(y-y0)**2)
+    # lower normal part of gaussian
+    normal = 1/(2.0 * np.pi * sigma**2)
+    # Calculating Gaussian filter
+    gauss = np.exp(-((dst-muu)**2 / (2.0 * sigma**2))) * normal
+    return(gauss)
+ 
+imSize=15
+cleanSize = 9
+cleanCenter = (cleanSize) // 2
+roughSize = 11
+roughCenter = (roughSize) // 2
+
+Iraw = gaussian2D(imSize, sigma=0.4, center = (0.12, -0.22))
+Y, X = ndi.center_of_mass(Iraw)
+xb1, yb1, xb2, yb2, validROI = ufun.getROI(roughSize, X, Y, 1000, 1000)
+
+fig1, ax1 = plt.subplots(1, 1)
+ax = ax1
+ax.imshow(Iraw)
+ax.plot(imSize//2, imSize//2, 'b+')
+ax.plot(X, Y, 'r+')
+ax.plot(np.round(X), np.round(Y), 'g+')
+ax.axvline(xb1, c='r', ls='--')
+ax.axvline(xb2-1, c='r', ls='--')
+ax.axhline(yb1, c='r', ls='--')
+ax.axhline(yb2-1, c='r', ls='--')
+print(X, Y)
+print(np.round(X), np.round(Y))
+print(xb1, yb1, xb2, yb2, validROI)
+
+I_roughRoi = Iraw[yb1:yb2, xb1:xb2]
+fig2, ax2 = plt.subplots(1, 1)
+ax = ax2
+ax.imshow(I_roughRoi)
+ax.plot(roughSize//2, roughSize//2, 'g+')
+ax.plot(X-xb1, Y-yb1, 'r+')
+
+xc1, yc1 = X-xb1, Y-yb1
+translation = (xc1-roughCenter, yc1-roughCenter)
+tform = transform.EuclideanTransform(rotation=0, translation = translation)
+F_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+fig3, ax3 = plt.subplots(1, 1)
+ax = ax3
+ax.imshow(F_tmp)
+ax.axvline(roughCenter, c='r', ls='--')
+
+I_cleanRoi = np.copy(F_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                            roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+Y2, X2 = ndi.center_of_mass(I_cleanRoi)
+cleanCenter = (cleanSize) // 2
+fig4, ax4 = plt.subplots(1, 1)
+ax = ax4
+ax.imshow(I_cleanRoi)
+ax.plot(X2, Y2, 'r+')
+ax.axvline(cleanCenter, c='r', ls='--')
+
+plt.show()
+
+#### part2
+
+imSize=15
+cleanSize = 9
+cleanCenter = (cleanSize) // 2
+roughSize = 11
+roughCenter = (roughSize) // 2
+
+Iraw = gaussian2D(imSize, sigma=0.4, center = (0.12, -0.22))
+Y, X = ndi.center_of_mass(Iraw)
+xb1, yb1, xb2, yb2, validROI = ufun.getROI(roughSize, X, Y, 1000, 1000)
+
+I_roughRoi = Iraw[yb1:yb2, xb1:xb2]
+
+
+xc1, yc1 = X-xb1, Y-yb1
+translation = (xc1-roughCenter, yc1-roughCenter)
+tform = transform.EuclideanTransform(rotation=0, translation = translation)
+F_tmp = transform.warp(I_cleanRoi, tform, order = 1, preserve_range = True)
+
+I_cleanRoi = np.copy(F_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                            roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+
+
+# %% Test shapely
+
+# %%% Plot Polygon
+
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
+from shapely.plotting import plot_polygon, plot_points
+
+# from figures import GRAY, RED, SIZE, set_limits
+
+fig = plt.figure(1, dpi=90)
+
+# 3: invalid polygon, ring touch along a line
+ax = fig.add_subplot(121)
+
+exte = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
+inte = [(0.5, 0), (1.5, 0), (1.5, 1), (0.5, 1), (0.5, 0)]
+polygon = Polygon(exte, [inte])
+
+plot_polygon(polygon, ax=ax, add_points=False, color='red')
+plot_points(polygon, ax=ax, color='gray', alpha=0.7)
+
+ax.set_title('c) invalid')
+
+
+#4: invalid self-touching ring
+ax = fig.add_subplot(122)
+ext = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
+int_1 = [(0.5, 0.25), (1.5, 0.25), (1.5, 1.25), (0.5, 1.25), (0.5, 0.25)]
+int_2 = [(0.5, 1.25), (1, 1.25), (1, 1.75), (0.5, 1.75)]
+polygon = Polygon(ext, [int_1, int_2])
+
+plot_polygon(polygon, ax=ax, add_points=False, color='red')
+plot_points(polygon, ax=ax, color='gray', alpha=0.7)
+
+ax.set_title('d) invalid')
+
+
+plt.show()
+
+# %%% Find PIA & radius
+
+from shapely.ops import polylabel
+from shapely import Polygon, LineString, get_exterior_ring, distance
+from shapely.plotting import plot_polygon, plot_points, plot_line
+
+fig = plt.figure(1, dpi=90)
+
+line = LineString([(0, 0), (50, 200), (100, 100), (20, 50), (-100, -20), (-100, +200)]) #.buffer(100)
+polygon = line.buffer(100)
+
+ax = fig.add_subplot(121)
+plot_line(line, ax=ax, add_points=False, color='blue')
+plot_points(line, ax=ax, color='gray', alpha=0.7)
+plot_polygon(polygon, ax=ax, add_points=False, color='red')
+# plot_points(polygon, ax=ax, color='gray', alpha=0.7)
+
+label = polylabel(polygon, tolerance=1)
+ExtR = get_exterior_ring(polygon)
+D = distance(label, ExtR)
+circle = label.buffer(D)
+
+
+ax = fig.add_subplot(122)
+
+plot_line(ExtR, ax=ax, add_points=False, color='blue')
+# plot_points(line, ax=ax, color='gray', alpha=0.7)
+plot_polygon(circle, ax=ax, add_points=False, color='red')
+plot_points(label, ax=ax, color='green', alpha=1)
+
+
+# %% Test colors
+
+
+A = np.arange(1,13)
+B = A.reshape((4,3))
+C = np.sum(B, axis = 1)
+C
+
+
+
+# %% Test colors
+N = 6
+fig, ax = plt.subplots(1, 1)
+ax.set_prop_cycle(plt.cycler("color", plt.cm.viridis(np.linspace(0,1,N))))
+TT = np.linspace(0, 2*np.pi, 360)
+dT = np.linspace(0, 1*np.pi, 6)
+A = np.zeros((6, 360))
+for k in range(len(dT)):
+    t = dT[k]
+    A[k,:] = np.sin(TT + t)
+    ax.plot(TT, A[k,:])
+    
+plt.show()
+
 # %% Test sorting
 
 A = np.array([3.2, 1.6, 6.4, 0.8])
@@ -195,7 +403,7 @@ df1 = pd.DataFrame(d1)
 d2 = {'i1':[1,2,3,6,7,8,9]}
 df2 = pd.DataFrame(d2)
 
-df3 = pd.merge(left=df1, right=df2, how='left', on='i1')
+df3 = pd.merge(left=df1, right=df2, how='right', on='i1')
 
 # Filter1 = (df['course'] == 'l')
 # Filter2 = (df['grade'] > 10)
