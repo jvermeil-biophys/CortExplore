@@ -1056,7 +1056,9 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
+                # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
+                # if (iF >= 1080 and iF <= 1100):
+                # # if (iF >= 225 and iF <= 265):
                 #     plot = 1
 
             # ###################################################################
@@ -1116,24 +1118,109 @@ class Trajectory:
         depthoDepth = self.deptho.shape[0]
         listProfiles = np.zeros((Nframes, hdSize))
         listROI = []
-        listWholeROI = []
+        listF_cleanRoi = []
         for i in range(Nframes):
             if np.sum(framesNuplet[i].F) == 0:
                 print('illegal')
             xx = np.arange(0, 5)
             yy = np.arange(0, cleanSize)
             try:
-                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) # > We could also try to recenter the image to keep a subpixel resolution here
-                # line that is 5 pixels wide
-                wholeROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
-                profileROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-2:X+3]
-                # f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
-                # # Now use the obtained interpolation function and plot the result:
-                # xxnew = xx
-                # yynew = np.linspace(0, cleanSize, hdSize)
-                # profileROI_hd = f(xxnew, yynew)
+                # X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
+                # > We could also try to recenter the image to keep a subpixel resolution here
                 
+                X, Y = listXY[i][0], listXY[i][1]
+                roughSize = cleanSize + 4
+                roughCenter = roughSize // 2
+                xb1, yb1, xb2, yb2, validROI = ufun.getROI(roughSize, X, Y, self.nx, self.ny)
+                F_roughRoi = framesNuplet[i].F[yb1:yb2, xb1:xb2]
+                
+                xc1, yc1 = X-xb1-0.5, Y-yb1-0.5
+                translation = (xc1-roughCenter, yc1-roughCenter)
+                
+                tform = transform.EuclideanTransform(rotation=0, translation = translation)
+                F_tmp = transform.warp(F_roughRoi, tform, order = 1, preserve_range = True)
+
+                F_cleanRoi = np.copy(F_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                           roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+                cleanCenter = cleanSize // 2
+                
+                
+                profileROI = F_cleanRoi[:, cleanCenter-2:cleanCenter+3] # line that is 5 pixels wide     
                 profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize)
+                
+                # if plot:
+                #     plt.ioff()
+                #     figtest, axestest = plt.subplots(2, 4, figsize=(16,4))
+                    
+                #     figtest.suptitle(f"X, Y = {X:.1f}, {Y:.1f}")
+                    
+                #     ax = axestest[0, 0]
+                #     ax.imshow(framesNuplet[i].F)
+                #     ax.plot(X, Y, 'r+')
+                #     Xro, Yro = np.round(X), np.round(Y)
+                #     ax.plot(Xro, Yro, 'g+')
+                #     ax.axvline(xb1, c='r', ls='--')
+                #     ax.axvline(xb2-1, c='r', ls='--')
+                #     ax.axhline(yb1, c='r', ls='--')
+                #     ax.axhline(yb2-1, c='r', ls='--')
+                #     ax.set_xlim(xb1-11, xb2+10)
+                #     ax.set_ylim(yb2+10, yb1-11)
+                    
+                #     ax = axestest[1, 0]
+                #     ax.imshow(framesNuplet[i].F)
+                #     ax.plot(X, Y, 'r+')
+                #     ax.plot(np.round(X), np.round(Y), 'g+')
+                #     ax.set_xlim(Xro-3, Xro+3)
+                #     ax.set_ylim(Yro+3, Yro-3)
+
+                #     ax = axestest[0, 1]
+                #     ax.imshow(F_roughRoi)
+                #     ax.plot(roughSize//2, roughSize//2, 'b+')
+                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+')
+                    
+                #     ax = axestest[1, 1]
+                #     ax.imshow(F_roughRoi)
+                #     ax.axvline(roughCenter, c='b', ls='--')
+                #     ax.axhline(roughCenter, c='b', ls='--')
+                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+', zorder = 6)
+                #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                #     ax.set_ylim(roughCenter+3, roughCenter-3)
+
+                #     ax = axestest[0, 2]
+                #     ax.imshow(F_tmp)
+                #     ax.axvline(roughCenter, c='r', ls='--')
+                    
+                #     ax = axestest[1, 2]
+                #     ax.imshow(F_tmp)
+                #     ax.axvline(roughCenter, c='b', ls='--')
+                #     ax.axhline(roughCenter, c='b', ls='--')
+                #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                #     ax.set_ylim(roughCenter+3, roughCenter-3)
+                    
+                #     Y2, X2 = ndi.center_of_mass(F_cleanRoi[cleanCenter-10:cleanCenter+11, cleanCenter-10:cleanCenter+11])
+                #     Y2, X2 = Y2 + (cleanCenter-10), X2 + (cleanCenter-10)
+                #     ax = axestest[0, 3]
+                #     ax.imshow(F_cleanRoi)
+                #     ax.plot(X2, Y2, 'r+')
+                #     ax.axvline(cleanCenter, c='b', ls='--')
+                    
+                #     ax = axestest[1, 3]
+                #     ax.imshow(F_cleanRoi)
+                #     ax.plot(X2, Y2, 'r+')
+                #     ax.axvline(cleanCenter, c='b', ls='--')
+                #     ax.axhline(cleanCenter, c='b', ls='--')
+                #     ax.set_xlim(cleanCenter-3, cleanCenter+3)
+                #     ax.set_ylim(cleanCenter+3, cleanCenter-3)
+
+                #     thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
+                #     if not os.path.isdir(thisCellTempPlots):
+                #         os.mkdir(thisCellTempPlots)
+                        
+                #     saveName = '00_S{:.0f}_B{:.0f}.png'.format(framesNuplet[i].iS, self.iB+1)
+                #     savePath = os.path.join(thisCellTempPlots, saveName)
+                #     figtest.savefig(savePath)
+                #     plt.close(figtest)
+                #     plt.ion()
                 
 
             except: # If the vertical slice doesn't work, try the horizontal one
@@ -1145,20 +1232,17 @@ class Trajectory:
                 print('' + gs.NORMAL)
 
                 xx, yy = yy, xx
-                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) # > We could also try to recenter the image to keep a subpixel resolution here
-                # line that is 5 pixels wide
-                wholeROI = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
-                profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1]
-                # f = interpolate.interp2d(xx, yy, profileROI, kind='cubic')
-                # # Now use the obtained interpolation function and plot the result:
-                # xxnew = np.linspace(0, cleanSize, hdSize)
-                # yynew = yy
-                # profileROI_hd = f(xxnew, yynew).T
+                # > We could also try to recenter the image to keep a subpixel resolution here
+                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
+                cleanCenter = Y
                 
+                F_cleanRoi = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
+                profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1] # line that is 5 pixels wide              
                 profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize).T
 
+
             listROI.append(profileROI)
-            listWholeROI.append(wholeROI)
+            listF_cleanRoi.append(F_cleanRoi)
 
             listProfiles[i,:] = profileROI_hd[:,5//2] * (1/5)
             for j in range(1, 1 + 5//2):
@@ -1196,11 +1280,17 @@ class Trajectory:
         listZ = np.zeros(Nframes, dtype = int)
         Zscanned = np.arange(Ztop, Zbot, 1, dtype=int)
         
+        # if plot:
+            # print(self.deptho.shape)
+            # print(Ztop, Zbot)
+            
         subDeptho = self.deptho[Ztop:Zbot, :]
         
         for i in range(Nframes):
             
             listDistances[i] = ufun.squareDistance(subDeptho, listProfiles[i], normalize = True) # Utility functions
+            #### HERE - NEW: Filtering the cost function
+            listDistances[i] = savgol_filter(listDistances[i], 31, 3, mode='mirror')
             listZ[i] = Ztop + np.argmin(listDistances[i])
 
         # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
@@ -1267,6 +1357,8 @@ class Trajectory:
             axes[0,0].plot([X2+dx,X2+dx], [Y2-dy,Y2+dy], ls = '--', c = color_image, lw = 0.8)
             axes[0,0].plot([X2-dx,X2+dx], [Y2-dy,Y2-dy], ls = '--', c = color_image, lw = 0.8)
             axes[0,0].plot([X2-dx,X2+dx], [Y2+dy,Y2+dy], ls = '--', c = color_image, lw = 0.8)
+            # axes[0,0].set_xlim([X2-dx-1,X2+dx+2])
+            # axes[0,0].set_ylim([Y2+dy+1, Y2-dy-2])
 
             # Plot the deptho then resize it better
             axes[0,1].imshow(self.deptho, cmap = cmap)
@@ -1286,20 +1378,24 @@ class Trajectory:
                 idx_inNUp += (idx_inNUp == 0)
                 
                 # Show the bead appearence
-                axes[1,i].imshow(listWholeROI[i], cmap = cmap)
+                axes[1,i].imshow(listF_cleanRoi[i], cmap = cmap)
                 images_ticks_loc = ticker.MultipleLocator(10)
                 axes[1,i].xaxis.set_major_locator(images_ticks_loc)
                 axes[1,i].yaxis.set_major_locator(images_ticks_loc)
                 axes[1,i].set_title('Image {:.0f}/{:.0f} - '.format(idx_inNUp, Nup) + direction, 
                                     fontsize = 14)
-                axes[1,i].plot([cleanSize//2,cleanSize//2],[0,cleanSize-1], c=color_Nup[i], ls='--', lw = 1)
+                axes[1,i].axvline(cleanCenter, c=color_Nup[i], ls='--', lw = 1)
+                
+                # #### HERE PLOT OPTION
+                axes[1,i].set_xlim([cleanCenter-8,cleanCenter+8])
+                axes[1,i].set_ylim([cleanCenter+8,cleanCenter-8])
                 
                 # Show the profile of the beads
                 axes[2,i].plot(pixLineHD, listProfiles[i], c = color_Nup[i])
-                axes[2,i].set_xlabel('Position along the profile\n(Y-axis)', 
-                                     fontsize = 9)
+                axes[2,i].set_xlabel('Position along the profile - (Y-axis)', 
+                                      fontsize = 9)
                 axes[2,i].set_ylabel('Pixel intensity', 
-                                     fontsize = 9)
+                                      fontsize = 9)
                 axes[2,i].set_title('Profile {:.0f}/{:.0f} - '.format(idx_inNUp, Nup), 
                                     fontsize = 11)
                 
@@ -1311,16 +1407,18 @@ class Trajectory:
                 # axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
                 axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
-                axes[3,i].set_xlabel('Position along the depthograph\n(Z-axis)', 
-                                     fontsize = 9)
-                axes[3,i].set_ylabel('Cost\n(Squared diff to deptho)', 
-                                     fontsize = 9)
-                axes[3,i].set_title('Cost curve {:.0f}/{:.0f}'.format(idx_inNUp, Nup), 
-                                    fontsize = 11)
-                
                 limy3 = axes[3,i].get_ylim()
                 min_i = zPos[np.argmin(listDistances[i])]
                 axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
+                
+                axes[3,i].set_xlabel('Position along the depthograph - (Z-axis)', 
+                                      fontsize = 9)
+                axes[3,i].set_ylabel('Cost\n(Squared diff to deptho)', 
+                                      fontsize = 9)
+                pos_nm = min_i/self.HDZfactor
+                axes[3,i].set_title(f'Cost curve {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}', 
+                                    fontsize = 11)
+                
                 # for p in peaks:
                 #     p_i = zPos[int(p)]
                 #     axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
@@ -1328,30 +1426,36 @@ class Trajectory:
                 #     axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
                 axes[3,i].set_xlim([0, depthoDepth])
                 
+                
+                
                 #
                 axes[4,i].plot(zPos, finalDists[i])
                 axes[4,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[4,i].xaxis.set_major_formatter(deptho_zticks_format)
-                axes[4,i].set_xlabel('Corrected position along the depthograph\n(Z-axis)', 
-                                     fontsize = 9)
-                axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
-                                     fontsize = 9)
-                axes[4,i].set_title('Cost curve with corrected position {:.0f}/{:.0f}'.format(idx_inNUp, Nup), 
-                                    fontsize = 11)
-                
                 limy4 = axes[4,i].get_ylim()
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
+                
+                axes[4,i].set_xlabel('Corrected position along the depthograph - (Z-axis)', 
+                                      fontsize = 9)
+                axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
+                                      fontsize = 9)
+                pos_nm = min_i/self.HDZfactor
+                axes[4,i].set_title(f'Cost curve with corrected position {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
+                                    fontsize = 11)
+                
                 # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
                 axes[4,i].set_xlim([0, depthoDepth])
 
+
+
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
-                               [listZ[i], listZ[i]], 
-                               ls = '--', c = color_Nup[i])
+                                [listZ[i], listZ[i]], 
+                                ls = '--', c = color_Nup[i])
                 
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
-                               [Z,Z], 
-                               ls = '--', c = color_result)
+                                [Z,Z], 
+                                ls = '--', c = color_result)
 
 
             axes[0,2].plot(zPos, sumFinalD)
@@ -1360,17 +1464,17 @@ class Trajectory:
             limy0 = axes[0,2].get_ylim()
             axes[0,2].plot([Z, Z], limy0, ls = '-', c = color_result, label = 'Z', lw = 1.5)
             axes[0,2].plot([previousZ, previousZ], limy0, 
-                           ls = '--', c = color_previousResult, label = 'previous Z', lw = 0.8)
+                            ls = '--', c = color_previousResult, label = 'previous Z', lw = 0.8)
             axes[0,2].plot([previousZ-maxDz, previousZ-maxDz], limy0,
-                           ls = '--', c = color_margin, label = 'allowed margin', lw = 0.8)
+                            ls = '--', c = color_margin, label = 'allowed margin', lw = 0.8)
             axes[0,2].plot([previousZ+maxDz, previousZ+maxDz], limy0,
-                           ls = '--', c = color_margin, lw = 0.8)
+                            ls = '--', c = color_margin, lw = 0.8)
             axes[0,2].set_xlim([0, depthoDepth])
             
             axes[0,2].set_xlabel('Position along the depthograph\n(Z-axis)', 
-                                 fontsize = 9)
+                                  fontsize = 9)
             axes[0,2].set_ylabel('Total Cost\n(Sum of Squared diff to deptho)', 
-                                 fontsize = 9)
+                                  fontsize = 9)
             axes[0,2].set_title('Sum of Cost curves with corrected position', 
                                 fontsize = 11)
             axes[0,2].legend()
@@ -1386,9 +1490,9 @@ class Trajectory:
             fig.subplots_adjust(top=0.94)
             
             fig.suptitle('Frames '+str(iFNuplet)+' - Slices '+str(iSNuplet)+' ; '+\
-                         'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
-                         '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
-                         y=0.98)
+                          'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
+                          '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
+                          y=0.98)
             
             if not os.path.isdir(cp.DirTempPlots):
                 os.mkdir(cp.DirTempPlots)
@@ -1521,7 +1625,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                    'importTrajFile' : True,
                   }
 
-    #### 1 - Make list of files to analyè__se
+    #### 1 - Make list of files to analyse
     
     sourceDirsPaths = []
     fileRoots = []
@@ -1958,6 +2062,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     depthoPathRoot = os.path.join(dictPaths['depthoDir'], dictPaths['depthoName'])
     depthoMetadata = pd.read_csv(depthoPathRoot+'_Metadata.csv', sep=';')
     deptho = io.imread(depthoPathRoot+'_Deptho.tif')
+    #### HERE ! NEW FEATURE
+    deptho = filters.gaussian(deptho, sigma=(4,0))
     depthoStep = depthoMetadata.loc[0,'step']
     depthoZFocus = depthoMetadata.loc[0,'focus']
     
@@ -2157,6 +2263,9 @@ class BeadDeptho:
 
         # If the bead is valid we can proceed
         self.validBead = validBead
+        
+        if not validBead:
+            print('invalid image size')
 
         if validBead:
             for z in range(self.bestZ, -1, -1):
@@ -2184,13 +2293,12 @@ class BeadDeptho:
                         self.valid_v = False
 
 
-                xm1, ym1 = xmi-x1, ymi-y1
+                xm1, ym1 = xmi-x1-0.5, ymi-y1-0.5
                 I_roughRoi = self.I[i,y1:y2,x1:x2]
 
                 translation = (xm1-roughCenter, ym1-roughCenter)
 
-                tform = transform.EuclideanTransform(rotation=0, \
-                                                     translation = (xm1-roughCenter, ym1-roughCenter))
+                tform = transform.EuclideanTransform(rotation=0, translation = translation)
 
                 I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
 
@@ -2198,6 +2306,7 @@ class BeadDeptho:
                                               roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
 
             if not self.valid_v:
+                print('invalid vertical slice')
                 self.validBead = False
 
             else:
@@ -2207,6 +2316,8 @@ class BeadDeptho:
                 self.I_cleanROI = I_cleanROI.astype(np.uint16)
                 
             if self.validDepth < self.nz * (2/3):
+                print('invalid depth')
+                print(self.validDepth, self.nz * (2/3), self.nz)
                 self.validBead = False
 
             # VISUALISE
@@ -2220,7 +2331,6 @@ class BeadDeptho:
 
 
     def buildDeptho(self, nbPixToAvg = 5, interpolationFactor = 5):
-        preferedDeptho = 'v'
         side_ROI = self.I_cleanROI.shape[1]
         mid_ROI = side_ROI//2
         deptho_raw = np.zeros([self.nz, side_ROI], dtype = np.float64)
@@ -2228,7 +2338,7 @@ class BeadDeptho:
 
         if self.validBead:
             for z in range(self.zFirst, self.zLast):
-                templine = side_ROI
+                # templine = side_ROI
                 deptho_raw[z] = self.I_cleanROI[z,:,mid_ROI] * (1/nbPixToAvg) # nbPixToAvg has to be an odd number
                 for i in range(1, 1 + nbPixToAvg//2): # nbPixToAvg has to be an odd number
                     deptho_raw[z] += self.I_cleanROI[z,:,mid_ROI - i] * (1/nbPixToAvg)
