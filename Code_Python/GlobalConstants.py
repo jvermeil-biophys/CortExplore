@@ -50,3 +50,5 @@ Examples
 SCALE_100X = 15.8 # pix/µm
 SCALE_63X = 9.9 # pix/µm
 SCALE_60X = 0.6*SCALE_100X # pix/µm
+
+SCALE_100X_CHAMELEON = 7.4588 # pix/µm
