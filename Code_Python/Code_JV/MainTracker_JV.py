@@ -547,7 +547,7 @@ output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf,
 # %%%% 23.12.03 M1 - C1 only
 
 dates = '23.12.03'
-manips, wells, cells = 1, 1, 1
+manips, wells, cells = 1, 1, 2
 depthoName = '23.12.03_M1_M450_step20_100X'
 
 output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
