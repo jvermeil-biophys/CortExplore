@@ -4558,6 +4558,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
             if k == 'results_main':
                 #### The main results data for a cell are grabbed here!
                 res_main = df
+                list_resultDf.append(res_main) # Append res_main to list for concatenation
             else: # Other result dataframe : H0 detection or local fit...
                 if df.size > 0:
                     #### Single cell data are saved here!
@@ -4576,7 +4577,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                         cloudpath = os.path.join(cp.DirCloudAnalysisFits, fileName)
                         df.to_csv(cloudpath, sep=';', index=False)
                     
-        list_resultDf.append(res_main) # Append res_main to list for concatenation
+        # list_resultDf.append(res_main) # Append res_main to list for concatenation
 
     mecaDf = pd.concat(list_resultDf) # Concatenation at the end of the loop
     return(mecaDf)
@@ -5186,14 +5187,14 @@ def getFitsInTable(mecaDf, fitsSubDir = '', fitType = 'stressGaussian', filter_f
     >>> # the nPoints method (specified number of points).
     
     >>> # Ex2.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'gaussianStress', filter_fitID = '200_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressGaussian', filter_fitID = '200_75')
     >>> # Return only fits in the region 200+/-75 Pa obtained with 
-    >>> # the gaussianStress method (gaussian stress window).
+    >>> # the stressGaussian method (gaussian stress window).
     
     >>> # Ex3.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'regionStress', filter_fitID = '_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressRegion', filter_fitID = '_75')
     >>> # Return only fits in regions of half width 75 Pa, obtained with 
-    >>> # the regionStress method (discrete stress window).
+    >>> # the stressRegion method (discrete stress window).
 
     """
     
