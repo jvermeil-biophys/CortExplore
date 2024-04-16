@@ -76,7 +76,118 @@ plt.close('all')
 # %%%% Next manipe
 # %%%% Next manipe
 
+
 # %% NANO-INDENTER
+
+# %%% 24-04-11 - One cell 
+
+dates = '24.04.11'
+manips, wells, cells = 1, 1, 3
+depthoName = '24.04.11_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%% 24-04-11
+
+dates = '24.04.11'
+manips, wells, cells = 1, 1, 'all'
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = f'{dates}_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 3, 1, 'all'
+depthoName = f'{dates}_M3_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 5, 1, 'all'
+depthoName = f'{dates}_M5_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%% 24-04-11 - One cell 
+
+dates = '24.02.28'
+manips, wells, cells = 1, 1, 2
+depthoName = '24.02.28_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%% 24-02-28
+
+dates = '24.02.28'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '24.02.28_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = '24.02.28_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+manips, wells, cells = 3, 1, 'all'
+depthoName = '24.02.28_M3_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%% 24-02-26
+
+dates = '24.02.26'
+manips, wells, cells = 2, 1, 'all'
+depthoName = '24.02.26_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+manips, wells, cells = 3, 1, 'all'
+depthoName = '24.02.26_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%% 23-12-10
+
+dates = '23.12.10'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '23.12.10_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%% 23-12-07
+
+dates = '23.12.07'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '23.12.07_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = '23.12.07_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
 
 # %%% 23-11-15
 
@@ -379,6 +490,156 @@ output = mainTracker(dates, manips, wells, cells, depthoName, expDf,
 
 # %%% Next experiment day
 # %%%% Next manipe
+
+# %%% 24.03.13 LIMKi
+# M1 - DMSO (4µL) || M2 - LIMKi 10µM || M3 - Y27 50µM || M4 - LIMKi 20µM
+
+# %%%% 24.03.13 M1 - C1 only
+
+dates = '24.03.13'
+manips, wells, cells = 1, 1, 1
+depthoName = '24.03.13_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+# %%%% 24.03.13 M1 - DMSO (4µL)
+
+dates = '24.03.13'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '24.03.13_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 24.03.13 M2 - LIMKi 10µM
+
+dates = '24.03.13'
+manips, wells, cells = 2, 1, 'all'
+depthoName = '24.03.13_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%%% 24.03.13 M3 - Y27 50µM
+
+dates = '24.03.13'
+manips, wells, cells = 3, 1, 'all'
+depthoName = '24.03.13_M3_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 24.03.13 M4 - LIMKi 20µM
+
+dates = '24.03.13'
+manips, wells, cells = 4, 1, 'all'
+depthoName = '24.03.13_M4_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%% 23.12.03 LatA
+# M2 & M4 - LatA 0.1µM // M1 - DMSO (5µL) // M3 - LatA 0.5µM
+
+# %%%% 23.12.03 M1 - C1 only
+
+dates = '23.12.03'
+manips, wells, cells = 1, 1, 1
+depthoName = '23.12.03_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+# %%%% 23.12.03 M1 - LatA 0.5µM
+
+dates = '23.12.03'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '23.12.03_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 23.12.03 M2 - DMSO
+
+dates = '23.12.03'
+manips, wells, cells = 2, 1, 'all'
+depthoName = '23.12.03_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%%% 23.12.03 M3 - LatA 2.5µM
+
+dates = '23.12.03'
+manips, wells, cells = 3, 1, 'all'
+depthoName = '23.12.03_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 23.12.03 M4 - LatA 0.5µM
+
+dates = '23.12.03'
+manips, wells, cells = 4, 1, 'all'
+depthoName = '23.12.03_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%% 23.11.26 LatA
+# M1 & M4 - LatA 0.5µM // M2 - DMSO (5µL) // M3 - LatA 2.5µM
+
+# %%%% 23.11.26 M1 - C1 only
+
+dates = '23.11.26'
+manips, wells, cells = 1, 1, 1
+depthoName = '23.11.26_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+# %%%% 23.11.26 M1 - LatA 0.5µM
+
+dates = '23.11.26'
+manips, wells, cells = 1, 1, 'all'
+depthoName = '23.11.26_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 23.11.26 M2 - DMSO
+
+dates = '23.11.26'
+manips, wells, cells = 2, 1, 'all'
+depthoName = '23.11.26_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+# %%%% 23.11.26 M3 - LatA 2.5µM
+
+dates = '23.11.26'
+manips, wells, cells = 3, 1, 'all'
+depthoName = '23.11.26_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
+# %%%% 23.11.26 M4 - LatA 0.5µM
+
+dates = '23.11.26'
+manips, wells, cells = 4, 1, 'all'
+depthoName = '23.11.26_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
 
 # %%% 23.09.19 JLY
 # M1 - DMSO // M2 - JLY - Jasp 8µM, LatB 5µM, Y27 10µM
