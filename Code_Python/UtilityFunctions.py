@@ -53,6 +53,7 @@ from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
 from collections.abc import Collection
 from copy import deepcopy
+from sklearn.linear_model import HuberRegressor
 
 #### Local Imports
 
@@ -958,11 +959,11 @@ def getROI(roiSize, x0, y0, nx, ny):
     Note : the ROI is done so that the final width (= height) 
     of the ROI will always be an odd number.
     """
-    roiSize += roiSize%2
-    x1 = int(np.floor(x0) - roiSize*0.5) - 1
-    x2 = int(np.floor(x0) + roiSize*0.5)
-    y1 = int(np.floor(y0) - roiSize*0.5) - 1
-    y2 = int(np.floor(y0) + roiSize*0.5)
+    roiSize -= roiSize%2 # even
+    x1 = int(np.round(x0) - roiSize*0.5) #- 1
+    x2 = int(np.round(x0) + roiSize*0.5) + 1
+    y1 = int(np.round(y0) - roiSize*0.5) #- 1
+    y2 = int(np.round(y0) + roiSize*0.5) + 1
     if min([x1,nx-x2,y1,ny-y2]) < 0:
         validROI = False
     else:
@@ -1364,6 +1365,34 @@ def fitLine(X, Y):
     
     X = sm.add_constant(X)
     model = sm.OLS(Y, X)
+    results = model.fit()
+    params = results.params 
+#     print(dir(results))
+    return(results.params, results)
+
+def fitLineHuber(X, Y):
+    """
+    returns: results.params, results \n
+    Y=a*X+b ; params[0] = b,  params[1] = a
+    
+    NB:
+        R2 = results.rsquared \n
+        ci = results.conf_int(alpha=0.05) \n
+        CovM = results.cov_params() \n
+        p = results.pvalues \n
+    
+    This is how one should compute conf_int:
+        bse = results.bse \n
+        dist = stats.t \n
+        alpha = 0.05 \n
+        q = dist.ppf(1 - alpha / 2, results.df_resid) \n
+        params = results.params \n
+        lower = params - q * bse \n
+        upper = params + q * bse \n
+    """
+    
+    X = sm.add_constant(X)
+    model = sm.RLM(Y, X, M=sm.robust.norms.HuberT())
     results = model.fit()
     params = results.params 
 #     print(dir(results))
