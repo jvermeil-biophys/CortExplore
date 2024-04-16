@@ -57,9 +57,9 @@ import UtilityFunctions as ufun
 
 
 #%% Define parameters # Jojo
-date = '23.11.13'
-DirExt = 'E:\\23.11.13_NanoIndent\\M2_depthos' #'/M4_patterns_ctrl' // \\M6-7_de
-DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M2') #  + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '24.04.11'
+DirExt = 'E:\\24-04-11_3T3Atcc-LaGFP_P+I-25um_Y27_patternSize\\M5_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M5') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
@@ -69,8 +69,8 @@ imagePrefix = 'im' # 'Image'
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie',
-                                             'film', 'films', 'capture', 'captures'
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
+                                               'film', 'films', 'capture', 'captures', # 'deptho', 'depthos',
                                              ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """
@@ -99,7 +99,7 @@ def getListOfSourceFolders(Dir,
             res = [Dir] # List with 1 element - the name of this dir
         else:
             return(res)
-        
+    
     else:
         listDirs = os.listdir(Dir)
         print(listDirs)
