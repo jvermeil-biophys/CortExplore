@@ -53,6 +53,7 @@ from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
 from collections.abc import Collection
 from copy import deepcopy
+from sklearn.linear_model import HuberRegressor
 
 #### Local Imports
 
@@ -958,11 +959,11 @@ def getROI(roiSize, x0, y0, nx, ny):
     Note : the ROI is done so that the final width (= height) 
     of the ROI will always be an odd number.
     """
-    roiSize += roiSize%2
-    x1 = int(np.floor(x0) - roiSize*0.5) - 1
-    x2 = int(np.floor(x0) + roiSize*0.5)
-    y1 = int(np.floor(y0) - roiSize*0.5) - 1
-    y2 = int(np.floor(y0) + roiSize*0.5)
+    roiSize -= roiSize%2 # even
+    x1 = int(np.round(x0) - roiSize*0.5) #- 1
+    x2 = int(np.round(x0) + roiSize*0.5) + 1
+    y1 = int(np.round(y0) - roiSize*0.5) #- 1
+    y2 = int(np.round(y0) + roiSize*0.5) + 1
     if min([x1,nx-x2,y1,ny-y2]) < 0:
         validROI = False
     else:
@@ -1171,15 +1172,71 @@ def max_entropy_threshold(I):
     T = max_entropy(H)
     return(T)
 
+
+def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
+    
+    nX, nY = I.shape[1], I.shape[0]
+    X, Y = np.arange(0, nX, 1), np.arange(0, nY, 1)
+    try:
+        newX, newY = np.arange(0, nX, nX/new_nx), np.arange(0, nY, nY/new_ny)
+    except:
+        newX, newY = np.arange(0, nX, 1/fx), np.arange(0, nY, 1/fy)
+        
+    # print(X.shape, Y.shape, newX.shape, newY.shape, I.shape)
+    # fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+    # depthoHD = fd(XX, ZZ_HD)
+    
+    fd = interpolate.RectBivariateSpline(Y, X, I)
+    newYY, newXX = np.meshgrid(newY, newX, indexing='ij')
+    new_I = fd(newYY, newXX, grid=False)
+    return(new_I)
+
 # %%% Physics
 
-def computeMag_M270(B):
-    M = 0.74257*1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+
+
+def computeMag_M270(B, k_batch = 1):
+    M = 1.05 * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
-def computeMag_M450(B):
-    M = 1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+def computeMag_M450(B, k_batch = 1):
+    M = 1.05 * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
+
+def computeForce_M450(B, D, d):
+    M = computeMag_M450(B)
+    R = D/2
+    V = (4*np.pi/3)*(R**3)
+    m = M*V
+    dist = D + d
+    F = (3e5 * 2 * m**2) / (dist**4)
+    # plt.plot(B, M)
+    return(F)
+
+def plotForce(d = 200e-9):
+    fig, axes = plt.subplots(1, 2, figsize = (10,5)) 
+    ax = axes[0]
+    B = np.linspace(1, 1000, 1000)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    ax = axes[1]
+    B = np.linspace(0, 100, 101)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
+    plt.tight_layout()
+    plt.show()
+
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
@@ -1266,6 +1323,14 @@ def findFirst(x, A):
     idx = (A==x).view(bool).argmax()
     return(idx)
 
+def findLast(x, A):
+    """
+    Find first occurence of x in array A, in a VERY FAST way.
+    If you like weird one liners, you will like this function.
+    """
+    idx = (A[::-1]==x).view(bool).argmax()
+    return(len(A)-idx-1)
+
 
 def findFirst_V2(v, arr):
     """
@@ -1300,6 +1365,34 @@ def fitLine(X, Y):
     
     X = sm.add_constant(X)
     model = sm.OLS(Y, X)
+    results = model.fit()
+    params = results.params 
+#     print(dir(results))
+    return(results.params, results)
+
+def fitLineHuber(X, Y):
+    """
+    returns: results.params, results \n
+    Y=a*X+b ; params[0] = b,  params[1] = a
+    
+    NB:
+        R2 = results.rsquared \n
+        ci = results.conf_int(alpha=0.05) \n
+        CovM = results.cov_params() \n
+        p = results.pvalues \n
+    
+    This is how one should compute conf_int:
+        bse = results.bse \n
+        dist = stats.t \n
+        alpha = 0.05 \n
+        q = dist.ppf(1 - alpha / 2, results.df_resid) \n
+        params = results.params \n
+        lower = params - q * bse \n
+        upper = params + q * bse \n
+    """
+    
+    X = sm.add_constant(X)
+    model = sm.RLM(Y, X, M=sm.robust.norms.HuberT())
     results = model.fit()
     params = results.params 
 #     print(dir(results))

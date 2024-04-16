@@ -222,12 +222,13 @@ def analyseTimeSeries_ctField(f, tsDf, expDf):
     
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
-    # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
+    # Deal with the asymmetric pair case
+    try:
+        DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+    except:
+        D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+        D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+        DIAMETER = (D1 + D2)/2.
     
     results['duration'] = np.max(tsDf['T'])
     results['medianRawB'] = np.median(tsDf.B)
@@ -620,7 +621,8 @@ def fitChadwick_hf(h, f, D):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, 
+                                 p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -703,7 +705,8 @@ def fitDimitriadis_hf(h, f, D, order = 2):
 
     
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(dimitriadisModel, h, f, 
+                                 p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -926,7 +929,8 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, 
+                                 p0=initialParameters, bounds = parameterBounds)
         
         ses = np.array([covM[0,0]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
@@ -989,7 +993,7 @@ def makeDictFit_hf(params, ses, error,
     
     2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
         i) from scipy import stats
-        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
+        ii) dof = nb_pts - nb_parms ; se = diag(cov)**0.5
         iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
         iv) ConfInt = [params - q*se, params + q*se]
 
@@ -1306,11 +1310,12 @@ class CellCompression:
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
         
-        diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-        if len(diameters) == 2:
-            D = (int(diameters[0]) + int(diameters[1]))/2.
-        else:
-            D = int(diameters[0])
+        try:
+            DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+        except:
+            D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+            D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+            DIAMETER = (D1 + D2)/2.
         
         EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
         
@@ -1324,7 +1329,7 @@ class CellCompression:
         nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
         
         self.Ncomp = Ncomp
-        self.DIAMETER = D
+        self.DIAMETER = DIAMETER
         self.EXPTYPE = EXPTYPE
         self.normalField = normalField
         self.minCompField = minCompField
@@ -4274,8 +4279,13 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         i_tsDf = ufun.findFirst(1, maskComp)
         
         #### 3.3 Create IndentCompression object
-        IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
-        CC.listIndent.append(IC)
+        try:
+            IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
+            CC.listIndent.append(IC)
+        except:
+            print(cellID, i)
+            return(thisCompDf)
+            
 
         #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
@@ -4450,7 +4460,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 
-# f = '23-02-23_M1_P1_C7_L40_disc20um_PY.csv'
+# f = '23-11-01_M1_P1_C2-2_L50_disc20um_nanoIndent_PY.csv'
 
 # stressCenters = [ii for ii in range(50, 1550, 25)]
 # stressHalfWidths = [25]
@@ -4460,9 +4470,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # fitSettings = {# H0
 #                 'methods_H0':['Chadwick', 'Dimitriadis'],
-#                 'zones_H0':['%f_5', '%f_10', '%f_20'],
+#                 'zones_H0':['%f_5', '%f_10', '%f_15'],
 #                 'method_bestH0':'Chadwick',
-#                 'zone_bestH0':'%f_10',
+#                 'zone_bestH0':'%f_15',
 #                 # Stress regions
 #                 'doStressRegionFits' : False,
 #                 'doStressGaussianFits' : True,
@@ -4548,6 +4558,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
             if k == 'results_main':
                 #### The main results data for a cell are grabbed here!
                 res_main = df
+                list_resultDf.append(res_main) # Append res_main to list for concatenation
             else: # Other result dataframe : H0 detection or local fit...
                 if df.size > 0:
                     #### Single cell data are saved here!
@@ -4566,7 +4577,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                         cloudpath = os.path.join(cp.DirCloudAnalysisFits, fileName)
                         df.to_csv(cloudpath, sep=';', index=False)
                     
-        list_resultDf.append(res_main) # Append res_main to list for concatenation
+        # list_resultDf.append(res_main) # Append res_main to list for concatenation
 
     mecaDf = pd.concat(list_resultDf) # Concatenation at the end of the loop
     return(mecaDf)
@@ -4717,7 +4728,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     
     #### 3. Select the files to analyse from the list according to the task
     list_taskMecaFiles = []
-    print(list_mecaFiles)
+    # print(list_mecaFiles)
     # 3.1
     if task == 'all':
         list_taskMecaFiles = list_mecaFiles
@@ -4730,7 +4741,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
                 if t in currentCellID:
                     list_taskMecaFiles.append(f)
                     break
-    print(list_taskMecaFiles)
+    # print(list_taskMecaFiles)
     list_selectedMecaFiles = []
     # 3.3
     if mode == 'fromScratch':
@@ -5176,14 +5187,14 @@ def getFitsInTable(mecaDf, fitsSubDir = '', fitType = 'stressGaussian', filter_f
     >>> # the nPoints method (specified number of points).
     
     >>> # Ex2.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'gaussianStress', filter_fitID = '200_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressGaussian', filter_fitID = '200_75')
     >>> # Return only fits in the region 200+/-75 Pa obtained with 
-    >>> # the gaussianStress method (gaussian stress window).
+    >>> # the stressGaussian method (gaussian stress window).
     
     >>> # Ex3.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'regionStress', filter_fitID = '_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressRegion', filter_fitID = '_75')
     >>> # Return only fits in regions of half width 75 Pa, obtained with 
-    >>> # the regionStress method (discrete stress window).
+    >>> # the stressRegion method (discrete stress window).
 
     """
     
