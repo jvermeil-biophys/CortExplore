@@ -230,9 +230,9 @@ class PincherTimeLapse:
                 iS = logDf_loop['iS'].values[-1]
                 
                 logDf_fast = logDf_loop[logDf_loop['Status'].apply(lambda x : x.startswith(fastestPhase))]
-                iS_fast = logDf_fast['iS'].values[-1]
+                iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
                 
-                while np.sum(self.I[iS-1]) == 0:
+                while np.sum(self.I[iS-1]) == 0: # while a black image is detected
                     nullFrames.append(iS_fast)
                     self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
                     self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
@@ -443,7 +443,7 @@ class PincherTimeLapse:
         Note about the naming conventions here:
         - 'iF': index in the list of Frames ;
         - 'iB': index in a list of Beads or a list of Trajectories ;
-        - 'iS': index of the slice in the image I (but here python starts with 0 and IJ starts with 1);
+        - 'iS': index of the slice in the image I (starts with 1 so it matches the ImageJ indexing);
         - 'Boi' refers to the 'Beads of interest', ie the beads that are being tracked.
         """
         
