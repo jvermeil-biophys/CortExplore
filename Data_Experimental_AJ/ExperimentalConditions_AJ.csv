@@ -86,19 +86,19 @@ date;manip;experimentType;drug;substrate;objective magnification;scale pixel per
 22-12-07;M2;compressionsLowStart;Y27_50;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 22-12-07;M3;compressionsLowStart;Y27_50;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;away from beads;3.3;False;3;500;436_200;labview;;
 22-12-07;M4;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-22-12-07;M5;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
-22-12-07;M6;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;away from beads;3.3;False;3;500;436_200;labview;;
-22-12-07;M7;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;4;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
-22-12-07;M8;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;3;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
-22-12-07;M9;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;5;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+22-12-07;M5;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+22-12-07;M6;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;away from beads;3.3;False;3;500;436_200;labview;;
+22-12-07;M7;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;4;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+22-12-07;M8;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;3;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+22-12-07;M9;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;14.0;1_50;1.5s;1.0;5;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 21-04-21;M1;constant field;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;aSFL;M450;4503;0;5.0;;;;;;;;;True;3;500;297;labview;;
 21-04-21;M2;constant field;none;20um fibronectin discs;100X;15.8;oil;0.875;1.0;3T3;aSFL;M450;4503;0;5.0;;;;;;;;;True;3;500;297;labview;;
 23-01-23;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA. low expressing;M450;4510;0;14.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-23-01-23;M2;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA. low expressing;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+23-01-23;M2;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA. low expressing;M450;4510;0;14.0;1_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 23-01-23;M3;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.06;3T3;optoRhoA. low expressing;M450;4510;0;14.0;2_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-23-01-23;M4;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.06;3T3;optoRhoA. low expressing;M450;4510;0;14.0;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+23-01-23;M4;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.06;3T3;optoRhoA. low expressing;M450;4510;0;14.0;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 23-02-02;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA;M450;4510;0;15.0;2_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-23-02-02;M2;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA;M450;4510;0;14.0;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+23-02-02;M2;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;1.014;3T3;optoRhoA;M450;4510;0;14.0;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 23-02-02;M3;compressionsLowStart;Y27_10;20um fibronectin discs;100X;15.8;oil;0.875;1.093;3T3;optoRhoA;M450;4510;0;14.0;2_50;1.5s;;;;;;;False;3;500;436_200;labview;;
 23-02-02;M4;compressionsLowStart;Y27_10;20um fibronectin discs;100X;15.8;oil;0.875;1.093;3T3;optoRhoA;M450;4510;0;14.0;2_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 23-02-02;M5;compressionsLowStart;Y27_0.1;20um fibronectin discs;100X;15.8;oil;0.875;1.041;3T3;optoRhoA;M450;4510;0;15.0;2_50;1.5s;;;;;;;False;3;500;436_200;labview;;
@@ -110,8 +110,8 @@ date;manip;experimentType;drug;substrate;objective magnification;scale pixel per
 23-03-28;M3;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3 ATCC;optoLARG;M450;4510;0;15.0;2.5_50;1.5s;1.0;;1.0;300;away from beads;3.3;False;3;500;436_200;labview;;
 23-03-24;M1;compressionsLowStart;blebbi_10;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;;;;;;;False;3;500;436_200;labview;;
 23-03-24;M2;compressionsLowStart;blebbi_10;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
-23-03-24;M3;compressionsLowStart;dmso;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-23-03-24;M4;compressionsLowStart;dmso;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
+23-03-24;M3;compressionsLowStart;dmso_10;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;;;;;;;False;3;500;436_200;labview;;
+23-03-24;M4;compressionsLowStart;dmso_10;20um fibronectin discs;100X;15.8;oil;0.875;1.17;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;1.0;;1.0;300;at beads;3.3;False;3;500;436_200;labview;;
 23-04-19;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;0.92;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;;;;;;;False;3;500;436_200;labview;;
 23-04-19;M2;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;0.92;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;1.0;;1.0;300;global;3.3;False;3;500;436_200;labview;;
 23-04-19;M3;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;0.92;3T3;optoRhoA;M450;4510;0;15.0;2.5_50;1.5s;1.0;1;1.0;300;global;3.3;False;3;500;436_200;labview;;
@@ -157,17 +157,32 @@ date;manip;experimentType;drug;substrate;objective magnification;scale pixel per
 23-10-25;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;0.98;HeLa;fucci;M450;4510;0;5.0;1_50;1.5s;;;;;;;True;3;500;436_200;labview;;s
 23-10-25;M2;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;0.98;HeLa;fucci;M450;4510;0;5.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;With Pelin Sar
 23-10-29;M1;compressionsLowStart;LIMKi3_0.2;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;;labview;;
-23-10-29;M2;compressionsLowStart;dmso;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;;labview;;
+23-10-29;M2;compressionsLowStart;dmso_4;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;;labview;;
 23-10-29;M3;compressionsLowStart;LIMKi3_0.1;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;;labview;;
 23-10-29;M1-1;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;1.0;;1.0;200;at beads;3.3;False;3;500;;labview;;
 23-10-29;M2-1;compressionsLowStart;activation;20um fibronectin discs;100X;15.8;oil;0.875;0.98;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;1.0;;1.0;200;at beads;3.3;False;3;500;;labview;;
 23-10-31;M1;constant field;none;20um fibronectin discs;100X;7.4588;oil;0.875;1.0;HeLa;fucci;M450;4510;0;3.6;;;;;;;;;False;3;500;3;zen;;With Pelin Sar
 23-10-22;M1;constant field;none;20um fibronectin discs;100X;7.4588;oil;0.875;0.942;HeLa;fucci;M450;4510;0;5.0;;;;;;;;;False;3;500;3;zen;;With Pelin Sar
 23-11-21;M1;compressionsLowStart;LIMKi3_1;20um fibronectin discs;100X;15.8;oil;0.875;0.958;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;
-23-11-21;M2;compressionsLowStart;dmso;20um fibronectin discs;100X;15.8;oil;0.875;0.958;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;
+23-11-21;M2;compressionsLowStart;dmso_4;20um fibronectin discs;100X;15.8;oil;0.875;0.958;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;;
 23-12-13;M1;constant field;none;20um fibronectin discs;100X;7.4588;oil;0.875;0.942;HeLa;fucci;M450;4510;0;5.0;;;;;;;;;False;3;500;3;zen;;With Pelin Sar
 24-01-02;M1;compressionsLowStart;none;20um fibronectin discs;100X;15.8;oil;0.875;0.992;3T3;uth-cry2;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;436_200;labview;upward;
 24-01-02;M2;compressionsLowStart;doxy_0.01;20um fibronectin discs;100X;15.8;oil;0.875;0.992;3T3;uth-cry2;M450;4510;0;15.0;1_50;1.5s;;;;;;;False;3;500;265_102;labview;upward;
 24-01-02;M3;compressionsLowStart;doxy_0.01;20um fibronectin discs;100X;15.8;oil;0.875;0.992;3T3;uth-cry2;M450;4510;0;15.0;1_50;1.5s;1.0;;1.0;300;global;3.3;True;3;500;265_102;labview;upward;
-24-01-25;M1;constant field;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;;;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
-24-01-25;M2;constant field;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;;;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
+24-01-25_Thickness;M1;constant field;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;;;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
+24-01-25_Thickness;M2;constant field;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;;;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
+24-01-25;M1;compressions;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;2_50;1.5;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
+24-01-25;M2;compressions;none;6um dumbbell;100x;15.8;oil;0.875;0.99;MCF;10a;M450;4510;0;5.0;2_50;1.5;;;;;;;False;3;500;300;labview;upward;With Yohalie Kalukula
+24-02-21;M1;compressionsLowStart;doxy_0.01;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;uth-cry2;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-02-21;M2;compressionsLowStart;doxy_0.01;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;uth-cry2;M450;4510;0;5.0;1_50;1.5;;;;;;;True;3;500;300;labview;upward;
+24-02-21;M3;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;uth-cry2;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-02-27;M1;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;1.5_70;1.5;;;;;;;False;3;500;300;labview;upward;Experiment by Hugo. Naming convention a bit modified. P1 : Epithelia with permanent magnets. compression from 1-70mt
+24-02-27;M2;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;1.5_70;1.5;;;;;;;False;3;500;300;labview;upward;Experiment by Hugo. Naming convention a bit modified. P1 : Epithelia with permanent magnets. compression from 1-70mt
+24-02-27;M3;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;1.5_70;1.5;;;;;;;False;3;500;300;labview;upward;Experiment by Hugo. Naming convention a bit modified. P1 : Epithelia with permanent magnets. compression from 1-70mt
+24-02-27;M4;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-02-27;M5;compressionsLowStart;none;fibronectin;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-04-10;M1;compressionsLowStart;LIMKi3_20;20um fibronectin discs;100x;15.8;oil;0.875;0.92;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-04-10;M2;compressionsLowStart;dmso_4;20um fibronectin discs;100x;15.8;oil;0.875;0.88;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-04-03;M1;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward	;
+24-04-03;M2;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;True;3;500;300;labview;upward;
+24-04-03;M3;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;True;3;500;300;labview;upward;

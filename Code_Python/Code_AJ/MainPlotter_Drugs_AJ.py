@@ -351,7 +351,7 @@ def makeBoxPlotParametric(dfAllCells, condCol, labels, order, condSelection, col
     
 
 def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath, colorPalette = None, removeLegend = False,
-                 average = False, stats = False):
+                 compAverage = False, cellAverage = False, stats = False):
     fig1, ax = plt.subplots(1, 1, figsize = (10,10))
     fig1.patch.set_facecolor('black')
     plt.style.use('default')
@@ -374,7 +374,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
     df = df.dropna()
     
     
-    if measure == 'E_full':
+    if cellAverage == True:
         
         df_og = df
         # print(df_og)
@@ -395,7 +395,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         y = df_og[(measure)]
         order = order
         
-        if average == False:
+        if compAverage == False:
             sns.boxplot(x = x_box, y = y_box, data=df_average, ax = ax, order = order, palette = colorPalette,
                                 medianprops={"color": 'darkred', "linewidth": 2},\
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
@@ -403,7 +403,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
             sns.swarmplot(x = x_box, y = y_box, data=df_average, order = order,linewidth = 1, ax = ax, color = 'k', edgecolor='k') #, hue = 'cellCode')
             test = 'Mann-Whitney'
             
-        elif average == True:
+        elif compAverage == True:
             sns.boxplot(x = x, y = y, data=df, ax = ax, order = order,
                                 medianprops={"color": 'darkred', "linewidth": 2},\
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.2})
@@ -430,14 +430,14 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         #     cellCodes = df['cellCode'][df['manip'] == manips[1]].values
         #     df = df[df['cellCode'].isin(cellCodes)]
 
-        if average == False:
+        if compAverage == False:
             sns.boxplot(x = x, y = y, data=df, ax = ax, order = order, palette = colorPalette,
                                 medianprops={"color": 'darkred', "linewidth": 2},\
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
                 
             sns.swarmplot(x = x, y = y, data=df, order = order,linewidth = 1, ax = ax, color = 'k', edgecolor='k') #, hue = 'cellCode')
         
-        elif average == True:
+        elif compAverage == True:
             
             sns.boxplot(x = x, y = y, data=df, ax = ax, order = order,
                                 medianprops={"color": 'darkred', "linewidth": 2},\
@@ -467,7 +467,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         ax.get_legend().remove()
 
     plt.tight_layout()
-    plt.savefig(savePath)
+    
     # plt.ylim(0,1200)
     plt.show()
     return fig1, ax
@@ -1085,8 +1085,7 @@ stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick'],
-                'zones_H0':['pts_15',
-                            '%f_5', '%f_10', '%f_15'],
+                'zones_H0':['pts_15', '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
                 'doStressRegionFits' : False,
@@ -1123,19 +1122,20 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '22-12-07 & 23-02-02 & 23-04-25 & 23-03-24 & 23-10-29 & 23-11-21'
-fitsSubDir = 'Chad_f15_AllDrugs_24-01-19'
+Task = '24-04-10 & 23-10-29 & 23-11-21'
+fitsSubDir =  'Chad_f15_AllLIMKi3_24-04-10'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
                             fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
-                            fitSettings = fitSettings, plotSettings = plotSettings,
+                            fitSettings = fitSettings, plotSettings = plotSettings, 
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
 #%% Calling data
 
-GlobalTable = taka.getMergedTable('Chad_f15_AllDrugs_24-01-19')
-fitsSubDir = 'Chad_f15_AllDrugs_24-01-19'
+GlobalTable = taka.getMergedTable('Chad_f15_AllLIMKi3_24-04-10')
+fitsSubDir = 'Chad_f15_AllLIMKi3_24-04-10'
+
 
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
@@ -1152,15 +1152,16 @@ fitType = 'stressGaussian'
 fitId = '_75'
 fitWidth = 75
 
-dirToSave = 'G:/CortexMeetings/CortexMeeting_23-12-19/Plots'
+dirToSave = 'G:/CortexMeetings/CortexMeeting_24-03-19/Plots'
 
 #%%%% Non - linearity
 
 
 data = data_main
+plt.style.use('seaborn')
 
 ########## Declare variables ##########
-# dates = ['23-07-12']
+# dates = ['24-04-10']
 stressRange = '200_500'
 interceptStress = 250
 plot = False
@@ -1176,26 +1177,66 @@ pathSubDir,pathFits,pathBoxPlots,pathNonlinDir,pathSSPlots,pathKSPlots = makeDir
 
 ###########################################
 
-#All drugs
+
 condCol = 'drug'
-dates = ['23-11-21', '23-10-29']
-condSelection = ['dmso', 'none', 'LIMKi3_1', 'LIMKi3_0.1', 'LIMKi3_0.2', 'Y27_50', 
-                  'Y27_10', 'Y27_1', 'Y27_0.1','blebbi_10']
-drugs = ['Y27_50', 'none', 'dmso']
-thickness_bins = [2,3]
+
+# drugs = ['LIMKi3_20', 'LIMKi3_1', 'LIMKi3_0.1', 'LIMKi3_0.2', 'dmso_4']
+drugs = ['LIMKi3_20', 'LIMKi3_1', 'LIMKi3_0.2', 'dmso_4']
+
+styleDict1 =  {'LIMKi3_20':{'color':  "#5a5f5e",'marker':'o', 'label':'LIMKi_20uM'},
+               'LIMKi3_1':{'color':   "#8f6030",'marker':'o', 'label':'LIMKi3_1uM'},
+               # 'LIMKi3_0.1':{'color':   gs.colorList40[11],'marker':'o', 'label':'LIMKi3_10nM'},
+               'LIMKi3_0.2':{'color':   "#c9a076",'marker':'o', 'label':'LIMKi3_20nM'},
+                'dmso_4':{'color':   "#000000",'marker':'o', 'label':'dmso'},
+                
+                }
+
+condSelection = drugs
+
+#All drugs
+# condCol = 'drug'
+
+# condSelection = ['dmso', 'none', 'LIMKi3_1', 'LIMKi3_0.1', 'LIMKi3_0.2', 'Y27_50', 'LIMKi3_20'
+#                   'Y27_10', 'Y27_1', 'Y27_0.1','blebbi_10']
+# drugs = ['Y27_50', 'dmso', 'blebbi_10', 'LIMKi3_1']
+
+# dates = ['23-03-24']
+# drugs = ['dmso', 'blebbi_10']
+# labels = ['DMSO', 'Blebbi 10μM']
+# colorPalette = ['#989b9b', '#3f6b3c']
+
+# dates = ['23-10-29']
+# drugs = ['dmso', 'LIMKi3_0.2' ]
+# labels = ['DMSO', 'LIMKi3 20nM']
+# colorPalette = ['#989b9b', '#c9a076']
+
+# dates = ['23-11-21']
+# drugs = ['dmso', 'LIMKi3_1']
+# labels = ['DMSO',  'LIMKi3 1μM']
+# colorPalette = ['#989b9b','#8f6030']
+# excludedCells = pd.read_csv(cp.DirDataRaw + '/23.11.21/ExcludedCells.csv')
+# excludedCells = excludedCells['cellId'].values
+
+# dates = ['23-04-25', '23-02-02', '22-12-07']
+# drugs = ['none', 'Y27_10', 'Y27_50']
+# labels = ['Control', 'Y27 10μM', 'Y27 50μM']
+# colorPalette = ['#6f7373', '#b98afc', '#612aaf']
+
+# thickness_bins = [2,3]
 # 'Y27_10', 'dmso', 'blebbi_10',
 
-styleDict1 =  {'dmso':{'color':  "#000000",'marker':'o', 'label':'dmso'},
-                'none':{'color':   gs.colorList40[30],'marker':'o', 'label':'none'},
-                'LIMKi3_1':{'color':   gs.colorList40[31],'marker':'o', 'label':'LIMKi3_1uM'},
-                'LIMKi3_0.1':{'color':   gs.colorList40[11],'marker':'o', 'label':'LIMKi3_10nM'},
-                'LIMKi3_0.2':{'color':   gs.colorList40[21],'marker':'o', 'label':'LIMKi3_20nM'},
-                'Y27_50':{'color':   gs.colorList40[32],'marker':'o', 'label':'Y27_50'},
-                'Y27_10':{'color':   gs.colorList40[22],'marker':'o', 'label':'Y27_10'},
-                'Y27_1':{'color':   gs.colorList40[12],'marker':'o', 'label':'Y27_1'},
-                'Y27_0.1':{'color':   gs.colorList40[21],'marker':'o', 'label':'Y27_0.1'},
-                'blebbi_10':{'color':   gs.colorList40[25],'marker':'o', 'label':'Blebbi_10'},
-                }
+# styleDict1 =  {'dmso':{'color':  "#5a5f5e",'marker':'o', 'label':'dmso'},
+#                 'none':{'color':   "#000000",'marker':'o', 'label':'none'},
+#                 'LIMKi3_1':{'color':   "#8f6030",'marker':'o', 'label':'LIMKi3_1uM'},
+#                 'LIMKi3_0.1':{'color':   gs.colorList40[11],'marker':'o', 'label':'LIMKi3_10nM'},
+#                 'LIMKi3_0.2':{'color':   "#c9a076",'marker':'o', 'label':'LIMKi3_20nM'},
+#                 'LIMKi3_20':{'color':   "#c9a075",'marker':'o', 'label':'LIMKi3_20uM'},
+#                 'Y27_50':{'color':   "#612aaf",'marker':'o', 'label':'Y27_50'},
+#                 'Y27_10':{'color':   "#b98afc",'marker':'o', 'label':'Y27_10'},
+#                 'Y27_1':{'color':   gs.colorList40[12],'marker':'o', 'label':'Y27_1'},
+#                 'Y27_0.1':{'color':   gs.colorList40[21],'marker':'o', 'label':'Y27_0.1'},
+#                 'blebbi_10':{'color':   "#3f6b3c",'marker':'o', 'label':'Blebbi_10'},
+#                 }
 
 #Effect of thickness / H0 on mechanics
 # condCol = 'Thickness_Bin'
@@ -1215,18 +1256,19 @@ Filters = [(data['validatedThickness'] == True),
             (data['valid_' + method] == True),
             (data[stiffnessType + '_kPa'] <= 50),
             # ((data['drug'] == 'dmso')),
-            (data['bead type'] == 'M450'),
-            (data['first activation'] != 1.0),
+            # (data['bead type'] == 'M450'),
             # (data['UI_Valid'] == True),
             (data['bestH0'] <= 1500),
             # (data['ramp field'] == '1_50'),
-            (data['compression duration'] == '1.5s'),
+            # (data['compression duration'] == '1.5'),
             # (data['normal field'] == 15.0),
-            (data['drug'].apply(lambda x : x in drugs)),
-            (data['Thickness_Bin'].apply(lambda x : x in thickness_bins)),
+            # (data['drug'].apply(lambda x : x in drugs)),
+            # (data['Thickness_Bin'].apply(lambda x : x in thickness_bins)),
             # (data['manipId'] != '22-12-07_M4'),
             # (data['surroundingThickness'] <= 1200),
+            # (data['cellId'].apply(lambda x : x not in excludedCells)),
             # (data['date'].apply(lambda x : x in dates)),
+            (data['drug'].apply(lambda x : x in drugs)),
             # (data['manip'].apply(lambda x : x in manips)),
             # (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
@@ -1235,7 +1277,7 @@ mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
 
 out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                   condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                    condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 
 mainFig1, mainAx1, exportDf1, countDf1 = out1
@@ -1243,9 +1285,9 @@ mainFig1, mainAx1, exportDf1, countDf1 = out1
 # plt.legend(fontsize = 20, loc = 'upper left')
 plt.ylim(0,20)
 plt.tight_layout()
-# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_wholeCurve.png')  
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(drugs) + '_wholeCurve.png')  
 plt.show()
-# plt.close()
+
 
 mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
@@ -1260,7 +1302,7 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylim(0,8)
 plt.tight_layout()
-# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_' + stressRange +'.png')  
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(drugs) + '_' + stressRange +'.png')  
 plt.show()
 
 dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
@@ -1315,54 +1357,86 @@ plt.show()
 measure = 'bestH0'
 labels = []
 # order= ['Y27_50', 'Y27_10', 'none', 'LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1', 'blebbi_10', 'dmso']
-order= ['LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1','dmso']
-labels = ['1uM', '20nM', '10nM', 'DMSO']
+order = drugs
+labels = []
 
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(1)+'_'+measure+'_boxplot_'+str(drugs)+'.png'
 
-savePath = dirToSave + '/Thickness/'+str(dates)+'_'+measure+'_boxplot_'+str(1)+'.png'
-
-makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath,
+fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath, 
                    stats = False, average = False)
 
-
-
+ax.set_ylim(0, 1200)
+plt.savefig(savePath)
 #%%%% Thickness/Fluctuations boxplots each cell
 
-dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
 measure = 'ctFieldThickness'
-labels = []
-order= None
-# order= ['LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1','dmso']
-# labels = ['1uM', '20nM', '10nM', 'DMSO']
+order = drugs
 
-savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(1)+'.png'
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(drugs)+'.png'
+dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
 
-makeBoxPlots(dfAllCellsCtField, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = False)
+
+fig, ax = makeBoxPlots(dfAllCellsCtField, measure, condCol, condSelection = condSelection, labels = labels, 
+                       order = order,savePath = savePath, colorPalette = colorPalette)
+
+ax.set_ylim(0, 1200)
+plt.savefig(savePath)
+
+measure = 'ctFieldFluctuAmpli'
+order = drugs
+
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(drugs)+'.png'
+dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
+
+
+fig, ax = makeBoxPlots(dfAllCellsCtField, measure, condCol, condSelection = condSelection, labels = labels, 
+                       order = order,savePath = savePath, colorPalette = colorPalette)
+
+ax.set_ylim(0, 800)
+plt.savefig(savePath)
+#%%%% Fluctuations vs Thickness
+dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
+pal = ['#c9a076', '#989b9b']
+# pal = ['#8f6030', '#989b9b']
+
+y = 'ctFieldFluctuAmpli'
+x = 'ctFieldThickness'
+sns.lmplot(data = dfAllCellsCtField, x = x, y = y, hue = condCol, palette  = pal)
+plt.legend(fontsize = 15, loc = 'upper left')
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.ylim(0, 1200)
+plt.show()
+
 
 #%%%% E_F_<_400pN
 
 measure = stiffnessType
-labels = []
-order= None
-# order= ['LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1','dmso']
-# labels = ['1uM', '20nM', '10nM', 'DMSO']
+order = drugs
+labels = labels
 
 measureName = 'E_400pN'
 
-# savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
+savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(drugs)+'.png'
 
-makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = False)
+fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath, colorPalette = colorPalette,
+                   stats = False, average = False, cellAverage = True)
 
-#%%%% Fluctuations vs Thickness
-dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
+ax.set_ylim(0,30000)
+plt.savefig(savePath)
 
-y = 'ctFieldFluctuAmpli'
-x = 'ctFieldThickness'
-sns.lmplot(data = dfAllCellsCtField, x = x, y = y, hue = condCol)
+#%%%% E_F_400pN vs Thickness
+# dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldThickness', keep = 'first')
+
+# pal = ['#c9a076', '#989b9b']
+pal = ['#8f6030', '#989b9b']
+y = stiffnessType
+x = 'bestH0'
+sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol, palette  = pal)
 plt.legend(fontsize = 15, loc = 'upper left')
-plt.xticks(fontsize=10)
-plt.yticks(fontsize=10)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.ylim(0,25000)
 plt.show()
+
 

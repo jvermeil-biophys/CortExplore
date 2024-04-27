@@ -47,16 +47,15 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '24.01.02'
-# DirDeptho = '24.01.02_Deptho'
+# date = '24.04.03'
+DirDeptho = '24.04.03_Deptho/Deptho_P2'
 
 # DirSave = os.path.join(cp.DirDataRaw, date) 
-DirSave = 'D:/Anumita/MagneticPincherData/Raw/24.01.25'
 
-DirExt = 'F:/20240125_mcf7_100xoil_4.5Fibro-PEGBeads'
+# DirExt = 'E:/20240403_3t3optorhoa_100xobj_Fibro-StreptBeads_Mechanics/24.04.03'
 
-# DirExt  = 'E:/20240102_3t3UTHCry2_100xoil_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
-# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+DirExt  = 'E:/20240403_3t3optorhoa_100xobj_Fibro-StreptBeads_Mechanics/'+ DirDeptho
+DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
@@ -479,7 +478,7 @@ for i in range(len(allCellsRaw)):
 #### DO THIS !
 copyFieldFiles(allCells, DirSave)
 
-# copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
+copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
 
@@ -499,6 +498,7 @@ limiter = 30
 print(gs.YELLOW + instructionText + gs.NORMAL)
 
 # if reset == 1:
+    
 #     allZimg = np.copy(allZimg_og)
 #     ref_point = []
 #     allRefPoints = []

@@ -1338,6 +1338,7 @@ class CellCompression:
         self.maxCompField = maxCompField
         self.nUplet = nUplet
         
+        
         # Loop structure infos
         try:
             loopStruct = thisExpDf.at[thisExpDf.index.values[0], 'loop structure'].split('_')
@@ -1440,7 +1441,8 @@ class CellCompression:
         mask = self.getMaskForCompression(i, task = 'compression & precompression')
         iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
         for c in colToCorrect:
-            jump = np.median(self.tsDf[c].values[iStart:iStart+5]) - np.median(self.tsDf[c].values[iStart-2:iStart])
+            #### CHANGE HERE: iStart+5 -> iStart+15
+            jump = np.median(self.tsDf[c].values[iStart:iStart+15]) - np.median(self.tsDf[c].values[iStart-2:iStart])
             self.tsDf.loc[mask, c] -= jump
             if c == 'D3':
                 D3corrected = True
@@ -1476,8 +1478,6 @@ class CellCompression:
             self.tsDf.loc[idx_loop] = df_loop
             self.listJumpsD3[i-1] = jumpD3
 
-    
-        
     def plot_Timeseries(self, plotSettings):
         fig, ax = plt.subplots(1,1,
                                # figsize = (5,4))
@@ -1489,8 +1489,71 @@ class CellCompression:
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Thickness (nm)', color=color)
         ax.tick_params(axis='y', labelcolor=color)
+        ax.scatter(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
+                color = color, ls = '--', linewidth = 1, zorder = 1, s = 4)
+        
+        for ii in range(self.Ncomp):
+            IC = self.listIndent[ii]
+            
+            compValid = IC.isValidForAnalysis
+            
+            if compValid:
+                fitError = IC.dictFitFH_Chadwick['Full']['error']
+
+                if (not fitError):                
+                    ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
+                            color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
+                    
+                    if not IC.error_bestH0:
+                        ax.plot(IC.Df['T'].values[0], IC.bestH0, 
+                                color = gs.colorList40[30], marker = 'o', markersize = 2, zorder = 3)
+                        
+                else:
+                    ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
+                            color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
+                
+            else:
+                ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
+                        color = 'crimson', linestyle = '-', linewidth = 1.25, zorder = 3)
+                
+            
+        
+        (axm, axM) = ax.get_ylim()
+        ax.set_ylim([min(0,axm), axM])
+        if (max(self.tsDf['D3'].values-self.DIAMETER) > 200):
+            ax.set_yticks(np.arange(0, max(self.tsDf['D3'].values-self.DIAMETER), 100))
+        
+        # Force axis
+        ax.tick_params(axis='y', labelcolor = color)
+        axbis = ax.twinx()
+        color = 'firebrick'
+        axbis.set_ylabel('Force (pN)', color=color)
+        axbis.plot(self.tsDf['T'].values,self. tsDf['F'].values, color=color)
+        axbis.tick_params(axis='y', labelcolor=color, labelsize = 8)
+        axbis.set_yticks([0,500,1000,1500])
+        minh = np.min(self.tsDf['D3'].values-self.DIAMETER)
+        ratio = min(1/abs(minh/axM), 5)
+        (axmbis, axMbis) = axbis.get_ylim()
+        axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
+        
+        axes = [ax, axbis]
+        fig.tight_layout()
+        return(fig, axes)
+        
+    def plot_Timeseries_V0(self, plotSettings):
+        #Plots with lines, can't distinguish between real points and small pauses caused my labview b/w loops
+        fig, ax = plt.subplots(1,1,
+                               # figsize = (5,4))
+                               figsize=(np.max(self.tsDf['T'])*(1/7),4))
+        fig.suptitle(self.cellID)
+        
+        # Distance axis
+        color = gs.colorList40[30] # 'skyblue'# 'blue'
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Thickness (nm)', color=color)
+        ax.tick_params(axis='y', labelcolor=color)
         ax.plot(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
-                color = color, ls = '-', linewidth = 1, zorder = 1)
+                color = color, ls = '--', linewidth = 1, zorder = 1)
         
         for ii in range(self.Ncomp):
             IC = self.listIndent[ii]
@@ -2308,12 +2371,14 @@ class IndentCompression:
         None.
 
         """
+       
         listB = self.rawDf.B.values
         
         # Test to check if most of the compression have not been deleted due to bad image quality 
         highBvalues = (listB > (self.maxCompField +self.minCompField)/2)
         N_highBvalues = np.sum(highBvalues)
-        testHighVal = (N_highBvalues > 20)
+        testHighVal = (N_highBvalues > 16)
+        
 
         # Test to check if the range of B field is large enough
         minB, maxB = min(listB), max(listB)
@@ -2506,6 +2571,11 @@ class IndentCompression:
             thresh1 = float(z1)
             thresh2 = float(z2)
             mask = (self.ChadwickRatio > thresh1) & (self.ChadwickRatio < thresh2)
+        elif zoneType == 'lesser':
+            pseudoForce = self.fCompr - np.min(self.fCompr)
+            thresh1 = np.min(pseudoForce)
+            thresh2 = float(zoneVal)
+            mask = (pseudoForce > thresh1) & (pseudoForce < thresh2)
         else:
             mask = np.ones_like(self.hCompr, dtype = bool)
             
@@ -2641,9 +2711,11 @@ class IndentCompression:
         None.
 
         """
+        
         if H0 == 'best':
             H0 = self.bestH0
             error = self.error_bestH0
+            
         else:
             # H0 is the number given in argument
             error = False
@@ -2678,9 +2750,11 @@ class IndentCompression:
         if H0 == 'best':
             H0 = self.bestH0
             error = self.error_bestH0
+            
         else:
             # H0 is the number given in argument
             error = False
+            
         
         if not error:
             hCompr = self.hCompr / 1000 # µm
@@ -4172,7 +4246,7 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
 # %%%% Main 
 
         
-def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False,
+def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = False, 
                            fitSettings = {}, fitValidationSettings = {}, plotSettings = {}):
     """
     
@@ -4319,6 +4393,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
 
             #### 3.9 Compute stress and strain based on the best H0
+            
             IC.computeStressStrain(method = 'Chadwick')
             
             #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
@@ -4568,7 +4643,9 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
             if k == 'results_main':
                 #### The main results data for a cell are grabbed here!
                 res_main = df
+                
             else: # Other result dataframe : H0 detection or local fit...
+                
                 if df.size > 0:
                     #### Single cell data are saved here!
                     cellID = ufun.findInfosInFileName(f, 'cellID')
@@ -4579,7 +4656,9 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                     else:
                         subdir_path = os.path.join(cp.DirDataAnalysisFits, fitsSubDir)
                         ufun.softMkdir(subdir_path)
+                       
                         df_path = os.path.join(subdir_path, fileName)
+                        
                         
                     df.to_csv(df_path, sep=';', index=False)
                     if cp.CloudSaving != '':

@@ -641,9 +641,9 @@ def computeMag_M450(B):
     return(M)
 
 V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
-m = computeMag_M450(21.8 * 10**(-3))*V
+m = computeMag_M450(5 * 10**(-3))*V
 
-d = 1.3 * 10**-6
+d = 500 * 10**-9
 
 F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
 
@@ -706,4 +706,130 @@ for file in files:
         
         np.savetxt(os.path.join(path,file), txt, fmt='%s', delimiter = '_')
         
+#%% Code to delete fluo images that are fully black because of possible issue with labiew
+#New labview code
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.21'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.21/Archive'
+allFiles = os.listdir(path)
+selectedCell = 'M2_P1_C3'
+allTifs = [i for i in allFiles if selectedCell in i and '.tif' in i]
+allFields = [i for i in allFiles if selectedCell in i and '_Field' in i]
+allStatus = [i for i in allFiles if selectedCell in i and '_Status' in i]
+nLoop = 1
+  
+for i in range(len(allTifs)):
+    deletedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    filestatus = allStatus[i]
+    
+    print(tif)
+    
+    # totalFrames = (np.linspace(0, len(stack), len(stack))
+    
+    if not os.path.exists(os.path.join(pathSave, tif)):
+        field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+        status = pd.read_csv(os.path.join(path, filestatus), header = None).values
+        # status = np.loadtxt(os.path.join(path, filestatus), dtype = None)
+        stack = tiff.imread(os.path.join(path, tif))
         
+        totalLoops = (len(stack))//284
+        for j in range(totalLoops+1):
+            deletedFrames.extend([(j*284)])
+    
+        deletedFrames = np.asarray(deletedFrames) - 1
+        # totalFrames.remove(deletedFrames)
+        field_new = np.delete(field, deletedFrames, 0)
+        status_new = np.delete(status, deletedFrames, 0)
+        stack_new = np.delete(stack, deletedFrames, 0)
+        
+        np.savetxt(os.path.join(pathSave, file), field_new, delimiter = '\t')
+        np.savetxt(os.path.join(pathSave, filestatus), status_new, fmt ="%s")
+        io.imsave(os.path.join(pathSave, tif), stack_new)
+        
+    else:
+        print(gs.GREEN + tif + ' already exists' + gs.NORMAL)
+        
+#%% Code to change values of magnetic field for experiments with permanent magnetic coils
+# For Field files
+
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+allFiles = os.listdir(path)
+offset = 24 #mT
+
+allField = [i for i in allFiles if '_Field' in i]
+allStatus = [i for i in allFiles if '_Status' in i]
+
+# allField =[ allField[0]]
+# allStatus = [allStatus[0]]
+for field, status in zip(allField, allStatus):
+    if 'L70' in field:
+        print(field)
+        # statusFile = pd.read_csv(os.path.join(path, status), sep = '_')
+        
+        # for i in range(len(statusFile['6.00'])):
+        #     if statusFile['6.00'].iloc[i] == 'sigmoid-6.00--22.50':
+        #         statusFile['6.00'].iloc[i] = 'sigmoid-30.00-1.50'
+        #     elif statusFile['6.00'].iloc[i] == '6.00':
+        #         statusFile['6.00'].iloc[i] = '30.00'
+        #     if statusFile['6.00'].iloc[i] == 'constant--22.50--22.50':
+        #         statusFile['6.00'].iloc[i] = 'constant-1.50-1.50'
+        #     if statusFile['6.00'].iloc[i] == 't^4--22.50-46.50':
+        #         statusFile['6.00'].iloc[i] = 't^4-1.50-70.50'
+        #     if statusFile['6.00'].iloc[i] == 't^4-46.50-6.00':
+        #         statusFile['6.00'].iloc[i] = 't^4-70.50-30.00'
+                
+        # toAdd = np.asarray([1, 'Passive', '30.00'], dtype = object)
+        # newStatusFile = np.insert(statusFile.values, [0], toAdd, axis = 0)
+        # np.savetxt(os.path.join(pathSave, status), newStatusFile, delimiter = '_', fmt ="%s")
+        
+        fieldFile = pd.read_csv(os.path.join(path, field), sep = '\t', header=None)
+
+        fieldFile[0:], fieldFile[2:]  = fieldFile[0:] + offset, fieldFile[2:] + offset
+        np.savetxt(os.path.join(pathSave, field), fieldFile, delimiter = '\t')
+        
+#%% Code to modify results file from Hugo
+
+
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+
+allFiles = os.listdir(path)
+offset = 24 #mT
+allResults = [i for i in allFiles if '_Results' in i]
+
+for results in (allResults):
+    if '__' in results:
+        resultsFile = pd.read_csv(os.path.join(path, results), sep = '\t')
+        
+        newResults = resultsFile[['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice']]
+        
+        cols = np.asarray(['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice'], dtype = object)
+        
+        newName = results.split('_Results')[0] + 'L50_Results'
+        
+        newResults.to_csv(os.path.join(pathSave, newName) + '.txt', sep='\t')
+    
+#%% changing filenames for Hugo's experiment
+
+
+path = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/24-02-27'
+pathSave = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/'
+
+allFiles = os.listdir(path)
+
+for i in allFiles:
+    if 'P2' in i:
+        newName = i.replace('M1', 'M2')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P3' in i:
+        newName = i.replace('M1', 'M3')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P4' in i:
+        newName = i.replace('M1', 'M4')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P5' in i:
+        newName = i.replace('M1', 'M5')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))

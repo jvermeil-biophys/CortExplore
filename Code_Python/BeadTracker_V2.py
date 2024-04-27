@@ -914,10 +914,10 @@ class PincherTimeLapse:
         bestStd = np.zeros(nT, dtype = bool)
         i = 0
         while i < nT:
-            if idx_inNUp[i] == 0:
+            if idx_NUp[i] == 0: #### Modified here !
                 bestStd[i] = True
                 i += 1
-            elif idx_inNUp[i] > 0:
+            elif idx_NUp[i] > 0: #### Modified here !
                 s2 = idx_NUp[i]
                 L = [i]
                 j = 0

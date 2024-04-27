@@ -989,7 +989,6 @@ def squareDistance(M, V, normalize = False): # MUCH FASTER ! **Michael Scott Voi
         V = V/np.mean(V)
     V = np.array([V])
     MV = np.repeat(V, n, axis = 0) # Key trick for speed !
-    print(len(np.mean(M, axis = 1)))
     if normalize:
         
         M = (M.T/np.mean(M, axis = 1).T).T

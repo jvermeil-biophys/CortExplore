@@ -196,23 +196,6 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
 
 #%% Functions
 
-def dataGroup(df, groupCol = 'cellID', idCols = [], numCols = [], aggFun = 'mean'):
-    agg_dict = {'date':'first',
-                'cellName':'first',
-                'cellID':'first',	
-                'manipID':'first',	
-                'compNum':'count',
-                }
-    for col in idCols:
-        agg_dict[col] = 'first'
-    for col in numCols:
-        agg_dict[col] = aggFun
-    
-    all_cols = agg_dict.keys()
-    group = df[all_cols].groupby(groupCol)
-    df_agg = group.agg(agg_dict)
-    return(df_agg)
-
 def makeDirs(fitsSubDir, FIT_MODE):
     if not os.path.exists(todayFigDir):
         os.mkdir(todayFigDir)
@@ -374,15 +357,24 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
     plt.style.use('default')
 
     df = dfAllCells
+
+    if FIT_MODE == 'linlin':
+        params = ['A', 'B']
+        ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+    elif FIT_MODE == 'loglog':
+        params = ['a', 'q']
+        ax_titles = ['Exponent (a)', 'Coefficient (q)']
+        
+
     condPairs = condSelection
 
     
     df = df[[measure, condCol, 'cellCode', 'cellId', 'compNum']]
     df = df.drop_duplicates()
     df = df.dropna()
-    print(df)       
     
-    if measure == 'E_f_<_400' or measure == 'bestH0': # or measure == 'surroundingThickness':
+    
+    if measure == 'E_f_<_400' or  measure == 'surroundingThickness' or  measure == 'bestH0':
         
         df_og = df
         # print(df_og)
@@ -390,6 +382,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         
         df_average = group_by_cell.agg({measure:['mean'], 'cellId':'first', condCol : 'first'})
         
+        print(df_average)       
         
         condCol_box = condCol, 'first'
         x_box = df_average[condCol_box]
@@ -398,8 +391,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         
 
         x = df_og[condCol]
-        # hue = df_og[('cellCode')]
-        hue = df_og[('cellId')]
+        hue = df_og[('cellCode')]
         y = df_og[(measure)]
         order = order
         
@@ -408,9 +400,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
                                 medianprops={"color": 'darkred', "linewidth": 2},\
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
                 
-            sns.swarmplot(x = x_box, y = y_box, data=df_average, order = order,linewidth = 1, ax = ax, color = 'k', edgecolor='k') #, hue = 'cellId')
-            # sns.swarmplot(x = x_box, y = y_box, data=df_average, order = order,linewidth = 1, ax = ax, edgecolor='k', hue = 'cellId')
-
+            sns.swarmplot(x = x_box, y = y_box, data=df_average, order = order,linewidth = 1, ax = ax, color = 'k', edgecolor='k') #, hue = 'cellCode')
             test = 'Mann-Whitney'
             
         elif average == True:
@@ -446,17 +436,15 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
                 
             sns.swarmplot(x = x, y = y, data=df, order = order,linewidth = 1, ax = ax, color = 'k', edgecolor='k') #, hue = 'cellCode')
-            # sns.swarmplot(x = x, y = y, data=df, order = order,linewidth = 1, ax = ax,  edgecolor='k', hue = 'cellId', size = 6)
-
+        
         elif average == True:
             
             sns.boxplot(x = x, y = y, data=df, ax = ax, order = order,
                                 medianprops={"color": 'darkred', "linewidth": 2},\
                                 boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.2})
             
-            sns.pointplot(x = x, y = y, data=df, order = order,hue = 'cellID', ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
-            # sns.pointplot(x = x, y = y, data=df, order = order, hue = 'cellCode', ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
-
+            sns.pointplot(x = x, y = y, data=df, order = order, hue = 'cellCode', ax = ax, dodge = True, errorbar='sd') #, hue = 'cellCode')
+               
             
         if stats:
             box_pairs = [(a, b) for idx, a in enumerate(condPairs) for b in condPairs[idx + 1:]]
@@ -479,7 +467,7 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
         ax.get_legend().remove()
 
     plt.tight_layout()
-    plt.savefig(savePath)
+    
     # plt.ylim(0,1200)
     plt.show()
     return fig1, ax
@@ -1097,8 +1085,7 @@ stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick'],
-                'zones_H0':['pts_15',
-                            '%f_5', '%f_10', '%f_15'],
+                'zones_H0':['pts_15', '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
                 'doStressRegionFits' : False,
@@ -1135,27 +1122,28 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '24-02-21'
-fitsSubDir = 'Chad_f15_UTHCry2_5mT_24-03-06'
+Task = '24-04-03'
+fitsSubDir =  'Chad_f15_24-04-03'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
                             fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
-                            fitSettings = fitSettings, plotSettings = plotSettings,
+                            fitSettings = fitSettings, plotSettings = plotSettings, 
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
-#%%% Calling data
+#%% Calling data
 
-GlobalTable = taka.getMergedTable('Chad_f15_UTHCry2_5mT_24-03-06')
-fitsSubDir = 'Chad_f15_UTHCry2_5mT_24-03-06'
+GlobalTable = taka.getMergedTable('Chad_f15_24-04-03')
+fitsSubDir = 'Chad_f15_24-04-03'
+
 
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
 data_main['cellId'] = GlobalTable['cellID']
 
-nBins = 11
-bins = np.linspace(1, 2000, nBins)
+nBins = 21
+bins = np.linspace(0, 2000, nBins)
 data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
 data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
 
@@ -1164,20 +1152,20 @@ fitType = 'stressGaussian'
 fitId = '_75'
 fitWidth = 75
 
-dirToSave = 'G:/CortexMeetings/PielMeeting_24-03-08/Plots_Crosslinking'
+dirToSave = 'H:/Lab Meetings/CortexMeeting_24-04-22/Plots'
 
 #%%%% Non - linearity
-plt.style.use('seaborn')
+
 
 data = data_main
+plt.style.use('seaborn')
 
 ########## Declare variables ##########
-# dates = ['23-07-12']
+# dates = ['24-04-10']
 stressRange = '200_500'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
-# condCol = 'ramp field'
 order = None
 
 method = 'f_<_400'
@@ -1188,40 +1176,48 @@ pathSubDir,pathFits,pathBoxPlots,pathNonlinDir,pathSSPlots,pathKSPlots = makeDir
 
 ###########################################
 
-#All cells with standard compression conditions
-dates = '24-02-21'
+
 condCol = 'manip'
-manips = ['M3', 'M1', 'M2']
-labels = ['Control', 'Doxy + No light', 'Doxy + Global activation']
-condSelection = manips
-colorPalette = ["#989b9b", '#7f5b20', "#ffb641"]
-styleDict1 =  {'M3':{'color':   "#000000",'marker':'o', 'label':'Control'},
-                'M1':{'color':   "#7f5b20",'marker':'o', 'label':'Doxy, no activation'},
-                'M2':{'color':  "#ffb641",'marker':'o', 'label':'Doxy + Global activation'},
+manips = ['M1', 'M2', 'M3']
+styleDict1 =  {'M1':{'color':   gs.colorList40[11],'marker':'o', 'label':'None'},
+               'M2':{'color':   "#c9a076",'marker':'o', 'label':'Activation'},
+                'M3':{'color':   "#000000",'marker':'o', 'label':'Activation_2'},
+                
                 }
+
+condSelection = manips
+
 
 #Effect of thickness / H0 on mechanics
 # condCol = 'Thickness_Bin'
 # condSelection = bins
 # styleDict1 = {}
 # keys = np.rint(np.linspace(1,nBins,nBins)).astype(int)
-# values = gs.colorList40[10:nBins+10]
+# values = gs.colorList40[0:nBins]
 
 # for key, value in zip(keys, values):
 #     print(key)
 #     key = int(key)
-#     if key < 10:
+#     if key < nBins - 1:
 #         styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : str(bins[key-1]) + "-" + str(bins[key])}
-# print(styleDict1)
 
 Filters = [(data['validatedThickness'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
             (data['valid_' + method] == True),
-            (data[stiffnessType + '_kPa'] <= 25),
-            (data['bead type'] == 'M450'),
-            (data['UI_Valid'] == True),
+            (data[stiffnessType + '_kPa'] <= 50),
+            # ((data['drug'] == 'dmso')),
+            # (data['bead type'] == 'M450'),
+            # (data['UI_Valid'] == True),
             (data['bestH0'] <= 1500),
-            (data['date'].apply(lambda x : x in dates)),
+            # (data['ramp field'] == '1_50'),
+            # (data['compression duration'] == '1.5'),
+            # (data['normal field'] == 15.0),
+            # (data['drug'].apply(lambda x : x in drugs)),
+            # (data['Thickness_Bin'].apply(lambda x : x in thickness_bins)),
+            # (data['manipId'] != '22-12-07_M4'),
+            # (data['surroundingThickness'] <= 1200),
+            # (data['cellId'].apply(lambda x : x not in excludedCells)),
+            # (data['date'].apply(lambda x : x in dates)),
             (data['manip'].apply(lambda x : x in manips)),
             # (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
@@ -1230,22 +1226,21 @@ mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
 
 out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
-                   condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                    condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
                                 returnData = 1, returnCount = 1)
 
 mainFig1, mainAx1, exportDf1, countDf1 = out1
 
-# # plt.legend(fontsize = 20, loc = 'upper left')
-# # plt.legend(fontsize = 12, loc = 'upper left')
+# plt.legend(fontsize = 20, loc = 'upper left')
 plt.ylim(0,20)
 plt.tight_layout()
-mainFig1.suptitle(condCol, color = fontColour)
-
-# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_wholeCurve.png')  
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(drugs) + '_wholeCurve.png')  
 plt.show()
+
 
 mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
+
 
 out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
                   fitWidth=75, Filters = Filters, condCol = condCol, mode = stressRange, scale = 'lin', printText = False,
@@ -1255,9 +1250,8 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 
 plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylim(0,8)
-mainFig2.suptitle(condCol, color = fontColour)
 plt.tight_layout()
-# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_' + stressRange +'.png')  
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(drugs) + '_' + stressRange +'.png')  
 plt.show()
 
 dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
@@ -1295,7 +1289,6 @@ ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
 #     # except:
 #     #     print('No activation data')
 # fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
-
 plt.xticks(fontsize=40, color = fontColour)
 plt.yticks(fontsize=40, color = fontColour)
 plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
@@ -1311,122 +1304,49 @@ plt.show()
 #%%%% Thicknes/bestH0 boxplots each compression
 
 measure = 'surroundingThickness'
+labels = []
 # order= ['Y27_50', 'Y27_10', 'none', 'LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1', 'blebbi_10', 'dmso']
-order = manips
+order = order
 labels = labels
 
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(1)+'_'+measure+'_boxplot_'+str(order)+'.png'
 
-savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_averaged_'+str(manips)+'.png'
+fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath, 
+                   stats = False, average = False)
 
-fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels = labels, order = order, 
-                       condSelection = condSelection, savePath= savePath, colorPalette = colorPalette)
-
-ax.set_ylim(0, 1400)
+ax.set_ylim(0, 1200)
 plt.savefig(savePath)
 #%%%% Thickness/Fluctuations boxplots each cell
 
 measure = 'ctFieldThickness'
-order = manips
+order = order
 
-savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(1)+'_'+measure+'_boxplot_'+str(order)+'.png'
 dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
 
 
 fig, ax = makeBoxPlots(dfAllCellsCtField, measure, condCol, condSelection = condSelection, labels = labels, 
-                       order = order,savePath = savePath, colorPalette = colorPalette)
+                       order = order,savePath = savePath)
 
 ax.set_ylim(0, 1200)
 plt.savefig(savePath)
 
 measure = 'ctFieldFluctuAmpli'
-order = manips
+order = order
 
-savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(drugs)+'.png'
 dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
 
 
 fig, ax = makeBoxPlots(dfAllCellsCtField, measure, condCol, condSelection = condSelection, labels = labels, 
-                       order = order,savePath = savePath, colorPalette = colorPalette)
+                       order = order,savePath = savePath)
 
 ax.set_ylim(0, 800)
 plt.savefig(savePath)
-
-#%%%% E_F_<_400pN
-
-measure = stiffnessType
-order = manips
-
-
-measureName = 'E_400pN'
-
-savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_cellWise_9'+str(manips)+'.png'
-
-fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath, colorPalette = colorPalette,
-                   stats = False, average = False)
-
-ax.set_ylim(0, 15000)
-
-# plt.savefig(savePath)
-
-#%%%% Slopes of K vs S
-
-measure = 'ctFieldFluctuAmpli'
-labels = []
-order= None
-makeBoxPlotParametric
-
-#%%%% Fluctuations vs Thickness
-y = 'ctFieldFluctuAmpli'
-x = 'ctFieldThickness'
-sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
-plt.legend(fontsize = 15, loc = 'upper left')
-plt.xticks(fontsize=10)
-plt.yticks(fontsize=10)
-plt.show()
-
-#%%%% Fluctuations vs Thickness
-x = stiffnessType
-y = 'bestH0'
-
-sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
-plt.legend(fontsize = 15, loc = 'upper left')
-plt.xticks(fontsize=10)
-plt.yticks(fontsize=10)
-plt.show()
-
-
-#%%%% Averaged by cell boxplots
-
-#%%%% Thicknes/bestH0 boxplots each compression
-
-measure = 'bestH0'
-labels = []
-# order= ['Y27_50', 'Y27_10', 'none', 'LIMKi3_1', 'LIMKi3_0.2', 'LIMKi3_0.1', 'blebbi_10', 'dmso']
-order = None
-labels = None
-
-savePath = dirToSave + '/Thickness_Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
-
-fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath, colorPalette = colorPalette,
-                   stats = False, average = False)
-
-#%%%% E_F_<_400pN
-
-measure = stiffnessType
-order = manips
-
-
-measureName = 'E_400pN'
-
-savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
-
-makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath, colorPalette = colorPalette,
-                   stats = False, average = False)
-
 #%%%% Fluctuations vs Thickness
 dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldFluctuAmpli', keep = 'first')
-pal = colorPalette = ['#7f5b20', "#ffb641", "#989b9b"]
-
+pal = ['#c9a076', '#989b9b']
+# pal = ['#8f6030', '#989b9b']
 
 y = 'ctFieldFluctuAmpli'
 x = 'ctFieldThickness'
@@ -1437,16 +1357,35 @@ plt.yticks(fontsize=15)
 plt.ylim(0, 1200)
 plt.show()
 
+
+#%%%% E_F_<_400pN
+
+measure = stiffnessType
+order = order
+labels = labels
+
+measureName = 'E_400pN'
+
+savePath = dirToSave + '/E_400pN/'+str(1)+'_'+measureName+'_'+str(order)+'.png'
+
+fig, ax = makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath, 
+                   stats = False, average = False)
+
+ax.set_ylim(0,30000)
+plt.savefig(savePath)
+
 #%%%% E_F_400pN vs Thickness
 # dfAllCellsCtField = dfAllCells.drop_duplicates(subset = 'ctFieldThickness', keep = 'first')
 
 # pal = ['#c9a076', '#989b9b']
-
+pal = ['#8f6030', '#989b9b']
 y = stiffnessType
 x = 'bestH0'
 sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol, palette  = pal)
 plt.legend(fontsize = 15, loc = 'upper left')
 plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
-plt.ylim(0,20000)
+plt.ylim(0,25000)
 plt.show()
+
+
