@@ -236,9 +236,9 @@ findAndRename(path0, s1, s2,
               target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 #%%
-path0 = 'D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo/crop'
-s1 = '-M1-P2-C'
-s2 = '_M1_P2_C'
-findAndRename(path0, '-M1-P1-', '_M1_P1_',
-              target='all', test = True, recursiveAction = False, exceptStrings = [])
+path0 = 'D:/Eloise/MagneticPincherData/Raw/24.05.23'
+s1 = 'C4_d'
+s2 = 'C4_blurred_d'
+findAndRename(path0, s1, s2,
+              target='all', test = False, recursiveAction = False, exceptStrings = [])
 

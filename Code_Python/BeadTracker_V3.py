@@ -2179,7 +2179,7 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
         #### 4.2 - Compute z for each traj
         #### ! Expt dependence here !
-        if PTL.microscope == 'metamorph':
+        if PTL.microscope == 'metamorph' or PTL.microscope == 'zen':
             matchingDirection = 'downward' # Change when needed !!
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
         elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':

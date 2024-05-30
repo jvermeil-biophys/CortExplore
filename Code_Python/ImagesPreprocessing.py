@@ -66,6 +66,18 @@ DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M5') #  + '_depthos', 
 microscope = 'labview'
 imagePrefix = 'im' # 'Image'
 
+
+#%% Define parameters # Eloise
+date = '24-05-23'
+DirExt = 'E:/Eloise/Data/24-05-23_helafucci_100x_450beads/24.05.23' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date + '_Deptho') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+
+# prefix = ''
+# channel = ''
+microscope = 'labview'
+imagePrefix = 'im' # 'Image'
+
+
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
@@ -421,7 +433,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
 #%% Main function 1/2
 
 # def preprocess(DirExt, DirSave, microscope, reset = 0):
-    
+
 allCellsRaw = getListOfSourceFolders(DirExt)[:]
 allCells = []
 allCellsToCrop = []
@@ -563,3 +575,7 @@ cropAndCopy(DirExt, DirSave, allRefPoints[:], allCellsToCrop[:], microscope)
 
 # AllMMTriplets2Stack(DirExt, DirSave, prefix, channel)
 
+#%%
+DirSrc='E:\Pelin\Imaging_Data\24.01.10\10.01.24_Fluoro\fluo_time'
+DirDst='D:\Pelin\Data\24-01-10-fluo'
+#cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel = 'nan', prefix = 'nan')

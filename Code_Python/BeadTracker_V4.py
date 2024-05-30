@@ -168,8 +168,8 @@ class PincherTimeLapse:
         
         # Passive Part
         NPassive = logDf[logDf['Status'] == 'Passive'].shape[0]
-        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)])
-        logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)])
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)]).astype(int)
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)]).astype(int)
         
         # Fluo Part
         logDf[logDf['Status'] == 'Fluo']['idxAnalysis'] = -1
@@ -179,34 +179,35 @@ class PincherTimeLapse:
         
         # idxAnalysis
         logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
-        for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
-            index_iL = logDf[logDf['iL'] == iL].index
+        if len(indexAction.values) > 0:
+            for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
+                index_iL = logDf[logDf['iL'] == iL].index
+                
+                i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+                i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
+                i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+                #
+                logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
+                # logDf.loc[i_startOfCompression:i_endOfCompression+1, 'idxAnalysis']
             
-            i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-            i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
-            i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-            #
-            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
-            # logDf.loc[i_startOfCompression:i_endOfCompression+1, 'idxAnalysis']
-        
-        # idxAnalysis for loops with repeated compressions
-        previous_idx = 0
-        for i in range(1, self.NLoops+1):
-            indexLoop_i = logDf[logDf['iL'] == i].index
-            maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
-            maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
-            maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
-            # print(maskMainPhase_i)
-            
-            lab_main, nlab_main = ndi.label(maskMainPhase_i)
-            # print(lab, nlab)
-            
-            if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
-                logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
-                lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
-                logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
-                # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
-                previous_idx = np.max(lab_main)
+            # idxAnalysis for loops with repeated compressions
+            previous_idx = 0
+            for i in range(1, self.NLoops+1):
+                indexLoop_i = logDf[logDf['iL'] == i].index
+                maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
+                maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
+                maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
+                # print(maskMainPhase_i)
+                
+                lab_main, nlab_main = ndi.label(maskMainPhase_i)
+                # print(lab, nlab)
+                
+                if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
+                    logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
+                    lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
+                    logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
+                    # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
+                    previous_idx = np.max(lab_main)
 
         self.logDf = logDf
         self.log_UIxy = log_UIxy
@@ -1022,10 +1023,10 @@ class Trajectory:
         
         #### Z detection settings here
         self.HDZfactor = 5
-        self.maxDz_triplets = 60 # Max Dz allowed between images
-        self.maxDz_singlets = 30
-        self.HWScan_triplets = 1200 # Half width of the scans
-        self.HWScan_singlets = 600
+        self.maxDz_triplets = 60*3 # Max Dz allowed between images
+        self.maxDz_singlets = 30*3
+        self.HWScan_triplets = 1200*3 # Half width of the scans
+        self.HWScan_singlets = 600*3
         
         
     def __str__(self):
@@ -1056,9 +1057,7 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
-                # if (iF >= 1080 and iF <= 1100):
-                # # if (iF >= 225 and iF <= 265):
+                # if (iF >= 550 and iF <= 700):
                 #     plot = 1
 
             # ###################################################################
@@ -1691,7 +1690,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             validFileGroup = True
                     
                     
-                elif metaDataFormatting == 'loopStruct':
+                elif (metaDataFormatting == 'loopStruct') or (metaDataFormatting == 'constantField'):
                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
                     
@@ -1721,6 +1720,39 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             txtStatusNames.append('')
                             txtResultsNames.append(f_Res)
                             validFileGroup = True
+                            
+                            
+                # elif metaDataFormatting == 'constantField':
+                #     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+                #     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+                    
+                #     if test_image and test_field:
+                #         f_Tif = f_root_simple + '.tif'
+                #         f_Field = f_root_simple + '_Field.txt'
+                #         sourceDirsPaths.append(rd)
+                #         fileRoots.append(f_root)
+                #         tifImagesNames.append(f_Tif)
+                #         txtFieldNames.append(f_Field)
+                #         txtStatusNames.append('')
+                #         txtResultsNames.append(f_Res)
+                #         validFileGroup = True
+                    
+                #     else: # Retry in case there was a duplicated image
+                #     # No call to the function that simplifies the names
+                #         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+                #         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+                        
+                #         if test_image and test_field:
+                #             f_Tif = f_root + '.tif'
+                #             f_Field = f_root + '_Field.txt'
+                #             sourceDirsPaths.append(rd)
+                #             fileRoots.append(f_root)
+                #             tifImagesNames.append(f_Tif)
+                #             txtFieldNames.append(f_Field)
+                #             txtStatusNames.append('')
+                #             txtResultsNames.append(f_Res)
+                #             validFileGroup = True
+                            
                 
                 if not validFileGroup:
                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
@@ -1795,6 +1827,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
         #### 4.2 - Mode using loopStruct for legacy data
         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
             print('Loop Structure Mode !')
+            
             loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
             Nstruct = len(loopStructList)
             loop_total_length_woF = loopStructList[0]
@@ -1846,6 +1879,22 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['Status'] = list_Status
             
             # TBC
+            
+        elif metaDataFormatting == 'constantField': # ['T_raw', 'B_set', 'iL', 'Status']
+            # Columns from the field file
+            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+            metaDf = fieldDf[['T_raw', 'B_set']]
+            
+            N_Loops = 1
+            NFrames = metaDf.shape[0]
+            Status = 'Passive'
+            StatusCol = [Status] * NFrames
+            StatusCol = np.array(StatusCol)
+            
+            iLCol = np.ones(NFrames)
+            
+            metaDf['iL'] = iLCol.astype(int)
+            metaDf['Status'] = StatusCol
         
         #### 5 - Call the smallTracker
         print('Calling the smallTracker...' + gs.NORMAL)
@@ -2314,6 +2363,7 @@ class BeadDeptho:
                 self.zLast = zLast
                 self.validDepth = zLast-zFirst
                 self.I_cleanROI = I_cleanROI.astype(np.uint16)
+                
                 
             if self.validDepth < self.nz * (2/3):
                 print('invalid depth')
