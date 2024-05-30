@@ -541,6 +541,7 @@ allFiles = os.listdir(path)
 allTifs = [i for i in allFiles if '22-10-06' in i and '.tif' in i]
 allFields = [i for i in allFiles if '22-10-06' in i and '_Field' in i]
 allLogs = [i for i in allFiles if '22-10-06' in i and '_LogPY' in i]
+
 activationFrames = np.asarray([])
 
 for i in range(len(allTifs)):
@@ -641,9 +642,9 @@ def computeMag_M450(B):
     return(M)
 
 V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
-m = computeMag_M450(5 * 10**(-3))*V
+m = computeMag_M450(30 * 10**(-3))*V
 
-d = 500 * 10**-9
+d = 400 * 10**-9
 
 F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
 
@@ -833,3 +834,60 @@ for i in allFiles:
     elif 'P5' in i:
         newName = i.replace('M1', 'M5')
         os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+
+#%% Code to create videos with a decently constant frame rate with a timestamp with Status File
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.04.24'
+allFiles = os.listdir(path)
+key = '24-04-24'
+allTifs = [i for i in allFiles if key in i and '.tif' in i]
+allFields = [i for i in allFiles if key in i and '_Field' in i]
+allLogs = [i for i in allFiles if key in i and '_Status' in i]
+
+activationFrames = np.asarray([])
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+    status = pd.read_csv(os.path.join(path, log), delimiter = '_',  header=None)
+    
+    ctfield = (status[1][status[1] == 'Passive'].index)[::3]
+    selectedFrames.extend(ctfield)
+    
+    fluo = (status[1][status[1] == 'Fluo'].index)
+    precomp_relax = (status[2][(status[2] == 'sigmoid-15.00-1.00') | \
+                               (status[2] == 'constant-1.00-1.00') | \
+                               (status[2] == 't^4-50.00-15.00')].index)[::6]
+    comp = (status[2][status[2] == 't^4-1.00-50.00'].index)[::60]
+
+    selectedFrames.extend(precomp_relax)
+    selectedFrames.extend(comp)
+    
+    selectedFrames = [e for e in selectedFrames if e not in fluo]
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[0, 1])/1000
+    
+    activationSlices = (status[1][status[1] == 'Fluo'].index) + 1
+
+    for (z, j) in zip(range(len(new_stack)), selectedFrames):
+        print(j)
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,0),2,cv2.LINE_AA)
+        
+        if j in activationSlices:
+            print('True')
+            cv2.circle(new_stack[z, :, :], (233, 5), 150, (0,0,255), 3)
+    
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+        

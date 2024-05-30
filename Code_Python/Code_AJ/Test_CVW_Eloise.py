@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu May 30 13:18:44 2024
+
+@author: anumi
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Fri Apr 26 13:59:54 2024
 
 @author: anumi
@@ -22,41 +29,13 @@ from scipy.stats import wilcoxon, mannwhitneyu
 path = 'D:/Anumita/MagneticPincherData/Data_TimeSeries'
 savePath = 'D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replotted'
 
-# file = '24-02-27_M1_P1_C4_L70_CoilswMagnets24mT_PY.csv'
-# file = '24-02-27_M4_P4_C9_disc20um_L50_PY.csv'
-
 files = np.asarray(os.listdir(path))
-# files = [i for i in files if '24-02-27_M' in i]
-# filename = ['23-02-02_M1', '23-02-02_M2', '22-10-06_M5', '22-10-06_M6', '22-12-07_M4', 
-#             '22-12-07_M5', '22-12-07_M8']
-# folder = '3T3OptoRhoA_AtBeads_20sFreq'
 
-# filename = ['23-07-12', '23-05-23']
-# folder = '3T3OptoRhoA_AtBeads_60sFreq'
-
-# filename = ['23-05-10_M3', '23-05-10_M4', '23-04-25_M1', '23-04-25_M2', '23-04-19_M1', '23-04-19_M2']
-# folder = '3T3OptoRhoA_GlobalActivation_60sFreq'
-
-# filename = ['23-03-09_M4', '23-02-23_M1', '23-03-08_M3', '23-07-07_M2', '23-07-12_M1',  '22-10-06_M5',  '22-12-07_M4']
-# folder = '3T3WT_3T3OptoRhoA'
-
-# filename = ['23-02-02_M3', '23-02-02_M4', '23-04-25_M1', '23-04-25_M3']
-# folder = '3T3OptoRhoA_Y27_10uM'
+filename = ['23-07-12', '23-05-23']
+folder = '3T3OptoRhoA_AtBeads_60sFreq'
 
 # filename = ['22-12-07_M4', '22-12-07_M5', '22-12-07_M8']
 # folder = '3T3OptoRhoA_Y27_50uM'
-
-# filename = ['23-03-24_M1', '23-03-24_M3']
-# folder = '3T3OptoRhoA_Blebbi_10uM'
-
-# filename = ['24-02-21']
-# folder = '3T3UTH_Crosslinking'
-
-# filename = ['23-03-16', '23-03-17']
-# folder = '3T3WT_Blebbi'
-
-filename = ['23-03-08']
-folder = '3T3WT_Y27'
 
 filteredFiles = []
             
@@ -76,9 +55,6 @@ if not os.path.exists(os.path.join(folderPath, 'Cell-Based Plots')):
     os.mkdir(os.path.join(folderPath, 'Cell-Based Plots'))
 
 # files = [i for i in files if 'test' in i]
-
-
-
 
 
 #%% Functions
@@ -241,9 +217,6 @@ def fitCvw(x, K, Y, H0):
 
 #%%
 
-# dictToPlot = {'cellName': [], 'manipID' : [], 'compNo':[], 'nli' : [], 'nli_ind':[], 'substrate':[], 'nli_plot': [], 'R2' : [], 
-#               'k' : [], 'y':[], 'h0':[], 'e':[]}
-
 dictToPlot = {'cellName': [], 'manipID' : [], 'cellID' : [], 'cellCode':[], 'compNo':[], 'nli' : [], 
               'nli_ind':[], 'manip':[],  'nli_plot': [], 'R2' : [], 
               'substrate' : [], 'k' : [], 'y':[], 'h0':[], 'e':[], 'maxH' : [], 'minH':[]}
@@ -251,7 +224,6 @@ dictToPlot = {'cellName': [], 'manipID' : [], 'cellID' : [], 'cellCode':[], 'com
 for file in (filteredFiles):
     fh = pd.read_csv(os.path.join(path, file), sep = ';')
     
-    # nLoop = fh['idxLoop'].max()
     nLoop = fh['idxAnalysis'].max()
     
     if nLoop > 3:
@@ -299,11 +271,6 @@ for file in (filteredFiles):
         elif manip == 'M2': 
             substrate = 'Y27 2'
         
-        # if manipID == '23-03-17_M3' or manipID == '23-03-16_M1':
-        #     substrate = 'Control'
-        # else: 
-        #     substrate = 'Blebbi'
-        
         # if manip == 'M3':
         #     substrate = 'Control'
         # elif manip == 'M1': 
@@ -311,47 +278,6 @@ for file in (filteredFiles):
         # elif manip == 'M2': 
         #     substrate = 'Doxy + Global Activation'
         
-        # if manipID == '23-03-24_M3':
-        #     substrate = 'Control'
-        # else: 
-        #     substrate = 'Blebbi 10uM'
-            
-        # if manipID == '22-12-07_M4':
-        #     substrate = 'Control'
-        # else: 
-        #     substrate = 'Y27 50uM'
-            
-        # if manipID == '23-02-02_M4' or manipID == '23-04-25_M4':
-        #     substrate = 'Y27 10uM'
-        # else: 
-        #     substrate = 'Control'
-        
-        # if manipID == '23-03-09_M4' or manipID == '23-03-08_M3' or manipID == '23-02-23_M1' or manipID =='23-02-23_M1':
-        #     substrate = '3T3 WT'
-        # else: 
-        #     substrate = '3T3 OptoRhoA'
-            
-        # if manipID == '23-05-10_M4' or manipID == '23-04-25_M2' or manipID == '23-04-19_M2':
-        #     substrate = 'activation'
-        # else: 
-        #     substrate = 'control'
-            
-        # if manipID == '23-05-23_M2' or manipID == '23-05-23_M3' or manipID == '23-07-12_M2' or manipID == '23-07-12_M3':
-        #     substrate = 'activation'
-        # else: 
-        #     substrate = 'control'
-            
-        # if manipID == '23-02-02_M2' or manipID == '22-10-06_M6' or manipID == '22-12-07_M5' or manipID == '22-12-07_M8':
-        #     substrate = 'activation'
-        # else: 
-        #     substrate = 'control'
-
-        # if manip == 'M1' or manip == 'M2' or manip == 'M3':
-        #     substrate = 'epithelia'
-        # elif manip == 'M4':
-        #     substrate = '20um discs'
-        # elif manip == 'M5':
-        #     substrate = 'glass'
             
         jMax = np.argmax(compression['B'])
         

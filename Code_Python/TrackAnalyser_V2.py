@@ -410,6 +410,10 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 
 # %%%% Mechanical models
 
+def VWC(h, K, Y, H0):
+    f = np.pi*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
+    return f
+
 def chadwickModel(h, E, H0, DIAMETER):
     """
     Implement the Chadwick formula with force as a function of thickness.
@@ -572,6 +576,69 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
 # %%%% General fitting functions
 
+def fitVWC_hf(h, f):
+    """
+    Fit the Chadwick model on a force-thickness curve, using the inversed model.
+    This means the X-variable is f and the Y-variable is h.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in µm.
+    f : numpy array
+        Array of pinching forces in pN.
+    D : float
+        Diameter of the beads indenting the cortex, in µm.
+
+    Returns
+    -------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0].
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
+    
+    Npts = len(h)
+    error = False
+    
+    def VWC(h, K, Y, H0):
+        f = np.pi*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
+        return f
+    
+    try:
+        # some initial parameter values - must be within bounds
+        initH0 = h[0] + 10
+        initK = 0.2*1e-3
+        initY = 1*1e-3
+        
+        initialParameters = [initK, initY, initH0]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, 0, 0) #K, Y, H0
+        upperBounds = (1e3, 1e6, 2*h[0]) #K, Y, H0
+        parameterBounds = [lowerBounds, upperBounds]
+
+
+        # params = [K, Y, H0] ; ses = [seK, seY, seH0]
+        params, covM = curve_fit(VWC, h, f, p0=initialParameters, bounds = parameterBounds)
+        ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
+        params[0], params[1] = params[0]*1e6, params[1]*1e6,
+        ses[0], ses[1] = ses[0]*1e6, ses[1]*1e6  # Convert E & seE to Pa
+        
+    except:
+        error = True
+        params = np.ones(3) * np.nan
+        ses = np.ones(3) * np.nan    
+    res = (params, ses, error)
+        
+    return(res)
+        
 
 def fitChadwick_hf(h, f, D):
     """
@@ -640,8 +707,6 @@ def fitChadwick_hf(h, f, D):
         
     return(res)
         
-
-
 
 
 def fitDimitriadis_hf(h, f, D, order = 2):
@@ -950,6 +1015,116 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
 
 # %%%% Functions to store the results of fits
 
+def makeDictFit_CVW_hf(params, ses, error, 
+                   x, y, yPredict, 
+                   err_chi2, fitValidationSettings):
+    """
+    Take multiple inputs related to the fit of a **force-thickness** curve, 
+    and compute detailed results contained in a dict.
+
+    Parameters
+    ----------
+    params : (2 x 1) numpy array
+        Parameters values as: [E, H0]. 
+    ses : (2 x 1) numpy array
+        Standard errors for the parameters: [se(E), se(H0)].
+    error : bool
+        Error during the fit. From the function fitChadwick_hf().
+    x : (N x 1) numpy array
+        The x-variable values array used for the fit.
+    y : (N x 1) numpy array
+        The y-variable values array used for the fit.
+    yPredict : (N x 1) numpy array
+        The x-variable values array predicted from the fit.
+    err_chi2 : float
+        The typical error on the y-variable used to compute the chi2.
+        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+    fitValidationSettings : dict
+        Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
+
+    Returns
+    -------
+    res : dict, contains the following fields : 
+        * 'error' : bool, error of the fit as given in input.
+        * 'nbPts' : int, number of points fitted.
+        * 'E', 'seE', 'H0', 'seH0' : float, params and ses as given in input.
+        * 'R2', 'Chi2' : float, R2 and Chi2 as computed using inputs x, y, and yPredict.
+        * 'ciwE', 'ciwH0' : float, Confidence Interval Width for the parameters.
+        * 'x', 'y', 'yPredict' : numpy array, the arrays given as input.
+        * 'valid': bool, wether or not the fit is validated with respect to the criteria in fitValidationSettings.
+        * 'issue': string, a text describing the reasons why a fit was not validated if it is the case.
+    
+    Note
+    -------
+    1. The inputs params, ses, error should be taken from the output of the functions 
+       **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+    
+    2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
+        i) from scipy import stats
+        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
+        iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
+        iv) ConfInt = [params - q*se, params + q*se]
+
+    """
+    if not error:
+        K, Y, H0 = params
+        seK, seY, seH0 = ses
+
+        alpha = 0.975
+        dof = len(y)-len(params)
+        q = st.t.ppf(alpha, dof) # Student coefficient
+        R2 = ufun.get_R2(y, yPredict)
+        Chi2 = ufun.get_Chi2(y, yPredict, dof, err_chi2)        
+
+        ciwK = q*seK
+        ciwY = q*seY
+        ciwH0 = q*seH0
+        
+        nbPts = len(y)
+        
+        isValidated = (K > 0 and Y > 0 and
+                       nbPts >= fitValidationSettings['crit_nbPts'] and
+                       R2 >= fitValidationSettings['crit_R2'] and 
+                       Chi2 <= fitValidationSettings['crit_Chi2'])
+        issue = ''
+        if isValidated:
+            issue += 'none'
+        else:
+            if not K > 0:
+                issue += 'K<0_'
+            if not Y > 0:
+                issue += 'Y<0_'
+            if not nbPts >= fitValidationSettings['crit_nbPts']:
+                issue += 'nbPts<{:.0f}_'.format(fitValidationSettings['crit_nbPts'])
+            if not nbPts >= fitValidationSettings['crit_R2']:
+                issue += 'R2<{:.2f}_'.format(fitValidationSettings['crit_R2'])
+            if not nbPts >= fitValidationSettings['crit_Chi2']:
+                issue += 'Chi2>{:.1f}_'.format(fitValidationSettings['crit_Chi2'])
+    
+    else:
+        K, Y, H0, seK, seY, seH0 = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+        R2, Chi2 = np.nan, np.nan
+        ciwK, ciwY, ciwH0 = np.nan, np.nan, np.nan
+        isValidated = False
+        issue = 'error'
+
+    res =  {'error': error,
+            'nbPts':len(y),
+            'K':K, 'seK':seK,
+            'Y':Y, 'seY':seY,
+            'H0':H0, 'seH0':seH0,
+            'R2':R2, 'Chi2':Chi2,
+            'ciwK':ciwK, 
+            'ciwY':ciwY, 
+            'ciwH0':ciwH0,
+            'x': x,
+            'y': y,
+            'yPredict': yPredict,
+            'valid': isValidated,
+            'issue': issue
+            }
+    
+    return(res)
 def makeDictFit_hf(params, ses, error, 
                    x, y, yPredict, 
                    err_chi2, fitValidationSettings):
@@ -1375,8 +1550,6 @@ class CellCompression:
         self.df_3parts = pd.DataFrame({}) #### TEST
 
         
-        
-        
     def getMaskForCompression(self, i, task = 'compression'):
         try:
             Npts = len(self.tsDf['idxAnalysis'].values)
@@ -1442,7 +1615,7 @@ class CellCompression:
         iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
         for c in colToCorrect:
             #### CHANGE HERE: iStart+5 -> iStart+15
-            jump = np.median(self.tsDf[c].values[iStart:iStart+15]) - np.median(self.tsDf[c].values[iStart-2:iStart])
+            jump = np.median(self.tsDf[c].values[iStart:iStart+5]) - np.median(self.tsDf[c].values[iStart-2:iStart])
             self.tsDf.loc[mask, c] -= jump
             if c == 'D3':
                 D3corrected = True
@@ -2334,6 +2507,7 @@ class IndentCompression:
         # fitFH_Chadwick() & fitFH_Dimitriadis()
         self.dictFitFH_Chadwick = {}
         self.dictFitFH_Dimitriadis = {}
+        self.dictFitFH_VWC = {}
         
         # Test of new chad fit
         # self.dictFitFH_Chadwick_fixedH0 = {}
@@ -2792,7 +2966,39 @@ class IndentCompression:
         print(listDicts)
         return(listDicts[-1])
     
+    def fitFH_VWC(self, fitValidationSettings, method = 'Full'):
+        """
         
+
+        Parameters
+        ----------
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
+        # if len(mask) == 0:
+        #     mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f= self.hCompr, self.fCompr
+        params, ses, error = fitVWC_hf(h, f)
+        
+        K, Y, H0 = params
+        fPredict = VWC(h, K, Y, H0/1000)*1000
+        x = f
+        y, yPredict = h, fPredict
+        #### err_Chi2 for distance (nm)
+        err_chi2 = 10
+        dictFit = makeDictFit_CVW_hf(params, ses, error, 
+                                 x, y, yPredict, 
+                                 err_chi2, fitValidationSettings)
+        
+
+        self.dictFitFH_VWC[method] = dictFit
     
     def fitFH_Chadwick(self, fitValidationSettings, method = 'Full', mask = []):
         """
@@ -2828,9 +3034,6 @@ class IndentCompression:
 
         self.dictFitFH_Chadwick[method] = dictFit
         
-        
-        
-
 
                 
     def fitFH_Dimitriadis(self, fitValidationSettings, method = 'Full', mask = []):
@@ -4480,7 +4683,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             IC.dictFits_To_DataFrame(fitSettings)
             
             
-            #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain curves
+            #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain 
+           
             # IC.fitSS_polynomial()
             # IC.fitSS_smooth()
     

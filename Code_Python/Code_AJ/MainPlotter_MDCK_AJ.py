@@ -1142,10 +1142,10 @@ plotSettings = {# ON/OFF switchs plot by plot
 
     
 Task = '24-02-27'
-fitsSubDir = 'Chad_f15_MDCK_24-04-02'
+fitsSubDir = 'Chad_f15_MDCK_24-04-29'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -1291,7 +1291,7 @@ styleDict1 =  {'epithelia':{'color': gs.colorList40[20] ,'marker':'o', 'label':'
 Filters = [(data['validatedThickness'] == True),
             (data['valid_' + method] == True),
             # (data[stiffnessType + '_kPa'] <= 100),
-            # (data['bestH0'] <= 1500),
+            (data['bestH0'] <= 1999),
             (data['bead type'] == 'M450'),
             (data['UI_Valid'] == True),
             # (data['manip'].apply(lambda x : x in manips)),
@@ -1505,95 +1505,122 @@ plt.show()
 dfe = dfAllCells
 
 dfe['bestH0_halved'] = dfe['bestH0']
-allepithelia = (dfe['manip'] == 'M1') | (dfe['manip'] == 'M2') | (dfe['manip'] == 'M3')
-dfe['bestH0_halved'][allepithelia] = dfe['bestH0_halved'][allepithelia].values / 2
+allepithelia = dfe[ (dfe['manip'] == 'M1') | (dfe['manip'] == 'M2') | (dfe['manip'] == 'M3')]
+disc = dfe[(dfe['manip'] == 'M4')]
+spread = dfe[(dfe['manip'] == 'M5')]
 
-dfe['bestH0_log'] = np.log(dfe['bestH0_halved'].values)
+allepithelia['bestH0_halved'] = allepithelia['bestH0_halved'].values / 2
 
-y = stiffnessType 
+y = 'E_Full'#stiffnessType 
 x = 'bestH0_halved'
 
-sns.scatterplot(data = dfe, x = x, y = y, hue = condCol, style = 'cellId', s = 100)
-# plt.show()
+if y == stiffnessType:
+    y_name = 'E_400pN'
+else:
+    y_name = y
+
+fig, ax = plt.subplots(figsize = (15,10))
+fig.patch.set_facecolor('black')
+plt.style.use('seaborn')
+
+sns.scatterplot(data = allepithelia, x = x, y = y, color = 'blue', style = 'cellId', s = 200, ax = ax)
+sns.scatterplot(data = disc, x = x, y = y, color = 'red', style = 'cellId', s = 200, ax = ax)
+sns.scatterplot(data = spread, x = x, y = y, color = 'green', style = 'cellId', s = 200, ax = ax)
+
+params, results = ufun.fitLineHuber((allepithelia[x].unique()), np.log(allepithelia[y].unique()))
+fit_x = np.linspace(np.min(allepithelia[x]), np.max(allepithelia[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'blue')
+
+params, results = ufun.fitLineHuber((disc[x].unique()), np.log(disc[y].unique()))
+fit_x = np.linspace(np.min(disc[x]), np.max(disc[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'red')
+
+
+params, results = ufun.fitLineHuber((spread[x].unique()), np.log(spread[y].unique()))
+fit_x = np.linspace(np.min(spread[x]), np.max(spread[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'green')
 
 # sns.lmplot(data = dfe, x = x, y = y, hue = condCol, fit_reg = True, robust = True)
 plt.yscale('log')
-plt.xscale('log')
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-# plt.legend(fontsize = 15, loc = 'upper left')
-
-# plt.yscale('log')
 # plt.xscale('log')
+plt.ylim(0, 10**6)
+plt.xlim(0, 1400)
 
-# plt.tick_params(axis='y',labelleft='off')
-
-# x_labels = np.asarray([90, 100, 200, 500, 800, 1200])
-# xlocs = np.log(x_labels)
-
-# y_labels = np.asarray([300, 500, 2000, 10000, 60000, 200000])
-# ylocs = np.log(y_labels)
-
-# plt.xticks(xlocs, (x_labels), fontsize=25)
-# plt.yticks(ylocs, (y_labels), fontsize=25)
-
+color = "#ffffff"
+ax.yaxis.set_tick_params(labelsize=plotTicks, color = color)
+ax.xaxis.set_tick_params(labelsize=plotTicks, color = color)
+ax.set_ylabel(y, fontsize = 25,  color = color)
+ax.tick_params(axis='both', colors= color) 
+plt.legend(loc=2, prop={'size': 7}, ncol = 9)
+savePath = dirToSave + '/Correlations/'+y_name+'v'+x+'.png'
+plt.savefig(savePath)
 plt.show()
 
 #%%%% E_400pN vs Thickness - cell based
 
 df_og = dfAllCells
+df_og['bestH0_halved'] = df_og['bestH0']
+all_epi_index = (df_og['manip'] == 'M1') | (df_og['manip'] == 'M2') | (df_og['manip'] == 'M3')
+df_og['bestH0_halved'][all_epi_index] = df_og['bestH0_halved'][all_epi_index].values / 2
+
 group_by_cell = df_og.groupby(['cellId'], as_index=False)   
 
-df_average = group_by_cell.agg({stiffnessType:'mean', 'bestH0_halved': 'mean',
-                                'cellId':'first', condCol : 'first'})
+df_avg = group_by_cell.agg({stiffnessType:'mean', 'E_Full':'mean', 'bestH0_halved': 'mean',
+                                'cellId':'first', condCol : 'first', 'manip':'first'})
 
-df_average['bestH0_log'] = np.log(df_average['bestH0_halved'].values)
+avg_epi = df_avg[ (df_avg['manip'] == 'M1') | (df_avg['manip'] == 'M2') | (df_avg['manip'] == 'M3')]
+avg_disc =  df_avg[ (df_avg['manip'] == 'M4')]
+avg_spread = df_avg[ (df_avg['manip'] == 'M5')]
 
-y = stiffnessType 
-x = 'bestH0_log'
+y = 'E_Full'#stiffnessType 
+x = 'bestH0_halved'
 
-sns.lmplot(data = df_average, x = x, y = y, hue = condCol, fit_reg = True, robust = True)
-plt.legend(fontsize = 15, loc = 'upper left')
+if y == stiffnessType:
+    y_name = 'E_400pN'
+else:
+    y_name = y
+    
+fig, ax = plt.subplots(figsize = (15,10))
+fig.patch.set_facecolor('black')
+plt.style.use('seaborn')
+
+sns.scatterplot(data = avg_epi, x = x, y = y, color = 'blue', style = 'cellId', s = 200, ax = ax)
+sns.scatterplot(data = avg_disc, x = x, y = y, color = 'red', style = 'cellId', s = 200, ax = ax)
+sns.scatterplot(data = avg_spread, x = x, y = y, color = 'green', style = 'cellId', s = 200, ax = ax)
 
 
-# xlocs, xlabels = plt.xticks()  
-# x_labels = (np.exp(xlocs)).astype(int)
+params, results = ufun.fitLineHuber((avg_epi[x].unique()), np.log(avg_epi[y].unique()))
+fit_x = np.linspace(np.min(avg_epi[x]), np.max(avg_epi[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'blue')
 
-# ylocs, ylabels = plt.yticks()  
-# y_labels = (np.exp(ylocs)).astype(int)
+params, results = ufun.fitLineHuber(avg_disc[x].unique(), np.log(avg_disc[y].unique()))
+fit_x = np.linspace(np.min(avg_disc[x]), np.max(avg_disc[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'red')
 
 
+params, results = ufun.fitLineHuber(avg_spread[x].unique(), np.log(avg_spread[y].unique()))
+fit_x = np.linspace(np.min(avg_spread[x]), np.max(avg_spread[x]), 50)
+fit = np.exp(params[0])*np.exp(params[1]*fit_x)
+ax.plot(fit_x, fit, color = 'green')
+
+
+# sns.lmplot(data = dfe, x = x, y = y, hue = condCol, fit_reg = True, robust = True)
 plt.yscale('log')
-plt.xscale('log')
-
-plt.tick_params(axis='y',labelleft='off')
-
-x_labels = np.asarray([90, 100, 200, 500, 800, 1200])
-xlocs = np.log(x_labels)
-
-y_labels = np.asarray([300, 500, 2000, 10000, 60000, 200000])
-ylocs = np.log(y_labels)
-
-                
-plt.xticks(xlocs, (x_labels), fontsize=25)
-plt.yticks(ylocs, (y_labels), fontsize=25)
-
+# plt.xscale('log')
+plt.ylim(0, 10**6)
+plt.xlim(0, 1400)
+color = "#ffffff"
+ax.yaxis.set_tick_params(labelsize=plotTicks, color = color)
+ax.xaxis.set_tick_params(labelsize=plotTicks, color = color)
+ax.set_ylabel(y, fontsize = 25,  color = color)
+ax.tick_params(axis='both', colors= color) 
+plt.legend(loc=2, prop={'size': 7}, ncol = 9)
+savePath = dirToSave + '/Correlations/'+y_name+'v'+x+'_cellAvg.png'
+plt.savefig(savePath)
 plt.show()
 
-#%%%% E_400pN vs Thickness - cell based
-
-# df_og = dfAllCells
-# group_by_cell = df_og.groupby(['cellId'], as_index=False)   
-
-# df_average = group_by_cell.agg({stiffnessType:'mean', 'bestH0_halved': 'mean',
-#                                 'cellId':'first', condCol : 'first'})
-# fig, ax = plt.subplots()
-
-# x = df_average['bestH0_halved'].values
-# y = df_average[stiffnessType].values
-
-
-# wls_model = sm.WLS(x, y)
-# results_wls = wls_model.fit()
-# S0, K = results_wls.params[0], 1/results_wls.params[1]
-# seS0, seK = results_wls.HC3_se[0], results_wls.HC3_se[1]*K**2

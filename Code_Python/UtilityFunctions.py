@@ -919,6 +919,7 @@ def getDepthoCleanSize(D, scale):
     """
     cleanSize = int(np.floor(1*D*scale))
     cleanSize += 1 + cleanSize%2
+    
     return(cleanSize)
 
 def compute_cost_matrix(XY1,XY2):
@@ -1327,6 +1328,36 @@ def fitLine(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
+
+
+def fitLineHuber(X, Y):
+    """
+    returns: results.params, results \n
+    Y=a*X+b ; params[0] = b,  params[1] = a
+    
+    NB:
+        R2 = results.rsquared \n
+        ci = results.conf_int(alpha=0.05) \n
+        CovM = results.cov_params() \n
+        p = results.pvalues \n
+    
+    This is how one should compute conf_int:
+        bse = results.bse \n
+        dist = stats.t \n
+        alpha = 0.05 \n
+        q = dist.ppf(1 - alpha / 2, results.df_resid) \n
+        params = results.params \n
+        lower = params - q * bse \n
+        upper = params + q * bse \n
+    """
+    
+    X = sm.add_constant(X)
+    model = sm.RLM(Y, X, M=sm.robust.norms.HuberT())
+    results = model.fit()
+    params = results.params 
+#     print(dir(results))
+    return(results.params, results)
+
 
 def fitLineWeighted(X, Y, weights):
     """
