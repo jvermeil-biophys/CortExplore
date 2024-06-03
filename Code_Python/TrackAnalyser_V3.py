@@ -409,6 +409,10 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 
 # %%%% Mechanical models
 
+def VWC(h, K, Y, H0):
+    f  = 3.1416*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
+    return f
+
 def chadwickModel(h, E, H0, DIAMETER):
     """
     Implement the Chadwick formula with force as a function of thickness.
@@ -570,6 +574,69 @@ def inversedConstitutiveRelation(stress, K, strain0):
     
 
 # %%%% General fitting functions
+
+def fitVWC_hf(h, f):
+    """
+    Fit the VWC model on a force-thickness curve.
+    This means the X-variable is h and the Y-variable is f.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in nm.
+    f : numpy array
+        Array of pinching forces in pN.
+
+
+    Returns
+    -------
+    params : (3 x 1) numpy array
+        Parameters values as: [K, Y, H0]. [Van Wyk, Chadwick, H0]
+    ses : (3 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(Y), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
+    
+    Npts = len(h)
+    error = False
+    
+    def VWC(h, K, Y, H0):
+        f =  3.1416*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
+        return f
+    
+    try:
+        # some initial parameter values - must be within bounds\
+       
+        initH0 = h[0] + 10
+        initK = 0.2*1e-3
+        initY = 1*1e-3
+        
+        initialParameters = [initK, initY, initH0]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, 0, h[0]) #K, Y, H0
+        upperBounds = (1e3, 1e6, 2*h[0]) #K, Y, H0
+        parameterBounds = [lowerBounds, upperBounds]
+
+
+        # params = [K, Y, H0] ; ses = [seK, seY, seH0]
+        params, covM = curve_fit(VWC, h, f, p0=initialParameters, bounds = parameterBounds, method = 'trf')
+        ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5, covM[2,2]**0.5])
+        # params[0], params[1] = params[0]*1e6, params[1]*1e6,
+        ses[0], ses[1] = ses[0]*1e6, ses[1]*1e6  # Convert E & seE to Pa
+        
+    except:
+        error = True
+        params = np.ones(3) * np.nan
+        ses = np.ones(3) * np.nan    
+    res = (params, ses, error)
+        
+    return(res)
         
 
 def fitChadwick_hf(h, f, D):
@@ -957,12 +1024,12 @@ def makeDictFit_CVW_hf(params, ses, error,
 
     Parameters
     ----------
-    params : (2 x 1) numpy array
-        Parameters values as: [E, H0]. 
-    ses : (2 x 1) numpy array
-        Standard errors for the parameters: [se(E), se(H0)].
+    params : (3 x 1) numpy array
+        Parameters values as: [K, Y, H0]. 
+    ses : (3 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(Y), se(H0)].
     error : bool
-        Error during the fit. From the function fitChadwick_hf().
+        Error during the fit. From the function fitVWC_hf().
     x : (N x 1) numpy array
         The x-variable values array used for the fit.
     y : (N x 1) numpy array
@@ -990,7 +1057,7 @@ def makeDictFit_CVW_hf(params, ses, error,
     Note
     -------
     1. The inputs params, ses, error should be taken from the output of the functions 
-       **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+       **fitChadwick_hf()** or **fitDimitriadis_hf()** or **fitVWC_hf**.
     
     2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
         i) from scipy import stats
@@ -1040,6 +1107,7 @@ def makeDictFit_CVW_hf(params, ses, error,
         ciwK, ciwY, ciwH0 = np.nan, np.nan, np.nan
         isValidated = False
         issue = 'error'
+    
 
     res =  {'error': error,
             'nbPts':len(y),
@@ -1615,7 +1683,7 @@ class CellCompression:
                     
                     if not IC.error_bestH0:
                         ax.plot(IC.Df['T'].values[0], IC.bestH0, 
-                                color = gs.colorList40[30], marker = 'o', markersize = 2, zorder = 3)
+                                color = '#b29600', marker = '*', markersize = 4, zorder = 3)
                         
                 else:
                     ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
@@ -1709,6 +1777,34 @@ class CellCompression:
         axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
         
         axes = [ax, axbis]
+        fig.tight_layout()
+        return(fig, axes)
+    
+    def plot_FH_VWC(self, plotSettings, plotH0 = True, plotFit = True):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 # figsize = (3, 4))
+                                figsize = (4*nColsSubplot, 4*nRowsSubplot))
+        figTitle = 'Thickness-Force of indentations\n'
+        if plotH0:
+            figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        if plotFit:
+            figTitle += 'with fit (Van Wyk-Chadwick)'
+        
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_FH_VWC(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
+            
         fig.tight_layout()
         return(fig, axes)
     
@@ -1876,6 +1972,15 @@ class CellCompression:
             # except:
             #     pass
         
+        if plotSettings['F(H)_VWC']:
+            
+            # try:
+                
+            name = self.cellID + '_VWC_F(h)'
+            fig, ax = self.plot_FH_VWC(plotSettings, plotH0 = True, plotFit = True)
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass 
         
         # 2.
         if plotSettings['F(H)']:
@@ -2118,6 +2223,21 @@ class CellCompression:
                            'method_bestH0':'',
                            }
         
+        if fitSettings['doVWCFit']:
+            for m in fitSettings['VWCFitMethods']:
+                d = {'error_'+ m : True,
+                     'nbPts_'+ m : np.nan, 
+                     'K_'+ m : np.nan, 
+                     'ciwK_'+ m : np.nan, 
+                     'Y_'+ m : np.nan, 
+                     'ciwY_'+ m : np.nan, 
+                     'H0_'+ m : np.nan, 
+                     'R2_'+ m : np.nan,
+                     'Chi2_'+ m : np.nan,
+                     'valid_'+ m: False,
+                     'issue_' + m: '',
+                     }
+                dictColumnsMeca = {**dictColumnsMeca, **d}
                 
         if fitSettings['doChadwickFit']:
             for m in fitSettings['ChadwickFitMethods']:
@@ -2238,6 +2358,23 @@ class CellCompression:
             results['maxStrain'][i] = np.max(IC.strainCompr)
             
             # Whole curve fits related
+            
+            if fitSettings['doVWCFit'] and IC.isValidForAnalysis:
+                for m in fitSettings['VWCFitMethods']:
+                    try:
+                        results['error_'+ m][i] = IC.dictFitFH_VWC[m]['error']
+                        results['nbPts_'+ m][i] = IC.dictFitFH_VWC[m]['nbPts']
+                        results['K_'+ m][i] = IC.dictFitFH_VWC[m]['K']
+                        results['ciwK_'+ m][i] = IC.dictFitFH_VWC[m]['ciwK']
+                        results['Y_'+ m][i] = IC.dictFitFH_VWC[m]['Y']
+                        results['ciwY_'+ m][i] = IC.dictFitFH_VWC[m]['ciwY']
+                        results['H0_'+ m][i] = IC.dictFitFH_VWC[m]['H0']
+                        results['R2_'+ m][i] = IC.dictFitFH_VWC[m]['R2']
+                        results['Chi2_'+ m][i] = IC.dictFitFH_VWC[m]['Chi2']
+                        results['valid_'+ m][i] = IC.dictFitFH_VWC[m]['valid']
+                        results['issue_'+ m][i] = IC.dictFitFH_VWC[m]['issue']
+                    except:
+                        print(IC.dictFitFH_VWC)
                         
                         
             if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
@@ -2448,6 +2585,7 @@ class IndentCompression:
         # fitFH_Chadwick() & fitFH_Dimitriadis()
         self.dictFitFH_Chadwick = {}
         self.dictFitFH_Dimitriadis = {}
+        self.dictFitFH_VWC = {}
         
         # Test of new chad fit
         # self.dictFitFH_Chadwick_fixedH0 = {}
@@ -2618,7 +2756,7 @@ class IndentCompression:
 
         """
         
-        listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
+        listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax', 'VWC']
         listAllZones = ['pts_15', 'pts_30', 
                         '%f_10', '%f_20', '%f_30', '%f_40', 
                         '%h_10', '%h_20', '%h_30', '%h_40']
@@ -2695,6 +2833,17 @@ class IndentCompression:
             
         dH0 = {}
         
+        if method == 'VWC':
+            h, f = self.hCompr[mask], self.fCompr[mask]
+            params, covM, error = fitVWC_hf(h, f)
+            K, Y, H0 = params[0], params[1], params[2]
+            dH0['H0_' + method + '_' + zone] = H0
+            dH0['K_' + method + '_' + zone] = K
+            dH0['Y_' + method + '_' + zone] = Y
+            dH0['error_' + method + '_' + zone] = error
+            dH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+            dH0['fArray_' + method + '_' + zone] = VWC(h, K, Y, H0)
+            dH0['hArray_' + method + '_' + zone] = h
         
         if method == 'Chadwick':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
@@ -2789,7 +2938,7 @@ class IndentCompression:
         for k in self.dictH0.keys():
             if k.startswith('H0'):
                 infos = k.split('_') # k = method_zoneType_zoneVal
-                if infos[1] in ['Chadwick', 'Dimitriadis']:
+                if infos[1] in ['Chadwick', 'Dimitriadis', 'VWC']:
                     cellID  = self.cellID
                     compNum = self.i_indent + 1
                     method = infos[1]
@@ -2907,6 +3056,42 @@ class IndentCompression:
         print(listDicts)
         return(listDicts[-1])
     
+    def fitFH_VWC(self, fitValidationSettings, method = 'Full', mask = []):
+        """
+        
+
+        Parameters
+        ----------
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        if len(mask) == 0:
+            mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f = self.hCompr[mask], self.fCompr[mask]
+        params, ses, error = fitVWC_hf(h, f)
+        
+        K, Y, H0 = params
+        # x = np.linspace(np.min(h), np.max(h), len(h))
+        
+        fPredict = VWC(h, K, Y, H0)
+        kPredict = VWC(h, K, 0, H0)
+        ePredict = VWC(h, 0, Y, H0)
+        y, yPredict = f, fPredict
+        #### err_Chi2 for distance (nm)
+        err_chi2 = 10
+        dictFit = makeDictFit_CVW_hf(params, ses, error, 
+                                 h, y, yPredict, kPredict, ePredict,
+                                 err_chi2, fitValidationSettings)
+        
+        self.dictFitFH_VWC[method] = dictFit
     
     def fitFH_Chadwick(self, fitValidationSettings, method = 'Full', mask = []):
         """
@@ -3192,6 +3377,164 @@ class IndentCompression:
             df.insert(0, 'compNum', np.ones(nRows) * (self.i_indent+1))
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_3parts = df
+    
+    def plot_FH_VWC(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotH0 : TYPE, optional
+            DESCRIPTION. The default is True.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        if self.isValidForAnalysis and plotSettings['F(H)_VWC']:
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            # ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('f (pN)')
+    
+            if plotFit:
+                
+                method = 'Full'
+                dictFit = self.dictFitFH_VWC[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    K, Y, H0 = dictFit['K']*1e6, dictFit['Y']*1e6, dictFit['H0']
+                    R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
+                    hFit = dictFit['x']
+                    fPredict = dictFit['yPredict']
+                    kPredict = dictFit['kPredict']
+                    ePredict = dictFit['ePredict']
+                    Eeff = Y + K * (0.8**-4)
+                    
+                    legendTextE = 'VWC Fit ;H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, Eeff, R2, Chi2)
+                    legendTextK = 'Van Wyk ;K = {:.2e}Pa'.format(K)
+                    legendTextY = 'Chadwick ;Y = {:.2e}Pa'.format(Y)
+
+                    
+                    ax.plot(hFit, (fPredict),'k--', linewidth = 0.8, label = legendTextE, zorder = 2)
+                    ax.plot(hFit, (kPredict),'--', linewidth = 0.8, label = legendTextK, zorder = 2, color = '#940000')
+                    ax.plot(hFit, (ePredict),'--', linewidth = 0.8, label = legendTextY, zorder = 2, color = '#237e76')
+                    
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+                # method = 'f_<_400'
+                # # dictFit = self.dictFitFH_Chadwick[method]
+                # dictFit = self.dictFitFH_Chadwick[method]
+                # fitError = dictFit['error']
+                    
+                # if not fitError:
+                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                #     fFit = dictFit['x']
+                #     hPredict = dictFit['yPredict']
+                    
+                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                #     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
+                #             label = legendText, zorder = 2)
+                # # else:
+                # #     titleText += '\nFIT ERROR'
+                
+                # method = 'f_in_400_800'
+                # # dictFit = self.dictFitFH_Chadwick[method]
+                # dictFit = self.dictFitFH_Chadwick[method]
+                # fitError = dictFit['error']
+                    
+                # if not fitError:
+                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                #     fFit = dictFit['x']
+                #     hPredict = dictFit['yPredict']
+                    
+                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                #     ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                #             label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+            if plotH0 and self.method_bestH0 == 'VWC':
+                bestH0 = self.bestH0
+                method = self.method_bestH0
+                zone = self.zone_bestH0
+                str_m_z = method + '_' + zone
+                K_bestH0 = self.dictH0['K_' + method + '_' + zone]
+                Y_bestH0 = self.dictH0['Y_' + method + '_' + zone]
+                
+                if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, bestH0, 20)
+                    # if self.method_bestH0 == 'Dimitriadis':
+                    #     low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    # elif self.method_bestH0 == 'Chadwick':
+                    #     # chadwickModel(h, E, H0, DIAMETER)
+                    #     low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    if self.method_bestH0 == 'VWC':
+                        low_f = VWC(high_h/1000, K_bestH0, Y_bestH0, bestH0/1000)
+                    else:
+                        low_f = np.ones_like(high_h) * bestH0
+                    
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    # plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    # plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#b29600', markersize = 5, 
+                            label = legendText)
+                    # ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+
+                    
+                # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
+                #     H0_ratio = self.dictH0['H0_Chadwick_ratio_2-2.5']
+                #     E_ratio = self.dictH0['E_Chadwick_ratio_2-2.5']
+                #     str_m_z = 'Chadwick_ratio_2-2.5'
+                #     max_h = np.max(self.hCompr)
+                #     high_h = np.linspace(max_h, H0_ratio, 20)
+                #     low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+
+                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                #             # label = legendText)
+                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    
+# <<<<<<<
+                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.title.set_text(titleText)
+# =======
+                # darkslateblue
+# >>>>>>>
+                
+                
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.title.set_text(titleText)
+            
+                    
+            # if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+            #     ax_r = ax.twinx()
+            #     ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+            #     ax_r.set_ylabel('a/h0')
+            #     ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+            #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+            #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+            #     ax_r.set_ylim([0,10])
     
     def plot_FH(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
         """
@@ -4276,6 +4619,8 @@ DEFAULT_fitSettings = {# H0
                        'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
+                       'doVWCFit' : True,
+                       'VWCFitMethods' : ['Full'],
                        'doDimitriadisFit' : False,
                        'DimitriadisFitMethods' : ['Full'],
                        'doChadwickFit' : True,
@@ -4482,7 +4827,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         if doThisCompAnalysis:
             
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
-            # IC.refineStartStop()            
+            IC.refineStartStop()            
             
             #### 3.7 Fit with Chadwick model of the force-thickness curve
             if fitSettings['doChadwickFit']:
@@ -4497,6 +4842,18 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                             # except:
                             #     pass
                         
+            if fitSettings['doVWCFit']:
+                
+                for m in fitSettings['VWCFitMethods']:
+                    if m == 'Full':
+                        IC.fitFH_VWC(fitValidationSettings, method = m)
+                    else:
+                        if m.startswith('f'):
+                            # try:
+                            mask = ufun.strToMask(IC.fCompr, m)
+                            IC.fitFH_VWC(fitValidationSettings, method = m, mask = mask)
+                            # except:
+                            #     pass
             
             #### 3.8 Find the best H0
             IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])

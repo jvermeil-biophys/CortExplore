@@ -230,8 +230,7 @@ class PincherTimeLapse:
                 A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
                 self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
                 
-                print(A)
-                print(self.logDf.loc[self.logDf['iL'] == i, 'iS'])
+                # print(self.logDf.loc[self.logDf['iL'] == i, 'iS'])
                 
                 # logDf_loop = self.logDf[self.logDf['iL'] == i]
                 # A = np.cumsum(logDf_loop['nullFrame'].values)
@@ -289,7 +288,7 @@ class PincherTimeLapse:
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
                 
-                print(fieldDf)
+                # print(fieldDf)
                 actN = len(allActivationIndices)
                 fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
                 metadataDict = {}

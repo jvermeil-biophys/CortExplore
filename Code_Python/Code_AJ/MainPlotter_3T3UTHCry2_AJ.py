@@ -55,6 +55,8 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser_V2 as taka
+import TrackAnalyser_V3 as taka
+
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -123,24 +125,32 @@ DEFAULT_fitSettings = {# H0
                        'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
-                       'doChadwickFit' : True,
+                       'doVWCFit' : True,
+                       'VWCFitMethods' : ['Full'],
                        'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
+                       'doChadwickFit' : False,
+                       'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
+                       'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
                        # Local fits
-                       'doStressRegionFits' : True,
-                       'doStressGaussianFits' : True,
+                       'doStressRegionFits' : False,
+                       'doStressGaussianFits' : False,
                        'centers_StressFits' : DEFAULT_stressCenters,
                        'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
-                       'doNPointsFits' : True,
+                       'doNPointsFits' : False,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
                        # NEW - Numi
-                       'doLogFits' : True,
+                       'doLogFits' : False,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
                        # NEW - Jojo
-                       'doStrainGaussianFits' : True,
+                       'doStrainGaussianFits' : False,
                        'centers_StrainFits' : DEFAULT_strainCenters,
                        'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
+                       # TEST - Jojo
+                       'do3partsFits' : False,
                        }
 
 #### 2. For Validation
@@ -169,6 +179,7 @@ DEFAULT_plot_strainHalfWidth = 0.0125
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True,
                         'S(e)_stressRegion':True,
                         'K(S)_stressRegion':True,
                         'S(e)_stressGaussian':True,
@@ -195,6 +206,13 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         }
 
 #%% Functions
+
+def filterDf(Filters, df):
+    globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    for k in range(0, len(Filters)):
+        globalFilter = globalFilter & Filters[k]
+    data_f = data[globalFilter]
+    return data_f
 
 def dataGroup(df, groupCol = 'cellID', idCols = [], numCols = [], aggFun = 'mean'):
     agg_dict = {'date':'first',
@@ -1095,17 +1113,39 @@ def addStat_df(ax, data, box_pairs, param, cond, test = 'Wilcox_less', percentHe
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
 
+# fitSettings = {# H0
+#                 'methods_H0':['Chadwick', 'VWC'],
+#                 'zones_H0':['pts_15',
+#                             '%f_5', '%f_10', '%f_15'],
+#                 'method_bestH0':'Chadwick', # Chadwick
+#                 'zone_bestH0':'%f_15',
+#                 'doStressRegionFits' : False,
+#                 'doStressRegionFits' : False,
+#                 'doStressGaussianFits' : True,
+#                 'centers_StressFits' : plot_stressCenters,
+#                 'halfWidths_StressFits' : stressHalfWidths,
+#                 'doNPointsFits' : True,
+#                 'nbPtsFit' : 33,
+#                 'overlapFit' : 21,
+#                 # NEW - Numi
+#                 'doLogFits' : False,
+#                 # NEW - Jojo
+#                 'doStrainGaussianFits' : False,
+#                 }
+
 fitSettings = {# H0
                 'methods_H0':['Chadwick'],
-                'zones_H0':['pts_15',
-                            '%f_5', '%f_10', '%f_15'],
-                'method_bestH0':'Chadwick', # Chadwick
-                'zone_bestH0':'%f_15',
+                'zones_H0':['%f_100'],
+                'method_bestH0':'Chadwick', 
+                'zone_bestH0':'%f_100',
+                'doVWCFit' : True,
+                'VWCFitMethods' : ['Full'],
                 'doStressRegionFits' : False,
-                'doStressGaussianFits' : True,
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : False,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
-                'doNPointsFits' : True,
+                'doNPointsFits' : False,
                 'nbPtsFit' : 33,
                 'overlapFit' : 21,
                 # NEW - Numi
@@ -1120,14 +1160,15 @@ plot_stressHalfWidth = 100
 plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
-                        'S(e)_stressGaussian':True,
-                        'K(S)_stressGaussian':True,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
                         'S(e)_strainGaussian':False, # NEW - Jojo
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
@@ -1135,16 +1176,16 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '24-02-21'
-fitsSubDir = 'Chad_f15_UTHCry2_5mT_24-03-06'
+Task = '24-05-29'
+fitsSubDir = '24-05-29_VWC_UTHCry2_5mT_24-06-03_NoRefine'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
+                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
-#%%% Calling data
+#%% Calling data
 
 GlobalTable = taka.getMergedTable('Chad_f15_UTHCry2_5mT_24-03-06')
 fitsSubDir = 'Chad_f15_UTHCry2_5mT_24-03-06'
@@ -1450,3 +1491,130 @@ plt.xticks(fontsize=15)
 plt.yticks(fontsize=15)
 plt.ylim(0,20000)
 plt.show()
+
+#%% Calling data - Analysing with VWC global tables
+
+GlobalTable = taka.getMergedTable('24-05-29_VWC_UTHCry2_5mT_24-06-03_NoRefine')
+fitsSubDir = '24-05-29_VWC_UTHCry2_5mT_24-06-03_NoRefine'
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+nBins = 11
+bins = np.linspace(1, 2000, nBins)
+data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
+data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
+
+fitType = 'stressGaussian'
+# fitType = 'nPoints'
+fitId = '_75'
+fitWidth = 75
+
+dirToSave = 'D:/Anumita/MagneticPincherData/Meetings/24-06-03_CortexMeeting'
+
+
+#%%% Filter data
+
+#Define criteria
+dates = ['24-05-29']
+
+
+data = data_main
+
+Filters = [(data['validatedThickness'] == True),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['bead type'] == 'M450'),
+            (data['UI_Valid'] == True),
+            (data['R2_Full'] > 0.90),
+            (data['bestH0'] <= 1500),
+            (data['date'].apply(lambda x : x in dates)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            ]
+
+df = filterDf(Filters, data)
+
+#%%% NLI Box Plots
+
+dfToPlot = df
+dfToPlot['NLI_Plot'] = [np.nan]*len(df)
+# plt.style.use('seaborn')
+plt.style.use('dark_background')
+
+K, Y = dfToPlot['K_Full']*1e6, dfToPlot['Y_Full']*1e6
+E = Y + K*(0.8)**-4
+
+dfToPlot['NLI'] = np.log10((0.8)**-4 * K/Y)
+NLItypes = ['linear', 'intermediate', 'non-linear']
+
+for i in NLItypes:
+    if i == 'linear':
+        index = dfToPlot[dfToPlot['NLI'] < -0.3].index
+    elif i =='non-linear':
+        index =  dfToPlot[dfToPlot['NLI'] > 0.3].index
+    elif i =='intermediate':
+        index = dfToPlot[(dfToPlot['NLI'] > -0.3) & (dfToPlot['NLI'] < 0.3)].index
+    for j in index:
+        dfToPlot['NLI_Plot'][j] = i
+
+manips = dfToPlot['manip'].unique()
+condCol, condCat = 'manip', manips
+
+fig, ax = plt.subplots(figsize = (15,10))
+fig.patch.set_facecolor('black')
+linear = []
+nonlinear = []
+intermediate = []
+N = []
+frac = []
+
+for i in condCat:
+    frac = dfToPlot[dfToPlot[condCol] == i]
+    sLinear = np.sum(frac['NLI_Plot']=='linear')
+    sNonlin = np.sum(frac['NLI_Plot']=='non-linear')
+    sInter = np.sum(frac['NLI_Plot']=='intermediate')
+    linear.append(sLinear)
+    nonlinear.append(sNonlin)
+    intermediate.append(sInter)
+    N.append(sLinear + sNonlin + sInter)
+
+# a1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[0]].values
+# b1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[1]].values
+# U1, p = mannwhitneyu(a1, b1)
+
+N = np.asarray(N)
+linear = (np.asarray(linear)/N)*100
+intermediate = (np.asarray(intermediate)/N)*100
+nonlinear = (np.asarray(nonlinear)/N)*100
+
+plt.bar(condCat, linear, label='linear', color = '#1c7cbb')
+plt.bar(condCat, intermediate, bottom = linear, label='intermediate', color = '#f08e3b')
+plt.bar(condCat, nonlinear, bottom = linear+intermediate, label='nonlinear',
+        color = '#fbb809')
+
+y1 = linear
+y2 = intermediate
+y3 = nonlinear
+fontColour2 = '#000000'
+fontColour = '#ffffff'
+
+for xpos, ypos, yval in zip(condCat, y1/2, y1):
+    plt.text(xpos, ypos, "%.1f"%yval + '%', ha="center", va="center", fontsize = 25, color = fontColour2)
+for xpos, ypos, yval in zip(condCat, y1+y2/2, y2):
+    plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center",fontsize = 25, color = fontColour2)
+for xpos, ypos, yval in zip(condCat, y1+y2+y3/2, y3):
+    plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center", fontsize = 25, color = fontColour2)
+# add text annotation corresponding to the "total" value of each bar
+for xpos, ypos, yval in zip(condCat, y1+y2+y3+0.5, N):
+    plt.text(xpos, ypos, "N=%d"%yval, ha="center", va="bottom", fontsize = 20)
+
+ax.spines.right.set_visible(False)
+ax.spines.top.set_visible(False)
+# plt.title('Test : Mann-Whitney | p-val = {:.4f}'.format(p), color = fontColour, fontsize = 20)
+plt.xticks(fontsize=15, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.legend(bbox_to_anchor=(1.01,0.5), loc='center left', fontsize = 20, labelcolor='linecolor')
+plt.tight_layout()
+plt.show()
+plt.savefig(os.path.join(dirToSave, 'NLI_'+str(dates)+'_NonRefined.png'))

@@ -55,8 +55,11 @@ files = np.asarray(os.listdir(path))
 # filename = ['23-03-16', '23-03-17']
 # folder = '3T3WT_Blebbi'
 
-filename = ['23-03-08']
-folder = '3T3WT_Y27'
+# filename = ['23-03-08']
+# folder = '3T3WT_Y27'
+
+filename = ['24-05-29']
+folder = '3T3_UTHCry2_Y27'
 
 filteredFiles = []
             
@@ -240,7 +243,7 @@ def fitCvw(x, K, Y, H0):
 
 
 #%%
-
+plt.style.use('default')
 # dictToPlot = {'cellName': [], 'manipID' : [], 'compNo':[], 'nli' : [], 'nli_ind':[], 'substrate':[], 'nli_plot': [], 'R2' : [], 
 #               'k' : [], 'y':[], 'h0':[], 'e':[]}
 
@@ -292,12 +295,25 @@ for file in (filteredFiles):
 
         manip = file.split('_')[1]
         
-        if manip == 'M3':
-            substrate = 'Control'
-        elif manip == 'M1': 
-            substrate = 'Y27 1'
+        if manip == 'M1':
+            substrate = 'Doxy'
         elif manip == 'M2': 
-            substrate = 'Y27 2'
+            substrate = 'Doxy + Act'
+        elif manip == 'M3': 
+            substrate = 'Doxy + Y27'
+        elif manip == 'M4': 
+            substrate = 'Doxy + Y27 + Act'
+        elif manip == 'M5': 
+            substrate = 'Y27'
+        elif manip == 'M6': 
+            substrate = 'Control'
+        
+        # if manip == 'M3':
+        #     substrate = 'Control'
+        # elif manip == 'M1': 
+        #     substrate = 'Y27 1'
+        # elif manip == 'M2': 
+        #     substrate = 'Y27 2'
         
         # if manipID == '23-03-17_M3' or manipID == '23-03-16_M1':
         #     substrate = 'Control'
@@ -353,28 +369,30 @@ for file in (filteredFiles):
         # elif manip == 'M5':
         #     substrate = 'glass'
             
-        jMax = np.argmax(compression['B'])
         
-        f, x = compression['F'].values[:jMax+1], compression['D3'].values[:jMax+1]*1000 - 4500
-        # f, x = refineStartStop(compression)
-        # x = x*1000
-        
-        
-        initH0 = x[0] + 10
-        initK = 0.2*1e-3
-        initY = 1*1e-3 
-        initialParameters = [initK, initY, initH0]
-        
-        maxF = np.max(f)
-        minF = np.min(f)
-        maxH = np.max(x)
-        minH = np.min(x)
         
         # dictToSave['idxAnalysis'].extend(np.asarray([i+1]*len(f)).astype(int))
         # dictToSave['f'].extend(f.T.astype(float))
         # dictToSave['x'].extend(x.T)
         
         try:
+            jMax = np.argmax(compression['B'])
+            
+            f, x = compression['F'].values[:jMax+1], compression['D3'].values[:jMax+1]*1000 - 4500
+            # f, x = refineStartStop(compression)
+            # x = x*1000
+            
+            
+            initH0 = x[0] + 10
+            initK = 0.2*1e-3
+            initY = 1*1e-3 
+            initialParameters = [initK, initY, initH0]
+            
+            maxF = np.max(f)
+            minF = np.min(f)
+            maxH = np.max(x)
+            minH = np.min(x)
+            
             params, covM = curve_fit(fitCvw, x, f, p0 = initialParameters, bounds=((0, 0, x[0]), (1e3, 1e6, 2*x[0])), method = 'trf')
             
             k = params[0]*1e6
@@ -446,13 +464,12 @@ for file in (filteredFiles):
             dictToPlot['R2'].append(np.nan)
             
 
-
     fig.suptitle(cellName) 
     # dfToSave = pd.DataFrame(dictToSave)
     # dfToSave.to_csv('D:/Anumita/MagneticPincherData/Collabs-Internships/Hugo/JumpCorrect_RefineStart/CSV_fh/'+file+'.csv',
     #                 sep = ';', index = False)
     plt.show()
-    # plt.savefig('D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replotted/'+folder+'/Compressions/'+file+'.png')
+    plt.savefig('D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replotted/'+folder+'/Compressions/'+file+'.png')
     
     plt.close()
 
@@ -525,8 +542,8 @@ dfToPlot = dfToPlot[(dfToPlot['R2'] > 0.9)] # & (dfToPlot['h0'] < 1500)]
 # substrate = ['Blebbi 10uM', 'Control']
 # substrate = ['Doxy + Global Activation', 'Doxy', 'Control']
 # substrate = ['Blebbi', 'Control']
-substrate = ['Y27 1', 'Y27 2', 'Control']
-
+# substrate = ['Y27 1', 'Y27 2', 'Control']
+substrate = ['Doxy', 'Doxy + Act','Doxy + Y27', 'Doxy + Y27 + Act', 'Y27', 'Control']
 
 plt.style.use('dark_background')
 
@@ -589,7 +606,7 @@ for xpos, ypos, yval in zip(manips, y1+y2+y3+0.5, N):
 ax.spines.right.set_visible(False)
 ax.spines.top.set_visible(False)
 plt.title('Test : Mann-Whitney | p-val = {:.4f}'.format(p), color = fontColour, fontsize = 20)
-plt.xticks(fontsize=30, color = fontColour)
+plt.xticks(fontsize=15, color = fontColour)
 plt.yticks(fontsize=30, color = fontColour)
 plt.legend(bbox_to_anchor=(1.01,0.5), loc='center left', fontsize = 20, labelcolor='linecolor')
 plt.tight_layout()
@@ -687,7 +704,7 @@ sns.boxplot(x = 'substrate', y = 'h0', data=dfToPlot, order = manips, color = 'g
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
     
 sns.swarmplot(x = 'substrate', y = 'h0', data=dfToPlot,linewidth = 1, order = manips,
-              edgecolor='k', size = 7, hue = 'cellID', palette = sns.color_palette("Paired", (N)))
+              edgecolor='k', size = 7, hue = 'nli_plot', palette = sns.color_palette("Paired", (N)))
 
 
 plt.xticks(fontsize=25)
@@ -722,7 +739,7 @@ plt.savefig('D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replot
 fig = plt.figure(figsize=(12,10))
 fig.patch.set_facecolor('black')
 
-param = 'e'
+param = 'h0'
 
 x, y = ('substrate', 'first'), (param, 'mean')
 statsDf = dfToPlot
@@ -738,12 +755,11 @@ group_by_cell = statsDf.groupby(['cellID'])
 avgDf = group_by_cell.agg({param:['var', 'std', 'mean', 'count'], 'cellName':'first', 'nli_plot' : 'first',
                             'cellCode':['first'], 'manip':'first', 'substrate':'first'})
 
-
 #For statistics:
-a = avgDf[y][avgDf['substrate', 'first'] == 'control']
-b = avgDf[y][avgDf['substrate', 'first'] == 'activation']
-test = 'two-sided'
-res = wilcoxon(a, b, alternative=test, zero_method = 'wilcox')
+# a = avgDf[y][avgDf['substrate', 'first'] == 'control']
+# b = avgDf[y][avgDf['substrate', 'first'] == 'activation']
+# test = 'two-sided'
+# res = wilcoxon(a, b, alternative=test, zero_method = 'wilcox')
 
 
 sns.pointplot(x = x, y = y, data=avgDf, order = manips,  hue = ('cellCode', 'first'))
@@ -753,7 +769,7 @@ sns.boxplot(x = x, y = y, data=avgDf, order = manips, color = 'grey',
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
 
 fontColour = '#ffffff'
-plt.title('Test : Wilcoxon paired "{:}" | p-val = {:.4f}'.format(test, res[1]), color = fontColour, fontsize = 20)
+# plt.title('Test : Wilcoxon paired "{:}" | p-val = {:.4f}'.format(test, res[1]), color = fontColour, fontsize = 20)
 
 plt.xticks(fontsize=30, color = fontColour)
 plt.yticks(fontsize=30, color = fontColour)

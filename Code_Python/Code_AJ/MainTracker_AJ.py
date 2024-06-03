@@ -1549,18 +1549,16 @@ mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf,
                                  redoAllSteps = True, trackAll = False)
 
 
+#%% Deptho from experiment 24-05-29 - Experiment with 3T3 UTH-Cry2
 
+# %%%% M1 : 
 
+dates = '24.05.29'
+manips, wells, cells = 3, 2, 7
+depthoNames = '24.05.29_P2_M450_step20_100X'
 
-
-
-
-
-
-
-
-
-
+mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
 
 
 
