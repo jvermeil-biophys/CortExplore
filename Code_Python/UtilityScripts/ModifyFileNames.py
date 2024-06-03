@@ -110,7 +110,8 @@ def findAndRename(path, target_string, new_string, target='file', test = True, r
                     print('Exception for ' + os.path.join(path,f))
             if not doExcept:
                 foundString = f[searchString.start():searchString.end()]
-                newFileName = f[:searchString.start()] + new_string + f[searchString.end():]
+                # newFileName = f[:searchString.start()] + new_string + f[searchString.end():]
+                newFileName = f[:searchString.start()] + foundString[:2] + f[searchString.end():]
                 renamedListTarget.append(newFileName)
                 if not test:
                     new_path = os.path.join(path, newFileName)
@@ -207,6 +208,32 @@ findAndRename(path0, s1, s2,
               target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 
+
+
+# %% Script Other renaming
+
+path0 = 'D://MagneticPincherData//Raw//23.11.13'
+s1 = '2311-01'
+s2 = '23-11-13'
+findAndRename(path0, s1, s2, 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
+
+# %% Script Other renaming
+
+path0 = 'D://MagneticPincherData//Raw//23.12.07'
+s1 = r'C\d-\d'
+s2 = 'Ctest'
+findAndRename(path0, s1, s2, 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
+
+
+# %% Script Other renaming
+
+path0 = 'D://MagneticPincherData//Raw//24.02.28'
+s1 = r'C\d\d'
+s2 = 'Ctest'
+findAndRename(path0, s1, s2, 
+              target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 
 

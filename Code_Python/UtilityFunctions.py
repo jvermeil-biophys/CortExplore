@@ -53,6 +53,7 @@ from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
 from collections.abc import Collection
 from copy import deepcopy
+from sklearn.linear_model import HuberRegressor
 
 #### Local Imports
 
@@ -961,12 +962,11 @@ def getROI(roiSize, x0, y0, nx, ny):
     Note : the ROI is done so that the final width (= height) 
     of the ROI will always be an odd number.
     """
-    factor = 0.5
-    roiSize += roiSize%2
-    x1 = int(np.floor(x0) - roiSize*factor) - 1
-    x2 = int(np.floor(x0) + roiSize*factor)
-    y1 = int(np.floor(y0) - roiSize*factor) - 1
-    y2 = int(np.floor(y0) + roiSize*factor)
+    roiSize -= roiSize%2 # even
+    x1 = int(np.round(x0) - roiSize*0.5) #- 1
+    x2 = int(np.round(x0) + roiSize*0.5) + 1
+    y1 = int(np.round(y0) - roiSize*0.5) #- 1
+    y2 = int(np.round(y0) + roiSize*0.5) + 1
     if min([x1,nx-x2,y1,ny-y2]) < 0:
         validROI = False
     else:
@@ -1197,13 +1197,50 @@ def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
 
 # %%% Physics
 
-def computeMag_M270(B):
-    M = 0.74257*1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+
+
+def computeMag_M270(B, k_batch = 1):
+    M = 1.05 * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
-def computeMag_M450(B):
-    M = 1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+def computeMag_M450(B, k_batch = 1):
+    M = 1.05 * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
+
+def computeForce_M450(B, D, d):
+    M = computeMag_M450(B)
+    R = D/2
+    V = (4*np.pi/3)*(R**3)
+    m = M*V
+    dist = D + d
+    F = (3e5 * 2 * m**2) / (dist**4)
+    # plt.plot(B, M)
+    return(F)
+
+def plotForce(d = 200e-9):
+    fig, axes = plt.subplots(1, 2, figsize = (10,5)) 
+    ax = axes[0]
+    B = np.linspace(1, 1000, 1000)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    ax = axes[1]
+    B = np.linspace(0, 100, 101)
+    D = 4500e-9
+    F = computeForce_M450(B, D, d)
+    ax.plot(B, F)
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    
+    fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
+    plt.tight_layout()
+    plt.show()
+
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
@@ -1290,6 +1327,14 @@ def findFirst(x, A):
     idx = (A==x).view(bool).argmax()
     return(idx)
 
+def findLast(x, A):
+    """
+    Find first occurence of x in array A, in a VERY FAST way.
+    If you like weird one liners, you will like this function.
+    """
+    idx = (A[::-1]==x).view(bool).argmax()
+    return(len(A)-idx-1)
+
 
 def findFirst_V2(v, arr):
     """
@@ -1329,7 +1374,6 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
-
 def fitLineHuber(X, Y):
     """
     returns: results.params, results \n
@@ -1357,7 +1401,6 @@ def fitLineHuber(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
-
 
 def fitLineWeighted(X, Y, weights):
     """

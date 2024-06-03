@@ -522,6 +522,59 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fi
                                     save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings) # task = 'updateExisting'
 
+# %%%% NanoIndenter
+
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : True,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+# NanoIndentTask = '23-11-13 & 23-11-15 & 23-12-07 & 23-12-10'
+# NanoIndentTask = '24-02-26 & 24-02-28'
+# NanoIndentTask = '24-02-26'
+NanoIndentTask = '24-04-11'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = NanoIndentTask, fileName = 'MecaData_NanoIndent_2023-2024', 
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'fromScratch' // 'updateExisting'
 
 
 # %%%% Drugs
@@ -563,6 +616,125 @@ plotSettings = {# ON/OFF switchs plot by plot
 drugTask = '22-03-28 & 22-03-30 & 22-11-23'
 res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_aSFL-Drugs', 
                                     save = True, PLOT = False, source = 'Python', fitSettings = fitSettings) # task = 'updateExisting'
+
+# %%%% Drugs 2
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : True,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+
+# drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
+# drugTask += ' & 22-11-23 & 23-11-26 & 23-12-03' # LatA
+# drugTask += ' & 23-03-08 & 23-03-09' # Y27
+# drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
+# drugTask += ' & 23-04-26 & 23-04-28' # Ck666
+# drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
+# drugTask += ' & 23-09-19' # JLY
+drugTask = '24-03-13' # JLY
+
+# drugTask = '23-09-19'
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs_V3', 
+                                    save = True, PLOT = False, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+# %%%% Physics
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : True,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':True,
+                        'K(S)_nPoints':True,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+phyTask = ''
+# phyTask += '22-06-10 & 22-06-16 & 22-07-06 & 22-07-06 & 22-07-12 & 22-07-12' # Pattern sizes DB 1/2
+# phyTask += ' & 22-07-22 & 22-07-29 & 22-08-24 & 22-08-24 & 22-08-24 & 22-08-24' # Pattern sizes DB 2/2
+# phyTask += '23-03-09' # Pattern sizes JV
+# phyTask += ' & 23-07-06_M1 & 23-07-06_M2 & 23-07-06_M3 & 23-07-06_M4 & 23-07-06_M5' # Repeats
+# phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
+phyTask += '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/3
+phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/3
+phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/3
+
+res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = phyTask, fileName = 'MecaData_Physics', 
+                                    save = True, PLOT = False, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 
 # %%%% Non-Lin
 
@@ -861,11 +1033,22 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_Log':False, # NEW - Numi
                         }
 
-AtccTask = '23-09-19'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = AtccTask, fileName = 'MecaData_Atcc_JLY', 
-                                    save = True, PLOT = True, source = 'Python', 
+
+# drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
+# drugTask += ' & 22-11-23 & 23-11-26 & 23-12-03' # LatA
+# drugTask += ' & 23-03-08 & 23-03-09' # Y27
+# drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
+# drugTask += ' & 23-04-26 & 23-04-28' # Ck666
+# drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
+# drugTask += ' & 23-09-19' # JLY
+drugTask = '24-03-13' # JLY
+
+# drugTask = '23-09-19'
+res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs_24-03-13', 
+                                    save = False, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
-                                    plotSettings = plotSettings) # task = 'updateExisting'
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
 
 
 # %%%%% Test strainGaussian plot

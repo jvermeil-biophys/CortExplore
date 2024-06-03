@@ -108,7 +108,7 @@ def getListOfSourceFolders(Dir,
             res = [Dir] # List with 1 element - the name of this dir
         else:
             return(res)
-        
+    
     else:
         listDirs = os.listdir(Dir)
         print(listDirs)

@@ -157,6 +157,14 @@ def consoleTextTester_01():
     print(BLUE + 'nothing rhyme with blue' + NORMAL)
     print(PURPLE + 'nothing rhyme with purple' + NORMAL)
     print('\n')
+    
+    print(NORMAL + 'normal' + NORMAL)
+    print(GREY + 'nothing rhyme with grey' + NORMAL)
+    print(DARKGREEN + 'nothing rhyme with dark green' + NORMAL)
+    print(BRIGHTRED + 'nothing rhyme with bright red' + NORMAL)
+    print(BRIGHTORANGE + 'nothing rhyme with bright orange' + NORMAL)
+    print(DARKPURPLE + 'nothing rhyme with dark purple' + NORMAL)
+    print('\n')
 
 
 def consoleTextTester_02():
@@ -202,6 +210,18 @@ def set_default_options_jv():
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     
     
+def set_mediumText_options_jv():
+    SMALLER_SIZE = 8
+    SMALL_SIZE = 10
+    MEDIUM_SIZE = 12
+    BIGGER_SIZE = 16
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 def set_smallText_options_jv():
     SMALLER_SIZE = 5
