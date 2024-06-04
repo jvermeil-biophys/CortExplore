@@ -47,7 +47,7 @@ from scipy import signal
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
 from scipy.signal import find_peaks, savgol_filter
-from scipy.optimize import linear_sum_assignment
+from scipy.optimize import linear_sum_assignment, least_squares
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
@@ -1191,6 +1191,49 @@ def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
     new_I = fd(newYY, newXX, grid=False)
     return(new_I)
 
+
+def fitCircle(contour, loss = 'huber'):
+    """
+    Find the best fitting circle to a an array of points in 2D.
+    The contour doesn't have to be the whole circle, it can be simply an arc.
+
+    Parameters
+    ----------
+    contour : Array-like
+        Shape (N, 2). Format RC (Row-Column), which means YX.
+        contour = [[Y1, X1], [Y2, X2], [Y3, X3], ...] = [[R1, C1], [R2, C2], [R3, C3], ...]
+    loss : string, optional
+        Type of loss function applied by least_squares. The default is 'huber', for a robust fit. For a normal least square fit, use 'linear'.
+        See documentation on https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
+
+    Returns
+    -------
+    center : tuple (Y, X), center of the circle
+    R : float, radius of the circle
+
+    """
+    # Contour = [[Y, X], [Y, X], [Y, X], ...] 
+    x, y = contour[:,1], contour[:,0]
+    x_m = np.mean(x)
+    y_m = np.mean(y)
+    
+    def calc_R(xc, yc):
+        """ calculate the distance of each 2D points from the center (xc, yc) """
+        return(((x-xc)**2 + (y-yc)**2)**0.5)
+
+
+    def f_2(c):
+        """ calculate the algebraic distance between the 2D points and the mean circle centered at c=(xc, yc) """
+        Ri = calc_R(*c)
+        return(Ri - np.mean(Ri))
+
+    center_estimate = x_m, y_m
+    result = least_squares(f_2, center_estimate, loss=loss) # Functions from the scipy.optimize library
+    center = result.x
+    R = np.mean(calc_R(*center))
+    
+    return(center, R)
+
 # %%% Physics
 
 
@@ -1325,8 +1368,8 @@ def findFirst(x, A):
 
 def findLast(x, A):
     """
-    Find first occurence of x in array A, in a VERY FAST way.
-    If you like weird one liners, you will like this function.
+    Find last occurence of x in array A, in a VERY FAST way.
+    Adapted from findFirst just above.
     """
     idx = (A[::-1]==x).view(bool).argmax()
     return(len(A)-idx-1)
@@ -1340,6 +1383,15 @@ def findFirst_V2(v, arr):
         if val == v:
             return(idx[0])
     return(-1)
+
+
+def argmedian(x):
+    """
+    Find the argument of the median value in array x.
+    """
+    if len(x)%2 == 0:
+        x = x[:-1]
+    return(np.argpartition(x, len(x) // 2)[len(x) // 2])
 
 
 def fitLine(X, Y):
@@ -1370,6 +1422,7 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
+
 def fitLineHuber(X, Y):
     """
     returns: results.params, results \n
@@ -1397,6 +1450,7 @@ def fitLineHuber(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
+
 
 def fitLineWeighted(X, Y, weights):
     """
@@ -1446,6 +1500,7 @@ def toList(x):
         else: # x is not a Collection : probably a number or a boolean
             return([x]) # return : [x]
         
+        
 def toListOfStrings(x):
     """
     if x is a list, return x with all elements converted to string
@@ -1466,16 +1521,6 @@ def toListOfStrings(x):
         else: # x is not a Collection : probably a number or a boolean
             return([str(x)]) # return : [x]
         
-# def toList_V0(x):
-#     """
-#     if x is a list, return x
-#     if x is not a list, return [x]
-#     """
-#     try:
-#         x = list(x)
-#         return(x)
-#     except:
-#         return([x])
 
     
 def drop_duplicates_in_array(A):
@@ -1816,10 +1861,6 @@ def makeMultiChoiceBox(choicesDict):
 # choicesDict = {'Is the cell ok?' : ['Yes', 'No', 'peanut butter jelly!'],
 #                 'Is the nucleus visible?' : ['Yes', 'No', 'banana!'],}
 # answersDict = makeMultiChoiceBox(choicesDict)
-
-
-
-
 
 
 
