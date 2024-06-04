@@ -170,9 +170,15 @@ class PincherTimeLapse:
         indexAction = logDf[logDf['Status'].apply(lambda x : x.startswith('Action'))].index
         
         # idxAnalysis
-        logDf.loc[indexAction, 'idxAnalysis'] = (-1)*logDf.loc[indexAction, 'iL']
-        indexMainPhase = logDf[logDf['Status'].apply(lambda x : x.startswith('Action_main'))].index
-        logDf.loc[indexMainPhase, 'idxAnalysis'] = (-1)*logDf.loc[indexMainPhase, 'idxAnalysis']
+        logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
+        for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
+            index_iL = logDf[logDf['iL'] == iL].index
+            
+            i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
+            i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            #
+            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
         
         # idxAnalysis for loops with repeated compressions
         previous_idx = 0
