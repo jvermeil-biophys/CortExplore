@@ -1,0 +1,24 @@
+cellID,phenotype,activation type,filter,fluo
+23-03-28_M2_P1_C1,none,,5,max
+23-03-28_M2_P1_C2,polarised,,5,max
+23-03-28_M2_P1_C3,none,,5,max
+23-03-28_M2_P1_C4,blebbing,,manual,manual
+23-03-28_M2_P1_C5,none,,none,1
+23-03-28_M2_P1_C6,none,,none,2
+23-03-28_M2_P1_C7,none,,none,3
+23-03-28_M2_P1_C8,polarised,,none,3
+23-03-28_M2_P1_C9,contraction,,none,3
+23-03-28_M2_P1_C10,polarised,,none,1
+23-03-28_M2_P1_C11,contraction,,none,1
+23-03-28_M2_P1_C12,none,local,none,2
+23-03-28_M2_P1_C14,blebbing,,none,2
+23-03-28_M2_P1_C15,blebbing,half,5,max
+23-03-28_M2_P1_C16,blebbing,half,5,max
+23-03-28_M2_P2_C2,blebbing,half,5,max
+23-03-28_M2_P2_C4,blebbing,half,5,max
+23-03-28_M2_P2_C5,contraction,half,5,max
+23-03-28_M2_P2_C7,none,half,5,max
+23-03-28_M2_P2_C8,none,half,5,max
+,,,,
+,,,,
+,Aug-20,none,,

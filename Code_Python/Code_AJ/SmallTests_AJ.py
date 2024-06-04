@@ -19,10 +19,16 @@ import pandas as pd
 import seaborn as sns
 import os
 import re
+import datetime as dt
 from datetime import date
 import sys
-import scipy.stats as st
+from skimage import io
+import CortexPaths as cp
 
+import scipy.stats as st
+import tifffile as tiff
+import cv2
+import GraphicStyles as gs
 
 # Local imports
 COMPUTERNAME = os.environ['COMPUTERNAME']
@@ -43,7 +49,7 @@ elif COMPUTERNAME == '':
 
 # Add the folder to path
 sys.path.append(mainDir + "//Code_Python")
-import utilityFunctions_JV as jvu
+# import utilityFunctions_JV as jvu
 
 #%% Global constants
 
@@ -101,10 +107,10 @@ df_average = group_by_subject.agg({'grades':['mean', 'std', 'count', 'sum'],
 #%%% Plotting all three graphs (3D, 2D and Dz)
 
 expt = '20220412_100xoil_3t3optorhoa_4.5beads_15mT_Mechanics'
-folder = '22-04-12_M1_P1_C5_disc20um'
-date = '22.04.12'
+folder = '23-09-21_M1_P1_C2_disc20um'
+date = '22.09.21'
 
-file = 'C:/Users/anumi/OneDrive/Desktop/ActinCortexAnalysis/Data_Analysis/TimeSeriesData/'+folder+'_PY.csv'
+file = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/'+folder+'_PY.csv'
 data = pd.read_csv(file, sep=';')
  #in um
 
@@ -154,8 +160,14 @@ plt.plot(t, dz)
 
 plt.show()
 
-plt.savefig('D:/Anumita/PincherPlots/'+folder+'_DistancevTime.jpg')
+#%%
 
+cells = os.listdir()
+cells = np.unique(cellDf1['cellID'])
+
+for i in cells:
+    axes = taka.plotCellTimeSeriesData(i, save = True, savePath = pathTSPlots)
+    
 #%% Plotting just 3D graphs
 
 # %%% Just 3D graphs
@@ -356,3 +368,526 @@ radius = np.asarray(data['Radius_[pixels]'])
 
 # for i in range(np.shape(data)[1]):
 #     plt
+
+
+
+#%% Changing the names of some mis-named files
+
+path = 'D:/Anumita/MagneticPincherData/Raw/23.04.25/Y27'
+newPath = 'D:/Anumita/MagneticPincherData/Raw/23.04.25/newName'
+
+files = os.listdir(path)
+
+for file in files:
+    oldName = file.split('_')
+    manip = oldName[1]
+    if manip == 'M3':
+        oldName[1] = 'M4'
+    if manip == 'M4':
+        oldName[1] = 'M5'
+    oldName = '_'.join(oldName)
+    os.rename(os.path.join(path, file), os.path.join(newPath, oldName))  
+        
+#%% Changing the names of some mis-named files #2
+
+path = 'D:/Anumita/MagneticPincherData/Raw/23.10.22/'
+newPath = 'D:/Anumita/MagneticPincherData/Raw/23.10.22/newName'
+
+files = os.listdir(path)
+
+for file in files:
+    if '.tif' in file:
+        oldName = file.split('.')
+        oldName.insert(1, '_disc20um_thickness')
+        oldName[2] = '.tif'
+        newName = ''.join(oldName)
+        os.rename(os.path.join(path, file), os.path.join(newPath, newName))  
+    
+    # if 'Results' in file:
+        
+    #     oldName = file.split('_Results')
+    #     oldName.insert(1, '_disc20um_thickness')
+    #     oldName[2] = '_Results.txt'
+    #     newName = ''.join(oldName)
+    #     os.rename(os.path.join(path, file), os.path.join(newPath, newName)) 
+        
+        
+        
+#%% Code to deleted some xtra triplets that arise when you use activations with different 
+#exposure times (prob with labview)
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/23.07.12'
+path = 'D:/Anumita/MagneticPincherData/Raw/23.07.12/Archive'
+allFiles = os.listdir(path)
+selectedCell = 'M2_P1_C1'
+allTifs = [i for i in allFiles if selectedCell in i and '.tif' in i]
+allFields = [i for i in allFiles if selectedCell in i and '_Field' in i]
+nLoop = 1
+  
+for i in range(len(allTifs)):
+    deletedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    
+    print(tif)
+    
+    # totalFrames = (np.linspace(0, len(stack), len(stack))
+    
+    if not os.path.exists(os.path.join(pathSave, tif)):
+        field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+        stack = tiff.imread(os.path.join(path, tif))
+        totalLoops = (len(stack) - 437)//439
+        for j in range(totalLoops):
+            if j >= nLoop :
+                deletedFrames.extend([(j*439)+439, (j*439)+440, (j*439)+441])
+            elif j < nLoop: 
+                deletedFrames.extend([(j*439)+438, (j*439)+439, (j*439)+440])
+    
+        deletedFrames = np.asarray(deletedFrames) - 1
+        # totalFrames.remove(deletedFrames)
+        field_new = np.delete(field, deletedFrames, 0)
+        stack_new = np.delete(stack, deletedFrames, 0)
+        
+        np.savetxt(os.path.join(pathSave, file), field_new, delimiter = '\t')
+        io.imsave(os.path.join(pathSave, tif), stack_new)
+        
+    else:
+        print(gs.GREEN + tif + ' already exists' + gs.NORMAL)
+    
+#%% Code to deleted some xtra triplets that arise when you use activations with different 
+#exposure times (prob with labview)
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/23.07.12'
+path = 'D:/Anumita/MagneticPincherData/Raw/23.07.12/Archive'
+allFiles = os.listdir(path)
+selectedCell = 'M2_P1_C1'
+allTifs = [i for i in allFiles if selectedCell in i and '.tif' in i]
+allFields = [i for i in allFiles if selectedCell in i and '_Field' in i]
+
+for i in range(len(allTifs)):
+    deletedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    
+    print(tif)
+    
+    # totalFrames = (np.linspace(0, len(stack), len(stack))
+    
+    if not os.path.exists(os.path.join(pathSave, tif)):
+        field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+        stack = tiff.imread(os.path.join(path, tif))
+        totalLoops = (len(stack) - 437)//439
+        for j in range(totalLoops+1):
+            deletedFrames.extend([(j*439)+19, (j*439)+20, (j*439)+21])
+          
+    
+        deletedFrames = np.asarray(deletedFrames) - 1
+        # totalFrames.remove(deletedFrames)
+        field_new = np.delete(field, deletedFrames, 0)
+        stack_new = np.delete(stack, deletedFrames, 0)
+        
+        np.savetxt(os.path.join(pathSave, file), field_new, delimiter = '\t')
+        io.imsave(os.path.join(pathSave, tif), stack_new)
+        
+    else:
+        print(gs.GREEN + tif + ' already exists' + gs.NORMAL)
+    
+     
+    
+#%% Code to deleted some xtra triplets that arise when you use activations with different 
+#exposure times (prob with labview)
+# This section is to use for cells with no activation
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/23.07.12'
+path = 'D:/Anumita/MagneticPincherData/Raw/23.07.12/Archive'
+allFiles = os.listdir(path)
+selectedCell = 'M1_P3_C4'
+allTifs = [i for i in allFiles if selectedCell in i and '.tif' in i]
+allFields = [i for i in allFiles if selectedCell in i and '_Field' in i]
+  
+for i in range(len(allTifs)):
+    deletedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    
+    print(tif)
+    if not os.path.exists(os.path.join(pathSave, tif)):
+        field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+        
+        stack = tiff.imread(os.path.join(path, tif))
+        # totalFrames = (np.linspace(0, len(stack), len(stack))
+        totalLoops = (len(stack) - 437)//439
+        
+        for j in range(totalLoops + 1):
+            deletedFrames.extend([(j*439)+1, (j*439)+2, (j*439)+3])
+        
+        deletedFrames = np.asarray(deletedFrames) - 1
+        
+        
+        # totalFrames.remove(deletedFrames)
+        field_new = np.delete(field, deletedFrames, 0)
+        stack_new = np.delete(stack, deletedFrames, 0)
+        
+        np.savetxt(os.path.join(pathSave, file), field_new, delimiter = '\t')
+        io.imsave(os.path.join(pathSave, tif), stack_new)
+    else:
+        print(gs.GREEN + tif + ' already exists' + gs.NORMAL)
+        
+#%% Code to create videos with a decently constant frame rate with a timestamp
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos'
+path = 'D:/Anumita/MagneticPincherData/Raw/ToConvert/'
+allFiles = os.listdir(path)
+allTifs = [i for i in allFiles if '22-10-06' in i and '.tif' in i]
+allFields = [i for i in allFiles if '22-10-06' in i and '_Field' in i]
+allLogs = [i for i in allFiles if '22-10-06' in i and '_LogPY' in i]
+
+activationFrames = np.asarray([])
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+    status = pd.read_csv(os.path.join(path, log), delimiter = '\t')
+    
+    ctfield = status['Slice'][status['status_frame'] == 3.0].values
+    selectedFrames.extend(ctfield-1)
+    
+    comp = status['Slice'][status['status_frame'] == 0.1].values
+    compId = np.asarray(np.linspace(0,199,5), dtype = 'int')
+    for j in range(len(comp)//200):
+        selectedComp = comp[j*200 : (j+1)*200]
+        idx = np.asarray(selectedComp[compId], dtype = 'int')
+        selectedFrames.extend(idx)
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[0, 1])/1000
+    
+    activationSlices = np.asarray([np.where(selectedFrames == k)[0] for k in activationFrames])
+    activationSlices = activationSlices.flatten()
+    
+    for z in range(len(new_stack)):
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,0),2,cv2.LINE_AA)
+        
+        if len(activationFrames) != 0 and z in activationSlices:
+            cv2.circle(new_stack[z, :, :], (128, 157), 175, (0,0,255), 3)
+    
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+        
+        
+        
+#%% Small code to plot forces
+
+fig, ax = plt.subplots(1)
+
+data = pd.read_csv('C:/Users/anumi/Downloads/22-02-09_M1_P1_C9_L40_20umdisc_PY.csv', sep = ';')
+
+toPlot = data[(data['idxAnalysis'] == -2) | (data['idxAnalysis'] == 2)]
+
+plt.plot(toPlot['T'], toPlot['F'], color = '#cc0000', lw = 4)
+ax.yaxis.set_tick_params(labelsize=25)
+ax.xaxis.set_tick_params(labelsize=25)
+plt.tight_layout()
+
+plt.plot()
+
+#%% Write a txt file for ramps and compressions
+
+def sigmoid(x):
+  return 1 / (1 + np.exp(-6*x))
+
+freq = 10000 #in Hz
+tConst = 1 # in secs
+tComp = 1.5 #in sec
+factor = 1000
+constfield = 15 # mT 
+lowfield = 1
+highfield = 50
+
+xRelease = np.linspace(-1, 1, freq*1)
+yRelease = (1 - sigmoid(xRelease))*(constfield-lowfield) + lowfield
+constRelease = np.asarray(freq*1*[lowfield])
+
+x = np.linspace(lowfield, highfield**(1/4), int(freq*tComp))
+constArray = np.asarray(freq*tConst*[constfield])
+compArray = x**4
+relaxArray = np.flip(compArray)
+wholeArray = []
+
+wholeArray.extend(constArray*factor)
+wholeArray.extend(yRelease*factor)
+wholeArray.extend(constRelease*factor)
+wholeArray.extend(compArray*factor)
+wholeArray.extend(relaxArray*factor)
+wholeArray.extend(constRelease*factor)
+
+wholeArray.extend(constArray*factor)
+
+np.savetxt(rawDir + "/CompressionFieldFiles/10mT_1-50_t4_1.5s.txt", wholeArray, fmt='%i')
+
+plt.plot(wholeArray)
+#%% Calculating the forces from the magnetic field and thickness
+
+def computeMag_M450(B):
+    M = 1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+    return(M)
+
+V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
+m = computeMag_M450(30 * 10**(-3))*V
+
+d = 400 * 10**-9
+
+F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
+
+f = F * 10**12 # in pN
+
+print(f)
+
+#%%%% Plotting a graph of field vs. distance between beads
+
+V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
+dist = 400 * 10**-9
+magFields = np.linspace(2, 1000, 60)
+m = computeMag_M450(magFields * 10**(-3))*V
+
+F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*dist**4)
+f = F * 10**12 # in pN
+
+plt.loglog(magFields, F)
+# plt.xlim(0, 10**2)
+# plt.ylim(0, 10**(-8))
+
+# plt.plot(magFields, f)
+# plt.grid()
+# plt.xlabel('Mag. Field (B) [mT]')
+# plt.ylabel('Force between a 400nm spacing (pN)')
+
+
+
+#%% Create folders for each field of view during Cannonball experiment
+
+filesPath = 'H:/Pelin_Sar_PMMH_Stage/23.10.31'
+
+allFiles = os.listdir(filesPath)
+allFiles = np.asarray([i for i in allFiles if i.endswith('.czi')])
+
+allRegs = np.unique(np.asarray([i.split('_disc20um')[0] for i in allFiles]))
+
+for i in allRegs:
+    if not os.path.exists(os.path.join(filesPath, i)):
+        os.mkdir(os.path.join(filesPath, i))
+    selectedFiles = [k for k in allFiles if i in k]
+    for j in selectedFiles:
+        os.rename(os.path.join(filesPath, j), os.path.join(filesPath + '/' + i, j))
+        
+#%% Manipulate status file
+
+path = "D:/Anumita/MagneticPincherData/Raw/24.01.25/Status"
+files = os.listdir(path)
+
+for file in files:
+    if '_Status' in file:
+        txt = pd.read_csv(os.path.join(path,file), sep = '_')
+        txt['Passive'] = ['Action']*len(txt['Passive'])
+        txt = txt.rename(columns={'Passive':'Action'})
+        
+        txt['5.00'] = ['constant-5.00-5.00']*len(txt['5.00'])
+        txt = txt.rename(columns={'5.00':'constant-5.00-5.00'})
+        
+        
+        
+        np.savetxt(os.path.join(path,file), txt, fmt='%s', delimiter = '_')
+        
+#%% Code to delete fluo images that are fully black because of possible issue with labiew
+#New labview code
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.21'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.21/Archive'
+allFiles = os.listdir(path)
+selectedCell = 'M2_P1_C3'
+allTifs = [i for i in allFiles if selectedCell in i and '.tif' in i]
+allFields = [i for i in allFiles if selectedCell in i and '_Field' in i]
+allStatus = [i for i in allFiles if selectedCell in i and '_Status' in i]
+nLoop = 1
+  
+for i in range(len(allTifs)):
+    deletedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    filestatus = allStatus[i]
+    
+    print(tif)
+    
+    # totalFrames = (np.linspace(0, len(stack), len(stack))
+    
+    if not os.path.exists(os.path.join(pathSave, tif)):
+        field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+        status = pd.read_csv(os.path.join(path, filestatus), header = None).values
+        # status = np.loadtxt(os.path.join(path, filestatus), dtype = None)
+        stack = tiff.imread(os.path.join(path, tif))
+        
+        totalLoops = (len(stack))//284
+        for j in range(totalLoops+1):
+            deletedFrames.extend([(j*284)])
+    
+        deletedFrames = np.asarray(deletedFrames) - 1
+        # totalFrames.remove(deletedFrames)
+        field_new = np.delete(field, deletedFrames, 0)
+        status_new = np.delete(status, deletedFrames, 0)
+        stack_new = np.delete(stack, deletedFrames, 0)
+        
+        np.savetxt(os.path.join(pathSave, file), field_new, delimiter = '\t')
+        np.savetxt(os.path.join(pathSave, filestatus), status_new, fmt ="%s")
+        io.imsave(os.path.join(pathSave, tif), stack_new)
+        
+    else:
+        print(gs.GREEN + tif + ' already exists' + gs.NORMAL)
+        
+#%% Code to change values of magnetic field for experiments with permanent magnetic coils
+# For Field files
+
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+allFiles = os.listdir(path)
+offset = 24 #mT
+
+allField = [i for i in allFiles if '_Field' in i]
+allStatus = [i for i in allFiles if '_Status' in i]
+
+# allField =[ allField[0]]
+# allStatus = [allStatus[0]]
+for field, status in zip(allField, allStatus):
+    if 'L70' in field:
+        print(field)
+        # statusFile = pd.read_csv(os.path.join(path, status), sep = '_')
+        
+        # for i in range(len(statusFile['6.00'])):
+        #     if statusFile['6.00'].iloc[i] == 'sigmoid-6.00--22.50':
+        #         statusFile['6.00'].iloc[i] = 'sigmoid-30.00-1.50'
+        #     elif statusFile['6.00'].iloc[i] == '6.00':
+        #         statusFile['6.00'].iloc[i] = '30.00'
+        #     if statusFile['6.00'].iloc[i] == 'constant--22.50--22.50':
+        #         statusFile['6.00'].iloc[i] = 'constant-1.50-1.50'
+        #     if statusFile['6.00'].iloc[i] == 't^4--22.50-46.50':
+        #         statusFile['6.00'].iloc[i] = 't^4-1.50-70.50'
+        #     if statusFile['6.00'].iloc[i] == 't^4-46.50-6.00':
+        #         statusFile['6.00'].iloc[i] = 't^4-70.50-30.00'
+                
+        # toAdd = np.asarray([1, 'Passive', '30.00'], dtype = object)
+        # newStatusFile = np.insert(statusFile.values, [0], toAdd, axis = 0)
+        # np.savetxt(os.path.join(pathSave, status), newStatusFile, delimiter = '_', fmt ="%s")
+        
+        fieldFile = pd.read_csv(os.path.join(path, field), sep = '\t', header=None)
+
+        fieldFile[0:], fieldFile[2:]  = fieldFile[0:] + offset, fieldFile[2:] + offset
+        np.savetxt(os.path.join(pathSave, field), fieldFile, delimiter = '\t')
+        
+#%% Code to modify results file from Hugo
+
+
+path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+
+allFiles = os.listdir(path)
+offset = 24 #mT
+allResults = [i for i in allFiles if '_Results' in i]
+
+for results in (allResults):
+    if '__' in results:
+        resultsFile = pd.read_csv(os.path.join(path, results), sep = '\t')
+        
+        newResults = resultsFile[['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice']]
+        
+        cols = np.asarray(['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice'], dtype = object)
+        
+        newName = results.split('_Results')[0] + 'L50_Results'
+        
+        newResults.to_csv(os.path.join(pathSave, newName) + '.txt', sep='\t')
+    
+#%% changing filenames for Hugo's experiment
+
+
+path = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/24-02-27'
+pathSave = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/'
+
+allFiles = os.listdir(path)
+
+for i in allFiles:
+    if 'P2' in i:
+        newName = i.replace('M1', 'M2')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P3' in i:
+        newName = i.replace('M1', 'M3')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P4' in i:
+        newName = i.replace('M1', 'M4')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+    elif 'P5' in i:
+        newName = i.replace('M1', 'M5')
+        os.rename(os.path.join(path, i), os.path.join(pathSave, newName))
+
+#%% Code to create videos with a decently constant frame rate with a timestamp with Status File
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.04.24'
+allFiles = os.listdir(path)
+key = '24-04-24'
+allTifs = [i for i in allFiles if key in i and '.tif' in i]
+allFields = [i for i in allFiles if key in i and '_Field' in i]
+allLogs = [i for i in allFiles if key in i and '_Status' in i]
+
+activationFrames = np.asarray([])
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+    status = pd.read_csv(os.path.join(path, log), delimiter = '_',  header=None)
+    
+    ctfield = (status[1][status[1] == 'Passive'].index)[::3]
+    selectedFrames.extend(ctfield)
+    
+    fluo = (status[1][status[1] == 'Fluo'].index)
+    precomp_relax = (status[2][(status[2] == 'sigmoid-15.00-1.00') | \
+                               (status[2] == 'constant-1.00-1.00') | \
+                               (status[2] == 't^4-50.00-15.00')].index)[::6]
+    comp = (status[2][status[2] == 't^4-1.00-50.00'].index)[::60]
+
+    selectedFrames.extend(precomp_relax)
+    selectedFrames.extend(comp)
+    
+    selectedFrames = [e for e in selectedFrames if e not in fluo]
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[0, 1])/1000
+    
+    activationSlices = (status[1][status[1] == 'Fluo'].index) + 1
+
+    for (z, j) in zip(range(len(new_stack)), selectedFrames):
+        print(j)
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,0),2,cv2.LINE_AA)
+        
+        if j in activationSlices:
+            print('True')
+            cv2.circle(new_stack[z, :, :], (233, 5), 150, (0,0,255), 3)
+    
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+        

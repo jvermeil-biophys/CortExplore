@@ -854,6 +854,7 @@ def copyFile(DirSrc, DirDst, filename):
     """
     PathSrc = os.path.join(DirSrc, filename)
     PathDst = os.path.join(DirDst, filename)
+    print(PathDst)
     shutil.copyfile(PathSrc, PathDst)
     
 def copyFolder(DirSrc, DirDst, folderName):
@@ -871,6 +872,7 @@ def copyFilesWithString(DirSrc, DirDst, stringInName):
     SrcFilesList = os.listdir(DirSrc)
     for SrcFile in SrcFilesList:
         if stringInName in SrcFile:
+            print(SrcFile)
             copyFile(DirSrc, DirDst, SrcFile)
             
 def containsFilesWithExt(Dir, ext):
@@ -918,6 +920,7 @@ def getDepthoCleanSize(D, scale):
     """
     cleanSize = int(np.floor(1*D*scale))
     cleanSize += 1 + cleanSize%2
+    
     return(cleanSize)
 
 def compute_cost_matrix(XY1,XY2):
@@ -988,6 +991,7 @@ def squareDistance(M, V, normalize = False): # MUCH FASTER ! **Michael Scott Voi
     V = np.array([V])
     MV = np.repeat(V, n, axis = 0) # Key trick for speed !
     if normalize:
+        
         M = (M.T/np.mean(M, axis = 1).T).T
     R = np.sum((M-MV)**2, axis = 1)
 #     print('DistanceCompTime')
@@ -1691,6 +1695,9 @@ def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'aut
                 ax.set_ylim(Y_BOUND)
         else:
             pass
+    
+    # except:
+    #      pass 
     
     return(axes)
 

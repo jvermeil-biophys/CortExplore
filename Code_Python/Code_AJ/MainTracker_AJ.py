@@ -26,7 +26,6 @@ from skimage import io, filters, exposure, measure, transform, util
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 
-
 # Local Imports
 
 import sys
@@ -38,6 +37,11 @@ import GlobalConstants as gc
 import UtilityFunctions as ufun
 
 from BeadTracker import mainTracker
+from BeadTracker_V2 import mainTracker_V2
+from BeadTracker_V3 import mainTracker_V3
+
+
+
 from BeadTracker import XYZtracking
 
 
@@ -1044,11 +1048,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M5 :
 
 dates = '22.12.07'
-manips, wells, cells = 5, 3, 17
+manips, wells, cells = 7, 3, 1
 depthoNames = '22.12.07_P2_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True, trackAll = False,
                      sourceField = 'default')
 
 #%% Deptho from experiment 21-04-21. Experiments from Filipe
@@ -1070,11 +1074,11 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '23.01.23'
-manips, wells, cells = 1, 1, 1
+manips, wells, cells = 2, 1, 1
 depthoNames = '23.01.23_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = False, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M2 : 
@@ -1084,7 +1088,7 @@ manips, wells, cells = 2, 1, 'all'
 depthoNames = '23.01.23_P1_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = False, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M3 : 
@@ -1168,7 +1172,7 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M2 : 
 
 dates = '23.03.28'
-manips, wells, cells = 2, 1, 'all'
+manips, wells, cells = 2, 2, 5
 depthoNames = '23.03.28_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
@@ -1178,10 +1182,409 @@ output = mainTracker(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M3 : 
 
 dates = '23.03.28'
-manips, wells, cells = 3, 1, 'all'
+manips, wells, cells = 3, 2, 'all'
 depthoNames = '23.03.28_P'+str(wells)+'_M450_step20_100X'
   
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
                      redoAllSteps = False, MatlabStyle = True, trackAll = False, 
                      sourceField = 'default')
+
+#%% Deptho from experiment 23-03-24. Mechanics experiment with optoLARG
+#Using Strep beads + 10X mPEG-Biot
+
+# %%%% M1 : 
+
+dates = '23.03.24'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.03.24'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.03.24'
+manips, wells, cells = 4, 2, 4
+depthoNames = '23.03.24_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-04-19. Mechanics experiment with optoPRG, global activation
+#Using Strep beads + 10X mPEG-Biot
+
+# %%%% M1 : 
+
+dates = '23.04.19'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '23.04.19_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.04.19'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '23.04.19_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.04.19'
+manips, wells, cells = 4, 2, 4
+depthoNames = '23.04.19_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-04-25. optoPRG + 10uM Y27, global activation
+#Using Strep beads + 10X mPEG-Biot, using HEPES ~7.19pH, 1M conc
+
+# %%%% M1 : 
+
+dates = '23.04.25'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '23.04.25_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.04.25'
+manips, wells, cells = 4, 2, 'all'
+depthoNames = '23.04.25_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.04.25'
+manips, wells, cells = 4, 2, 4
+depthoNames = '23.04.25_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-05-10. optoPRG global activation
+#Using Strep beads + 10X mPEG-Biot new batch with new HEPES set with pH 7.4, 10mM conc
+
+# %%%% M1 : 
+
+dates = '23.05.10'
+manips, wells, cells = 2, 1, 8
+depthoNames = '23.05.10_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M2 : 
+
+dates = '23.05.10'
+manips, wells, cells = 4, 3, 2
+depthoNames = '23.05.10_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.05.10'
+manips, wells, cells = 5, 3, 8
+depthoNames = '23.05.10_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-05-23. optoPRG  polarised rear activation
+#Using Strep beads + 10X mPEG-Biot new batch with new HEPES set with pH 7.4, 10mM conc
+
+# %%%% M1 : 
+for i in range(10,15):
+    try:
+        dates = '23.05.23'
+        manips, wells, cells = 3, 3, i
+        depthoNames = '23.05.23_P'+str(wells)+'_M450_step20_100X'
+          
+        output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                             redoAllSteps = False, trackAll = False, 
+                             sourceField = 'default')
+    except:
+        pass
+
+# %%%% M2 : 
+
+dates = '23.05.23'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '23.05.23_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+# %%%% M3 : 
+
+dates = '23.05.23'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '23.05.23_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, MatlabStyle = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-06-28. optoPRG  with 5mT instead of 15mT
+#Using Strep beads + 10X mPEG-Biot new batch with new HEPES set with pH 7.4, 10mM conc
+
+# %%%% M1 : 
+
+dates = '23.06.28'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '23.06.28_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-07-07. optoPRG  with 5mT instead of 15mT
+#Using Strep beads + 10X mPEG-Biot new batch with new HEPES set with pH 7.4, 10mM conc
+
+# %%%% M1 : 
+
+dates = '23.07.07'
+manips, wells, cells = 1, 2, 5
+depthoNames = '23.07.07_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-07-12. optoPRG  with at beads polarisation
+#Using Strep beads + 10X mPEG-Biot new batch with new HEPES set with pH 7.4, 10mM conc
+
+# %%%% M1 : 
+
+dates = '23.07.12'
+manips, wells, cells = 2, 3, 'all'
+depthoNames = '23.07.12_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-10-19 - Experiment in MDCK epithelium with Hugo Lachuer
+
+# %%%% M1 : 
+
+dates = '23.10.19'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.10.19_P'+str(wells)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-10-25 - Experiment in HeLa with Pelin
+
+# %%%% M1 : 
+
+dates = '23.10.25'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '23.10.25_P'+str(2)+'_M450_step20_100X'
+  
+output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = False, trackAll = False, 
+                     sourceField = 'default')
+
+#%% Deptho from experiment 23-10-29 - Experiment with 3T3 optoRhoA LIMKi3
+
+# %%%% M1 : 
+
+dates = '23.10.29'
+manips, wells, cells = 1, 1, 6
+depthoNames = '23.10.29_P'+str(wells)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+
+#%% Deptho from experiment 23-10-31 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+
+# %%%% M1 : 
+
+dates = '23.10.31'
+manips, wells, cells = 1, 2, 15
+depthoNames = '23.10.31_P'+str(1)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+#%% Deptho from experiment 23-11-22 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+#Experiment titled 23-10-22 because of an error
+
+# %%%% M1 : 
+
+dates = '23.10.22'
+manips, wells, cells = 1, 1, 1
+depthoNames = '23.11.22_P'+str(1)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+#%% Deptho from experiment 23-11-21 - Experiment with LIMKi3, optoRhoa (1um dose of LIMKi3)
+
+# %%%% M1 : 
+
+dates = '23.11.21'
+manips, wells, cells = 2, 3, 'all'
+depthoNames = '23.11.21_P'+str(wells)+'_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False, 
+                                 sourceField = 'default')
+
+
+
+#%% Deptho from experiment 23-11-13 - Experiment with HeLa FUCCI, constant field with Pelin Sar
+
+# %%%% M1 : 
+
+dates = '23.12.13'
+manips, wells, cells = 1, 1, 2
+depthoNames = '23.12.13_M450_step20_100X'
+  
+logDf, log_UIxy = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False, 
+                                 sourceField = 'default')
+
+
+
+#%% Deptho from experiment 24-01-02 - Experiment with 3T3 UTH-Cry2
+
+# %%%% M1 : 
+dates = '24.01.02'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '24.01.02_M450_step20_100X'
+  
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+#%% Deptho from experiment 24-01-25 - Experiment with MCF-10a, with Yohalie Kalukula
+#Both Thickness
+
+# %%%% M1 : 
+
+dates = '24.01.25'
+manips, wells, cells = 'all', 'all', 'all'
+depthoNames = '24.01.25_M450_step20_100X'
+  
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+#%% Deptho from experiment 24-02-27 - Experiment with 3T3 Cry2
+#Both Thickness
+
+# %%%% M1 : 
+
+dates = '24.02.27'
+manips, wells, cells = 1, 5, 'all'
+depthoNames = '24.02.27_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-04-10 - Experiment with 3T3 optoRhoA and high dose LIMKi3
+
+# %%%% M1 : 
+
+dates = '24.04.10'
+manips, wells, cells = 1, 1, 10
+depthoNames = '24.04.10_P'+str(2)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+#%% Deptho from experiment 24-04-03 - Experiment with 3T3 optoRhoA 
+
+# %%%% M1 : 
+
+dates = '24.04.03'
+manips, wells, cells = 3, 'all', 'all'
+depthoNames = '24.04.03_M450_step20_100X'
+
+mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+#%% Deptho from experiment 24-05-29 - Experiment with 3T3 UTH-Cry2
+
+# %%%% M1 : 
+
+dates = '24.05.29'
+manips, wells, cells = 3, 2, 7
+depthoNames = '24.05.29_P2_M450_step20_100X'
+
+mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
