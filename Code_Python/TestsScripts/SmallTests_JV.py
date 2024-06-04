@@ -26,6 +26,120 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+# %% Make getPixelsInside(I, Y, X) function
+
+    
+def getPixelsInside(I, Y, X):
+    nx, ny = I.shape[1], I.shape[0]
+    contour = np.array([Y, X]).T
+    path_edge = mpltPath.Path(contour)
+    xx, yy = np.meshgrid(np.arange(nx), np.arange(ny))
+    pp = np.array([[x, y] for x, y in zip(xx.flatten(), yy.flatten())])
+    inside = path_edge.contains_points(pp).reshape(ny, nx)
+    return(inside)
+
+
+
+
+
+
+# %% Transform test
+
+import skimage as skm
+
+img = skm.data.astronaut()
+img = skm.color.rgb2gray(img[40:50, 40:50])
+
+fig, axes = plt.subplots(1, 2, figsize=(12,6))
+
+ax = axes[0]
+ax.imshow(img, vmin=0.04, vmax=0.08)
+
+tform = skm.transform.EuclideanTransform(translation=(-1, 0))
+img_tformed = skm.transform.warp(img, tform)
+
+
+ax = axes[1]
+ax.imshow(img_tformed, vmin=0.04, vmax=0.08)
+
+plt.show()
+
+# %% TEST METADATA
+
+path = "D://MagneticPincherData//Raw//24.02.27_Chameleon//Clean//Test//3T3-LifeActGFP_PincherFluo_C7_off4um-01.czi"
+dstXmlPath = "D://MagneticPincherData//Raw//24.02.27_Chameleon//Clean//Test//3T3-LifeActGFP_PincherFluo_C7_off4um-01_meta.txt"
+
+# with open(path, errors="ignore") as f:
+#     metadata = str(f.readlines())
+#     keyword = "<Plane"
+#     searchedLines = re.findall(keyword, metadata)
+#     for L in searchedLines:
+#         print(L)
+    
+    
+# from aicsimageio import AICSImage
+
+# # Get an AICSImage object
+# img = AICSImage(path)
+# data = img.data  # returns 6D STCZYX numpy array
+# dims = img.dims  # returns string "STCZYX"
+# shape = img.shape  # returns tuple of dimension sizes in STCZYX order
+
+
+from aicsimageio.readers import CziReader
+from ome_types import to_xml
+import xml.etree.ElementTree as ET
+
+# Get reader
+reader = CziReader(path, include_subblock_metadata=True)
+data = reader.data  # returns all image data from the file
+dims = reader.dims  # reads the dimensions found in metadata
+shape = reader.shape  # returns the tuple of dimension sizes in same order as dims
+ome_meta = reader.ome_metadata
+
+xa = reader.xarray_data
+
+
+# print(reader.channel_names)  # returns a list of string channel names found in the metadata
+# print(reader.physical_pixel_sizes.Y)  # returns the Y dimension pixel size as found in the metadata
+# print(reader.physical_pixel_sizes.X)  # returns the X dimension pixel size as found in the metadata
+
+xml_ome_meta = to_xml(ome_meta)
+
+# tree = ET.ElementTree(meta)
+# ET.indent(tree, space="\t", level=0)
+# tree.write(dstXmlPath, encoding="utf-8")
+
+# from aicsimageio.readers import BioformatsReader
+
+# reader = BioformatsReader(path)
+
+ome_meta.getattr('Experimenter')
+
+# %%
+
+from pylibCZIrw import czi as pyczi
+
+path = "D://MagneticPincherData//Raw//24.02.27_Chameleon//Clean//Test//3T3-LifeActGFP_PincherFluo_C7_off4um-01.czi"
+
+# open the CZI document to read the
+with pyczi.open_czi(path) as czidoc:
+    # define some plane coordinates
+    plane_1 = {'C': 0, 'Z': 2, 'T': 1}
+    plane_2 = {'C': 1, 'Z': 3, 'T': 2}
+
+    # equivalent to reading {'C': 0, 'Z': 0, 'T': 0}
+    frame_0 = czidoc.read()
+
+    # get the shape of the 2d plane - the last dime indicates the pixel type
+    # 3 = BGR and 1 = Gray
+    print("Array Shape: ", frame_0.shape)
+
+    # get specific planes 
+    frame_1 = czidoc.read(plane=plane_1)
+    frame_2 = czidoc.read(plane=plane_2)
+
+
 # %%
 
 from statsmodels.robust.norms import HuberT
