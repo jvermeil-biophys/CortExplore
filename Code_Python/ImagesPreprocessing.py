@@ -47,15 +47,15 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '24.05.29'
-DirDeptho = '24.05.29_Deptho/Deptho_P3'
+date = '24.05.22'
+# DirDeptho = '24.05.29_Deptho/Deptho_P3'
 
 DirSave = os.path.join(cp.DirDataRaw, date) 
 
-# DirExt = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/24.05.29'
+DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
 
-DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
-DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+# DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
+# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
