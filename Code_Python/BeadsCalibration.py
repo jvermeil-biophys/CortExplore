@@ -836,7 +836,7 @@ plt.show()
 
 # %%% (3.2) SCRIPT for deptho chains 1st try
 
-mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationM450-2023_FirstTry//DepthoChains'
+mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationM450-2023_FirstTry//DepthoChains//else'
 depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)

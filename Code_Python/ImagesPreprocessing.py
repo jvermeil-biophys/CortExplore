@@ -56,6 +56,10 @@ DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
 
 # DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+#%% Define parameters # Jojo
+date = '24.04.18'
+DirExt = 'E:\\24-04-18_3T3Atcc-LaGFP_P+I-25um_Y27\\M3_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date  + '_depthos', 'M3') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
@@ -80,8 +84,10 @@ imagePrefix = 'tif'
 # %% Functions
 
 def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'captures'], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
-                           compulsaryWords = []): # 
+                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
+                                               'film', 'films', 'capture', 'captures' # ,  'deptho', 'depthos',
+                                             ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
+                           compulsaryWords = []): # 'depthos'
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
