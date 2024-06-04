@@ -39,6 +39,20 @@ def dateFormat(d):
     d2 = d[0:2]+'.'+d[3:5]+'.'+d[6:8]
     return(d2)
 
+def checkForbiddenWords(s, fwL):
+    res = True
+    for w in fwL:
+        if w.lower() in s.lower():
+            res = False
+    return(res)
+
+def checkCompulsaryWords(s, fwL):
+    res = True
+    for w in fwL:
+        if w.lower() not in s.lower():
+            res = False
+    return(res)
+
 # %% Run the analysis block by block
 
 # %%% Some parameters
@@ -48,11 +62,12 @@ Ref_Height = 20 # µm
 
 # %%% Paths
 
-date, manip, cell, indent = '24.02.26', 'M3', 'C2', '003'
+date, manip, cell, indent = '24-04-11', 'M3', 'C2', '003'
+date2 = dateFormat(date)
 specif1 = '_25um' # indenter size
 specif2 = '-20um' # height above substrate
 
-mainDir = f'D://MagneticPincherData//Raw//{date}_NanoIndent_ChiaroData{specif1}'
+mainDir = f'D://MagneticPincherData//Raw//{date2}_NanoIndent_ChiaroData{specif1}'
 manipDir = os.path.join(mainDir, f'{manip}')
 
 indentID = f'{dateFormat(date)}_{manip}_{cell}_I{int(indent)}'
@@ -60,8 +75,8 @@ indentID = f'{dateFormat(date)}_{manip}_{cell}_I{int(indent)}'
 
 # %%% Refresh Geometry
 
-date2 = dateFormat(date)
-fgeom_path = os.path.join(mainDir, f'{date2}_cellGeometry.csv')
+
+fgeom_path = os.path.join(mainDir, f'{date}_cellGeometry.csv')
 dfG = pd.read_csv(fgeom_path)
 dfG['R1'] = (dfG['W_R1'] + dfG['H_R1'])/4
 
@@ -72,7 +87,7 @@ dfG['manipID'] = dfG_manipID
 dfG['cellID'] = dfG_cellID
 dfG['indentID'] = dfG_indentID
 
-# dfG.to_csv(fgeom_path, index = False)
+dfG.to_csv(fgeom_path, index = False)
 
 
 # %%% Get the indentation hertzian fit
@@ -86,7 +101,7 @@ dI = ihf.initializeFitHertz(findent_path, date, manip, cell, indent) #
 # 2. Analyze them
 dfI = dI['df']
 hertzFitResults = ihf.FitHertz(dI, mode = 'dZmax', dZmax = 2,
-                         plot = 2, save_plot = True, save_path = manipDir)
+                         plot = 1, save_plot = True, save_path = manipDir)
 # nm to µm # µN to pN
 
 # %%% Get the radius table
@@ -334,10 +349,62 @@ def loadPickle(path):
 # data_opened = loadPickle(test_path)
 
 
+def indentations_hertz(indent_path, date, manip, cell, indent,
+                       mode = 'dZmax', dZmax = 2, redo = False, 
+                       save_plots=True, figures_path=''):
+    
+    indent_dir, indent_file = os.path.split(indent_path)
+    
+    #### LOAD JSON / PICKLE
+    manipID = f'{date}_{manip}'
+    cellID = f'{date}_{manip}_{cell}'
+    indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
+    
+    pickle_hertz_path = os.path.join(indent_dir, 'pickles', indentID + '_hertz.pkl')
+
+    loaded_pickle = False
+    try:
+        hertz_resDict = loadPickle(pickle_hertz_path)
+        if hertz_resDict != None:
+            loaded_pickle = True            
+    except:
+        pass
+
+    #### 1. Fit Hertz
+    error = False
+    if redo or not loaded_pickle:
+        dI = ihf.initializeFitHertz(indent_path, date, manip, cell, indent) #
+        dfI = dI['df']
+        try:
+            hertz_resDict = ihf.FitHertz(dI, mode = 'dZmax', dZmax = 2,
+                                     plot = 1, save_plot = save_plots, save_path = figures_path)
+        except:
+            error = True
+    
+    #### SAVE JSON / PICKLE
+    if not error:
+        saveAsPickle(hertz_resDict, pickle_hertz_path)
+    
+        otherSaveDir = os.path.join(cp.DirDataAnalysis, 'Chiaro', manipID, cellID)
+        head, tail = os.path.split(otherSaveDir)
+        if not os.path.exists(head):
+            os.mkdir(head)
+        if not os.path.exists(otherSaveDir):
+            os.mkdir(otherSaveDir) 
+            
+        saveAsPickle(hertz_resDict,  os.path.join(otherSaveDir, indentID + '_hertz.pkl'))
+    
+        return(hertz_resDict)
+
+
+
+
 def indentations_apt(indent_path, date, manip, cell, indent,
-                     R1, Href, save_plots=True, figures_path='', **kwargs):
+                     R1, Href='glass-indent', save_plots=True, figures_path='', **kwargs):
     # tentative name for now
     # apt stands for "all purpose tool"
+    
+    VALID = True
     
     tasks = {'Fit Hertz':True,
              'Compute shape':True,
@@ -370,14 +437,38 @@ def indentations_apt(indent_path, date, manip, cell, indent,
 
     #### 1. Fit Hertz
     if tasks['Fit Hertz'] or not loaded_pickle:
+        # try:
         dI = ihf.initializeFitHertz(indent_path, date, manip, cell, indent) #
         dfI = dI['df']
         hertz_resDict = ihf.FitHertz(dI, mode = 'dZmax', dZmax = 2,
-                                 plot = 2, save_plot = save_plots, save_path = figures_path)
+                                 plot = 1, save_plot = save_plots, save_path = figures_path)
+        # except:
+            # VALID = False
+            # print(gs.ORANGE + "Failed to run Hertz Analysis" + gs.NORMAL)
+            # return
+            
+        #### 1.2 Height of the cell
+        if Href == 'glass-indent':
+            glass_cellID = f'{date}_{manip}_P1_{cell}-glass'
+            glass_indentID = f'{date}_{manip}_{cell}-glass_I{int(indent)}'
+            glass_indent_path = os.path.join(manipDir, f'{cell}-glass//Indentations//{cell}-glass{specif2} Indentation_{indent}.txt')
+            
+            dI_glass = ihf.initializeFitHertz(glass_indent_path, date, manip, cell, indent)
+            Zc = ihf.findHardSurface(dI_glass, plot = True, save_plot = save_plots, save_path = figures_path)
+            
+            Href = Zc
+            
+        hertz_resDict['Href'] = Href
+            
     
     #### 2. Contact Point
     Z0 = hertz_resDict['Z0_d']
+    try:
+        Href = hertz_resDict['Href']
+    except:
+        pass
     
+
     #### 3. Prepare the data
     i_start = hertz_resDict['i_start']
     # i_stop = hertzFitResults['i_stop']
@@ -393,14 +484,20 @@ def indentations_apt(indent_path, date, manip, cell, indent,
     delta_fullComp = Z_fullComp - Z0 #np.min(Z_fullComp)
     max_delta = np.max(delta_fullComp)
     
+    if max_delta < 1:
+        VALID = False
+        print(gs.ORANGE + "Indentation too shallow" + gs.NORMAL)
+        return
+    
     # N_fullComp = len(F_fullComp)
     # F1, delta1 = np.median(F_fullComp[-N_fullComp//40:]), np.median(delta_fullComp[-N_fullComp//40:])
 
     R1 = R1 # Cell basal radius, µm
     H0 = Href - Z0 # Cell height, µm
     Rp = dI['R'] # Probe radius, µm
+    V_comp = dI['V_comp']
     print('\nIndent ' + indentID)
-    print(f'R1 = {R1:.1f} | H0 = {H0:.1f} | Rp = {Rp:.1f}')
+    print(f'R1 = {R1:.1f} | H0 = {H0:.1f} | Rp = {Rp:.1f} | V_comp = {V_comp:.1f}')
 
 
     #### 4. Compute shape
@@ -409,9 +506,10 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         delta_values = np.linspace(0, max_delta, N_points) + 0.01
         shape_resDict, shape_resDf = css.CSS_sphere_general(R1, H0, Rp, delta_values)
         css.plot_contours(shape_resDict, shape_resDf, 
-                          save = save_plots, save_path = figures_path)
+                          save = save_plots, save_path = figures_path, fig_name_prefix = indentID)
         poly_dict = css.plot_curves(shape_resDict, shape_resDf, return_polynomial_fits = True, 
-                                    save = save_plots, save_path = figures_path)
+                                    save = save_plots, save_path = figures_path, fig_name_prefix = indentID)
+        
 
     #### 5. Fit tension
     if tasks['Fit tension'] or not loaded_pickle:
@@ -450,20 +548,20 @@ def indentations_apt(indent_path, date, manip, cell, indent,
                         'tension_results_filtered': results_filtered,}
     
         #### 5.2 Plot tension
-        fig, axes = plt.subplots(3, 2, figsize = (10, 9), sharex='col')
-        ax=axes[0,0]
+        figT, axesT = plt.subplots(3, 2, figsize = (10, 9), sharex='col')
+        ax=axesT[0,0]
         ax.plot(delta_comp_f, alpha_comp_f*100, 'g-', lw=3)
         # ax.set_xlabel('$\\delta$ (µm)')
         ax.set_ylabel('$\\alpha$ (%)')
         ax.grid()
     
-        ax=axes[1,0]
+        ax=axesT[1,0]
         ax.plot(delta_comp_f, F_comp_f, 'r-', lw=1.5)
         # ax.set_xlabel('$\\delta$ (µm)')
         ax.set_ylabel('F (nN)')
         ax.grid()
     
-        ax=axes[2,0]
+        ax=axesT[2,0]
         ax.plot(delta_comp_f, Lc_comp_f, 'c-', lw=3)
         ax.plot(delta_comp_f, np.polyval(P_Lc, delta_comp_f), 'r--', lw=1)
         ax.set_xlabel('$\\delta$ (µm)')
@@ -471,19 +569,19 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         ax.grid()
         
         
-        ax=axes[0,1]
+        ax=axesT[0,1]
         ax.plot(alpha_comp_f, Lc_comp_f, c='royalblue', ls='-', lw=3)
         # ax.set_xlabel('$\\alpha$')
         ax.set_ylabel('$L_c$ (µm)')
         ax.grid()
     
-        ax=axes[1,1]
+        ax=axesT[1,1]
         ax.plot(alpha_comp_f, F_comp_f, c='darkred', ls='-')
         # ax.set_xlabel('$\\alpha$')
         ax.set_ylabel('F (nN)')
         ax.grid()
     
-        ax=axes[2,1]
+        ax=axesT[2,1]
         ax.plot(alpha_comp_f, Tension_comp_f)
         ax.set_xlabel('$\\alpha$')
         ax.set_ylabel('$F / 2\\pi.L_c$ (nN/µm)')
@@ -503,8 +601,8 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         plt.show()
         
         if save_plots:
-            name = indentID + '_tension_fit'
-            ufun.archiveFig(fig, name = name, figDir = figures_path)
+            name = indentID + '_tensionFit'
+            ufun.archiveFig(figT, name = name, figDir = figures_path)
             
     
         #### 6. Have a look at relaxation
@@ -530,7 +628,7 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         tension_dict['T0_relax'] = Tension2
     
         
-        #### 6.2 Plot tension
+        #### 6.2 Plot tension - relaxation
         figR, axesR = plt.subplots(1, 3, figsize = (15, 5))
         
         ax=axesR[2]
@@ -573,7 +671,7 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         
         if save_plots:
             name = indentID + '_tensionRelax'
-            ufun.archiveFig(fig, name = name, figDir = figures_path)
+            ufun.archiveFig(figR, name = name, figDir = figures_path)
         
         
     #### SAVE JSON / PICKLE
@@ -593,56 +691,118 @@ def indentations_apt(indent_path, date, manip, cell, indent,
         os.mkdir(otherSaveDir) 
         
     saveAsPickle(jar, os.path.join(otherSaveDir, indentID + '_results.pkl'))
-    saveAsPickle(hertz_resDict,  os.path.join(otherSaveDir, indentID + '_hertz.pkl'))
-    saveAsPickle(shape_resDict,  os.path.join(otherSaveDir, indentID + '_shape.pkl'))
-    saveAsPickle(poly_dict,  os.path.join(otherSaveDir, indentID + '_poly.pkl'))
-    saveAsPickle(tension_dict,  os.path.join(otherSaveDir, indentID + '_tension.pkl'))
+    saveAsPickle(hertz_resDict,  pickle_hertz_path)
+    saveAsPickle(shape_resDict,  pickle_shape_path)
+    saveAsPickle(poly_dict,  pickle_poly_path)
+    saveAsPickle(tension_dict,  pickle_tension_path)
         
     return(jar)
 
 # %% Run the function on 1 file
 
-date, manip, cell, indent = '24-02-26', 'M3', 'C2', '002'
+# date, manip, cell, indent = '24-04-11', 'M1', 'C3', '001'
+# date2 = dateFormat(date)
+# specif1 = '_25um' # indenter size
+# specif2 = '' # height above substrate
+
+for strI in ['001', '002']:
+
+    date, manip, cell, indent = '24-04-11', 'M1', 'C5', strI
+    date2 = '24.04.11'
+    specif1 = '_25um' # indenter size
+    specif2 = '' # height above substrate
+    
+    mainDir = f'D://MagneticPincherData//Raw//{date2}_NanoIndent_ChiaroData{specif1}'
+    manipDir = os.path.join(mainDir, f'{manip}')
+    cellID = f'{date}_{manip}_P1_{cell}'
+    indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
+    indent_path = os.path.join(manipDir, f'{cell}-cell//Indentations//{cell}-cell{specif2} Indentation_{indent}.txt')
+    # indent_path = os.path.join(manipDir, f'{cell}//Indentations//{cell}{specif2} Indentation_{indent}.txt')
+    figures_path = os.path.join(mainFigDir, date)
+    
+    date2 = dateFormat(date)
+    fgeom_path = os.path.join(mainDir, f'{date}_cellGeometry.csv')
+    dfG = pd.read_csv(fgeom_path)
+    
+    # Href = 20 # µm
+    R1 = dfG.loc[dfG['cellID'] == cellID, 'R1'].values[0] # Cell basal radius, µm
+    
+    
+    tasks = {'Fit Hertz':True,
+             'Compute shape':True,
+             'Fit tension':True}
+    
+    jar = indentations_apt(indent_path, date, manip, cell, indent,
+                         R1, Href='glass-indent', save_plots=True, figures_path=figures_path, **tasks)
+
+# %% Run the HERTZ analysis on many files
+
+plt.ioff()
+
+date, manip = '24-04-11', 'M2'
 date2 = dateFormat(date)
 specif1 = '_25um' # indenter size
-specif2 = '-20um' # height above substrate
+specif2 = '' # height above substrate
+
+Excluded = ['calib', 'test']
 
 mainDir = f'D://MagneticPincherData//Raw//{date2}_NanoIndent_ChiaroData{specif1}'
 manipDir = os.path.join(mainDir, f'{manip}')
-cellID = f'{date}_{manip}_P1_{cell}'
-indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
-indent_path = os.path.join(manipDir, f'{cell}//Indentations//{cell}{specif2} Indentation_{indent}.txt')
-figures_path = os.path.join(mainFigDir, indentID)
+cellDirList = [cd for cd in os.listdir(manipDir) if ((os.path.isdir(manipDir + '//' + cd)) and checkForbiddenWords(cd, Excluded))] #  and len(f) in [2, 7, 9]
+print(cellDirList)
 
-date2 = dateFormat(date)
-fgeom_path = os.path.join(mainDir, f'{date}_cellGeometry.csv')
-dfG = pd.read_csv(fgeom_path)
+liste_df = []
 
-Href = 20 # µm
-R1 = dfG.loc[dfG['cellID'] == cellID, 'R1'].values[0] # Cell basal radius, µm
+for cd in cellDirList:
+    if 'glass' in cd:
+        cell = cd[:8]
+    elif 'combo' in cd:
+        cell = cd[:8]
+    elif 'cell' in cd:
+        cell = cd[:2]
+    else:
+        cell = cd[:2]
+    cellDirPath = os.path.join(manipDir, cd)
+    indentDirPath = os.path.join(cellDirPath, 'Indentations')
+    indentFiles = [f for f in os.listdir(indentDirPath) if (('Indentation' in f ) and ('.txt' in f ))]
+    for f in indentFiles:
+        indent_path = os.path.join(indentDirPath, f)
+        indent_root = '.'.join(f.split('.')[:-1])
+        indent = indent_root[-3:]
+        
+        manipID = f'{date}_{manip}'
+        cellID = f'{date}_{manip}_P1_{cell}'
+        indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
+        # print(indentID)
+        
+        figures_path = manipDir #, indentID)
 
-tasks = {'Fit Hertz':False,
-         'Compute shape':False,
-         'Fit tension':True}
-
-jar = indentations_apt(indent_path, date, manip, cell, indent,
-                     R1, Href, save_plots=True, figures_path=figures_path, **tasks)
+        indentations_hertz(indent_path, date, manip, cell, indent,
+                               mode = 'dZmax', dZmax = 2, redo = True, 
+                               save_plots=True, figures_path=figures_path)
+        
+plt.close('all')
+plt.ion()
 
 # %% Run the function on many files
 
 
-date, manip = '24-02-26', 'M2'
+date, manip = '24-04-11', 'M1'
 date2 = dateFormat(date)
 specif1 = '_25um' # indenter size
-specif2 = '-20um' # height above substrate
+specif2 = '' # height above substrate
 
 tasks = {'Fit Hertz':False,
          'Compute shape':False,
          'Fit tension':True}
 
+Excluded = ['calib', 'test', 'C1', 'C2', 'glass', 'combo']
+Compulsary = ['cell']
+
 mainDir = f'D://MagneticPincherData//Raw//{date2}_NanoIndent_ChiaroData{specif1}'
 manipDir = os.path.join(mainDir, f'{manip}')
-cellDirList = [cd for cd in os.listdir(manipDir) if (os.path.isdir(manipDir + '//' + cd))] #  and len(f) in [2, 7, 9]
+cellDirList = [cd for cd in os.listdir(manipDir) if ((os.path.isdir(manipDir + '//' + cd)) and checkForbiddenWords(cd, Excluded))]
+                                                                                           # and checkCompulsaryWords(cd, Compulsary))] #  and len(f) in [2, 7, 9]
 print(cellDirList)
 
 liste_df = []
@@ -650,7 +810,7 @@ liste_df = []
 for cd in cellDirList:
     cell = cd[:2]
     cellDirPath = os.path.join(manipDir, cd)
-    indentDirPath = os.path.join(cellDirPath, 'indentations')
+    indentDirPath = os.path.join(cellDirPath, 'Indentations')
     indentFiles = [f for f in os.listdir(indentDirPath) if (('Indentation' in f )and ('.txt' in f ))]
     for f in indentFiles:
         indent_path = os.path.join(indentDirPath, f)
@@ -662,80 +822,85 @@ for cd in cellDirList:
         indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
         # print(indentID)
         
-        figures_path = os.path.join(mainFigDir) #, indentID)
+        figures_path = os.path.join(mainFigDir, date)
+        
         fgeom_path = os.path.join(mainDir, f'{date}_cellGeometry.csv')
         dfG = pd.read_csv(fgeom_path)
 
-        Href = 20 # µm
+        # Href = 20 # µm
         R1 = dfG.loc[dfG['cellID'] == cellID, 'R1'].values[0] # Cell basal radius, µm
         
+        if '-cell' in cd:
+            Href = 'glass-indent'
+        else:
+            Href = 20
+        
         jar = indentations_apt(indent_path, date, manip, cell, indent,
-                              R1, Href, save_plots=True, figures_path=figures_path, **tasks)
+                              R1, Href = Href, save_plots=True, figures_path=figures_path, **tasks)
         
-        [dI, hertz_resDict, shape_resDict, poly_dict, tension_dict] = jar
-        
-        # Validity criteria
-        delta_Zstart = hertz_resDict['Z0_d'] - hertz_resDict['Z_start']
-        delta_Zstop = hertz_resDict['Z_stop'] - hertz_resDict['Z0_d']
-        hertz_resDict['valid_Z0'] = (delta_Zstart > 1) & (delta_Zstop > hertz_resDict['dZmax'])
-        
-        # Fit quality
-        R_full = tension_dict['tension_results_full']
-        CI_full = R_full.conf_int(alpha=0.05)
-        CIW_full = CI_full[:,1] - CI_full[:,0]
-        
-        
-        # dict for table
-        syntetic_dict = {# ID
-                         'date':date,
-                         'manipID':manipID,
-                         'cellID':cellID,
-                         'indentID':indentID,
-                         # General
-                         'Rp':shape_resDict['Rp'],
-                         'Href':Href,
-                         # Hertz
-                         't0':dI['time'],
-                         'Xpos':dI['X0'],
-                         'Ypos':dI['Y0'],
-                         'Zpos':dI['Z0'],
-                         'Z0':hertz_resDict['Z0_d'],
-                         'Kh':hertz_resDict['K_d'],
-                         'dZmax':hertz_resDict['dZmax'],
-                         'valid_hertz_Z0':hertz_resDict['valid_Z0'],
-                         # Shape
-                         'H0':shape_resDict['H0'],
-                         'R1':shape_resDict['R1'],
-                         'A0':shape_resDict['A0'],
-                         'V0':shape_resDict['V0'],
-                         'max_r1':np.max(shape_resDict['r1']),
-                         'min_R0':np.min(shape_resDict['R0']),
-                         'max_R0':np.max(shape_resDict['R0']),
-                         'max_phi':np.max(shape_resDict['phi']),
-                         'max_delta':np.max(shape_resDict['delta']),
-                         'max_area':np.max(shape_resDict['area']),
-                         'max_alpha':np.max(shape_resDict['alpha']),
-                         # Tension
-                         'T0':tension_dict['tension_coeffs_filtered'][0],
-                         'T0_ciw':tension_dict['tension_ciw_filtered'][0],
-                         'Ka':tension_dict['tension_coeffs_filtered'][1],
-                         'Ka_ciw':tension_dict['tension_ciw_filtered'][1],
-                         'T0_relax':tension_dict['T0_relax'],
-                         }
-        
-        syntetic_df = pd.DataFrame(syntetic_dict, index=[1])
-        liste_df.append(syntetic_df)
+        if jar != None:
+            [dI, hertz_resDict, shape_resDict, poly_dict, tension_dict] = jar
+            
+            # Validity criteria
+            delta_Zstart = hertz_resDict['Z0_d'] - hertz_resDict['Z_start']
+            delta_Zstop = hertz_resDict['Z_stop'] - hertz_resDict['Z0_d']
+            hertz_resDict['valid_Z0'] = (delta_Zstart > 1) & (delta_Zstop > hertz_resDict['dZmax'])
+            
+            # Fit quality
+            R_full = tension_dict['tension_results_full']
+            CI_full = R_full.conf_int(alpha=0.05)
+            CIW_full = CI_full[:,1] - CI_full[:,0]
+            
+            
+            # dict for table
+            syntetic_dict = {# ID
+                             'date':date,
+                             'manipID':manipID,
+                             'cellID':cellID,
+                             'indentID':indentID,
+                             # General
+                             'Rp':shape_resDict['Rp'],
+                             'Href':hertz_resDict['Href'],
+                             # Hertz
+                             't0':dI['time'],
+                             'Xpos':dI['X0'],
+                             'Ypos':dI['Y0'],
+                             'Zpos':dI['Z0'],
+                             'V_comp':dI['V_comp'],
+                             'T_rest':dI['dT_rest'],
+                             'V_relax':dI['V_relax'],
+                             'Z0':hertz_resDict['Z0_d'],
+                             'Kh':hertz_resDict['K_d'],
+                             'dZmax':hertz_resDict['dZmax'],
+                             'valid_hertz_Z0':hertz_resDict['valid_Z0'],
+                             # Shape
+                             'H0':shape_resDict['H0'],
+                             'R1':shape_resDict['R1'],
+                             'A0':shape_resDict['A0'],
+                             'V0':shape_resDict['V0'],
+                             'max_r1':np.max(shape_resDict['r1']),
+                             'min_R0':np.min(shape_resDict['R0']),
+                             'max_R0':np.max(shape_resDict['R0']),
+                             'max_phi':np.max(shape_resDict['phi']),
+                             'max_delta':np.max(shape_resDict['delta']),
+                             'max_area':np.max(shape_resDict['area']),
+                             'max_alpha':np.max(shape_resDict['alpha']),
+                             # Tension
+                             'T0':tension_dict['tension_coeffs_filtered'][0],
+                             'T0_ciw':tension_dict['tension_ciw_filtered'][0],
+                             'Ka':tension_dict['tension_coeffs_filtered'][1],
+                             'Ka_ciw':tension_dict['tension_ciw_filtered'][1],
+                             'T0_relax':tension_dict['T0_relax'],
+                             }
+            
+            syntetic_df = pd.DataFrame(syntetic_dict, index=[1])
+            liste_df.append(syntetic_df)
         
 global_df = pd.concat(liste_df, ignore_index = True)
 SavePath = os.path.join(mainDir, manipID + '_syn.csv')
 otherSavePath = os.path.join(cp.DirDataAnalysis, 'Chiaro', manipID, manipID + '_syn.csv')
 global_df.to_csv(SavePath, index=False)
 global_df.to_csv(otherSavePath, index=False)
-
-    
-# %%
-
-
 
 
 
