@@ -43,6 +43,7 @@ import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
 import TrackAnalyser_V2 as taka2
+import TrackAnalyser_V3 as taka3
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -159,8 +160,12 @@ DEFAULT_fitSettings = {# H0
                        'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
+                       'doVWCFit' : True,
+                       'VWCFitMethods' : ['Full'],
                        'doChadwickFit' : True,
+                       'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
                        # Local fits
                        'doStressRegionFits' : True,
                        'doStressGaussianFits' : True,
@@ -534,6 +539,7 @@ fitSettings = {# H0
                             '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
+                'doVWCFit' : True, # NEW - Numi
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
                 'centers_StressFits' : plot_stressCenters,
@@ -553,14 +559,15 @@ plot_stressHalfWidth = 100
 plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True, # NEW - Numi
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
                         'S(e)_stressGaussian':True,
                         'K(S)_stressGaussian':True,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
                         'S(e)_strainGaussian':False, # NEW - Jojo
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
@@ -570,8 +577,8 @@ plotSettings = {# ON/OFF switchs plot by plot
 # NanoIndentTask = '23-11-13 & 23-11-15 & 23-12-07 & 23-12-10'
 # NanoIndentTask = '24-02-26 & 24-02-28'
 # NanoIndentTask = '24-02-26'
-NanoIndentTask = '24-04-11'
-res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = NanoIndentTask, fileName = 'MecaData_NanoIndent_2023-2024', 
+NanoIndentTask = '24-04-11_M2_P1_C3'
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = NanoIndentTask, fileName = 'MecaData_testV3',# 'MecaData_NanoIndent_2023-2024', 
                                     save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'fromScratch' // 'updateExisting'
