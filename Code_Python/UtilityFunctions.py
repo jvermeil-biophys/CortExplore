@@ -1398,6 +1398,16 @@ def argmedian(x):
     return(np.argpartition(x, len(x) // 2)[len(x) // 2])
 
 
+def sortMatrixByCol(A, col=0, direction = 1):
+    """
+    Return the matrix A where all columns where sorted by the column i
+    Increasing order if direction = 1
+    Decreasing order if direction = -1
+    """
+    return(A[A[:, col].argsort()[::direction]])
+
+
+
 def fitLine(X, Y):
     """
     returns: results.params, results \n

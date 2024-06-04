@@ -26,6 +26,20 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+
+# %% Sort
+
+A = [5, 1, 2, 4, 3]
+B = [1, 2, 3, 4, 5]
+
+x = np.array([A, B]).T
+
+y = x[x[:, 0].argsort()]
+
+print(x)
+print(y)
+
+
 # %% Make getPixelsInside(I, Y, X) function
 
     
