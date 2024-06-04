@@ -627,7 +627,7 @@ def fitVWC_hf(h, f):
         # params = [K, Y, H0] ; ses = [seK, seY, seH0]
         params, covM = curve_fit(VWC, h, f, p0=initialParameters, bounds = parameterBounds, method = 'trf')
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5, covM[2,2]**0.5])
-        # params[0], params[1] = params[0]*1e6, params[1]*1e6,
+        params[0], params[1] = params[0]*1e6, params[1]*1e6
         ses[0], ses[1] = ses[0]*1e6, ses[1]*1e6  # Convert E & seE to Pa
         
     except:
@@ -2225,17 +2225,18 @@ class CellCompression:
         
         if fitSettings['doVWCFit']:
             for m in fitSettings['VWCFitMethods']:
-                d = {'error_'+ m : True,
-                     'nbPts_'+ m : np.nan, 
-                     'K_'+ m : np.nan, 
-                     'ciwK_'+ m : np.nan, 
-                     'Y_'+ m : np.nan, 
-                     'ciwY_'+ m : np.nan, 
-                     'H0_'+ m : np.nan, 
-                     'R2_'+ m : np.nan,
-                     'Chi2_'+ m : np.nan,
-                     'valid_'+ m: False,
-                     'issue_' + m: '',
+                m2 = 'vwc_' + m
+                d = {'error_'+ m2 : True,
+                     'nbPts_'+ m2 : np.nan, 
+                     'K_'+ m2 : np.nan, 
+                     'ciwK_'+ m2 : np.nan, 
+                     'Y_'+ m2 : np.nan, 
+                     'ciwY_'+ m2 : np.nan, 
+                     'H0_'+ m2 : np.nan, 
+                     'R2_'+ m2 : np.nan,
+                     'Chi2_'+ m2 : np.nan,
+                     'valid_'+ m2 : False,
+                     'issue_' + m2 : '',
                      }
                 dictColumnsMeca = {**dictColumnsMeca, **d}
                 
@@ -2362,17 +2363,18 @@ class CellCompression:
             if fitSettings['doVWCFit'] and IC.isValidForAnalysis:
                 for m in fitSettings['VWCFitMethods']:
                     try:
-                        results['error_'+ m][i] = IC.dictFitFH_VWC[m]['error']
-                        results['nbPts_'+ m][i] = IC.dictFitFH_VWC[m]['nbPts']
-                        results['K_'+ m][i] = IC.dictFitFH_VWC[m]['K']
-                        results['ciwK_'+ m][i] = IC.dictFitFH_VWC[m]['ciwK']
-                        results['Y_'+ m][i] = IC.dictFitFH_VWC[m]['Y']
-                        results['ciwY_'+ m][i] = IC.dictFitFH_VWC[m]['ciwY']
-                        results['H0_'+ m][i] = IC.dictFitFH_VWC[m]['H0']
-                        results['R2_'+ m][i] = IC.dictFitFH_VWC[m]['R2']
-                        results['Chi2_'+ m][i] = IC.dictFitFH_VWC[m]['Chi2']
-                        results['valid_'+ m][i] = IC.dictFitFH_VWC[m]['valid']
-                        results['issue_'+ m][i] = IC.dictFitFH_VWC[m]['issue']
+                        m2 = 'vwc_' + m
+                        results['error_'+ m2][i] = IC.dictFitFH_VWC[m]['error']
+                        results['nbPts_'+ m2][i] = IC.dictFitFH_VWC[m]['nbPts']
+                        results['K_'+ m2][i] = IC.dictFitFH_VWC[m]['K']
+                        results['ciwK_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwK']
+                        results['Y_'+ m2][i] = IC.dictFitFH_VWC[m]['Y']
+                        results['ciwY_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwY']
+                        results['H0_'+ m2][i] = IC.dictFitFH_VWC[m]['H0']
+                        results['R2_'+ m2][i] = IC.dictFitFH_VWC[m]['R2']
+                        results['Chi2_'+ m2][i] = IC.dictFitFH_VWC[m]['Chi2']
+                        results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
+                        results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
                     except:
                         print(IC.dictFitFH_VWC)
                         
@@ -3081,9 +3083,9 @@ class IndentCompression:
         K, Y, H0 = params
         # x = np.linspace(np.min(h), np.max(h), len(h))
         
-        fPredict = VWC(h, K, Y, H0)
-        kPredict = VWC(h, K, 0, H0)
-        ePredict = VWC(h, 0, Y, H0)
+        fPredict = VWC(h, K/1e6, Y/1e6, H0)
+        kPredict = VWC(h, K/1e6, 0, H0)
+        ePredict = VWC(h, 0, Y/1e6, H0)
         y, yPredict = f, fPredict
         #### err_Chi2 for distance (nm)
         err_chi2 = 10
@@ -3416,7 +3418,7 @@ class IndentCompression:
                 fitError = dictFit['error']
                     
                 if not fitError:
-                    K, Y, H0 = dictFit['K']*1e6, dictFit['Y']*1e6, dictFit['H0']
+                    K, Y, H0 = dictFit['K'], dictFit['Y'], dictFit['H0']
                     R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
                     hFit = dictFit['x']
                     fPredict = dictFit['yPredict']
@@ -3514,12 +3516,10 @@ class IndentCompression:
                 #             # label = legendText)
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
-# <<<<<<<
+
                 ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
-# =======
-                # darkslateblue
-# >>>>>>>
+
                 
                 
             ax = ufun.setAllTextFontSize(ax, size = 9)
@@ -3659,12 +3659,10 @@ class IndentCompression:
                 #             # label = legendText)
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
-# <<<<<<<
+
                 ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
-# =======
-                # darkslateblue
-# >>>>>>>
+
                 
                 
             ax = ufun.setAllTextFontSize(ax, size = 9)
@@ -4867,11 +4865,11 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
             IC.computeContactRadius(method = 'Chadwick')
             
-# <<<<<<<
+
             #### 3.9.2 IN DEV : Re-Compute the best H0 
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
-# =======
+
             #### 3.9.2 Re-Compute the best H0
             # try:
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
@@ -4881,7 +4879,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
             # except:
             #     pass
-# >>>>>>>
+
             
             #### 3.10 Local fits of stress-strain curves
             

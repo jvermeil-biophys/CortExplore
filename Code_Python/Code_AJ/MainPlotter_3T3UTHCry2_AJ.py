@@ -1176,11 +1176,11 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '24-05-29'
-fitsSubDir = '24-05-29_VWC_UTHCry2_5mT_24-06-03_NoRefine'
+Task = '24-05-29_M1_P1_C1'
+fitsSubDir = '24-05-29_VWC_UTHCry2_5mT_24-06-04_Test'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
