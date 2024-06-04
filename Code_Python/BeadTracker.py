@@ -233,18 +233,17 @@ class PincherTimeLapse:
             self.activationExp = manipDict['activation exp']
             self.activationType = manipDict['activation type']
             
+                
             if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                print('case 1')
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
+                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop + 1, self.activationFreq)])
+                print(self.LoopActivations)
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
-                print('case 2')
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
-            
             else:
-                print('case 3')
                 self.LoopActivations = np.array([self.activationFirst-1])
-                            
+            
+            
             fluo = True
                 
         except:
@@ -310,6 +309,7 @@ class PincherTimeLapse:
                                 for kk in range(self.nLoop)])
             # print(offsets)
             for i in range(self.nLoop):
+                    
                 j = ((i+1)*self.loop_mainSize) - 1 + offsets[i]
                 # print(j)
                 checkSum = np.sum(self.I[j])
@@ -338,17 +338,16 @@ class PincherTimeLapse:
             # print('excludedFrames_black')
             # print(self.excludedFrames_black)
             try:
+                
                 if self.activationFirst > 0:
-                        
                     for iLoop in self.LoopActivations:
-                        
                         totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
                         
                         j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
                         # print(j)
                         self.dictLog['status_frame'][j] = -1
                         self.dictLog['status_nUp'][j] = -1
-
+    
             except:
                 if self.wFluoEveryLoop:
                     for iLoop in self.LoopActivations:
@@ -369,8 +368,9 @@ class PincherTimeLapse:
                 path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j+1) + '.tif')
                 io.imsave(path, Ifluo, check_contrast=False)
             
-            
-            
+                # print('excludedFrames_outward')
+                # print(self.excludedFrames_outward)
+            # 
             # try: # Optogenetic activations behaviour
             #     print(gs.ORANGE + 'Trying optogen fluo detection...' + gs.NORMAL)
             #     if self.activationFirst > 0 and not self.wFluoEveryLoop:
@@ -435,6 +435,8 @@ class PincherTimeLapse:
         """
         N0 = self.loop_mainSize
         Nramp0 = self.loop_rampSize
+        # print('Nramp0')
+        # print(Nramp0)
         # Nexclu = self.loop_excludedSize
         nUp = self.Nuplet
         # N = N0 - Nexclu
@@ -530,7 +532,7 @@ class PincherTimeLapse:
         i_nUp = 1
 
         # print(N0,Nramp0,Nexclu,nUp)
-        if self.microscope == 'metamorph':
+        if self.microscope == 'metamorph' or self.microscope == 'zen':
             for i in range(self.nLoop):
                 jstart = int(i*N0)
                 for j in range(N0): # N
@@ -558,17 +560,15 @@ class PincherTimeLapse:
         pass
     
     def makeOptoMetadata(self, fieldDf, display = 1, save = False, path = ''):
-        try:
             actFreq = self.activationFreq
             actExp = self.activationExp
             actType = [self.activationType]
             microscope = self.microscope
-            if microscope == 'labview':
+            if microscope == 'labview' and actType != []:
+            # if microscope == 'labview':
                 allActivationIndices = ufun.findActivation(fieldDf)[0]
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
-                
-                print(fieldDf)
                 actN = len(allActivationIndices)
                 fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
                 metadataDict = {}
@@ -579,17 +579,15 @@ class PincherTimeLapse:
                 metadataDict['T_0'] = [fieldDf['T_abs'][0]/timeScaleFactor]*actN
                 # metadataDict['Exp'] = actExp*np.ones(actN, dtype = type(actN))
                 metadataDict['Type'] = actType*actN
-                print(len(fieldToMeta))
-                print(len(metadataDict['activationNo']))
-                print(len(metadataDict['Slice']))
-                print(len(metadataDict['T_abs']))
-                print(len(metadataDict['T_0']))
+                # print(len(fieldToMeta))
+                # print(len(metadataDict['activationNo']))
+                # print(len(metadataDict['Slice']))
+                # print(len(metadataDict['T_abs']))
+                # print(len(metadataDict['T_0']))
                 
-                metadataDf = pd.DataFrame(metadataDict)
-                if save:
-                    metadataDf.to_csv(path, sep='\t')
-        except:
-            pass
+                metadataDf = pd.DataFrame(metadataDict)    
+                metadataDf.to_csv(path, sep='\t')
+
         
         # if display == 1:
         #     print('\n\n* Initialized Log Table:\n')
@@ -784,7 +782,8 @@ class PincherTimeLapse:
             if 'Unnamed' in c:
                 df.drop([c], axis = 1, inplace=True)
         self.detectBeadsResult = df
-
+        
+        
     def findBestStd(self):
         """
         Simpler and better than findBestStd_V0 using the status_nUp column of the dictLog.
@@ -799,7 +798,56 @@ class PincherTimeLapse:
         """
 
         Nup = self.Nuplet
-        nT = self.listTrajectories[0].nT
+        nT = self.listTrajectories[0].nT      
+        
+        status_nUp = self.listTrajectories[0].dict['status_nUp']
+        status_frame = self.listTrajectories[0].dict['status_frame']
+        sum_std = np.zeros(nT)
+        for i in range(self.NB):
+            sum_std += np.array(self.listTrajectories[i].dict['StdDev'])
+        
+        bestStd = np.zeros(nT, dtype = bool)
+        # print('nT ', nT)
+        i = 0
+        while i < nT:
+            if status_nUp[i] == 0: #### Modified here !
+                bestStd[i] = True
+                i += 1
+            elif status_nUp[i] > 0: #### Modified here !
+                s2 = status_nUp[i]
+                L = [i]
+                j = 0
+                while i+j < nT-1 and status_nUp[i+j+1] == s2: # lazy evaluation of booleans
+                    j += 1
+                    L.append(i+j)
+                # print(L)
+                loc_std = sum_std[L]
+                i_bestStd = i + int(np.argmax(loc_std))
+                bestStd[i_bestStd] = True
+                L = []
+                i = i + j + 1
+        # print('i ', i)
+        # print('sum ', np.sum(bestStd))
+        # print(bestStd[:300])
+                
+        return(bestStd)
+
+    def findBestStd_V0(self):
+        """
+        Simpler and better than findBestStd_V0 using the status_nUp column of the dictLog.
+        ---
+        For each frame of the timelapse that belongs to a N-uplet, I want to reconsititute this N-uplet
+        (meaning the list of 'Nup' consecutive images numbered from 1 to Nup,
+        minus the images eventually with no beads detected).
+        Then for each N-uplet of images, i want to find the max standard deviation
+        and report its position because it's for the max std that the X and Y detection is the most precise.
+        ---
+        This is very easy thanks to the 'status_nUp', because it contains a different number for each N-Uplet.
+        """
+
+        Nup = self.Nuplet
+        nT = self.listTrajectories[0].nT      
+        
         status_nUp = self.listTrajectories[0].dict['status_nUp']
         status_frame = self.listTrajectories[0].dict['status_frame']
         sum_std = np.zeros(nT)
@@ -819,7 +867,7 @@ class PincherTimeLapse:
                 while i+j < nT-1 and status_nUp[i+j+1] == s2: # lazy evaluation of booleans
                     j += 1
                     L.append(i+j)
-                #print(L)
+                # print(L)
                 loc_std = sum_std[L]
                 i_bestStd = i + int(np.argmax(loc_std))
                 bestStd[i_bestStd] = True
@@ -916,10 +964,8 @@ class PincherTimeLapse:
             #### >>> Exp type dependance here (01)
             if 'compressions' in self.expType or 'constant field' in self.expType:
                 self.listTrajectories[iB].dict['idxAnalysis'].append((self.listFrames[init_iF].status_frame == 0))
-                
             #### TBC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             elif 'sinus' in self.expType:
-                 print('Passed expt type')
                  self.listTrajectories[iB].dict['idxAnalysis'].append(0)
                  
             elif 'brokenRamp' in self.expType:
@@ -1101,7 +1147,8 @@ class PincherTimeLapse:
                         * (max(self.listTrajectories[iB].dict['idxAnalysis']) + 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] <= 0)) \
                             - (self.listFrames[iF].status_frame == 0.1) \
                         * (abs(min(self.listTrajectories[iB].dict['idxAnalysis']) - 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0)))
-                        
+                
+                    # print(idxAnalysis)
                 elif self.expType == 'constant field':
                     idxAnalysis = 0
                         
@@ -1201,7 +1248,8 @@ class PincherTimeLapse:
                 
                 # 'optoGen' or 'compressions' but probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
-                    # print(iLoop)
+                # if 'optoGen' in self.expType:
+
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)
@@ -1229,6 +1277,7 @@ class PincherTimeLapse:
         bestStd = self.findBestStd()
         for i in range(self.NB):
             self.listTrajectories[i].dict['bestStd'] = bestStd
+
 
 
     def importTrajectories(self, path, iB):
@@ -1657,6 +1706,7 @@ class Trajectory:
         Zscanned = np.arange(Ztop, Zbot, 1, dtype=int)
         
         subDeptho = self.deptho[Ztop:Zbot, :]
+        # print(subDeptho)
         
         for i in range(Nframes):
             
@@ -1921,11 +1971,13 @@ class Trajectory:
         dictBestStd = {}
         bestStd = self.dict['bestStd']
         nT = int(np.sum(bestStd))
+        # nT = len(bestStd)
         for k in self.dict.keys():
             A = np.array(self.dict[k])
             dictBestStd[k] = A[bestStd]
         self.dict = dictBestStd
         self.nT = nT
+        
 
 
     def detectNeighbours_ui(self, Nimg, frequency, beadType): # NOT VERY WELL MADE FOR NOW
@@ -2127,11 +2179,13 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         
         #### 0.51 Find index of first activation
         #### Anumita's stuff
-        # try:
-        #     optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
-        #     PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
-        # except:
-        #     pass
+        try:
+            optoMetaPath = cp.DirDataRaw + '/' + dates
+            optoMetaName = os.path.join(optoMetaPath, cellID + '_OptoMetadata.txt')
+            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaName)
+        except:
+            print(gs.RED + 'Not saving any OptoMetaData for: ' + manipID + gs.NORMAL)
+            pass
         
         #### 0.6 - Check if a log file exists and load it if required
         logFilePath = resPath[:-12] + '_LogPY.txt'
@@ -2165,7 +2219,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'compressions'
             if ('thickness' in f):
-                PTL.determineFramesStatus_R40()
+                PTL.determineFramesStatus_optoGen()
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'constant field'
             elif 'L40' in f:
@@ -2384,11 +2438,13 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
         #### 4.2 - Compute z for each traj
         #### ! Expt dependence here !
-        if PTL.microscope == 'metamorph':
+        if PTL.microscope == 'metamorph' or PTL.microscope == 'zen':
             matchingDirection = 'downward' # Change when needed !!
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
         elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
             matchingDirection = 'upward'
+            #### !!!!!!!!! REMEMBER TO CHANGE BACK
+            # matchingDirection = 'downward'
             print(gs.ORANGE + "Deptho detection 'upward' mode" + gs.NORMAL)
             
         if redoAllSteps or not trajFilesImported:
@@ -2404,9 +2460,6 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         else:
             print(gs.BLUE + 'Computing Z...' + gs.NORMAL)
             print(gs.GREEN + 'Z had been already computed :)' + gs.NORMAL)
-            
-        
-        
 
         #### 4.3 - Save the raw traj (before Std selection)
         if redoAllSteps or not trajFilesImported:
@@ -2428,12 +2481,12 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 traj_df = pd.DataFrame(traj.dict)
                 trajPath = os.path.join(DirDataTimeseries, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 traj_df.to_csv(trajPath, sep = '\t', index = False)
-                
+                # traj.dict['idxAnalysis']
                 # save in ownCloud
                 # if ownCloud_timeSeriesDataDir != '':
                 #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 #     traj_df.to_csv(OC_trajPath, sep = '\t', index = False)
-    
+                
     
     #### 5. Define pairs and compute distances
         print(gs.BLUE + 'Computing distances...' + gs.NORMAL)
@@ -2460,7 +2513,9 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.2 - Input common values:
             T0 = fieldDf['T_abs'].values[0]/1000 # From ms to s conversion
+
             timeSeries['idxAnalysis'] = traj1.dict['idxAnalysis']
+            
             timeSeries['Tabs'] = (fieldDf['T_abs'][traj1.dict['iField']])/1000 # From ms to s conversion
             timeSeries['T'] = timeSeries['Tabs'].values - T0*np.ones(nT)
             timeSeries['B'] = fieldDf['B_set'][traj1.dict['iField']].values

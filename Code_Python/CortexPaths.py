@@ -57,9 +57,9 @@ elif COMPUTERNAME == 'DESKTOP-K9KOJR2':
     DirRepo = "C://Users//anumi//OneDrive//Desktop//CortExplore"
     DirData = "D:/Anumita/MagneticPincherData"
     #### TBC !!!
-    DirCloud = ""# + suffix
+    DirCloud = "C://Users//anumi//ownCloud//MagneticPincherData" + suffix
     DirTempPlots = 'C://Users//anumi//OneDrive//Desktop//TempPlots'
-    CloudSaving = ''
+    CloudSaving = 'OwnCloud'
     
     
 elif COMPUTERNAME =='DATA2JHODR':
