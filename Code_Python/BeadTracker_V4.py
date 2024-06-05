@@ -187,7 +187,6 @@ class PincherTimeLapse:
             i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
             #
             logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
-            # logDf.loc[i_startOfCompression:i_endOfCompression+1, 'idxAnalysis']
         
         # idxAnalysis for loops with repeated compressions
         previous_idx = 0
@@ -210,6 +209,7 @@ class PincherTimeLapse:
 
         self.logDf = logDf
         self.log_UIxy = log_UIxy
+        
         
         
         

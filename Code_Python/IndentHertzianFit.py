@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 # import seaborn as sns
 # import statsmodels.api as sm
 
-# import os
+import os
 # import re
 # import datetime
 
@@ -54,18 +54,30 @@ def initializeFitHertz(fpath, date, manip, cell, indent):
     
     time = flines[0].split('\t')[3]
     dI['time'] = time
-    R = float(getLineWithString(flines, 'Tip radius (um)')[0][16:])
+    R = float(getLineWithString(metadataText, 'Tip radius (um)')[0][16:])
     dI['R'] = R
     
-    X = float(getLineWithString(flines, 'X-position (um)')[0][16:])
+    X = float(getLineWithString(metadataText, 'X-position (um)')[0][16:])
     dI['X0'] = X
-    Y = float(getLineWithString(flines, 'Y-position (um)')[0][16:])
+    Y = float(getLineWithString(metadataText, 'Y-position (um)')[0][16:])
     dI['Y0'] = Y
-    Z = float(getLineWithString(flines, 'Z-position (um)')[0][16:])
+    Z = float(getLineWithString(metadataText, 'Z-position (um)')[0][16:])
     dI['Z0'] = Z
     
-    text_start_times, j = getLineWithString(flines, 'Step absolute start times')
-    text_end_times, j = getLineWithString(flines, 'Step absolute end times')
+    s1, s2_dZ_comp, s3, s4_dT_comp = getLineWithString(metadataText, 'D[Z1]')[0][:-1].split('\t')
+    V_comp = float(s2_dZ_comp)*1e-3/float(s4_dT_comp)
+    dI['V_comp'] = V_comp # µm/s
+    
+    s1, s2, s3, s4_dT_rest = getLineWithString(metadataText, 'D[Z2]')[0][:-1].split('\t')
+    dT_rest = float(s4_dT_rest)
+    dI['dT_rest'] = dT_rest # s
+    
+    s1, s2, s3, s4_dT_relax = getLineWithString(metadataText, 'D[Z3]')[0][:-1].split('\t')
+    V_relax = float(s2_dZ_comp)*1e-3/float(s4_dT_relax)
+    dI['V_relax'] = V_relax # µm/s
+    
+    text_start_times, j = getLineWithString(metadataText, 'Step absolute start times')
+    text_end_times, j = getLineWithString(metadataText, 'Step absolute end times')
     start_times = np.array(text_start_times[30:].split(',')).astype(float)
     end_times = np.array(text_end_times[28:].split(',')).astype(float)
     
@@ -85,11 +97,12 @@ def initializeFitHertz(fpath, date, manip, cell, indent):
 
 
 def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
-                plot = 2, save_plot = False, save_path = ''):    
+                plot = 1, save_plot = False, save_path = ''):    
     
     #### 1. Initialize
     df = dI['df']
     R = dI['R']
+    V_comp = dI['V_comp']
     
     ti, tf = dI['ti'][0], dI['tf'][0]
     compression_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
@@ -240,6 +253,7 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
 
     #### 5. Make Results
     results = {'R':R,
+               'V_comp':V_comp,
                 'mode':mode,
                 'fractionF':fractionF, 
                 'dZmax':dZmax,
@@ -265,9 +279,102 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
                 }
 
 
-    
+
     #### 6.1 Plot == 1
     if plot == 1:
+        plt.ioff()
+        fig, axes = plt.subplots(2,2, figsize = (10,6))
+        colorList = gs.colorList10[:len(dI['ti'])]
+        
+        def Hertz(z, Z0, K, R, F0):
+            zeroInd = 1e-9 * np.ones_like(z)
+            d = z - Z0
+            d = np.where(d>0, d, zeroInd)
+            f = (4/3) * K * R**0.5 * (d)**1.5 + F0
+            return(f)
+        
+        #### axes[0,0]
+        ax = axes[0,0]
+        ax.plot(df['Time (s)'], df['Piezo (nm)'], 'b-', label='Displacement')
+        ax.plot(df['Time (s)'], df['Z Tip (nm)'], color='gold', ls='-', label='Z Tip')
+        ax.plot(df['Time (s)'], df['Cantilever (nm)'], 'g-', label='Deflection')
+        ax.plot(df['Time (s)'], df['Indentation (nm)'], 'r-', label='Indentation')
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Distance (nm)')
+        ax.legend(loc='upper right')
+        
+        #### axes[0,1]
+        ax = axes[0,1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        for ti, tf, c in zip(dI['ti'][::-1], dI['tf'][::-1], colorList[::-1]):
+            step_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
+            ax.plot(df.loc[step_indices, 'Z Tip (nm)']*1e-3, df.loc[step_indices, 'Load (uN)']*1e6*1e-3, color=c,
+                    marker = '.', markersize = 2, ls = '')
+        
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Load (nN)')
+        
+        ax.axvline(Z[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        ax.axvline(Z[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
+        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        labelFit1 = f'First fit\nZ0 = {Z01:.2f} +/- {covM1[1,1]**0.5:.2f} µm\n'
+        labelFit1 += f'Yeff = {K1:.0f} +/- {covM1[0,0]**0.5:.0f} Pa\nR² = {Rsq1:.3f}'
+        ax.plot(Z_plotfit1, F_plotfit1*1e-3, 
+                ls = '-', color = 'gold', zorder = 5, label = labelFit1)
+        
+        labelFit2 = f'Second fit\nZ0 = {Z02:.2f} +/- {covM2[1,1]**0.5:.2f} µm\n'
+        labelFit2 += f'Yeff = {K2:.0f} +/- {covM2[0,0]**0.5:.0f} Pa\nR² = {Rsq2:.3f}'
+        ax.plot(Z_plotfit2, F_plotfit2*1e-3, 
+                ls = '-', color = 'red', zorder = 5, label = labelFit2)
+        
+
+        ax.legend(loc='upper left')
+
+
+
+
+        #### axes[1,0]
+        ax = axes[1,0]
+
+        
+        ax.plot(df['Time (s)'], df['Load (uN)']*1e6*1e-3, color='darkred', ls='-', label = 'Load')
+        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', lw=1, zorder = 4)
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Load (nN)')
+        ax.legend(loc='upper right')
+
+
+        #### axes[1,1]
+        ax = axes[1,1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        ax.plot(Z_denoised[compression_indices], F_denoised[compression_indices]*1e-3, color=colorList[0],
+                marker = '.', markersize = 2, ls = '')
+        
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Load (nN)')
+        
+        ax.axvline(Z_denoised[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        ax.axvline(Z_denoised[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
+        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        labelFit_d = f'Denoised fit\nZ0 = {Z0_d:.2f} +/- {covM_d[1,1]**0.5:.2f} µm\n'
+        labelFit_d += f'Yeff = {K_d:.0f} +/- {covM_d[0,0]**0.5:.0f} Pa\nR² = {Rsq_d:.3f}'
+        ax.plot(Z_plotfit_d, F_plotfit_d*1e-3, 
+                ls = '-', color = 'lime', zorder = 5, label = labelFit_d)
+
+        ax.legend()
+        
+
+    
+        
+        
+        
+        
+        
+        
+    #### 6.2 Plot == 2
+    if plot == 2:
         plt.ioff()
         fig, axes = plt.subplots(2,3, figsize = (12,6))
         colorList = gs.colorList10[:len(dI['ti'])]
@@ -404,100 +511,13 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
         ax.set_xlabel('Distance (um)')
         ax.set_ylabel('Load (nN)')
         ax.legend()
-
-
-
         
         
-    
-    #### 6.2 Plot == 2
-    if plot == 2:
-        plt.ioff()
-        fig, axes = plt.subplots(2,2, figsize = (10,6))
-        colorList = gs.colorList10[:len(dI['ti'])]
         
-        def Hertz(z, Z0, K, R, F0):
-            zeroInd = 1e-9 * np.ones_like(z)
-            d = z - Z0
-            d = np.where(d>0, d, zeroInd)
-            f = (4/3) * K * R**0.5 * (d)**1.5 + F0
-            return(f)
         
-        #### axes[0,0]
-        ax = axes[0,0]
-        ax.plot(df['Time (s)'], df['Piezo (nm)'], 'b-', label='Displacement')
-        ax.plot(df['Time (s)'], df['Z Tip (nm)'], color='gold', ls='-', label='Z Tip')
-        ax.plot(df['Time (s)'], df['Cantilever (nm)'], 'g-', label='Deflection')
-        ax.plot(df['Time (s)'], df['Indentation (nm)'], 'r-', label='Indentation')
-        
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Distance (nm)')
-        ax.legend(loc='upper right')
-        
-        #### axes[0,1]
-        ax = axes[0,1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
-        for ti, tf, c in zip(dI['ti'][::-1], dI['tf'][::-1], colorList[::-1]):
-            step_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
-            ax.plot(df.loc[step_indices, 'Z Tip (nm)']*1e-3, df.loc[step_indices, 'Load (uN)']*1e6*1e-3, color=c,
-                    marker = '.', markersize = 2, ls = '')
-        
-        ax.set_xlabel('Distance (um)')
-        ax.set_ylabel('Load (nN)')
-        
-        ax.axvline(Z[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
-        ax.axvline(Z[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
-        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
-        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
-        labelFit1 = f'First fit\nZ0 = {Z01:.2f} +/- {covM1[1,1]**0.5:.2f} µm\n'
-        labelFit1 += f'Yeff = {K1:.0f} +/- {covM1[0,0]**0.5:.0f} Pa\nR² = {Rsq1:.3f}'
-        ax.plot(Z_plotfit1, F_plotfit1*1e-3, 
-                ls = '-', color = 'gold', zorder = 5, label = labelFit1)
-        
-        labelFit2 = f'Second fit\nZ0 = {Z02:.2f} +/- {covM2[1,1]**0.5:.2f} µm\n'
-        labelFit2 += f'Yeff = {K2:.0f} +/- {covM2[0,0]**0.5:.0f} Pa\nR² = {Rsq2:.3f}'
-        ax.plot(Z_plotfit2, F_plotfit2*1e-3, 
-                ls = '-', color = 'red', zorder = 5, label = labelFit2)
-        
-
-        ax.legend(loc='upper left')
-
-
-
-
-        #### axes[1,0]
-        ax = axes[1,0]
-
-        
-        ax.plot(df['Time (s)'], df['Load (uN)']*1e6*1e-3, color='darkred', ls='-', label = 'Load')
-        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', lw=1, zorder = 4)
-        
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Load (nN)')
-        ax.legend(loc='upper right')
-
-
-        #### axes[1,1]
-        ax = axes[1,1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
-        ax.plot(Z_denoised[compression_indices], F_denoised[compression_indices]*1e-3, color=colorList[0],
-                marker = '.', markersize = 2, ls = '')
-        
-        ax.set_xlabel('Distance (um)')
-        ax.set_ylabel('Load (nN)')
-        
-        ax.axvline(Z_denoised[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
-        ax.axvline(Z_denoised[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
-        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
-        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
-        labelFit_d = f'Denoised fit\nZ0 = {Z0_d:.2f} +/- {covM_d[1,1]**0.5:.2f} µm\n'
-        labelFit_d += f'Yeff = {K_d:.0f} +/- {covM_d[0,0]**0.5:.0f} Pa\nR² = {Rsq_d:.3f}'
-        ax.plot(Z_plotfit_d, F_plotfit_d*1e-3, 
-                ls = '-', color = 'lime', zorder = 5, label = labelFit_d)
-
-        ax.legend()
-        
-
+    dictPlotName = {1:'ChiaroPlot', 2:'DenoisingPlot'}
     if plot >= 1:
-        figtitle = f"{dI['date']}_{dI['manip']}_{dI['cell']}_{dI['indent']}_PlotType-0{plot}"
+        figtitle = f"{dI['date']}_{dI['manip']}_{dI['cell']}_{dI['indent']}_{dictPlotName[plot]}"
         fig.suptitle(figtitle)
         plt.tight_layout()
         show = True
@@ -509,10 +529,130 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
             ufun.simpleSaveFig(fig, figtitle, save_path, '.png', 150)
             
         plt.ion()
-
-
-    
+        
+        
+        
     
     return(results)
 
 
+
+def findHardSurface(dI, plot = False, save_plot = False, save_path=''): 
+    #### 1. Initialize
+    df = dI['df']
+    R = dI['R']
+    
+    ti, tf = dI['ti'][0], dI['tf'][0]
+    compression_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
+    Z = df.loc[compression_indices, 'Z Tip (nm)'].values*1e-3 # nm to µm
+    F = df.loc[compression_indices, 'Load (uN)'].values*1e6 # µN to pN
+    Time = df.loc[compression_indices, 'Time (s)']
+
+    early_points = len(F)//20
+    F_moy = np.median(F[:early_points])
+    F_std = 6*np.std(F[:early_points])
+    F_max = np.max(F)
+
+    Z_start = np.min(Z)
+    Z_stop = np.max(Z)
+    
+    #### 2.1 First Fit Zone
+    Z0_sup = np.max(Z)
+
+    #### 2.2 First Fit
+    upper_threshold = F_moy + 0.75 * (F_max - F_moy)
+    i_start = len(F) - ufun.findFirst(True, F[::-1] < F_moy + F_std) - 1
+    Z0, F0 = Z[:i_start], F[:i_start]*1e-3
+    Z1, F1 = Z[i_start:], F[i_start:]*1e-3
+    cap = min(len(Z1), 500)
+    Z1, F1 = Z1[:cap], F1[:cap]
+    
+    [b0, a0], results0 = ufun.fitLineHuber(Z0, F0)
+    [d1, c1], results1 = ufun.fitLineHuber(F1, Z1)
+    a1, b1 = 1/c1, -d1/c1
+    
+    z1, z2, z3 = np.min(Z0), np.min(Z1), np.max(Z1)*1.01
+    
+    # Zc = (b1-b0)/(a0-a1)
+    Zc = (c1*b0 + d1)/(1-c1*a0)
+    
+    if plot:
+        fig, axes = plt.subplots(1,3, figsize = (15,5))
+        colorList = gs.colorList10[:len(dI['ti'])]
+        
+        #### axes[0]
+        ax = axes[0]
+        ax.plot(df['Time (s)'], df['Piezo (nm)'], 'b-', label='Displacement')
+        ax.plot(df['Time (s)'], df['Z Tip (nm)'], color='gold', ls='-', label='Z Tip')
+        ax.plot(df['Time (s)'], df['Cantilever (nm)'], 'g-', label='Deflection')
+        ax.plot(df['Time (s)'], df['Indentation (nm)'], 'r-', label='Indentation')
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Distance (nm)')
+        ax.legend(loc='upper right')
+        
+        #### axes[1]
+        ax = axes[1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        for ti, tf, c in zip(dI['ti'][::-1], dI['tf'][::-1], colorList[::-1]):
+            step_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
+            ax.plot(df.loc[step_indices, 'Z Tip (nm)']*1e-3, df.loc[step_indices, 'Load (uN)']*1e6*1e-3, color=c,
+                    marker = '.', markersize = 2, ls = '')
+        
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Load (nN)')
+        ax.axvline(Z[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        # ax.axvline(Z[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
+        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        # ax.legend(loc='upper left')
+        
+        #### axes[2]
+        ax = axes[2] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        ax.plot(Z0, F0, color='b',
+                marker = '.', markersize = 2, ls = '')
+        ax.plot(Z1, F1, color='r',
+                marker = '.', markersize = 2, ls = '')
+        
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Load (nN)')
+        ax.axvline(Z[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        # ax.axvline(Z[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
+        ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        
+        ax.plot([z1, z3], [a0*z1+b0, a0*z3+b0], 'g--', lw=1)
+        ax.plot([z2, z3], [a1*z2+b1, a1*z3+b1], 'g--', lw=1)
+        ax.plot([Zc], [a0*Zc+b0], 'co', mec='k', ms=5, label=f'Zc={Zc:.2f}')
+        ax.legend(loc='upper left', fontsize = 12)
+        
+        fig.suptitle('Contact point computation')
+        
+        fig.tight_layout()
+        plt.show()
+        
+        if save_plot:
+            name = f"{dI['date']}_{dI['manip']}_{dI['cell']}_{dI['indent']}_GlassIndent"
+            ufun.simpleSaveFig(fig, name, save_path, '.png', 150)
+        
+    return(Zc)
+
+
+
+# %% Test Functions in dev
+
+# %%% findHardSurface
+
+date, manip, cell, indent = '24-04-11', 'M3', 'C1-glass', '001'
+date2 = '24.04.11'
+specif1 = '_25um' # indenter size
+specif2 = '' # height above substrate
+
+mainDir = f'D://MagneticPincherData//Raw//{date2}_NanoIndent_ChiaroData{specif1}'
+manipDir = os.path.join(mainDir, f'{manip}')
+cellID = f'{date}_{manip}_P1_{cell}'
+indentID = f'{date}_{manip}_{cell}_I{int(indent)}'
+indent_path = os.path.join(manipDir, f'{cell}//Indentations//{cell}{specif2} Indentation_{indent}.txt')
+figures_path = manipDir
+
+dI = initializeFitHertz(indent_path, date, manip, cell, indent)
+# Zc = findHardSurface(dI, plot = False)

@@ -949,7 +949,7 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
     return(res)
 
 
-#%%%% 
+#%%%% makeDictFit
 
 
 def makeDictFit_CVW_hf(params, ses, error, 

@@ -47,7 +47,7 @@ from scipy import signal
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
 from scipy.signal import find_peaks, savgol_filter
-from scipy.optimize import linear_sum_assignment, least_squares
+from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
@@ -77,6 +77,7 @@ dateFormatExcel = re.compile(r'[1-2]\d{1}/\d{2}/(?:19|20)\d{2}') # matches X#/##
 dateFormatExcel2 = re.compile(r'[1-2]\d-\d{2}-(?:19|20)\d{2}') # matches X#-##-YY## where X in {1, 2} and YY in {19, 20}
 dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
+cm_in = 2.54
 
 # %% (1) Utility functions
 
@@ -854,7 +855,6 @@ def copyFile(DirSrc, DirDst, filename):
     """
     PathSrc = os.path.join(DirSrc, filename)
     PathDst = os.path.join(DirDst, filename)
-    print(PathDst)
     shutil.copyfile(PathSrc, PathDst)
     
 def copyFolder(DirSrc, DirDst, folderName):
@@ -872,7 +872,6 @@ def copyFilesWithString(DirSrc, DirDst, stringInName):
     SrcFilesList = os.listdir(DirSrc)
     for SrcFile in SrcFilesList:
         if stringInName in SrcFile:
-            print(SrcFile)
             copyFile(DirSrc, DirDst, SrcFile)
             
 def containsFilesWithExt(Dir, ext):
@@ -920,7 +919,6 @@ def getDepthoCleanSize(D, scale):
     """
     cleanSize = int(np.floor(1*D*scale))
     cleanSize += 1 + cleanSize%2
-    
     return(cleanSize)
 
 def compute_cost_matrix(XY1,XY2):
@@ -991,7 +989,6 @@ def squareDistance(M, V, normalize = False): # MUCH FASTER ! **Michael Scott Voi
     V = np.array([V])
     MV = np.repeat(V, n, axis = 0) # Key trick for speed !
     if normalize:
-        
         M = (M.T/np.mean(M, axis = 1).T).T
     R = np.sum((M-MV)**2, axis = 1)
 #     print('DistanceCompTime')
@@ -1195,59 +1192,16 @@ def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
     new_I = fd(newYY, newXX, grid=False)
     return(new_I)
 
-
-def fitCircle(contour, loss = 'huber'):
-    """
-    Find the best fitting circle to a an array of points in 2D.
-    The contour doesn't have to be the whole circle, it can be simply an arc.
-
-    Parameters
-    ----------
-    contour : Array-like
-        Shape (N, 2). Format RC (Row-Column), which means YX.
-        contour = [[Y1, X1], [Y2, X2], [Y3, X3], ...] = [[R1, C1], [R2, C2], [R3, C3], ...]
-    loss : string, optional
-        Type of loss function applied by least_squares. The default is 'huber', for a robust fit. For a normal least square fit, use 'linear'.
-        See documentation on https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
-
-    Returns
-    -------
-    center : tuple (Y, X), center of the circle
-    R : float, radius of the circle
-
-    """
-    # Contour = [[Y, X], [Y, X], [Y, X], ...] 
-    x, y = contour[:,1], contour[:,0]
-    x_m = np.mean(x)
-    y_m = np.mean(y)
-    
-    def calc_R(xc, yc):
-        """ calculate the distance of each 2D points from the center (xc, yc) """
-        return(((x-xc)**2 + (y-yc)**2)**0.5)
-
-
-    def f_2(c):
-        """ calculate the algebraic distance between the 2D points and the mean circle centered at c=(xc, yc) """
-        Ri = calc_R(*c)
-        return(Ri - np.mean(Ri))
-
-    center_estimate = x_m, y_m
-    result = least_squares(f_2, center_estimate, loss=loss) # Functions from the scipy.optimize library
-    center = result.x
-    R = np.mean(calc_R(*center))
-    
-    return(center, R)
-
 # %%% Physics
 
 
 
 def computeMag_M270(B, k_batch = 1):
-    M = 1.05 * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+    M = k_batch * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
 def computeMag_M450(B, k_batch = 1):
-    M = 1.05 * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+    M = k_batch * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
 def computeForce_M450(B, D, d):
@@ -1260,7 +1214,7 @@ def computeForce_M450(B, D, d):
     # plt.plot(B, M)
     return(F)
 
-def plotForce(d = 200e-9):
+def plotForce(d = 0):
     fig, axes = plt.subplots(1, 2, figsize = (10,5)) 
     ax = axes[0]
     B = np.linspace(1, 1000, 1000)
@@ -1283,7 +1237,116 @@ def plotForce(d = 200e-9):
     fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
     plt.tight_layout()
     plt.show()
+    
+def plotMagAndForce(d = 0):
+    gs.set_smallText_options_jv()
+    D = 4500e-9
+    # for log plots
+    B1 = np.linspace(0.1, 1001, 1000)
+    M1 = computeMag_M450(B1)
+    F1 = computeForce_M450(B1, D, d)
+    
+    # for lin plots
+    B2 = np.linspace(0, 501, 2001)
+    M2 = computeMag_M450(B2)
+    F2 = computeForce_M450(B2, D, d)
+    B2 = np.concatenate((-B2[::-1], [0], B2))
+    M2 = np.concatenate((-M2[::-1], [0], M2))
+    F2 = np.concatenate((-F2[::-1], [0], F2))
+    
+    fig, axes = plt.subplots(2, 2, figsize = (19/cm_in, 12/cm_in))
+    
+    ax = axes[0,0]
+    ax.plot(B1, M1)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('M (A/m)')
+    ax.grid()
+    
+    ax = axes[0,1]
+    ax.plot(B2, M2)
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('M (A/m)')
+    ax.grid()
+    
+    
+    ax = axes[1,0]
+    ax.plot(B1, F1)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    ax.grid()
+    
+    ax = axes[1,1]
+    ax.plot(B2, F2)
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (pN)')
+    ax.grid()
+    
+    fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
+    plt.tight_layout()
+    plt.show()
+    
+def plotMagAndForce2(d = 0):
+    gs.set_mediumText_options_jv()
+    D = 4500e-9
+    
+    # for small range plots
+    B1 = np.linspace(0, 100, 1000)
+    M1 = computeMag_M450(B1)
+    F1 = computeForce_M450(B1, D, d)
+    
+    # for large range plots
+    B2 = np.linspace(0, 500, 2000)
+    M2 = computeMag_M450(B2)
+    F2 = computeForce_M450(B2, D, d)
+    # B2 = np.concatenate((-B2[::-1], [0], B2))
+    # M2 = np.concatenate((-M2[::-1], [0], M2))
+    # F2 = np.concatenate((-F2[::-1], [0], F2))
+    
+    fig1, axes1 = plt.subplots(1, 2, figsize = (19/cm_in, 8/cm_in), sharey='row')
+    
+    ax = axes1[0]
+    ax.plot(B1, M1/1e3, c='indigo')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('M (kA/m)')
+    ax.grid()
+    
+    ax = axes1[1]
+    ax.plot(B2, M2/1e3, c='indigo')
+    ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('M (kA/m)')
+    ax.grid()
+    
+    fig1.suptitle(f'M(B) for a M-450 bead (D = {D*1e6:.2f} µm)')
+    fig1.tight_layout()
+    
+    fig2, axes2 = plt.subplots(1, 2, figsize = (19/cm_in, 8/cm_in), sharey='row')
+    
+    ax = axes2[0]
+    ax.plot(B1, F1/1e3, c='darkred')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (nN)')
+    ax.grid()
+    
+    ax = axes2[1]
+    ax.plot(B2, F2/1e3, c='darkred')
+    ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('F (pN)')
+    ax.grid()
+    
+    fig2.suptitle(f'F(B) for two M-450 beads in contact (D = {D*1e6:.2f} µm)')
+    fig2.tight_layout()
+    
+    path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
+    simpleSaveFig(fig1, 'Example_M-B', path, '.png', 150)
+    simpleSaveFig(fig2, 'Example_F-B', path, '.png', 150)
+    
+    plt.show()
 
+# plotMagAndForce2(d = 0)
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
@@ -1372,8 +1435,8 @@ def findFirst(x, A):
 
 def findLast(x, A):
     """
-    Find last occurence of x in array A, in a VERY FAST way.
-    Adapted from findFirst just above.
+    Find first occurence of x in array A, in a VERY FAST way.
+    If you like weird one liners, you will like this function.
     """
     idx = (A[::-1]==x).view(bool).argmax()
     return(len(A)-idx-1)
@@ -1387,25 +1450,6 @@ def findFirst_V2(v, arr):
         if val == v:
             return(idx[0])
     return(-1)
-
-
-def argmedian(x):
-    """
-    Find the argument of the median value in array x.
-    """
-    if len(x)%2 == 0:
-        x = x[:-1]
-    return(np.argpartition(x, len(x) // 2)[len(x) // 2])
-
-
-def sortMatrixByCol(A, col=0, direction = 1):
-    """
-    Return the matrix A where all columns where sorted by the column i
-    Increasing order if direction = 1
-    Decreasing order if direction = -1
-    """
-    return(A[A[:, col].argsort()[::direction]])
-
 
 
 def fitLine(X, Y):
@@ -1436,7 +1480,6 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
-
 def fitLineHuber(X, Y):
     """
     returns: results.params, results \n
@@ -1464,7 +1507,6 @@ def fitLineHuber(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
-
 
 def fitLineWeighted(X, Y, weights):
     """
@@ -1514,7 +1556,6 @@ def toList(x):
         else: # x is not a Collection : probably a number or a boolean
             return([x]) # return : [x]
         
-        
 def toListOfStrings(x):
     """
     if x is a list, return x with all elements converted to string
@@ -1535,6 +1576,16 @@ def toListOfStrings(x):
         else: # x is not a Collection : probably a number or a boolean
             return([str(x)]) # return : [x]
         
+# def toList_V0(x):
+#     """
+#     if x is a list, return x
+#     if x is not a list, return [x]
+#     """
+#     try:
+#         x = list(x)
+#         return(x)
+#     except:
+#         return([x])
 
     
 def drop_duplicates_in_array(A):
@@ -1705,9 +1756,6 @@ def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'aut
                 ax.set_ylim(Y_BOUND)
         else:
             pass
-    
-    # except:
-    #      pass 
     
     return(axes)
 

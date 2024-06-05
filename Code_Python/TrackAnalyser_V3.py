@@ -230,11 +230,12 @@ def analyseTimeSeries_ctField(f, tsDf, expDf):
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
     # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
-    diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-    if len(diameters) == 2:
-        DIAMETER = (int(diameters[0]) + int(diameters[1]))/2.
-    else:
-        DIAMETER = int(diameters[0])
+    try:
+        DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+    except:
+        D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+        D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+        DIAMETER = (D1 + D2)/2.
     
     results['duration'] = np.max(tsDf['T'])
     results['medianRawB'] = np.median(tsDf.B)
@@ -575,7 +576,7 @@ def inversedConstitutiveRelation(stress, K, strain0):
 
 # %%%% General fitting functions
 
-def fitVWC_hf(h, f):
+def fitVWC_hf(h, f, D):
     """
     Fit the VWC model on a force-thickness curve.
     This means the X-variable is h and the Y-variable is f.
@@ -605,9 +606,11 @@ def fitVWC_hf(h, f):
     Npts = len(h)
     error = False
     
+    R = D/2
+    
     def VWC(h, K, Y, H0):
-        f =  3.1416*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
-        return f
+        f = np.pi*R * (K/6*(H0**3 * h**(-2) + 2*h - 3*H0) + Y/3 * H0 * (1 - h/H0)**2) #including factor 3 (K/6)
+        return(f)
     
     try:
         # some initial parameter values - must be within bounds\
@@ -1012,7 +1015,7 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
     return(res)
 
 
-#%%%% 
+#%%%% makeDictFit
 
 
 def makeDictFit_CVW_hf(params, ses, error, 
@@ -1492,11 +1495,12 @@ class CellCompression:
         
         Ncomp = max(timeseriesDf['idxAnalysis'])
         
-        diameters = thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'].split('_')
-        if len(diameters) == 2:
-            D = (int(diameters[0]) + int(diameters[1]))/2.
-        else:
-            D = int(diameters[0])
+        try:
+            DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
+        except:
+            D1 = int(thisExpDf.at[thisExpDf.index.values[0], 'inside bead diameter'])
+            D2 = int(thisExpDf.at[thisExpDf.index.values[0], 'outside bead diameter'])
+            DIAMETER = (D1 + D2)/2.
         
         EXPTYPE = str(thisExpDf.at[thisExpDf.index.values[0], 'experimentType'])
         
@@ -1510,7 +1514,7 @@ class CellCompression:
         nUplet = thisExpDf.at[thisExpDf.index.values[0], 'normal field multi images']
         
         self.Ncomp = Ncomp
-        self.DIAMETER = D
+        self.DIAMETER = DIAMETER
         self.EXPTYPE = EXPTYPE
         self.normalField = normalField
         self.minCompField = minCompField
@@ -1614,46 +1618,27 @@ class CellCompression:
         
         
     def correctJumpForCompression(self, i):
-        colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
+        colToCorrect = ['dx', 'dy', 'dz']
         mask = self.getMaskForCompression(i, task = 'compression & precompression')
         iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
         for c in colToCorrect:
             #### CHANGE HERE: iStart+5 -> iStart+15
             jump = np.median(self.tsDf[c].values[iStart:iStart+5]) - np.median(self.tsDf[c].values[iStart-2:iStart])
             self.tsDf.loc[mask, c] -= jump
-            if c == 'D3':
-                D3corrected = True
-                jumpD3 = jump
+        
+        #### D2
+        newD2 = (self.tsDf.loc[mask, 'dx']**2 + self.tsDf.loc[mask, 'dy']**2)**0.5
+        self.tsDf.loc[mask, 'D2'] = newD2
+        #### D3
+        newD3 = (newD2**2 + self.tsDf.loc[mask, 'dz']**2)**0.5
+        jumpD3 = np.mean(newD3 - self.tsDf.loc[mask, 'D3'])
+        D3corrected = True
         self.listJumpsD3[i] = jumpD3
+        self.tsDf.loc[mask, 'D3'] = newD3
         
     
-    def correctAllJumpsByLoop(self):
-        colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
-        N = np.max(self.tsDf['idxLoop'])
-        for i in range(1, N+1):
-            idx_loop = self.tsDf[self.tsDf['idxLoop'] == i].index
-            df_loop = self.tsDf.loc[idx_loop]
+
             
-            idx_action = df_loop[df_loop['idxAnalysis'] != 0].index
-            iStart = idx_action[0]
-            
-            # print(df_loop)
-            # print(idx_loop)
-            # print(idx_action)
-            # print(iStart)
-            
-            for c in colToCorrect:
-                jump = np.median(df_loop.loc[iStart:iStart+5, c].values) \
-                     - np.median(df_loop.loc[iStart-2:iStart, c].values)
-                # print(jump)     
-                df_loop.loc[idx_action, c] -= jump
-                if c == 'D3':
-                    D3corrected = True
-                    jumpD3 = jump
-                    
-                    
-            self.tsDf.loc[idx_loop] = df_loop
-            self.listJumpsD3[i-1] = jumpD3
 
     def plot_Timeseries(self, plotSettings):
         fig, ax = plt.subplots(1,1,
@@ -2836,8 +2821,8 @@ class IndentCompression:
         dH0 = {}
         
         if method == 'VWC':
-            h, f = self.hCompr[mask], self.fCompr[mask]
-            params, covM, error = fitVWC_hf(h, f)
+            h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+            params, covM, error = fitVWC_hf(h, f, D)
             K, Y, H0 = params[0], params[1], params[2]
             dH0['H0_' + method + '_' + zone] = H0
             dH0['K_' + method + '_' + zone] = K
@@ -3077,23 +3062,27 @@ class IndentCompression:
         
         if len(mask) == 0:
             mask = np.ones_like(self.hCompr, dtype = bool)
-        h, f = self.hCompr[mask], self.fCompr[mask]
-        params, ses, error = fitVWC_hf(h, f)
+        h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+        params, ses, error = fitVWC_hf(h, f, D)
         
         K, Y, H0 = params
         # x = np.linspace(np.min(h), np.max(h), len(h))
         
-        fPredict = VWC(h, K/1e6, Y/1e6, H0)
-        kPredict = VWC(h, K/1e6, 0, H0)
-        ePredict = VWC(h, 0, Y/1e6, H0)
-        y, yPredict = f, fPredict
+        #### Test here
+        [h_sort, f_sort] = ufun.sortMatrixByCol(np.array([h, f]).T, col=0, direction = -1).T
+       
+        fPredict = VWC(h_sort, K/1e6, Y/1e6, H0)
+        kPredict = VWC(h_sort, K/1e6, 0, H0)
+        ePredict = VWC(h_sort, 0, Y/1e6, H0)
+        y, yPredict = f_sort, fPredict
         #### err_Chi2 for distance (nm)
         err_chi2 = 10
         dictFit = makeDictFit_CVW_hf(params, ses, error, 
-                                 h, y, yPredict, kPredict, ePredict,
+                                 h_sort, y, yPredict, kPredict, ePredict, # h_sort instead of h
                                  err_chi2, fitValidationSettings)
         
         self.dictFitFH_VWC[method] = dictFit
+        
     
     def fitFH_Chadwick(self, fitValidationSettings, method = 'Full', mask = []):
         """
@@ -3380,6 +3369,7 @@ class IndentCompression:
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_3parts = df
     
+    
     def plot_FH_VWC(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
         """
         
@@ -3535,6 +3525,8 @@ class IndentCompression:
             #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
             #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
             #     ax_r.set_ylim([0,10])
+    
+    
     
     def plot_FH(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
         """
@@ -4619,8 +4611,6 @@ DEFAULT_fitSettings = {# H0
                        # Global fits
                        'doVWCFit' : True,
                        'VWCFitMethods' : ['Full'],
-                       'doDimitriadisFit' : False,
-                       'DimitriadisFitMethods' : ['Full'],
                        'doChadwickFit' : True,
                        'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
@@ -4670,6 +4660,7 @@ DEFAULT_plot_strainHalfWidth = 0.0125
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True,
                         'S(e)_stressRegion':True,
                         'K(S)_stressRegion':True,
                         'S(e)_stressGaussian':True,
@@ -4792,23 +4783,15 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     CC = CellCompression(cellID, tsDf, thisExpDf, f)
     CC.method_bestH0 = method_bestH0
     
-    #### 2.1 Test - Correct jumps
-    doJumpCorr = True
-    try:
-        CC.correctAllJumpsByLoop()
-        doJumpCorr = False
-    except:
-        doJumpCorr = True
+    #### 2.1 Correct jumps
+    for i in range(Ncomp):
+        CC.correctJumpForCompression(i)
 
     # idxAnalysisVals = tsDf['idxAnalysis'].unique()
     # idxComps = [i-1 for i in range(1, Ncomp+1) if i in idxAnalysisVals]    
 
     #### 3. Start looping over indents
     for i in range(Ncomp):
-        
-        #### 3.1 Correct jumps
-        if doJumpCorr:
-            CC.correctJumpForCompression(i)
             
         #### 3.2 Segment the i-th compression
         maskComp = CC.getMaskForCompression(i, task = 'compression')
@@ -5296,7 +5279,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
                 if t in currentCellID:
                     list_taskMecaFiles.append(f)
                     break
-    print(list_taskMecaFiles)
+    # print(list_taskMecaFiles)
     list_selectedMecaFiles = []
     # 3.3
     if mode == 'fromScratch':
@@ -5340,7 +5323,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     if imported_mecaDf:
         listMecaDf.append(existing_mecaDf)
     
-    print(list_selectedMecaFiles)
+    # print(list_selectedMecaFiles)
     if Nfiles > 0:
         
         for i in range(0, Nfiles, 10):
