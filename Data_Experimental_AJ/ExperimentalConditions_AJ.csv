@@ -180,7 +180,7 @@ date;manip;experimentType;drug;substrate;objective magnification;scale pixel per
 24-02-27;M2;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;1.5_70;1.5;;;;;;;False;3;500;300;labview;upward;Experiment by Hugo. Naming convention a bit modified. P1 : Epithelia with permanent magnets. compression from 1-70mt
 24-02-27;M3;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;1.5_70;1.5;;;;;;;False;3;500;300;labview;upward;Experiment by Hugo. Naming convention a bit modified. P1 : Epithelia with permanent magnets. compression from 1-70mt
 24-02-27;M4;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
-24-02-27;M5;compressionsLowStart;none;fibronectin;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
+24-02-27;M5;compressionsLowStart;none;glass;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
 24-04-10;M1;compressionsLowStart;LIMKi3_20;20um fibronectin discs;100x;15.8;oil;0.875;0.92;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
 24-04-10;M2;compressionsLowStart;dmso_4;20um fibronectin discs;100x;15.8;oil;0.875;0.88;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward;
 24-04-03;M1;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;15.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward	;
@@ -192,3 +192,8 @@ date;manip;experimentType;drug;substrate;objective magnification;scale pixel per
 24-05-29;M4;compressionsLowStart;doxy_2_Y27_10;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;5.0;1_50;1.5;1.0;;1.0;100;global;7uW;True;3;500;300;labview;upward	;
 24-05-29;M5;compressionsLowStart;Y27_10;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward	;
 24-05-29;M6;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;3T3;optoRhoA;M450;4510;0;5.0;1_50;1.5;;;;;;;False;3;500;300;labview;upward	;
+24-05-22;M1;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;2_70;1.5;;;;;;;False;3;500;300;labview;upward;With Hugo
+24-05-22;M2;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;2_70;1.5;;;;;;;False;3;500;300;labview;upward	;With Hugo
+24-05-22;M3;compressionsLowStart;none;epithelia;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;2_70;1.5;;;;;;;False;3;500;300;labview;upward;With Hugo
+24-05-22;M4;compressionsLowStart;none;20um fibronectin discs;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;2_70;1.5;;;;;;;False;3;500;300;labview;upward;With Hugo
+24-05-22;M5;compressionsLowStart;none;glass;100x;15.8;oil;0.875;1.0;MDCK;WT;M450;4510;0;30.0;2_70;1.5;;;;;;;False;3;500;300;labview;upward;With Hugo

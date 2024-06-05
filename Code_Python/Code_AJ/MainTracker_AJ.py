@@ -1560,6 +1560,26 @@ depthoNames = '24.05.29_P2_M450_step20_100X'
 mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False)
 
+#%% Deptho from experiment 24-05-22 - Experiment with MDCK
+
+# %%%% M1 : 
+
+dates = '24.05.22'
+manips, wells, cells = 5, 'all', 'all'
+depthoNames = '24.05.22_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+
+
+
+
+
+
+
+
+
 
 
 

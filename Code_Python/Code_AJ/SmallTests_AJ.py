@@ -755,61 +755,63 @@ for i in range(len(allTifs)):
 #%% Code to change values of magnetic field for experiments with permanent magnetic coils
 # For Field files
 
-path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.05.22/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.22'
 allFiles = os.listdir(path)
-offset = 24 #mT
+offset = 32 #mT
 
 allField = [i for i in allFiles if '_Field' in i]
 allStatus = [i for i in allFiles if '_Status' in i]
 
-# allField =[ allField[0]]
+# allField =[allField[0]]
 # allStatus = [allStatus[0]]
 for field, status in zip(allField, allStatus):
     if 'L70' in field:
         print(field)
-        # statusFile = pd.read_csv(os.path.join(path, status), sep = '_')
+        statusFile = pd.read_csv(os.path.join(path, status), sep = '_')
         
-        # for i in range(len(statusFile['6.00'])):
-        #     if statusFile['6.00'].iloc[i] == 'sigmoid-6.00--22.50':
-        #         statusFile['6.00'].iloc[i] = 'sigmoid-30.00-1.50'
-        #     elif statusFile['6.00'].iloc[i] == '6.00':
-        #         statusFile['6.00'].iloc[i] = '30.00'
-        #     if statusFile['6.00'].iloc[i] == 'constant--22.50--22.50':
-        #         statusFile['6.00'].iloc[i] = 'constant-1.50-1.50'
-        #     if statusFile['6.00'].iloc[i] == 't^4--22.50-46.50':
-        #         statusFile['6.00'].iloc[i] = 't^4-1.50-70.50'
-        #     if statusFile['6.00'].iloc[i] == 't^4-46.50-6.00':
-        #         statusFile['6.00'].iloc[i] = 't^4-70.50-30.00'
+        for i in range(len(statusFile['-2.00'])):
+            if statusFile['-2.00'].iloc[i] == 'sigmoid--2.00--30.50':
                 
-        # toAdd = np.asarray([1, 'Passive', '30.00'], dtype = object)
-        # newStatusFile = np.insert(statusFile.values, [0], toAdd, axis = 0)
-        # np.savetxt(os.path.join(pathSave, status), newStatusFile, delimiter = '_', fmt ="%s")
+                statusFile['-2.00'].iloc[i] = 'sigmoid-30.00-2.00'
+            elif statusFile['-2.00'].iloc[i] == '-2.00':
+                statusFile['-2.00'].iloc[i] = '30.00'
+            if statusFile['-2.00'].iloc[i] == 'constant--30.50--30.50':
+                statusFile['-2.00'].iloc[i] = 'constant-2.00-2.00'
+            if statusFile['-2.00'].iloc[i] == 't^4--30.50-38.00':
+                statusFile['-2.00'].iloc[i] = 't^4-2.00-70.00'
+            if statusFile['-2.00'].iloc[i] == 't^4-38.00--2.00':
+                statusFile['-2.00'].iloc[i] = 't^4-70.00-30.00'
+                
+        toAdd = np.asarray([1, 'Passive', '30.00'], dtype = object)
+        newStatusFile = np.insert(statusFile.values, [0], toAdd, axis = 0)
+        np.savetxt(os.path.join(pathSave, status), newStatusFile, delimiter = '_', fmt ="%s")
         
-        fieldFile = pd.read_csv(os.path.join(path, field), sep = '\t', header=None)
-
-        fieldFile[0:], fieldFile[2:]  = fieldFile[0:] + offset, fieldFile[2:] + offset
-        np.savetxt(os.path.join(pathSave, field), fieldFile, delimiter = '\t')
+        fieldFile = pd.read_csv(os.path.join(path, field), sep = '\t', header=None).values
+        
+        fieldFile[:, 0], fieldFile[:, 2]  = (fieldFile[:, 0] + offset), (fieldFile[:, 2] + offset)
+        np.savetxt(os.path.join(pathSave, field), fieldFile, fmt='%2.3f\t%8.3f\t%2.3f\t%2.3f')
         
 #%% Code to modify results file from Hugo
 
 
-path = 'D:/Anumita/MagneticPincherData/Raw/24.02.27/Archive'
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.02.27'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.05.22/Archive'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.22'
 
 allFiles = os.listdir(path)
-offset = 24 #mT
+offset = 30 #mT
 allResults = [i for i in allFiles if '_Results' in i]
 
 for results in (allResults):
-    if '__' in results:
+    if 'L70' in results:
+        print(results)
         resultsFile = pd.read_csv(os.path.join(path, results), sep = '\t')
         
         newResults = resultsFile[['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice']]
         
         cols = np.asarray(['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice'], dtype = object)
         
-        newName = results.split('_Results')[0] + 'L50_Results'
+        newName = results.split('_Results')[0] + '2mT_Results'
         
         newResults.to_csv(os.path.join(pathSave, newName) + '.txt', sep='\t')
     

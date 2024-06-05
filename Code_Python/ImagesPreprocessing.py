@@ -47,7 +47,7 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '24.05.22'
+date = '24.05.22/Archive'
 # DirDeptho = '24.05.29_Deptho/Deptho_P3'
 
 DirSave = os.path.join(cp.DirDataRaw, date) 
