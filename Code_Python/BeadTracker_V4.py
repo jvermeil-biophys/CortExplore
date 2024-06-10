@@ -1023,10 +1023,10 @@ class Trajectory:
         
         #### Z detection settings here
         self.HDZfactor = 5
-        self.maxDz_triplets = 60*3 # Max Dz allowed between images
-        self.maxDz_singlets = 30*3
-        self.HWScan_triplets = 1200*3 # Half width of the scans
-        self.HWScan_singlets = 600*3
+        self.maxDz_triplets = 60 # Max Dz allowed between images
+        self.maxDz_singlets = 30
+        self.HWScan_triplets = 1200 # Half width of the scans
+        self.HWScan_singlets = 600
         
         
     def __str__(self):
@@ -1057,7 +1057,7 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 550 and iF <= 700):
+                # if (iF >= 1250 and iF <= 1350):
                 #     plot = 1
 
             # ###################################################################

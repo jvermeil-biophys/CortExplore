@@ -63,7 +63,7 @@ gs.set_default_options_jv()
 # %% Deptho for the 24-05-23
 
 DirDataRaw = cp.DirDataRaw
-date = '24.05.23'
+date = '24.06.04'
 
 
 

@@ -15,12 +15,13 @@ import seaborn as sb
 
 import CortexPaths as cp
 
+#%%
 # import utility functions
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
-import getIntensity as GI
+#import getIntensity as GI
 #%% import data
-DirDataTimeseries = "D:/Eloise/MagneticPincherData/Data_Timeseries"
+DirDataTimeseries_d = "D:/Eloise/MagneticPincherData/Data_Timeseries/24-04-24_data"
 allTimeSeriesDataFiles = [f for f in os.listdir(cp.DirDataTimeseries) \
                           if (os.path.isfile(os.path.join(cp.DirDataTimeseries, f)) and f.endswith(".csv"))]
 print(allTimeSeriesDataFiles)
@@ -112,7 +113,7 @@ for file in allTimeSeriesDataFiles :
     fig.suptitle('Data for '+cellID)
     plt.xlabel('Time (s)')
     fig.set_size_inches(10, 11)
-    plt.savefig(DirDataTimeseries + '/' + file[:-4] + '_plot.jpg')
+    plt.savefig(cp.DirDataTimeseries + '/' + file[:-4] + '_plot.jpg')
     plt.close()
 
 #%% get every h data for each cell
@@ -150,6 +151,8 @@ p1=sb.scatterplot(fluctu.T['mean'],color='k')
 p2=sb.scatterplot(fluctu.T['max'],color='r')
 p3=sb.scatterplot(fluctu.T['min'],color='b')
 
+#%%
+from getIntensity import intensityCellv2
 #%% get info of fluo
 path_crop="D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo/crop"
 path="D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo"
@@ -157,31 +160,52 @@ cell='24-04-24_M1_P1_C1'
 fileInfotxt=cell +'_disc20um-01.czi_info.txt'
 allcrops=os.listdir(path_crop)
 
-cells=pd.DataFrame()
+cells_fluo=pd.DataFrame()
 
 for j in range(len(allcrops)):
-    name=allcrops[j][12:-19]
-    test = GI.intensityCellv2(allcrops[j],fileInfotxt,path_crop,path)
-    cells=pd.concat([cells,test])
+    name=allcrops[j][12:-19] 
+    test =intensityCellv2(allcrops[j],fileInfotxt,path_crop,path)
+    cells_fluo=pd.concat([cells_fluo,test])
 
 #%%
 p4=sb.scatterplot(fluctu.T['mean'],color='k')
 p5=sb.scatterplot(fluctu.T['max'],color='k')
 p6=sb.scatterplot(fluctu.T['min'],color='b')
 #%%
-cells_h=fluctu.T
-for i in fluctu.columns:
-    if i in cells.index:
-        cells_h.at[i,'Color']=cells.at[i,'Color']
-p7=sb.scatterplot(x=cells_h.index,y=cells_h['mean'],hue=cells_h['Color'], palette=['g','r'])
+# cells_h=fluctu.T
+# for i in fluctu.columns:
+#     if i in cells.index:
+#         cells_h.at[i,'Color']=cells.at[i,'Color']
+# p7=sb.scatterplot(x=cells_h.index,y=cells_h['mean'],hue=cells_h['Color'], palette=['g','r'])
 
     
-    
-    
-    
-    
-    
-    
-    
+
+#%%
+path_fluo='D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo'
+data_fluo=pd.read_csv(os.path.join(path_fluo,'data_fluo_24-04.txt'),sep='\t')
+#%%
+data_fluo.loc[data_fluo['Color'] =='Green', ['phase']] = 'S/G2'
+data_fluo.loc[data_fluo['Color'] =='Red', ['phase']] = 'G1'
+data_fluo.loc[data_fluo['Color'] =='Yellow', ['phase']] = 'G1/S'
+
+#%%
+hmean=h_means.T
+hmean=hmean.rename({0:'mean_h'},axis='columns')
+#%%
+for i in data_fluo.index :
+    for j in hmean.index :
+        if data_fluo.at[i,'name'][:-3]==j[:-3]:
+            hmean.at[j,'Color']=data_fluo.at[i,'Color']
+            hmean.at[j,'phase']=data_fluo.at[i,'phase']
+            hmean.at[j,'ratio G/R']=data_fluo.at[i,'ratio G/R']
+hmean.at['P1_C12-02','phase']='M'
+#hmean.at['P1_C1-01','phase']='M'
+#%%
+p1=sb.boxplot(hmean,x='phase',y='mean_h',hue='phase',palette=['g','limegreen','r','gold'])
+sb.swarmplot(hmean,x='phase',y='mean_h',hue=hmean.index)
+p1.set_title('Data 24-04 confocal')
+
+#%%
+hmean.to_csv(path + '/data_24-04.txt', sep='\t')
     
 

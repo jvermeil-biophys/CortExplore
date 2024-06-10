@@ -134,7 +134,7 @@ expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True)
 # %%%% Specific task
 
 # Example : 
-Task_1 = '24-05-23'
+Task_1 = '24-06-04'
 data=taka.computeGlobalTable_meca(task = Task_1, fileName = 'Global_MecaData', 
                             save = True, PLOT = True, source = 'Python') # task = 'updateExisting'
 # Task_2 = '22-05-03_M1 & 22-05-04_M2'
@@ -160,3 +160,4 @@ data=taka.computeGlobalTable_meca(task = Task_1, fileName = 'Global_MecaData',
 # Example : df = taka.getFluoData().head()
 
 
+#%

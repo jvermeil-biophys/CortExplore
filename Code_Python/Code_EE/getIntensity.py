@@ -443,9 +443,9 @@ for i in cells_all.index :
             cells_norm2.at[i,'EGFP']=(cells_all.at[i,'EGFP']-bg.at[bg.index[k],'EGFP'])
             cells_norm2.at[i,'DsRed']=(cells_all.at[i,'DsRed']-bg.at[bg.index[k],'DsRed'])
             cells_norm2.at[i,'ratio G/R']=cells_norm2.at[i,'EGFP']/cells_norm2.at[i,'DsRed']
-cells_norm2.loc[cells_norm2['ratio G/R'] > 2, ['Color']] = 'Green'
-cells_norm2.loc[cells_norm2['ratio G/R'] < 0.5, ['Color']] = 'Red'
-cells_norm2.loc[(cells_norm2['ratio G/R'] > 0.5) & (cells_norm2['ratio G/R']<2), ['Color']] = 'Yellow' 
+cells_norm2.loc[cells_norm2['ratio G/R'] > 3, ['Color']] = 'Green'
+cells_norm2.loc[cells_norm2['ratio G/R'] < 0.3, ['Color']] = 'Red'
+cells_norm2.loc[(cells_norm2['ratio G/R'] > 0.3) & (cells_norm2['ratio G/R']<3), ['Color']] = 'Yellow' 
 
 #%%
 intens=cells_norm2.T
@@ -481,12 +481,15 @@ while k <len(inds):
 #%%
 cells_maxN=intens_max.T
 #%%
-p6=sns.scatterplot(cells_maxN, x='EGFP', y='DsRed',hue='Color', palette=['g','r','gold'])
+p6=sns.scatterplot(cells_maxN, x='EGFP', y='DsRed',hue='Color', palette=['gold','g','r'])
 plt.xscale('log')
 plt.yscale('log')
 plt.title('Intensity of each fluo without background')
-# plt.ylim(10**(-2), 10**2)
-# plt.xlim(10**(-2), 10**2)
+plt.ylim(1, 10**5)
+plt.xlim(1, 10**5)
+#%%
+cells_maxN.to_csv(path + '/data.txt', sep='\t')
+
 #%%
 
 
@@ -516,7 +519,7 @@ def intensityCellShrimp(images,dir_crop,dir_file):
     histos=pd.DataFrame()
     images_rg=[]
     cellID=ufun.findInfosInFileName(file, 'cellID')
-    name_cell=cellID[12:]+file[-3:]
+    name_cell=cellID[12:]
     for i in range(channels):
         images_rg.append(plt.imread(os.path.join(images_folder,images_crop[i])))
         histo,bins=np.histogram(images_rg[i],bins=65536,range=(images_rg[i][images_rg[i] != 0].min(),images_rg[i].max()))
@@ -584,28 +587,89 @@ for j in range(len(allcrops_bg)):
 bgS=bgS.replace('Yellow','bg')
 
 #%%
-cells_all=cells.copy()
-cells_normS=cells_all.copy()
-for i in cells_all.index :
-    for k in range(len(bgS.index)):
-        if i==bgS.index[k]:
-            print(k)
-            cells_normS.at[i,'EGFP']=(cells_all.at[i,'EGFP']-bgS.at[bgS.index[k],'EGFP'])
-            cells_normS.at[i,'DsRed']=(cells_all.at[i,'DsRed']-bgS.at[bgS.index[k],'DsRed'])
-            cells_normS.at[i,'ratio G/R']=cells_normS.at[i,'EGFP']/cells_normS.at[i,'DsRed']
-cells_normS.loc[cells_normS['ratio G/R'] > 2, ['Color']] = 'Green'
-cells_normS.loc[cells_normS['ratio G/R'] < 0.5, ['Color']] = 'Red'
-cells_normS.loc[(cells_normS['ratio G/R'] > 0.5) & (cells_normS['ratio G/R']<2), ['Color']] = 'Yellow' 
+def normalize_crop_bg(cells,bg):
+    cells_all=cells.copy()
+    cells_normS=cells_all.copy()
+    for i in cells_all.index :
+        for k in range(len(bgS.index)):
+            if i==bgS.index[k]:
+                print(k)
+                cells_normS.at[i,'EGFP']=(cells_all.at[i,'EGFP']-bgS.at[bgS.index[k],'EGFP'])
+                cells_normS.at[i,'DsRed']=(cells_all.at[i,'DsRed']-bgS.at[bgS.index[k],'DsRed'])
+                cells_normS.at[i,'ratio G/R']=cells_normS.at[i,'EGFP']/cells_normS.at[i,'DsRed']
+    cells_normS.loc[cells_normS['ratio G/R'] > 2, ['Color']] = 'Green'
+    cells_normS.loc[cells_normS['ratio G/R'] < 0.5, ['Color']] = 'Red'
+    cells_normS.loc[(cells_normS['ratio G/R'] > 0.5) & (cells_normS['ratio G/R']<2), ['Color']] = 'Yellow'
+    cells_normS.loc[cells_normS['Color'] =='Green', ['phase']] = 'S/G2'
+    cells_normS.loc[cells_normS['Color'] =='Red', ['phase']] = 'G1'
+    cells_normS.loc[cells_normS['Color'] =='Yellow', ['phase']] = 'G1/S'
+    return cells_normS
+
 #%%
-plt.figure(figsize=(8, 7))
-p5=sns.scatterplot(cells_normS, x='EGFP', y='DsRed', hue='Color', palette=['r','g','gold'])
-#p6=sns.scatterplot(bg, x='EGFP', y='DsRed', hue='Color', palette=['k'])
-plt.title('Intensity of each color wo background - cells from Shrimp 23-05')
+cells_norm=normalize_crop_bg(cells, bgS)
+cells_norm.to_csv(path + '/data_fluo_24.05.23.txt', sep='\t')
+#%%
+# plt.figure(figsize=(8, 7))
+# p5=sns.scatterplot(cells_normS, x='EGFP', y='DsRed', hue='Color', palette=['r','g','gold'])
+# #p6=sns.scatterplot(bg, x='EGFP', y='DsRed', hue='Color', palette=['k'])
+# plt.title('Intensity of each color wo background - cells from Shrimp 23-05')
+# plt.xscale('log')
+# plt.yscale('log')
+# plt.ylim(10, 10**4)
+# plt.xlim(10, 10**4)
+
+# #%%
+
+# cells_normS.to_csv(path + '/data.txt', sep='\t')
+
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo/crop"
+path="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo"
+all_dircrops=os.listdir(path_crop)
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-19]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+
+
+
+#%% background for shrimp
+path_crop_bg="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo/background"
+path="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops_bg=os.listdir(path_crop_bg)
+fileInfotxt_bg=[i[:-5]+'_info.txt' for i in allcrops_bg]
+
+bgS=pd.DataFrame()
+
+for j in range(len(allcrops_bg)):
+    name=allcrops_bg[j][12:-17]
+    test= intensityCellShrimp(allcrops_bg[j],path_crop_bg,path)
+    bgS=pd.concat([bgS,test])
+bgS=bgS.replace('Yellow','bg')
+
+#%%
+cells_norm=normalize_crop_bg(cells, bgS)
+cells_norm.loc[cells_norm.index=='P2_C12', ['phase']] = 'M'
+cells_norm.loc[cells_norm.index=='P2_C13', ['phase']] = 'M'
+cells_norm.loc[cells_norm.index=='P2_C5', ['phase']] = 'M'
+cells_norm.to_csv(path + '/data_fluo_24.06.04.txt', sep='\t')
+
+#%%
+p2=sns.scatterplot(data=cells,x='EGFP',y='DsRed',hue='Color',palette=['gold','g','r'])
 plt.xscale('log')
 plt.yscale('log')
-plt.ylim(10, 10**4)
-plt.xlim(10, 10**4)
-
 #%%
-
-cells_normS.to_csv(path + '/data.txt', sep='\t')
+p1=sns.scatterplot(data=cells_norm,x='EGFP',y='DsRed',hue='Color',palette=['g','gold','r'])
+p1.axhline(np.min(bgS['DsRed']))
+p1.axvline(np.min(bgS['EGFP']))
+plt.xscale('log')
+plt.xlim(10,10**4)
+plt.yscale('log')
+plt.ylim(10,10**4)

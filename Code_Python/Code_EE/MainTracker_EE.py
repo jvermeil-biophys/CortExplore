@@ -122,4 +122,9 @@ depthoNames = '24.05.23_M450_step20_100X'
 
 output = mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, redoAllSteps = True, trackAll = False)
 
+#%%
+dates = '24.06.04'
+manips, wells, cells = 1, 1,7
+depthoNames = '24.06.04_M450_step20_100X'
 
+output = mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, redoAllSteps = True, trackAll = True)

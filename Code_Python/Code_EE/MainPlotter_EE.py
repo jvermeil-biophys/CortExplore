@@ -1370,7 +1370,348 @@ def buildStyleDictMCA():
 
 # %%% Run here scripts to make plots
 
+GlobalTable = taka.getGlobalTable_meca('Global_MecaData')
+
+#%%
+
+#sns.boxplot(y=GlobalTable['bestH0'])
+data=GlobalTable.copy()
+#%%
+#excluded = ['24-05-23_M1_P2_C4','24-05-23_M1_P2_C5','24-05-23_M1_P2_C3','24-05-23_M1_P1_C1','24-05-23_M1_P2_C6',
+#            '24-05-23_M2_P2_C4','24-05-23_M2_P2_C5','24-05-23_M2_P2_C3','24-05-23_M2_P1_C1','24-05-23_M2_P2_C6']
+excluded = ['24-05-23_M1_P2_C4','24-05-23_M2_P2_C4','24-05-23_M1_P1_C1','24-05-23_M2_P1_C1'
+            ,'24-05-23_M1_P2_C5','24-05-23_M1_P2_C3','24-05-23_M2_P2_C5','24-05-23_M2_P2_C3']#,'24-05-23_M1_P2_C5','24-05-23_M2_P2_C5']
+for i in excluded:
+    data = data[data['cellID'].str.contains(i) == False]
+
+for j in range(174,180,1): #first set of P2_C6 M2
+    data=data.drop(j)
+for k in range(54,60,1): #first set of P2_C6 M1
+    data=data.drop(k)
+# for z in range(42,48,1): #second set of P2_C4 M1
+#     data=data.drop(z)
+# for l in range(162,168,1): #second set of P2_C4 M2
+#     data=data.drop(l)
+#%%
+sns.swarmplot(data,x='manipID',y='bestH0')
+sns.boxplot(data,x='manipID',y=GlobalTable['bestH0'])
+plt.show()
+
+#%%
+path_fluo='D:/Eloise/MagneticPincherData/Raw/24.05.23_fluo'
+data_fluo_23_05=pd.read_csv(os.path.join(path_fluo,'data_fluo_23-05.txt'),sep='\t')
+data_fluo_23_05=data_fluo_23_05.rename({'Unnamed: 0':'cellID'},axis='columns')
+#%%
+# data_fluo.loc[data_fluo['Color'] =='Green', ['phase']] = 'S/G2'
+# data_fluo.loc[data_fluo['Color'] =='Red', ['phase']] = 'G1'
+# data_fluo.loc[data_fluo['cellID']=='P2_C4-01', ['phase']] = 'M'
+# #%%
+# for i in range(len(data_fluo['cellID'])):
+#     for j in range(len(data['cellCode'])):
+#         if data_fluo.at[data_fluo.index[i],'cellID'][:-3]==data.at[data.index[j],'cellCode']:
+#             data.at[data.index[j],'Color']=data_fluo.at[data_fluo.index[i],'Color']
+#             data.at[data.index[j],'phase']=data_fluo.at[data_fluo.index[i],'phase']
+#             data.at[data.index[j],'ratio G/R']=data_fluo.at[data_fluo.index[i],'ratio G/R']
+#             data.at[data.index[j],'EGFP']=data_fluo.at[data_fluo.index[i],'EGFP']
+#             data.at[data.index[j],'DsRed']=data_fluo.at[data_fluo.index[i],'DsRed']
+#%%
+sns.swarmplot(data,x='manipID',y='bestH0',hue='Color',palette=['red','green'])
+sns.boxplot(data,x='manipID',y=GlobalTable['bestH0'],color='tan')
+plt.show()          
+#%%
+sns.boxplot(data,x='manipID',y='bestH0', hue='phase',palette=['tomato','mediumseagreen'])
+sns.swarmplot(data,x='manipID',y='bestH0',hue='phase',palette=['red','green','limegreen'],dodge=True)
+plt.show()
+
+#%%	manipID 24-05-23_M1
+data_M1 = data[data['manipID'].str.contains('24-05-23_M2') == False]
+ax=sns.swarmplot(data_M1,x='phase',y='bestH0',hue='EGFP')
+sns.boxplot(data_M1,x='phase',y='bestH0',hue='phase',palette=['mediumseagreen','tomato'])
+plt.legend(bbox_to_anchor=(1.05, 1.1), loc='upper right')
+ax.set_title('Data from 23-05')
+plt.plot()
+#%%
+sns.scatterplot(data_M1,x='EGFP',y='bestH0')
+plt.xscale('log') 
+#%%	manipID 24-05-23_M2
+data_M2 = data[data['manipID'].str.contains('24-05-23_M2') == True]
+ax=sns.swarmplot(data_M2,x='phase',y='bestH0',hue='cellCode')
+sns.boxplot(data_M2,x='phase',y='bestH0',hue='phase',palette=['tomato','mediumseagreen'])
+plt.legend(bbox_to_anchor=(1.05, 1.1), loc='upper right')
+ax.set_title('Data from 23-05')
+plt.plot()
+#%% both manip
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+p1=sns.swarmplot(ax=axes[0],data=data_M1,x='phase',y='bestH0',hue='cellCode')
+sns.boxplot(ax=axes[0],data=data_M1,x='phase',y='bestH0',hue='phase',palette=['tomato','mediumseagreen'])
+sns.move_legend(p1,'upper center')
+axes[0].set_title('from raw images')
+p2=sns.swarmplot(ax=axes[1],data=data_M2,x='phase',y='bestH0',hue='cellCode')
+sns.boxplot(ax=axes[1],data=data_M2,x='phase',y='bestH0',hue='phase',palette=['tomato','mediumseagreen'])
+sns.move_legend(p2,'upper center')
+axes[1].set_title('from blurred images')
+
+#%%
+for i in data.index:
+    if data.at[i,'cellCode'] == 'P2_C4':
+        print(data.at[i,'bestH0'])
+        
+#%% get h mean
+for i in data['cellID'] :
+    j=data.index[data['cellID']==i]
+    data.at[j[0],'mean_h'] = data.loc[j[0]:j[-1]]['bestH0'].sum()/6
+#%%
+data.to_csv(path_fluo + '/data_24.05.23.txt', sep='\t')
+#%%
+data_M1 = data[data['manipID'].str.contains('24-05-23_M2') == False]
+sns.boxplot(data=data_M1,x='phase',y='mean_h',hue='phase',palette=['tomato','mediumseagreen'])
+sns.swarmplot(data=data_M1,x='phase',y='mean_h',hue='cellCode',palette='Paired')
+plt.title('Mean of H0 for each cell 23-05')
+#%%
+sns.scatterplot(data_M1,x='EGFP',y='mean_h',hue='phase')
+#plt.xscale('log')
+#plt.yscale('log')
+#%%
+path_24_04='D:/Eloise/MagneticPincherData/Raw'
+data_24_04=pd.read_csv(os.path.join(path_24_04,'data_24-04.txt'),sep='\t')
+data_24_04=data_24_04.rename({'Unnamed: 0':'cellCode'},axis='columns')
+for i in data_24_04.index:
+    data_24_04.at[i,'mean_h']=data_24_04.at[i,'mean_h']*1000
+data_24_04=data_24_04.drop(index=1)
+path_fluo_24_04='D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo'
+data_fluo_24_04=pd.read_csv(os.path.join(path_fluo_24_04,'data_fluo_24-04.txt'),sep='\t')
+data_fluo_24_04=data_fluo_24_04.rename({'Unnamed: 0':'cellCode'},axis='columns')
+#data_24_04=pd.concat(data_24_04,data_fluo_24_04['EGFP','DsRed'])
+#%%
+for i in range(len(data_fluo_24_04['cellCode'])):
+    for j in range(len(data_24_04['cellCode'])):
+        if data_fluo_24_04.at[data_fluo_24_04.index[i],'cellCode']==data_24_04.at[data_24_04.index[j],'cellCode'][:-2]:
+            data_24_04.at[data_24_04.index[j],'Color']=data_fluo_24_04.at[data_fluo_24_04.index[i],'Color']
+            #data_24_04.at[data_24_04.index[j],'phase']=data_fluo_24_04.at[data_fluo_24_04.index[i],'phase']
+            data_24_04.at[data_24_04.index[j],'ratio G/R']=data_fluo_24_04.at[data_fluo_24_04.index[i],'ratio G/R']
+            data_24_04.at[data_24_04.index[j],'EGFP']=data_fluo_24_04.at[data_fluo_24_04.index[i],'EGFP']
+            data_24_04.at[data_24_04.index[j],'DsRed']=data_fluo_24_04.at[data_fluo_24_04.index[i],'DsRed']
+#%%
+sns.scatterplot(data_24_04,x='EGFP',y='mean_h',hue='phase')
+#%%
+data_23_05=data_M1[['cellID','cellCode','mean_h','ratio G/R','Color','phase','EGFP','DsRed']]
+
+#%%
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+sns.boxplot(ax=axes[0],data=data_24_04,x='phase',y='mean_h')
+sns.swarmplot(ax=axes[0],data=data_24_04,x='phase',y='mean_h',hue='cellCode',palette='Paired')
+axes[0].set_title('data from 24-04')
+sns.boxplot(ax=axes[1],data=data_23_05,x='phase',y='mean_h')
+sns.swarmplot(ax=axes[1],data=data_23_05,x='phase',y='mean_h',hue='cellCode',palette='Paired')
+axes[1].set_title('data from 23-05')
+axes[0].set_ylim(100,1100)
+axes[1].set_ylim(100,1100)
+
+#%%
+data_all=pd.concat([data_24_04,data_23_05])
+s = pd.Series([x for x in range(len(data_all))])
+data_all=data_all.set_index(s)
+data_all[data_all['phase']=='M']
+#%%
+sns.boxplot(data=data_24_04,x='phase',y='mean_h',order=['S/G2','G1','G1/S','M'],hue='phase',palette=['mediumseagreen','limegreen','tomato','orange'])
+p2=sns.swarmplot(data=data_24_04,x='phase',y='mean_h',hue='cellCode',palette='Paired')
+p2.set_title('H mean (nm) vs phase for 24-04 cells')
+#%%
+sns.boxplot(data=data_all,x='phase',y='mean_h',order=['S/G2','G1','G1/S','M'],hue='phase',palette=['mediumseagreen','limegreen','tomato','gold'])
+p5=sns.swarmplot(data=data_all,x='phase',y='mean_h',hue='cellCode')
+p5.set_title('H mean (nm) vs phase for both experiments')
+
+#%%
+sns.scatterplot(data_all,x='EGFP',y='mean_h',hue='DsRed',hue_norm=matplotlib.colors.LogNorm())
+#sns.scatterplot(data=data_24_04,x='EGFP',y='mean_h',hue='phase')
+plt.xscale('log')
+#%%
+sns.boxplot(data=data_23_05,x='phase',y='bestH0',hue='phase',palette=['mediumseagreen','tomato'])
+p2=sns.swarmplot(data=data_23_05,x='phase',y='bestH0',hue='cellCode',palette='Paired')
+p2.set_title('best H0 vs phase for 24-04 cells')
+
+# %% data all sum up all data
+
+# %%% get data from 24-04
+# %%%% fluo
+path_fluo_24_04='D:/Eloise/MagneticPincherData/Raw/24.04.24_fluo'
+data_fluo_24_04=pd.read_csv(os.path.join(path_fluo_24_04,'data_fluo_24-04.txt'),sep='\t')
+data_fluo_24_04=data_fluo_24_04.rename({'Unnamed: 0':'cellCode'},axis='columns')
+data_fluo_24_04['date']='24-04-24'
+data_fluo_24_04=data_fluo_24_04.drop('name',axis='columns')
+# %%%% h
+path='D:/Eloise/MagneticPincherData/Raw'
+data_24_04=pd.read_csv(os.path.join(path,'data_24-04.txt'),sep='\t')
+data_24_04=data_24_04.rename({'Unnamed: 0':'cellCode'},axis='columns')
+data_24_04['date']='24-04-24'
+data_24_04['mean_h']=data_24_04['mean_h']*1000
+# %%%% combine the two
+for i in range(len(data_fluo_24_04['cellCode'])):
+    for j in range(len(data_24_04['cellCode'])):
+        if data_fluo_24_04.at[data_fluo_24_04.index[i],'cellCode']==data_24_04.at[data_24_04.index[j],'cellCode'][:-3]:
+            data_24_04.at[data_24_04.index[j],'Color']=data_fluo_24_04.at[data_fluo_24_04.index[i],'Color']
+            data_24_04.at[data_24_04.index[j],'ratio G/R']=data_fluo_24_04.at[data_fluo_24_04.index[i],'ratio G/R']
+            data_24_04.at[data_24_04.index[j],'EGFP']=data_fluo_24_04.at[data_fluo_24_04.index[i],'EGFP']
+            data_24_04.at[data_24_04.index[j],'DsRed']=data_fluo_24_04.at[data_fluo_24_04.index[i],'DsRed']
+            #data_24_04.at[data_24_04.index[j],'phase']=data_fluo_24_04.at[data_fluo_24_04.index[i],'phase']
+# %%%% plot
+
+# %%% get data from 23-05
+# %%%% fluo
+path_fluo='D:/Eloise/MagneticPincherData/Raw/24.05.23_fluo'
+data_fluo_23_05=pd.read_csv(os.path.join(path_fluo,'data_fluo_24.05.23.txt'),sep='\t')
+data_fluo_23_05=data_fluo_23_05.rename({'Unnamed: 0':'cellCode'},axis='columns')
+data_fluo_23_05['date']='24-05-23'
+# %%%% other data
+path='D:/Eloise/MagneticPincherData/Raw'
+data_23_05=pd.read_csv(os.path.join(path,'data_24.05.23.txt'),sep='\t')
+data_23_05['date']='24-05-23'
+data_23_05=data_23_05.drop('Unnamed: 0',axis='columns')
+data_23_05 = data_23_05[data_23_05['manipID'].str.contains('24-05-23_M1') == True]
+# %%%% combine the two
+for i in range(len(data_fluo_23_05['cellCode'])):
+    for j in range(len(data_23_05['cellCode'])):
+        if data_fluo_23_05.at[data_fluo_23_05.index[i],'cellCode']==data_23_05.at[data_23_05.index[j],'cellCode']:
+            data_23_05.at[data_23_05.index[j],'Color']=data_fluo_23_05.at[data_fluo_23_05.index[i],'Color']
+            data_23_05.at[data_23_05.index[j],'ratio G/R']=data_fluo_23_05.at[data_fluo_23_05.index[i],'ratio G/R']
+            data_23_05.at[data_23_05.index[j],'EGFP']=data_fluo_23_05.at[data_fluo_23_05.index[i],'EGFP']
+            data_23_05.at[data_23_05.index[j],'DsRed']=data_fluo_23_05.at[data_fluo_23_05.index[i],'DsRed']
+            data_23_05.at[data_23_05.index[j],'phase']=data_fluo_23_05.at[data_fluo_23_05.index[i],'phase']
+# %%% get data from 04-06
+# %%%% fluo
+path_fluo_04_06='D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo'
+data_fluo_04_06=pd.read_csv(os.path.join(path_fluo_04_06,'data_fluo_24.06.04.txt'),sep='\t')
+data_fluo_04_06=data_fluo_04_06.rename({'Unnamed: 0':'cellCode'},axis='columns')
+data_fluo_04_06['date']='24-06-04'
+
+#%%%% others from GlobalMeca
+
+# %%% get all data together
+data_fluo_all=pd.concat([data_fluo_23_05,data_fluo_04_06,data_24_04])
+
+#%%% plot all
+sns.scatterplot(data_fluo_all,x='EGFP',y='DsRed',hue='date',palette=['tomato','mediumseagreen','black'])
+plt.xscale('log')
+plt.yscale('log')
 
 
+#%% Data from 24.06.04
+
+#%%%
+data_04_06 = taka.getGlobalTable_meca('Global_MecaData')
+
+#%%%%
+sns.boxplot(data_04_06,y='bestH0')
+sns.swarmplot(data_04_06,y='bestH0')
+plt.show()
+#%%%%
+for i in data_04_06['cellID'] :
+    j=data_04_06.index[data_04_06['cellID']==i]
+    data_04_06.at[j[0],'mean_h'] = data_04_06.loc[j[0]:j[-1]]['bestH0'].sum()/10
+
+#%%%%
+path='D:/Eloise/MagneticPincherData/Raw/24.06.04'
+data_04_06.to_csv(path + '/data_24.06.04v2.txt', sep='\t')
+
+#%%% fluo
+path_fluo='D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo'
+data_fluo_04_06=pd.read_csv(os.path.join(path_fluo,'data_fluo_24.06.04.txt'),sep='\t')
+data_fluo_04_06=data_fluo_04_06.rename({'Unnamed: 0':'cellCode'},axis='columns')
+data_fluo_04_06['date']='24-06-04'
+
+#%%%
+for i in range(len(data_fluo_04_06['cellCode'])):
+    for j in range(len(data_04_06['cellCode'])):
+        if data_fluo_04_06.at[data_fluo_04_06.index[i],'cellCode']==data_04_06.at[data_04_06.index[j],'cellCode']:
+            data_04_06.at[data_04_06.index[j],'Color']=data_fluo_04_06.at[data_fluo_04_06.index[i],'Color']
+            data_04_06.at[data_04_06.index[j],'ratio G/R']=data_fluo_04_06.at[data_fluo_04_06.index[i],'ratio G/R']
+            data_04_06.at[data_04_06.index[j],'EGFP']=data_fluo_04_06.at[data_fluo_04_06.index[i],'EGFP']
+            data_04_06.at[data_04_06.index[j],'DsRed']=data_fluo_04_06.at[data_fluo_04_06.index[i],'DsRed']
+            data_04_06.at[data_04_06.index[j],'phase']=data_fluo_04_06.at[data_fluo_04_06.index[i],'phase']
+#%%%
+excluded = ['P1_C2','P2_C13']
+for i in excluded:
+    data_04_06= data_04_06[data_04_06['cellCode'].str.contains(i) == False]
+    
+#%%
+data_shrimp=pd.concat([data_23_05,data_04_06])
+#%%
+s = pd.Series([x for x in range(len(data_shrimp))])
+data_shrimp=data_shrimp.set_index(s)
+#%%%plot
+sns.boxplot(data_04_06,x='phase',y='bestH0',order=['G1','G1/S','S/G2','M'])
+sns.swarmplot(data_04_06,x='phase',y='bestH0',order=['G1','G1/S','S/G2','M'],hue='cellCode')
+plt.show()
+
+#%%
+sns.boxplot(data_shrimp,x='phase',y='mean_h',order=['G1','G1/S','S/G2','M'])
+sns.swarmplot(data_shrimp,x='phase',y='mean_h',order=['G1','G1/S','S/G2','M'])
+plt.show()
+#%%
+data_shrimp['fluctu']=data_shrimp['ctFieldFluctuAmpli']/data_shrimp['ctFieldThickness']
+#%%%
+
+sns.lmplot(data_shrimp,x='ctFieldThickness',y='fluctu',hue='phase')
+#plt.xscale('log')
+#plt.yscale('log')
+plt.show()
+
+#%%
+sns.boxplot(data_shrimp,x='phase',y='E_Full',order=['G1','G1/S','S/G2','M'])
+sns.swarmplot(data_shrimp,x='phase',y='E_Full',order=['G1','G1/S','S/G2','M'])
+plt.yscale('log')
+plt.show()
+#%% data all
+data_all=pd.concat([data_24_04,data_23_05,data_04_06])
+s = pd.Series([x for x in range(len(data_all))])
+data_all=data_all.set_index(s)
+#%%
+sns.boxplot(data_all,x='phase',y='surroundingThickness',order=['G1','G1/S','S/G2','M'])
+sns.swarmplot(data_all,x='phase',y='surroundingThickness',order=['G1','G1/S','S/G2','M'])
+plt.show()
+
+#%%
+sns.scatterplot(data_all,x='bestH0',y='E_Full',hue='phase')
+plt.yscale('log')
+plt.show()
 
 
+#%%
+path='D:/Eloise/MagneticPincherData/Raw/24.06.04'
+datav2=pd.read_csv(os.path.join(path,'data_24.06.04v2.txt'),sep='\t')
+#datav2=datav2.rename({'Unnamed: 0':'cellCode'},axis='columns')
+
+path='D:/Eloise/MagneticPincherData/Raw/24.06.04'
+data=pd.read_csv(os.path.join(path,'data_24.06.04.txt'),sep='\t')
+#data=data.rename({'Unnamed: 0':'cellCode'},axis='columns')
+#%%
+for i in range(len(data_fluo_04_06['cellCode'])):
+    for j in range(len(data['cellCode'])):
+        if data_fluo_04_06.at[data_fluo_04_06.index[i],'cellCode']==data.at[data.index[j],'cellCode']:
+            data.at[data.index[j],'Color']=data_fluo_04_06.at[data_fluo_04_06.index[i],'Color']
+            data.at[data.index[j],'ratio G/R']=data_fluo_04_06.at[data_fluo_04_06.index[i],'ratio G/R']
+            data.at[data.index[j],'EGFP']=data_fluo_04_06.at[data_fluo_04_06.index[i],'EGFP']
+            data.at[data.index[j],'DsRed']=data_fluo_04_06.at[data_fluo_04_06.index[i],'DsRed']
+            data.at[data.index[j],'phase']=data_fluo_04_06.at[data_fluo_04_06.index[i],'phase']
+#%%
+for i in range(len(data_fluo_04_06['cellCode'])):
+    for j in range(len(datav2['cellCode'])):
+        if data_fluo_04_06.at[data_fluo_04_06.index[i],'cellCode']==datav2.at[datav2.index[j],'cellCode']:
+            datav2.at[datav2.index[j],'Color']=data_fluo_04_06.at[data_fluo_04_06.index[i],'Color']
+            datav2.at[datav2.index[j],'ratio G/R']=data_fluo_04_06.at[data_fluo_04_06.index[i],'ratio G/R']
+            datav2.at[datav2.index[j],'EGFP']=data_fluo_04_06.at[data_fluo_04_06.index[i],'EGFP']
+            datav2.at[datav2.index[j],'DsRed']=data_fluo_04_06.at[data_fluo_04_06.index[i],'DsRed']
+            datav2.at[datav2.index[j],'phase']=data_fluo_04_06.at[data_fluo_04_06.index[i],'phase']
+#%%
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+p1=sns.swarmplot(ax=axes[0],data=data,x='phase',y='E_Full',hue='cellCode')
+sns.boxplot(ax=axes[0],data=data,x='phase',y='E_Full',hue='phase')
+sns.move_legend(p1,'upper center')
+axes[0].set_title('x3')
+axes[0].set_yscale('log')
+p2=sns.swarmplot(ax=axes[1],data=datav2,x='phase',y='E_Full',hue='cellCode')
+sns.boxplot(ax=axes[1],data=datav2,x='phase',y='E_Full',hue='phase')
+sns.move_legend(p2,'upper center')
+axes[1].set_title('simple')
+axes[1].set_yscale('log')
+plt.show()
