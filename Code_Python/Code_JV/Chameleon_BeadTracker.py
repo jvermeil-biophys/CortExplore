@@ -44,14 +44,15 @@ from skimage import io, filters, exposure, measure, transform, util, color
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
+from matplotlib.colors import to_hex
 from matplotlib import ticker
 from datetime import date
 
 #### Local Imports
 
 import sys
-import CortexPaths as cp
-sys.path.append(cp.DirRepoPython)
+# import CortexPaths as cp
+# sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
 import GlobalConstants as gc
@@ -163,13 +164,13 @@ class PincherTimeLapse:
         log_UIxy = np.zeros((self.nS, self.NB, 2), dtype = int)
         #
         
-        self.NLoops = np.max(logDf['iL'])
+        self.NLoops = int(np.max(logDf['iL']))
         Nuplet = self.Nuplet
         
         # Passive Part
         NPassive = logDf[logDf['Status'] == 'Passive'].shape[0]
-        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)]).astype(int)
-        logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)]).astype(int)
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)])
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)])
         
         # Fluo Part
         logDf[logDf['Status'] == 'Fluo']['idxAnalysis'] = -1
@@ -178,8 +179,8 @@ class PincherTimeLapse:
         indexAction = logDf[logDf['Status'].apply(lambda x : x.startswith('Action'))].index
         
         # idxAnalysis
-        logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
         if len(indexAction.values) > 0:
+            logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
             for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
                 index_iL = logDf[logDf['iL'] == iL].index
                 
@@ -189,35 +190,28 @@ class PincherTimeLapse:
                 #
                 logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
                 # logDf.loc[i_startOfCompression:i_endOfCompression+1, 'idxAnalysis']
-            
-            i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-            i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
-            i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-            #
-            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
         
-        # idxAnalysis for loops with repeated compressions
-        previous_idx = 0
-        for i in range(1, self.NLoops+1):
-            indexLoop_i = logDf[logDf['iL'] == i].index
-            maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
-            maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
-            maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
-            # print(maskMainPhase_i)
-            
-            lab_main, nlab_main = ndi.label(maskMainPhase_i)
-            # print(lab, nlab)
-            
-            if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
-                logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
-                lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
-                logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
-                # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
-                previous_idx = np.max(lab_main)
+            # idxAnalysis for loops with repeated compressions
+            previous_idx = 0
+            for i in range(1, self.NLoops+1):
+                indexLoop_i = logDf[logDf['iL'] == i].index
+                maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
+                maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
+                maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
+                # print(maskMainPhase_i)
+                
+                lab_main, nlab_main = ndi.label(maskMainPhase_i)
+                # print(lab, nlab)
+                
+                if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
+                    logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
+                    lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
+                    logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
+                    # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
+                    previous_idx = np.max(lab_main)
 
         self.logDf = logDf
         self.log_UIxy = log_UIxy
-        
         
         
         
@@ -238,25 +232,26 @@ class PincherTimeLapse:
                 iS = logDf_loop['iS'].values[-1]
                 
                 logDf_fast = logDf_loop[logDf_loop['Status'].apply(lambda x : x.startswith(fastestPhase))]
-                iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
-                
-                while np.sum(self.I[iS-1]) == 0: # while a black image is detected
-                    nullFrames.append(iS_fast)
-                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
-                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
-                    iS -= 1
-                    iS_fast -= 1
-                if len(nullFrames) > 0:
-                    print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
+                if len(logDf_fast) > 0:
+                    iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
                     
-                A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
-                self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
-                # logDf_loop = self.logDf[self.logDf['iL'] == i]
-                # A = np.cumsum(logDf_loop['nullFrame'].values)
-                # logDf_loop['iS'] = logDf_loop['iS'] - A
-                    
-                self.nullFramesPerLoop.append(nullFrames[::-1])
-                # print(self.nullFramesPerLoop)
+                    while np.sum(self.I[iS-1]) == 0: # while a black image is detected
+                        nullFrames.append(iS_fast)
+                        self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
+                        self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
+                        iS -= 1
+                        iS_fast -= 1
+                    if len(nullFrames) > 0:
+                        print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
+                        
+                    A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
+                    self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
+                    # logDf_loop = self.logDf[self.logDf['iL'] == i]
+                    # A = np.cumsum(logDf_loop['nullFrame'].values)
+                    # logDf_loop['iS'] = logDf_loop['iS'] - A
+                        
+                    self.nullFramesPerLoop.append(nullFrames[::-1])
+                    # print(self.nullFramesPerLoop)
 
     
         else:
@@ -1030,9 +1025,9 @@ class Trajectory:
         
         #### Z detection settings here
         self.HDZfactor = 5
-        self.maxDz_triplets = 60 # Max Dz allowed between images
-        self.maxDz_singlets = 30
-        self.HWScan_triplets = 1200 # Half width of the scans
+        self.maxDz_triplets = 60*6 # Max Dz allowed between images
+        self.maxDz_singlets = 30*6
+        self.HWScan_triplets = 3000 # Half width of the scans
         self.HWScan_singlets = 600
         
         
@@ -1046,7 +1041,7 @@ class Trajectory:
         df = pd.DataFrame(self.dict)
         df.to_csv(path, sep = '\t', index = False)
 
-    def computeZ(self, matchingDirection, plot = 0):
+    def computeZ(self, matchingDirection, plot = 0, plotpath=''):
 
         if len(self.deptho) == 0:
             return('Error, no depthograph associated with this trajectory')
@@ -1063,8 +1058,10 @@ class Trajectory:
                 
             #### Enable plots of Z detection  here
                 
-                plot = 0
-                # if (iF >= 1250 and iF <= 1350):
+                plot = 1
+                # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
+                # if (iF <= 21):
+                # # if (iF >= 225 and iF <= 265):
                 #     plot = 1
 
             # ###################################################################
@@ -1095,14 +1092,14 @@ class Trajectory:
 
 
                     Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                          matchingDirection, plot)
+                                          matchingDirection, plot, plotpath=plotpath)
                         
                         
                     previousZ = Z
                     # This Z_pix has no meaning in itself, it needs to be compared to the depthograph Z reference point,
                     # which is depthoZFocus.
 
-                    Zr = self.depthoZFocus - Z # If you want to find it back, Z = depthoZFocus - Zr
+                    Zr = self.depthoZFocus - Z # If you want to find it back, Z = depthoZFocus - Zr                        
                     # This definition was chosen so that when Zr > 0, the plane of observation of the bead is HIGHER than the focus
                     # and accordingly when Zr < 0, the plane of observation of the bead is LOWER than the focus
 
@@ -1112,7 +1109,7 @@ class Trajectory:
                 
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot = False):
+                     matchingDirection, plot = False, plotpath=''):
         # try:
         Nframes = len(framesNuplet)
         listStatus_1 = [F.idx_inNUp for F in framesNuplet]
@@ -1328,12 +1325,14 @@ class Trajectory:
         #### Important plotting option here
         if plot >= 1:
             plt.ioff()
-            fig, axes = plt.subplots(5, 3, figsize = (16,16))
+            gs.set_smallText_options_jv()
+            fig, axes = plt.subplots(5, Nframes, figsize = (3*Nframes, 16))
             
             cmap = 'magma'
             color_image = 'cyan'
-            color_Nup = ['gold', 'darkorange', 'red']
-            color_result = 'darkgreen'
+            viridis_rgba = plt.cm.viridis(np.linspace(0.1, 0.9, Nframes))
+            color_Nup = [to_hex(c) for c in viridis_rgba]
+            color_result = 'darkred'
             color_previousResult = 'turquoise'
             color_margin = 'aquamarine'
             
@@ -1442,12 +1441,12 @@ class Trajectory:
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
                 
-                axes[4,i].set_xlabel('Corrected position along the depthograph - (Z-axis)', 
+                axes[4,i].set_xlabel('Corrected position - (Z-axis)', 
                                       fontsize = 9)
                 axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
                                       fontsize = 9)
                 pos_nm = min_i/self.HDZfactor
-                axes[4,i].set_title(f'Cost curve with corrected position {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
+                axes[4,i].set_title(f'Corrected pos {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
                                     fontsize = 11)
                 
                 # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
@@ -1500,19 +1499,19 @@ class Trajectory:
                           '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
                           y=0.98)
             
-            if not os.path.isdir(cp.DirTempPlots):
-                os.mkdir(cp.DirTempPlots)
-                
-            thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
-            if not os.path.isdir(thisCellTempPlots):
-                os.mkdir(thisCellTempPlots)
+            ZPlots_path = f'{plotpath}/Zplots/{self.cellID}/'
+            if not os.path.isdir(f'{plotpath}/Zplots/'):
+                os.mkdir(f'{plotpath}/Zplots/')
+            if not os.path.isdir(ZPlots_path):
+                os.mkdir(ZPlots_path)
             
             saveName = 'ZCheckPlot_S{:.0f}_B{:.0f}.png'.format(iSNuplet[0], self.iB+1)
-            savePath = os.path.join(thisCellTempPlots, saveName)
+            savePath = os.path.join(ZPlots_path, saveName)
             fig.savefig(savePath)
             plt.close(fig)
         
         plt.ion()
+        gs.set_mediumText_options_jv()
 
         return(Z)
 
@@ -1612,302 +1611,252 @@ class Trajectory:
 
 # %%%% Wrapper for the stand-alone
 
-def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
-                metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False,
-                DirData = cp.DirData, 
-                DirDataRaw = cp.DirDataRaw, 
-                DirDataRawDeptho = cp.DirDataRawDeptho, 
-                DirDataTimeseries = cp.DirDataTimeseries,
-                CloudSaving = cp.CloudSaving,
-                DirCloudTimeseries = cp.DirCloudTimeseries):
+# def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
+#                 metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False,
+#                 DirData = cp.DirData, 
+#                 DirDataRaw = cp.DirDataRaw, 
+#                 DirDataRawDeptho = cp.DirDataRawDeptho, 
+#                 DirDataTimeseries = cp.DirDataTimeseries,
+#                 CloudSaving = cp.CloudSaving,
+#                 DirCloudTimeseries = cp.DirCloudTimeseries):
     
-    Tstart = time.time()
+#     Tstart = time.time()
 
-    dictOptions = {'redoAllSteps' : redoAllSteps,
-                   'trackAll' : trackAll,
-                   'importLogFile' : True,
-                   'saveLogFile' : True,
-                   'saveFluo' : True,
-                   'importTrajFile' : True,
-                  }
+#     dictOptions = {'redoAllSteps' : redoAllSteps,
+#                    'trackAll' : trackAll,
+#                    'importLogFile' : True,
+#                    'saveLogFile' : True,
+#                    'saveFluo' : True,
+#                    'importTrajFile' : True,
+#                   }
 
-    #### 1 - Make list of files to analyse
+#     #### 1 - Make list of files to analyse
     
-    sourceDirsPaths = []
-    fileRoots = []
-    txtResultsNames = []
-    tifImagesNames = []
-    txtFieldNames = []
-    txtStatusNames = []
-    if not isinstance(dates, str):
-        rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
-    else:
-        rawDirList = [os.path.join(DirDataRaw, dates)]
+#     sourceDirsPaths = []
+#     fileRoots = []
+#     txtResultsNames = []
+#     tifImagesNames = []
+#     txtFieldNames = []
+#     txtStatusNames = []
+#     if not isinstance(dates, str):
+#         rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
+#     else:
+#         rawDirList = [os.path.join(DirDataRaw, dates)]
 
         
-    for rd in rawDirList:
-        fileList = os.listdir(rd)
-        for f in fileList:
-            if ufun.isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = '_Results.txt'): # See Utility Functions > isFileOfInterest
-                validFileGroup = False
-                f_Res = f # A result file was found
-                f_root = '_'.join(f_Res.split('_')[:-1])
-                f_root_simple = ufun.simplifyCellId(f_root) # The common 'root' to the .tif and _Field.txt files.
-                # With a call to ufun.simplifyCellId(), 'M1_P1_C2-1' become 'M1_P1_C2'
-                # This is useful cause like that, the image and field files 
-                # do not have to be duplicated if there are 2 results files.
+#     for rd in rawDirList:
+#         fileList = os.listdir(rd)
+#         for f in fileList:
+#             if ufun.isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = '_Results.txt'): # See Utility Functions > isFileOfInterest
+#                 validFileGroup = False
+#                 f_Res = f # A result file was found
+#                 f_root = '_'.join(f_Res.split('_')[:-1])
+#                 f_root_simple = ufun.simplifyCellId(f_root) # The common 'root' to the .tif and _Field.txt files.
+#                 # With a call to ufun.simplifyCellId(), 'M1_P1_C2-1' become 'M1_P1_C2'
+#                 # This is useful cause like that, the image and field files 
+#                 # do not have to be duplicated if there are 2 results files.
                 
-                print(f_root_simple)
+#                 print(f_root_simple)
                 
-                if metaDataFormatting == 'statusFile':
-                    test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
-                    test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
-                    test_status = os.path.isfile(os.path.join(rd, f_root_simple + '_Status.txt'))
+#                 if metaDataFormatting == 'statusFile':
+#                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+#                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+#                     test_status = os.path.isfile(os.path.join(rd, f_root_simple + '_Status.txt'))
                     
-                    if test_image and test_field and test_status:
-                        f_Tif = f_root_simple + '.tif'
-                        f_Field = f_root_simple + '_Field.txt'
-                        f_Status = f_root_simple + '_Status.txt'
+#                     if test_image and test_field and test_status:
+#                         f_Tif = f_root_simple + '.tif'
+#                         f_Field = f_root_simple + '_Field.txt'
+#                         f_Status = f_root_simple + '_Status.txt'
                         
-                        sourceDirsPaths.append(rd)
-                        fileRoots.append(f_root)
-                        tifImagesNames.append(f_Tif)
-                        txtFieldNames.append(f_Field)
-                        txtStatusNames.append(f_Status)
-                        txtResultsNames.append(f_Res)
-                        validFileGroup = True
+#                         sourceDirsPaths.append(rd)
+#                         fileRoots.append(f_root)
+#                         tifImagesNames.append(f_Tif)
+#                         txtFieldNames.append(f_Field)
+#                         txtStatusNames.append(f_Status)
+#                         txtResultsNames.append(f_Res)
+#                         validFileGroup = True
                     
-                    else: # Retry in case there was a duplicated image
-                    # No call to the function that simplifies the names
-                        test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
-                        test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
-                        test_status = os.path.isfile(os.path.join(rd, f_root + '_Status.txt'))
+#                     else: # Retry in case there was a duplicated image
+#                     # No call to the function that simplifies the names
+#                         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+#                         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+#                         test_status = os.path.isfile(os.path.join(rd, f_root + '_Status.txt'))
                         
-                        if test_image and test_field and test_status:
-                            f_Tif = f_root + '.tif'
-                            f_Field = f_root + '_Field.txt'
-                            f_Status = f_root + '_Status.txt'
+#                         if test_image and test_field and test_status:
+#                             f_Tif = f_root + '.tif'
+#                             f_Field = f_root + '_Field.txt'
+#                             f_Status = f_root + '_Status.txt'
                             
-                            sourceDirsPaths.append(rd)
-                            fileRoots.append(f_root)
-                            tifImagesNames.append(f_Tif)
-                            txtFieldNames.append(f_Field)
-                            txtStatusNames.append(f_Status)
-                            txtResultsNames.append(f_Res)
-                            validFileGroup = True
+#                             sourceDirsPaths.append(rd)
+#                             fileRoots.append(f_root)
+#                             tifImagesNames.append(f_Tif)
+#                             txtFieldNames.append(f_Field)
+#                             txtStatusNames.append(f_Status)
+#                             txtResultsNames.append(f_Res)
+#                             validFileGroup = True
                     
                     
-                elif (metaDataFormatting == 'loopStruct') or (metaDataFormatting == 'constantField'):
-                    test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
-                    test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+#                 elif metaDataFormatting == 'loopStruct':
+#                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+#                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
                     
-                    if test_image and test_field:
-                        f_Tif = f_root_simple + '.tif'
-                        f_Field = f_root_simple + '_Field.txt'
-                        sourceDirsPaths.append(rd)
-                        fileRoots.append(f_root)
-                        tifImagesNames.append(f_Tif)
-                        txtFieldNames.append(f_Field)
-                        txtStatusNames.append('')
-                        txtResultsNames.append(f_Res)
-                        validFileGroup = True
+#                     if test_image and test_field:
+#                         f_Tif = f_root_simple + '.tif'
+#                         f_Field = f_root_simple + '_Field.txt'
+#                         sourceDirsPaths.append(rd)
+#                         fileRoots.append(f_root)
+#                         tifImagesNames.append(f_Tif)
+#                         txtFieldNames.append(f_Field)
+#                         txtStatusNames.append('')
+#                         txtResultsNames.append(f_Res)
+#                         validFileGroup = True
                     
-                    else: # Retry in case there was a duplicated image
-                    # No call to the function that simplifies the names
-                        test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
-                        test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+#                     else: # Retry in case there was a duplicated image
+#                     # No call to the function that simplifies the names
+#                         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+#                         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
                         
-                        if test_image and test_field:
-                            f_Tif = f_root + '.tif'
-                            f_Field = f_root + '_Field.txt'
-                            sourceDirsPaths.append(rd)
-                            fileRoots.append(f_root)
-                            tifImagesNames.append(f_Tif)
-                            txtFieldNames.append(f_Field)
-                            txtStatusNames.append('')
-                            txtResultsNames.append(f_Res)
-                            validFileGroup = True
-                            
-                            
-                # elif metaDataFormatting == 'constantField':
-                #     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
-                #     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
-                    
-                #     if test_image and test_field:
-                #         f_Tif = f_root_simple + '.tif'
-                #         f_Field = f_root_simple + '_Field.txt'
-                #         sourceDirsPaths.append(rd)
-                #         fileRoots.append(f_root)
-                #         tifImagesNames.append(f_Tif)
-                #         txtFieldNames.append(f_Field)
-                #         txtStatusNames.append('')
-                #         txtResultsNames.append(f_Res)
-                #         validFileGroup = True
-                    
-                #     else: # Retry in case there was a duplicated image
-                #     # No call to the function that simplifies the names
-                #         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
-                #         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
-                        
-                #         if test_image and test_field:
-                #             f_Tif = f_root + '.tif'
-                #             f_Field = f_root + '_Field.txt'
-                #             sourceDirsPaths.append(rd)
-                #             fileRoots.append(f_root)
-                #             tifImagesNames.append(f_Tif)
-                #             txtFieldNames.append(f_Field)
-                #             txtStatusNames.append('')
-                #             txtResultsNames.append(f_Res)
-                #             validFileGroup = True
-                            
+#                         if test_image and test_field:
+#                             f_Tif = f_root + '.tif'
+#                             f_Field = f_root + '_Field.txt'
+#                             sourceDirsPaths.append(rd)
+#                             fileRoots.append(f_root)
+#                             tifImagesNames.append(f_Tif)
+#                             txtFieldNames.append(f_Field)
+#                             txtStatusNames.append('')
+#                             txtResultsNames.append(f_Res)
+#                             validFileGroup = True
                 
-                if not validFileGroup:
-                    print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
+#                 if not validFileGroup:
+#                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
         
         
-    #### 2 - Loop over the list of files to analyse
-    for i in range(len(fileRoots)):
-        f = fileRoots[i]
-        print('\n')
-        print(gs.YELLOW + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
+#     #### 2 - Loop over the list of files to analyse
+#     for i in range(len(fileRoots)):
+#         f = fileRoots[i]
+#         print('\n')
+#         print(gs.YELLOW + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
 
-        dictPaths = {'sourceDirPath' : sourceDirsPaths[i],
-                     'imageFileName' : tifImagesNames[i],
-                     'resultsFileName' : txtResultsNames[i],
-                     'depthoDir' : DirDataRawDeptho,
-                     'depthoName' : depthoName,
-                     'resultDirPath' : DirDataTimeseries,
-                     }
+#         dictPaths = {'sourceDirPath' : sourceDirsPaths[i],
+#                      'imageFileName' : tifImagesNames[i],
+#                      'resultsFileName' : txtResultsNames[i],
+#                      'depthoDir' : DirDataRawDeptho,
+#                      'depthoName' : depthoName,
+#                      'resultDirPath' : DirDataTimeseries,
+#                      }
         
-        manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
-        cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
-        fieldPath, statusPath = os.path.join(sourceDirsPaths[i], txtFieldNames[i]), os.path.join(sourceDirsPaths[i], txtStatusNames[i])
+#         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
+#         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
+#         fieldPath, statusPath = os.path.join(sourceDirsPaths[i], txtFieldNames[i]), os.path.join(sourceDirsPaths[i], txtStatusNames[i])
         
-        #### 3 - Load exp data (manipDict)
-        if manipID not in expDf['manipID'].values:
-            print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
-            break
-        else:
-            expDf_line = expDf.loc[expDf['manipID'] == manipID]
-            manipDict = {}
-            for c in expDf_line.columns.values:
-                manipDict[c] = expDf_line[c].values[0]
+#         #### 3 - Load exp data (manipDict)
+#         if manipID not in expDf['manipID'].values:
+#             print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
+#             break
+#         else:
+#             expDf_line = expDf.loc[expDf['manipID'] == manipID]
+#             manipDict = {}
+#             for c in expDf_line.columns.values:
+#                 manipDict[c] = expDf_line[c].values[0]
         
-        #### 4 - Make the appropriate metaDataFrame
-        #### 4.1 - Mode using a status file
-        if metaDataFormatting == 'statusFile': # ['T_raw', 'B_set', 'iL', 'Status']
+#         #### 4 - Make the appropriate metaDataFrame
+#         #### 4.1 - Mode using a status file
+#         if metaDataFormatting == 'statusFile': # ['T_raw', 'B_set', 'iL', 'Status']
             
-            # Columns from the field file
-            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
+#             # Columns from the field file
+#             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+#             metaDf = fieldDf[['T_raw', 'B_set']]
             
-            # Format the status file
-            statusDf = pd.read_csv(statusPath, sep='_', names=['iL', 'Status', 'Status details'])
-            Ns = len(statusDf)
+#             # Format the status file
+#             statusDf = pd.read_csv(statusPath, sep='_', names=['iL', 'Status', 'Status details'])
+#             Ns = len(statusDf)
             
-            statusDf['Action type'] = np.array(['' for i in range(Ns)], dtype = '<U16')
-            statusDf['deltaB'] = np.zeros(Ns, dtype = float)
-            statusDf['B_diff'] = np.array(['' for i in range(Ns)], dtype = '<U4')
+#             statusDf['Action type'] = np.array(['' for i in range(Ns)], dtype = '<U16')
+#             statusDf['deltaB'] = np.zeros(Ns, dtype = float)
+#             statusDf['B_diff'] = np.array(['' for i in range(Ns)], dtype = '<U4')
             
-            indexAction = statusDf[statusDf['Status'] == 'Action'].index
-            Bstart = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[1]))
-            Bstop = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[2]))
+#             indexAction = statusDf[statusDf['Status'] == 'Action'].index
+#             Bstart = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[1]))
+#             Bstop = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[2]))
             
-            statusDf.loc[indexAction, 'deltaB'] =  Bstop - Bstart
-            statusDf.loc[statusDf['deltaB'] == 0, 'B_diff'] =  'none'
-            statusDf.loc[statusDf['deltaB'] > 0, 'B_diff'] =  'up'
-            statusDf.loc[statusDf['deltaB'] < 0, 'B_diff'] =  'down'
+#             statusDf.loc[indexAction, 'deltaB'] =  Bstop - Bstart
+#             statusDf.loc[statusDf['deltaB'] == 0, 'B_diff'] =  'none'
+#             statusDf.loc[statusDf['deltaB'] > 0, 'B_diff'] =  'up'
+#             statusDf.loc[statusDf['deltaB'] < 0, 'B_diff'] =  'down'
             
-            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('t^')), 'Action type'] = 'power'
-            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('sigmoid')), 'Action type'] = 'sigmoid'
-            statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('constant')), 'Action type'] = 'constant'
+#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('t^')), 'Action type'] = 'power'
+#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('sigmoid')), 'Action type'] = 'sigmoid'
+#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('constant')), 'Action type'] = 'constant'
             
-            statusDf.loc[indexAction, 'Action type'] = statusDf.loc[indexAction, 'Action type'] + '_' + statusDf.loc[indexAction, 'B_diff']
-            statusDf = statusDf.drop(columns=['deltaB', 'B_diff'])
+#             statusDf.loc[indexAction, 'Action type'] = statusDf.loc[indexAction, 'Action type'] + '_' + statusDf.loc[indexAction, 'B_diff']
+#             statusDf = statusDf.drop(columns=['deltaB', 'B_diff'])
             
-            # Columns from the status file
-            mainActionStep = 'power_up'
-            metaDf['iL'] = statusDf['iL']
-            metaDf['Status'] = statusDf['Status']
-            metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
+#             # Columns from the status file
+#             mainActionStep = 'power_up'
+#             metaDf['iL'] = statusDf['iL']
+#             metaDf['Status'] = statusDf['Status']
+#             metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
             
-        #### 4.2 - Mode using loopStruct for legacy data
-        elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
-            print('Loop Structure Mode !')
+#         #### 4.2 - Mode using loopStruct for legacy data
+#         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
+#             print('Loop Structure Mode !')
+#             loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
+#             Nstruct = len(loopStructList)
+#             loop_total_length_woF = loopStructList[0]
             
-            loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
-            Nstruct = len(loopStructList)
-            loop_total_length_woF = loopStructList[0]
-            
-            if Nstruct >= 2:
-                loop_mainAction_length = loopStructList[1]
-            else:
-                loop_mainAction_length = 0
+#             if Nstruct >= 2:
+#                 loop_mainAction_length = loopStructList[1]
+#             else:
+#                 loop_mainAction_length = 0
                 
-            if Nstruct >= 3:
-                loop_fluo_length = loopStructList[2]
-            elif manipDict['with fluo images']:
-                loop_fluo_length = 1
-            else:
-                loop_fluo_length = 0
+#             if Nstruct >= 3:
+#                 loop_fluo_length = loopStructList[2]
+#             elif manipDict['with fluo images']:
+#                 loop_fluo_length = 1
+#             else:
+#                 loop_fluo_length = 0
                 
-            # Columns from the field file
-            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
+#             # Columns from the field file
+#             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+#             metaDf = fieldDf[['T_raw', 'B_set']]
             
-            # 'iL' column
-            N = len(metaDf)
-            loop_total_length = loop_total_length_woF + loop_fluo_length
-            NLoops = N // loop_total_length
-            list_iL = [1 + i//loop_total_length for i in range(N)]
-            metaDf['iL'] = list_iL
+#             # 'iL' column
+#             N = len(metaDf)
+#             loop_total_length = loop_total_length_woF + loop_fluo_length
+#             NLoops = N // loop_total_length
+#             list_iL = [1 + i//loop_total_length for i in range(N)]
+#             metaDf['iL'] = list_iL
             
-            # 'Status' column
-            expType = manipDict['experimentType']
-            if 'compressionsLowStart' in expType:
-                loop_action_length = 2*loop_mainAction_length
-            else:
-                loop_action_length = loop_mainAction_length
+#             # 'Status' column
+#             expType = manipDict['experimentType']
+#             if 'compressionsLowStart' in expType:
+#                 loop_action_length = 2*loop_mainAction_length
+#             else:
+#                 loop_action_length = loop_mainAction_length
                 
-            N_passive_1 = (loop_total_length_woF - loop_action_length)//2
-            N_preAction = loop_action_length - loop_mainAction_length
-            N_mainAction_up = loop_mainAction_length//2 + loop_mainAction_length%2
-            N_mainAction_down = loop_mainAction_length//2
-            N_passive_2 = N_passive_1
-            N_Fluo = loop_fluo_length
-            # print(N_passive_1, N_preAction, N_mainAction_up, N_mainAction_down, N_passive_2, N_Fluo)
+#             N_passive_1 = (loop_total_length_woF - loop_action_length)//2
+#             N_preAction = loop_action_length - loop_mainAction_length
+#             N_mainAction_up = loop_mainAction_length//2 + loop_mainAction_length%2
+#             N_mainAction_down = loop_mainAction_length//2
+#             N_passive_2 = N_passive_1
+#             N_Fluo = loop_fluo_length
+#             # print(N_passive_1, N_preAction, N_mainAction_up, N_mainAction_down, N_passive_2, N_Fluo)
             
-            loopStatus = ['Passive' for i in range(N_passive_1)] + ['Action' for i in range(N_preAction)] \
-                       + ['Action_main' for i in range(N_mainAction_up)] + ['Action' for i in range(N_mainAction_down)] \
-                       + ['Passive' for i in range(N_passive_2)] + ['Fluo' for i in range(N_Fluo)]
-            # print(loopStatus)
+#             loopStatus = ['Passive' for i in range(N_passive_1)] + ['Action' for i in range(N_preAction)] \
+#                        + ['Action_main' for i in range(N_mainAction_up)] + ['Action' for i in range(N_mainAction_down)] \
+#                        + ['Passive' for i in range(N_passive_2)] + ['Fluo' for i in range(N_Fluo)]
+#             # print(loopStatus)
             
-            list_Status = loopStatus*NLoops
-            metaDf['Status'] = list_Status
+#             list_Status = loopStatus*NLoops
+#             metaDf['Status'] = list_Status
             
-            # TBC
-            
-        elif metaDataFormatting == 'constantField': # ['T_raw', 'B_set', 'iL', 'Status']
-            # Columns from the field file
-            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
-            
-            N_Loops = 1
-            NFrames = metaDf.shape[0]
-            Status = 'Passive'
-            StatusCol = [Status] * NFrames
-            StatusCol = np.array(StatusCol)
-            
-            iLCol = np.ones(NFrames)
-            
-            metaDf['iL'] = iLCol.astype(int)
-            metaDf['Status'] = StatusCol
+#             # TBC
         
-        #### 5 - Call the smallTracker
-        print('Calling the smallTracker...' + gs.NORMAL)
-        timeSeries_Df = smallTracker(dictPaths, metaDf, manipDict, NB = 2, **dictOptions)
+#         #### 5 - Call the smallTracker
+#         print('Calling the smallTracker...' + gs.NORMAL)
+#         timeSeries_Df = smallTracker(dictPaths, metaDf, manipDict, NB = 2, **dictOptions)
         
-    print(gs.YELLOW + 'Task over! Total time = {:.2f}'.format(time.time()-Tstart) + gs.NORMAL)
+#     print(gs.YELLOW + 'Task over! Total time = {:.2f}'.format(time.time()-Tstart) + gs.NORMAL)
     
 
 
@@ -1926,6 +1875,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
                    'saveLogFile' : False,
                    'saveFluo' : False,
                    'importTrajFile' : False,
+                   'expandedResults' : False,
                    }
     
     dictOptions.update(kwargs)
@@ -1939,6 +1889,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     fluoDirPath = os.path.join(dictPaths['sourceDirPath'], 'FluoImages')
     
     cellID = ufun.findInfosInFileName(f, 'cellID')
+    if cellID == '':
+        cellID = f
     
     
 
@@ -2145,7 +2097,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             print(gs.CYAN + 'Computing Z in traj  {:.0f}...'.format(iB+1) + gs.NORMAL)
             Tz = time.time()
             traj = PTL.listTrajectories[iB]
-            traj.computeZ(matchingDirection, plot = 0)
+            traj.computeZ(matchingDirection, plot = 0, plotpath=dictPaths['resultDirPath'])
             print(gs.CYAN + 'OK! dT = {:.3f}'.format(time.time()-Tz) + gs.NORMAL)
 
     else:
@@ -2203,6 +2155,16 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             'D2' : np.zeros(nT),
             'D3' : np.zeros(nT),
         }
+        
+        if dictOptions['expandedResults']:
+            timeSeries = {
+                'X_in' : np.zeros(nT),
+                'X_out' : np.zeros(nT),
+                'Y_in' : np.zeros(nT),
+                'Y_out' : np.zeros(nT),
+                'Zr_in' : np.zeros(nT),
+                'Zr_out' : np.zeros(nT),
+            }
 
         #### 4.1.2 - Input common values:
         T0 = metaDf['T_raw'].values[0]/1000 # From ms to s conversion
@@ -2221,6 +2183,18 @@ def smallTracker(dictPaths, metaDf, dictConstants,
         timeSeries['dz'] = (traj2.dict['Zr']*traj2.depthoStep - traj1.dict['Zr']*traj1.depthoStep)/1000
         timeSeries['dz'] *= PTL.OptCorrFactor
         timeSeries['D3'] = (timeSeries['D2']**2 +  timeSeries['dz']**2)**0.5
+        
+        if dictOptions['expandedResults']:
+            if order == 'InOut':
+                t_in, t_out = traj1, traj2
+            elif order == 'OutIn':
+                t_out, t_in = traj1, traj2
+            timeSeries['X_in'] = t_in.dict['X']/PTL.scale
+            timeSeries['Y_in'] = t_in.dict['Y']/PTL.scale
+            timeSeries['Zr_in'] = t_in.dict['Zr']*(t_in.depthoStep/1000)*PTL.OptCorrFactor
+            timeSeries['X_out'] = t_out.dict['X']/PTL.scale
+            timeSeries['Y_out'] = t_out.dict['Y']/PTL.scale
+            timeSeries['Zr_out'] = t_out.dict['Zr']*(t_out.depthoStep/1000)*PTL.OptCorrFactor
 
         #print('\n\n* timeSeries:\n')
         #print(timeSeries_DF[['T','B','F','dx','dy','dz','D2','D3']])
@@ -2370,7 +2344,6 @@ class BeadDeptho:
                 self.zLast = zLast
                 self.validDepth = zLast-zFirst
                 self.I_cleanROI = I_cleanROI.astype(np.uint16)
-                
                 
             if self.validDepth < self.nz * (2/3):
                 print('invalid depth')

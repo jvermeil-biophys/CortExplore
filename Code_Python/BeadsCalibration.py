@@ -836,7 +836,7 @@ plt.show()
 
 # %%% (3.2) SCRIPT for deptho chains 1st try
 
-mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationM450-2023_FirstTry//DepthoChains'
+mainPath = 'D://MagneticPincherData//Raw//22.03.21_CalibrationM450-2023_FirstTry//DepthoChains//else'
 depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.03.21_CALIBRATION_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainNupAnalysis(mainPath, depthoPath, 4.5)
@@ -864,7 +864,7 @@ depthoPath = 'D://MagneticPincherData//Raw//DepthoLibrary//22.02.09_M1_M450_step
 listZQualityOldObj = computeDepthoQuality(depthoPath)
 
 #%% Numi's calibrations
-#%%% 22.12.5 
+#%%% 22.12.15 
 # BEAD CALIBRATION - mPegBiotin + Streptavidin beads (4.5um), 1X and 10X mPEG concentrations
 
 mainPath = 'D:/Anumita/MagneticPincherData//Raw//22.12.15_CalibrationStreptavidinPEG//1XPEG'
@@ -877,3 +877,12 @@ mainPath = 'D:/Anumita/MagneticPincherData//Raw//22.12.15_CalibrationStreptavidi
 depthoPath = 'D:/Anumita/MagneticPincherData//Raw//DepthoLibrary//22.12.15CALIBRATION_P2_M450_step20_100X'
 
 xyzDf_02, distanceDf_02, statsDf_02 = mainChainAnalysis(mainPath, depthoPath, 4.5)
+
+#%%% 23.09.08 
+# BEAD CALIBRATION - mPegBiotin + Streptavidin beads (4.5um),  10X mPEG concentrations
+
+mainPath = 'D:/Anumita/MagneticPincherData//Raw//23.09.08_BeadCalibration_Strept'
+depthoPath = 'D:/Anumita/MagneticPincherData//Raw//DepthoLibrary//23.09.08_BeadCalibration_StreptPEG_M450_step20_100X'
+
+
+xyzDf_01, distanceDf_01, statsDf_01 = mainChainAnalysis(mainPath, depthoPath, 4.5)

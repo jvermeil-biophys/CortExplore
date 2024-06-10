@@ -128,6 +128,9 @@ def CSS_sphere_1domain(R1, H0, Rp, delta_values,
 
     # Altitude of the peeling point z1, Indentation delta & their common integrand
     def integrand_z_sphere(r, r1_phi):
+        """
+        integrand = u / (1 - u**2)**0.5
+        """
         return(u_sphere(r, r1_phi) / (my_sqrt(1 - u_sphere(r, r1_phi)**2)))
 
     def z1_sphere_fun(r1_phi):
@@ -736,6 +739,11 @@ def CSS_sphere_general(R1, H0, Rp, delta_values):
     table_cols = ['delta', 'r1', 'R0', 'phi', 'area', 'alpha', 'curvature', 'case', 'error']
     res_df = pd.DataFrame({k:res_dict[k] for k in table_cols})
     
+    if np.max(res_df['phi'] >= 3.0):
+        res_df = res_df[res_df['phi'] <= 3.0]
+        for k in table_cols:
+            res_dict[k] = res_df[k].values
+    
     return(res_dict, res_df)
 
 
@@ -744,7 +752,7 @@ def CSS_sphere_general(R1, H0, Rp, delta_values):
 
 def plot_contours(res_dict, res_df,
                   initial_contour = True, limit_contour = True, deltas_contour = True,
-                  save = False, save_path=''):
+                  save = False, save_path='', fig_name_prefix = ''):
     
     [R1, H0, Rp, phi0, V0, A0] = [res_dict[k] for k in ['R1', 'H0', 'Rp', 'phi0', 'V0', 'A0']]
     R00 = (H0**2 + R1**2) / (2*H0)
@@ -991,14 +999,16 @@ def plot_contours(res_dict, res_df,
     
     if save:
         for fig, name in zip(figs, fig_names):
-            ufun.archiveFig(fig, name = name, figDir = save_path)
+            ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, figDir = save_path)
 
     plt.show()
+    
+    
 
 
 
 def plot_curves(res_dict, res_df, return_polynomial_fits = True,
-                save = False, save_path=''):
+                save = False, save_path='', fig_name_prefix = ''):
     
     [R1, H0, Rp, phi0, V0, A0] = [res_dict[k] for k in ['R1', 'H0', 'Rp', 'phi0', 'V0', 'A0']]
     # limit_reached = ('limit' in res_df['case'].values)
@@ -1138,7 +1148,7 @@ def plot_curves(res_dict, res_df, return_polynomial_fits = True,
     if save:
         fig_names = ['delta-shape_fitting_parms', 'delta-alpha', 'delta-Lc']
         for fig, name in zip([fig01, fig02, fig03], fig_names):
-            ufun.archiveFig(fig, name = name, figDir = save_path)
+            ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, figDir = save_path)
     
     poly_dict = {'P_alpha':P_alpha, 'P_Lc':P_Lc, }
     

@@ -170,9 +170,15 @@ class PincherTimeLapse:
         indexAction = logDf[logDf['Status'].apply(lambda x : x.startswith('Action'))].index
         
         # idxAnalysis
-        logDf.loc[indexAction, 'idxAnalysis'] = (-1)*logDf.loc[indexAction, 'iL']
-        indexMainPhase = logDf[logDf['Status'].apply(lambda x : x.startswith('Action_main'))].index
-        logDf.loc[indexMainPhase, 'idxAnalysis'] = (-1)*logDf.loc[indexMainPhase, 'idxAnalysis']
+        logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
+        for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
+            index_iL = logDf[logDf['iL'] == iL].index
+            
+            i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
+            i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            #
+            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
         
         # idxAnalysis for loops with repeated compressions
         previous_idx = 0
@@ -225,9 +231,13 @@ class PincherTimeLapse:
                     iS_fast -= 1
                 if len(nullFrames) > 0:
                     print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
-                    
+                
+                #### HERE -> removed next two lines
                 A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
                 self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
+                
+                # print(self.logDf.loc[self.logDf['iL'] == i, 'iS'])
+                
                 # logDf_loop = self.logDf[self.logDf['iL'] == i]
                 # A = np.cumsum(logDf_loop['nullFrame'].values)
                 # logDf_loop['iS'] = logDf_loop['iS'] - A
@@ -251,9 +261,12 @@ class PincherTimeLapse:
             indexFluo = self.logDf['Status'].apply(lambda x : x.startswith('Fluo'))
             fluoFrames_iS = self.logDf.loc[indexFluo, 'iS'].values
             fluoFrames_iL = self.logDf.loc[indexFluo, 'iL'].values
+            # print(self.logDf.loc[indexFluo,:])
             for k in range(len(fluoFrames_iS)):
                 iL, iS = fluoFrames_iL[k], fluoFrames_iS[k]
-                self.fluoFramesPerLoop[iL].append(iS)
+                #### Recent Correction: iL -> iL-1
+                # self.fluoFramesPerLoop[iL-1].append(iS)
+                self.fluoFramesPerLoop[iL-1].append(iS)
                 self.logDf.loc[self.logDf['iS'] == iS, 'trackFrame'] = False
                 
             if save:
@@ -281,7 +294,7 @@ class PincherTimeLapse:
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
                 
-                print(fieldDf)
+                # print(fieldDf)
                 actN = len(allActivationIndices)
                 fieldToMeta = fieldDf['T_abs'][fieldDf.index.isin(allActivationIndices)]
                 metadataDict = {}
@@ -1021,8 +1034,8 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
-                #     plot = 1
+                if (iF >= 797 and iF <= 826):
+                    plot = 1
 
             # ###################################################################
 
@@ -1054,7 +1067,7 @@ class Trajectory:
                     Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
                                           matchingDirection, plot)
                         
-                        
+
                     previousZ = Z
                     # This Z_pix has no meaning in itself, it needs to be compared to the depthograph Z reference point,
                     # which is depthoZFocus.
@@ -1065,10 +1078,413 @@ class Trajectory:
 
                     mask = np.array([(iF in iFNuplet) for iF in self.dict['iF']])
                     self.dict['Zr'][mask] = Zr
-                
-                
-
+    
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
+                         matchingDirection, plot = False):
+            # try:
+            Nframes = len(framesNuplet)
+            listStatus_1 = [F.idx_inNUp for F in framesNuplet]
+            listXY = [[self.dict['X'][np.where(self.dict['iF']==iF)][0],
+                       self.dict['Y'][np.where(self.dict['iF']==iF)][0]] for iF in iFNuplet]
+            listiS = [self.dict['iS'][np.where(self.dict['iF']==iF)][0] for iF in iFNuplet]
+            cleanSize = ufun.getDepthoCleanSize(self.D, self.scale)
+            hdSize = self.deptho.shape[1]
+            depthoDepth = self.deptho.shape[0]
+            listProfiles = np.zeros((Nframes, hdSize))
+            listROI = []
+            listF_cleanRoi = []
+            for i in range(Nframes):
+                if np.sum(framesNuplet[i].F) == 0:
+                    print('illegal')
+                xx = np.arange(0, 5)
+                yy = np.arange(0, cleanSize)
+                try:
+                    # X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
+                    # > We could also try to recenter the image to keep a subpixel resolution here
+                    
+                    X, Y = listXY[i][0], listXY[i][1]
+                    roughSize = cleanSize + 4
+                    roughCenter = roughSize // 2
+                    xb1, yb1, xb2, yb2, validROI = ufun.getROI(roughSize, X, Y, self.nx, self.ny)
+                    F_roughRoi = framesNuplet[i].F[yb1:yb2, xb1:xb2]
+                    
+                    xc1, yc1 = X-xb1-0.5, Y-yb1-0.5
+                    translation = (xc1-roughCenter, yc1-roughCenter)
+                    
+                    tform = transform.EuclideanTransform(rotation=0, translation = translation)
+                    F_tmp = transform.warp(F_roughRoi, tform, order = 1, preserve_range = True)
+    
+                    F_cleanRoi = np.copy(F_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                               roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+                    cleanCenter = cleanSize // 2
+                    
+                    
+                    profileROI = F_cleanRoi[:, cleanCenter-2:cleanCenter+3] # line that is 5 pixels wide     
+                    profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize)
+                    
+                    # if plot:
+                    #     plt.ioff()
+                    #     figtest, axestest = plt.subplots(2, 4, figsize=(16,4))
+                        
+                    #     figtest.suptitle(f"X, Y = {X:.1f}, {Y:.1f}")
+                        
+                    #     ax = axestest[0, 0]
+                    #     ax.imshow(framesNuplet[i].F)
+                    #     ax.plot(X, Y, 'r+')
+                    #     Xro, Yro = np.round(X), np.round(Y)
+                    #     ax.plot(Xro, Yro, 'g+')
+                    #     ax.axvline(xb1, c='r', ls='--')
+                    #     ax.axvline(xb2-1, c='r', ls='--')
+                    #     ax.axhline(yb1, c='r', ls='--')
+                    #     ax.axhline(yb2-1, c='r', ls='--')
+                    #     ax.set_xlim(xb1-11, xb2+10)
+                    #     ax.set_ylim(yb2+10, yb1-11)
+                        
+                    #     ax = axestest[1, 0]
+                    #     ax.imshow(framesNuplet[i].F)
+                    #     ax.plot(X, Y, 'r+')
+                    #     ax.plot(np.round(X), np.round(Y), 'g+')
+                    #     ax.set_xlim(Xro-3, Xro+3)
+                    #     ax.set_ylim(Yro+3, Yro-3)
+    
+                    #     ax = axestest[0, 1]
+                    #     ax.imshow(F_roughRoi)
+                    #     ax.plot(roughSize//2, roughSize//2, 'b+')
+                    #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+')
+                        
+                    #     ax = axestest[1, 1]
+                    #     ax.imshow(F_roughRoi)
+                    #     ax.axvline(roughCenter, c='b', ls='--')
+                    #     ax.axhline(roughCenter, c='b', ls='--')
+                    #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+', zorder = 6)
+                    #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                    #     ax.set_ylim(roughCenter+3, roughCenter-3)
+    
+                    #     ax = axestest[0, 2]
+                    #     ax.imshow(F_tmp)
+                    #     ax.axvline(roughCenter, c='r', ls='--')
+                        
+                    #     ax = axestest[1, 2]
+                    #     ax.imshow(F_tmp)
+                    #     ax.axvline(roughCenter, c='b', ls='--')
+                    #     ax.axhline(roughCenter, c='b', ls='--')
+                    #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                    #     ax.set_ylim(roughCenter+3, roughCenter-3)
+                        
+                    #     Y2, X2 = ndi.center_of_mass(F_cleanRoi[cleanCenter-10:cleanCenter+11, cleanCenter-10:cleanCenter+11])
+                    #     Y2, X2 = Y2 + (cleanCenter-10), X2 + (cleanCenter-10)
+                    #     ax = axestest[0, 3]
+                    #     ax.imshow(F_cleanRoi)
+                    #     ax.plot(X2, Y2, 'r+')
+                    #     ax.axvline(cleanCenter, c='b', ls='--')
+                        
+                    #     ax = axestest[1, 3]
+                    #     ax.imshow(F_cleanRoi)
+                    #     ax.plot(X2, Y2, 'r+')
+                    #     ax.axvline(cleanCenter, c='b', ls='--')
+                    #     ax.axhline(cleanCenter, c='b', ls='--')
+                    #     ax.set_xlim(cleanCenter-3, cleanCenter+3)
+                    #     ax.set_ylim(cleanCenter+3, cleanCenter-3)
+    
+                    #     thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
+                    #     if not os.path.isdir(thisCellTempPlots):
+                    #         os.mkdir(thisCellTempPlots)
+                            
+                    #     saveName = '00_S{:.0f}_B{:.0f}.png'.format(framesNuplet[i].iS, self.iB+1)
+                    #     savePath = os.path.join(thisCellTempPlots, saveName)
+                    #     figtest.savefig(savePath)
+                    #     plt.close(figtest)
+                    #     plt.ion()
+                    
+    
+                except: # If the vertical slice doesn't work, try the horizontal one
+                    print(gs.ORANGE + 'error with the vertical slice -> trying with horizontal one')
+                    print('iFNuplet')
+                    print(iFNuplet)
+                    print('Roi')
+                    print(Y-2,Y+3, X-cleanSize//2,X+cleanSize//2+1)
+                    print('' + gs.NORMAL)
+    
+                    xx, yy = yy, xx
+                    # > We could also try to recenter the image to keep a subpixel resolution here
+                    X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
+                    cleanCenter = Y
+                    
+                    F_cleanRoi = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
+                    profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1] # line that is 5 pixels wide              
+                    profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize).T
+    
+    
+                listROI.append(profileROI)
+                listF_cleanRoi.append(F_cleanRoi)
+    
+                listProfiles[i,:] = profileROI_hd[:,5//2] * (1/5)
+                for j in range(1, 1 + 5//2):
+                    listProfiles[i,:] += profileROI_hd[:,5//2-j] * (1/5)
+                    listProfiles[i,:] += profileROI_hd[:,5//2+j] * (1/5)
+    
+            listProfiles = listProfiles.astype(np.uint16)
+    
+    
+    
+            # now use listStatus_1, listProfiles, self.deptho + data about the jump between Nuplets ! (TBA)
+            # to compute the correlation function
+            nVoxels = int(np.round(int(self.Zstep)/self.depthoStep))
+            
+            if previousZ == -1:
+                Ztop = 0
+                Zbot = depthoDepth
+            
+            elif Nup > 1:
+                HW = self.HWScan_triplets
+                halfScannedDepth_raw = int(HW / self.depthoStep)
+                Ztop = max(0, previousZ - halfScannedDepth_raw) 
+                Zbot = min(depthoDepth, previousZ + halfScannedDepth_raw)
+                
+            elif Nup == 1:
+                HW = self.HWScan_singlets
+                halfScannedDepth_raw = int(HW / self.depthoStep) 
+                Ztop = max(0, previousZ - halfScannedDepth_raw) 
+                Zbot = min(depthoDepth, previousZ + halfScannedDepth_raw)
+    
+            scannedDepth = Zbot - Ztop
+            # print(Nup, depthoDepth, Ztop, Zbot, scannedDepth)
+            
+            listDistances = np.zeros((Nframes, scannedDepth))
+            listZ = np.zeros(Nframes, dtype = int)
+            Zscanned = np.arange(Ztop, Zbot, 1, dtype=int)
+            
+            # if plot:
+                # print(self.deptho.shape)
+                # print(Ztop, Zbot)
+                
+            subDeptho = self.deptho[Ztop:Zbot, :]
+            
+            for i in range(Nframes):
+                
+                listDistances[i] = ufun.squareDistance(subDeptho, listProfiles[i], normalize = True) # Utility functions
+                #### HERE - NEW: Filtering the cost function
+                listDistances[i] = savgol_filter(listDistances[i], 31, 3, mode='mirror')
+                listZ[i] = Ztop + np.argmin(listDistances[i])
+    
+            # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
+            # and don't move the others (idx_inNUp 2 if Nup = 3 or the 1 profile when Nup = 1)
+            if Nup > 1:
+                finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
+                                            nVoxels, direction = matchingDirection)
+            elif Nup == 1:
+                finalDists = listDistances
+    
+            sumFinalD = np.sum(finalDists, axis = 0)
+    
+    
+            #### Tweak this part to force the Z-detection to a specific range to prevent abnormal jumps
+            if previousZ == -1: # First image => No restriction
+                Z = np.argmin(sumFinalD)
+                maxDz = 0
+                
+            else: # Not first image => Restriction
+                if Nup > 1 and previousZ != -1: # Not first image AND Triplets => Restriction Triplets
+                    maxDz = self.maxDz_triplets
+                elif Nup == 1 and previousZ != -1: # Not first image AND singlet => Restriction Singlet
+                    maxDz = self.maxDz_singlets
+                    
+                limInf = max(previousZ - maxDz, 0) - Ztop
+                limSup = min(previousZ + maxDz, depthoDepth) - Ztop
+                Z = Ztop + limInf + np.argmin(sumFinalD[limInf:limSup])
+    
+            #### Important plotting option here
+            if plot >= 1:
+                plt.ioff()
+                fig, axes = plt.subplots(5, 3, figsize = (16,16))
+                
+                cmap = 'magma'
+                color_image = 'cyan'
+                color_Nup = ['gold', 'darkorange', 'red']
+                color_result = 'darkgreen'
+                color_previousResult = 'turquoise'
+                color_margin = 'aquamarine'
+                
+                im = framesNuplet[0].F
+                X2, Y2 = listXY[0][0], listXY[0][1]
+                
+                deptho_zticks_list = np.arange(0, depthoDepth, 50*self.HDZfactor, dtype = int)
+                deptho_zticks_loc = ticker.FixedLocator(deptho_zticks_list)
+                deptho_zticks_format = ticker.FixedFormatter((deptho_zticks_list/self.HDZfactor).astype(int))
+    
+                
+                if Nup == 1:
+                    direction = 'Single Image'
+                else:
+                    direction = matchingDirection
+    
+                pStart, pStop = np.percentile(im, (1, 99))
+                axes[0,0].imshow(im, vmin = pStart, vmax = 1.5*pStop, cmap = 'gray')
+                images_ticks_loc = ticker.MultipleLocator(50)
+                axes[0,0].xaxis.set_major_locator(images_ticks_loc)
+                axes[0,0].yaxis.set_major_locator(images_ticks_loc)
+                
+                
+                dx, dy = 50, 50
+                axes[0,0].plot([X2], [Y2], marker = '+', c = 'red')
+                axes[0,0].plot([X2-dx,X2-dx], [Y2-dy,Y2+dy], ls = '--', c = color_image, lw = 0.8)
+                axes[0,0].plot([X2+dx,X2+dx], [Y2-dy,Y2+dy], ls = '--', c = color_image, lw = 0.8)
+                axes[0,0].plot([X2-dx,X2+dx], [Y2-dy,Y2-dy], ls = '--', c = color_image, lw = 0.8)
+                axes[0,0].plot([X2-dx,X2+dx], [Y2+dy,Y2+dy], ls = '--', c = color_image, lw = 0.8)
+                # axes[0,0].set_xlim([X2-dx-1,X2+dx+2])
+                # axes[0,0].set_ylim([Y2+dy+1, Y2-dy-2])
+    
+                # Plot the deptho then resize it better
+                axes[0,1].imshow(self.deptho, cmap = cmap)
+                XL0, YL0 = axes[0,1].get_xlim(), axes[0,1].get_ylim()
+                extent = (XL0[0], YL0[0]*(5/3), YL0[0], YL0[1])
+                axes[0,1].imshow(self.deptho, extent = extent, cmap = cmap)
+                
+                axes[0,1].yaxis.set_major_locator(deptho_zticks_loc)
+                axes[0,1].yaxis.set_major_formatter(deptho_zticks_format)
+                
+                pixLineHD = np.arange(0, hdSize, 1)
+                zPos = Zscanned
+                
+                
+                for i in range(Nframes):
+                    idx_inNUp = int(framesNuplet[i].idx_inNUp)
+                    idx_inNUp += (idx_inNUp == 0)
+                    
+                    # Show the bead appearence
+                    axes[1,i].imshow(listF_cleanRoi[i], cmap = cmap)
+                    images_ticks_loc = ticker.MultipleLocator(10)
+                    axes[1,i].xaxis.set_major_locator(images_ticks_loc)
+                    axes[1,i].yaxis.set_major_locator(images_ticks_loc)
+                    axes[1,i].set_title('Image {:.0f}/{:.0f} - '.format(idx_inNUp, Nup) + direction, 
+                                        fontsize = 14)
+                    axes[1,i].axvline(cleanCenter, c=color_Nup[i], ls='--', lw = 1)
+                    
+                    # #### HERE PLOT OPTION
+                    axes[1,i].set_xlim([cleanCenter-8,cleanCenter+8])
+                    axes[1,i].set_ylim([cleanCenter+8,cleanCenter-8])
+                    
+                    # Show the profile of the beads
+                    axes[2,i].plot(pixLineHD, listProfiles[i], c = color_Nup[i])
+                    axes[2,i].set_xlabel('Position along the profile - (Y-axis)', 
+                                          fontsize = 9)
+                    axes[2,i].set_ylabel('Pixel intensity', 
+                                          fontsize = 9)
+                    axes[2,i].set_title('Profile {:.0f}/{:.0f} - '.format(idx_inNUp, Nup), 
+                                        fontsize = 11)
+                    
+                    # Show the distance map to the deptho
+                    listDistances = np.array(listDistances)
+                    # inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
+                    # peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
+                    axes[3,i].plot(zPos, listDistances[i])
+                    # axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
+                    axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
+                    axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
+                    limy3 = axes[3,i].get_ylim()
+                    min_i = zPos[np.argmin(listDistances[i])]
+                    axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
+                    
+                    axes[3,i].set_xlabel('Position along the depthograph - (Z-axis)', 
+                                          fontsize = 9)
+                    axes[3,i].set_ylabel('Cost\n(Squared diff to deptho)', 
+                                          fontsize = 9)
+                    pos_nm = min_i/self.HDZfactor
+                    axes[3,i].set_title(f'Cost curve {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}', 
+                                        fontsize = 11)
+                    
+                    # for p in peaks:
+                    #     p_i = zPos[int(p)]
+                    #     axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
+                    #                   marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
+                    #     axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
+                    axes[3,i].set_xlim([0, depthoDepth])
+                    
+                    
+                    
+                    #
+                    axes[4,i].plot(zPos, finalDists[i])
+                    axes[4,i].xaxis.set_major_locator(deptho_zticks_loc)
+                    axes[4,i].xaxis.set_major_formatter(deptho_zticks_format)
+                    limy4 = axes[4,i].get_ylim()
+                    min_i = zPos[np.argmin(finalDists[i])]
+                    axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
+                    
+                    axes[4,i].set_xlabel('Corrected position along the depthograph - (Z-axis)', 
+                                          fontsize = 9)
+                    axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
+                                          fontsize = 9)
+                    pos_nm = min_i/self.HDZfactor
+                    axes[4,i].set_title(f'Cost curve with corrected position {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
+                                        fontsize = 11)
+                    
+                    # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
+                    axes[4,i].set_xlim([0, depthoDepth])
+    
+    
+    
+                    axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
+                                    [listZ[i], listZ[i]], 
+                                    ls = '--', c = color_Nup[i])
+                    
+                    axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
+                                    [Z,Z], 
+                                    ls = '--', c = color_result)
+    
+    
+                axes[0,2].plot(zPos, sumFinalD)
+                axes[0,2].xaxis.set_major_locator(deptho_zticks_loc)
+                axes[0,2].xaxis.set_major_formatter(deptho_zticks_format)
+                limy0 = axes[0,2].get_ylim()
+                axes[0,2].plot([Z, Z], limy0, ls = '-', c = color_result, label = 'Z', lw = 1.5)
+                axes[0,2].plot([previousZ, previousZ], limy0, 
+                                ls = '--', c = color_previousResult, label = 'previous Z', lw = 0.8)
+                axes[0,2].plot([previousZ-maxDz, previousZ-maxDz], limy0,
+                                ls = '--', c = color_margin, label = 'allowed margin', lw = 0.8)
+                axes[0,2].plot([previousZ+maxDz, previousZ+maxDz], limy0,
+                                ls = '--', c = color_margin, lw = 0.8)
+                axes[0,2].set_xlim([0, depthoDepth])
+                
+                axes[0,2].set_xlabel('Position along the depthograph\n(Z-axis)', 
+                                      fontsize = 9)
+                axes[0,2].set_ylabel('Total Cost\n(Sum of Squared diff to deptho)', 
+                                      fontsize = 9)
+                axes[0,2].set_title('Sum of Cost curves with corrected position', 
+                                    fontsize = 11)
+                axes[0,2].legend()
+                
+                for ax in axes.flatten():
+                    ax.tick_params(axis='x', labelsize=9)
+                    ax.tick_params(axis='y', labelsize=9)
+                
+                Nfig = plt.gcf().number
+                iSNuplet = [F.iS for F in framesNuplet]
+                
+                fig.tight_layout()
+                fig.subplots_adjust(top=0.94)
+                
+                fig.suptitle('Frames '+str(iFNuplet)+' - Slices '+str(iSNuplet)+' ; '+\
+                              'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
+                              '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
+                              y=0.98)
+                
+                if not os.path.isdir(cp.DirTempPlots):
+                    os.mkdir(cp.DirTempPlots)
+                    
+                thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
+                if not os.path.isdir(thisCellTempPlots):
+                    os.mkdir(thisCellTempPlots)
+                
+                saveName = 'ZCheckPlot_S{:.0f}_B{:.0f}.png'.format(iSNuplet[0], self.iB+1)
+                savePath = os.path.join(thisCellTempPlots, saveName)
+                fig.savefig(savePath)
+                plt.close(fig)
+            
+            plt.ion()
+    
+            return(Z)
+
+    def findZ_Nuplet_V0(self, framesNuplet, iFNuplet, Nup, previousZ, 
                      matchingDirection, plot = False):
         # try:
         Nframes = len(framesNuplet)
@@ -1140,7 +1556,6 @@ class Trajectory:
         listProfiles = listProfiles.astype(np.uint16)
 
 
-
         # now use listStatus_1, listProfiles, self.deptho + data about the jump between Nuplets ! (TBA)
         # to compute the correlation function
         nVoxels = int(np.round(int(self.Zstep)/self.depthoStep))
@@ -1180,15 +1595,17 @@ class Trajectory:
             #### HERE - NEW: Filtering the cost function
             listDistances[i] = savgol_filter(listDistances[i], 31, 3, mode='mirror')
             listZ[i] = Ztop + np.argmin(listDistances[i])
-
+            
+            
         # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
         # and don't move the others (idx_inNUp 2 if Nup = 3 or the 1 profile when Nup = 1)
         if Nup > 1:
             finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
                                         nVoxels, direction = matchingDirection)
+            
         elif Nup == 1:
             finalDists = listDistances
-
+            
         sumFinalD = np.sum(finalDists, axis = 0)
 
 
@@ -1202,9 +1619,14 @@ class Trajectory:
                 maxDz = self.maxDz_triplets
             elif Nup == 1 and previousZ != -1: # Not first image AND singlet => Restriction Singlet
                 maxDz = self.maxDz_singlets
-                
+            
+            # print('previousZ, maxDz,Ztop, depthoDepth')
+            # print(previousZ, maxDz,Ztop, depthoDepth)
             limInf = max(previousZ - maxDz, 0) - Ztop
             limSup = min(previousZ + maxDz, depthoDepth) - Ztop
+            # print('limInf, limSup')
+            # print(sumFinalD)
+            
             Z = Ztop + limInf + np.argmin(sumFinalD[limInf:limSup])
 
         #### Important plotting option here
@@ -2068,6 +2490,8 @@ def mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 D = 2.7
 
             first_iF = PTL.listTrajectories[0].dict['iF'][0]
+            
+            print(first_iF)
             for B in PTL.listFrames[first_iF].listBeads:
                 B.D = D
         else:
@@ -2474,7 +2898,7 @@ def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['iL'] = statusDf['iL']
             metaDf['Status'] = statusDf['Status']
             metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
-            
+
         #### 3.2 - Mode using loopStruct for legacy data
         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
             pass
@@ -2530,7 +2954,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     
     print(gs.BLUE + '**** smallTracker of cell {} ****'.format(cellID) + gs.NORMAL)
     I = io.imread(imageFilePath)
-    resultsDf = pd.read_csv(resultsPath, usecols=[1, 2, 3, 4, 5], sep=None, engine='python')   
+    resultsDf = pd.read_csv(resultsPath, usecols=[1, 2, 3, 4, 5, 6], sep=None, engine='python')   
     PTL = PincherTimeLapse(I, cellID, dictConstants, NB)
     PTL.resultsDf = resultsDf
         
@@ -2563,6 +2987,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     PTL.makeFramesList()
     
     #### 0.7 - If specified, save log
+    
+    #### PLAY WITH THIS HERE!!!!
     if dictOptions['saveLogFile']:
         PTL.saveLogDf(display = False, save = dictOptions['saveLogFile'], path = logFilePath)    
         
@@ -2674,7 +3100,9 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     
     depthoPathRoot = os.path.join(dictPaths['depthoDir'], dictPaths['depthoName'])
     depthoMetadata = pd.read_csv(depthoPathRoot+'_Metadata.csv', sep=';')
+ 
     deptho = io.imread(depthoPathRoot+'_Deptho.tif')
+    deptho = filters.gaussian(deptho, sigma=(4,0))
     depthoStep = depthoMetadata.loc[0,'step']
     depthoZFocus = depthoMetadata.loc[0,'focus']
     
@@ -2902,6 +3330,9 @@ class BeadDeptho:
                     if y1 < 0 or y2 > self.ny:
                         self.valid_v = False
 
+                #### OLD
+                # xm1, ym1 = xmi-x1, ymi-y1
+                # I_roughRoi = self.I[i,y1:y2,x1:x2]
 
                 xm1, ym1 = xmi-x1-0.5, ymi-y1-0.5
                 I_roughRoi = self.I[i,y1:y2,x1:x2]

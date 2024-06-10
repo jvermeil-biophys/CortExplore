@@ -79,6 +79,55 @@ Filters = np.array([df_pincher['date'].apply(lambda x : x in dates).values,
 totalFilter = np.all(Filters, axis = 0)
 df_pincher_f = df_pincher[totalFilter]
 
+# %%% 24-02-26 & 24-04-11
+
+dates = ['24-02-26', '24-04-11']
+Excluded = []
+Excluded2 = ['24-02-26_M2_P1_C3-1']
+
+chiaroDir = "D://MagneticPincherData//Data_Analysis"
+df_chiaro = [pd.read_csv(os.path.join(chiaroDir, f'ChiaroData_{d}_syn.csv'), sep=',') for d in dates]
+df_chiaro = pd.concat(df_chiaro)
+df_chiaro = df_chiaro[df_chiaro['date'].apply(lambda x : x in dates).values]
+df_chiaro['cellName'] = df_chiaro['cellID'].apply(lambda x : '_'.join(x.split('_')[1:])).values
+df_chiaro['cellNum'] = df_chiaro['cellID'].apply(lambda x : x.split('_')[-1]).values
+
+Filters = np.array([(df_chiaro['date'].apply(lambda x : x in dates)).values,
+                    (df_chiaro['cellID'].apply(lambda x : x not in Excluded)).values,
+                    (df_chiaro['valid_UI'] == True).values,
+                    (df_chiaro['V_comp'] == 1).values,
+                    # (df_chiaro['manipID'].apply(lambda x : x not in ['24-04-11_M2', '24-04-11_M5'])).values,
+                    # (df_chiaro['manipID'].apply(lambda x : x in ['24-04-11_M1', '24-04-11_M2', '24-04-11_M3'])).values,
+                    (df_chiaro['manipID'].apply(lambda x : x in ['24-04-11_M1', '24-04-11_M3', '24-04-11_M5'])).values,
+                    # (df_chiaro['manipID'].apply(lambda x : x not in ['24-04-11_M2'])).values,
+                    ])
+
+totalFilter = np.all(Filters, axis = 0)
+df_chiaro_f = df_chiaro[totalFilter]
+
+
+pincherDir = "D://MagneticPincherData//Data_Analysis"
+df_pincher = pd.read_csv(os.path.join(pincherDir, 'MecaData_NanoIndent_2023-2024.csv'), sep=';')
+
+df_pincher['cellCode'] = df_pincher['cellName'].apply(lambda x : x.split('_')[-1])
+df_pincher['cellName'] = df_pincher['cellName'].apply(lambda x : x.split('-')[0])
+df_pincher['cellID'] = df_pincher['date'] + '_' + df_pincher['cellName']
+df_pincher.insert(4, 'cellLongCode', df_pincher['cellID'].apply(lambda x : '_'.join(x.split('_')[:-1])) + '_' + df_pincher['cellCode'])
+
+_stiff = '_f_<_400'
+df_pincher['valid' + _stiff] = (df_pincher['E' + _stiff] < 50e3) & (df_pincher['R2' + _stiff] > 0.5) & (df_pincher['Chi2' + _stiff] < 2.5)
+
+Filters = np.array([df_pincher['date'].apply(lambda x : x in dates).values,
+                    (df_pincher['cellID'].apply(lambda x : x not in Excluded)).values,
+                    (df_pincher['cellLongCode'].apply(lambda x : x not in Excluded2)).values,
+                    (df_pincher['validatedThickness'] == True).values,
+                    (df_pincher['bestH0'] <= 1000).values,
+                    (df_pincher['valid' + _stiff] == True).values,
+                    ])
+
+totalFilter = np.all(Filters, axis = 0)
+df_pincher_f = df_pincher[totalFilter]
+
 # %%% Merge
 
 Filters = np.array([(df_chiaro_f['lastIndent'] == True).values,
@@ -92,13 +141,40 @@ df_pincher_g = g.agg({'bestH0':'mean', 'E' + _stiff :'mean', 'compNum': 'count'}
 
 df_merged = df_chiaro_g.merge(df_pincher_g, on='cellID')
 
+df_merged['E_eq'] = ((df_merged['Ka']*1e-3)/(df_merged['bestH0']*1e-9))
+df_merged['E_eq_kPa'] = df_merged['E_eq'] * 1e-3
+df_merged['E' + _stiff + '_kPa'] = df_merged['E' + _stiff] * 1e-3
+
 
 # %%% Plot stuff
 
 data = df_chiaro_f
+# fig, axes = plt.subplots(2, 2, figsize = (12, 4))
+# ax=axes[0,0]
+# sns.scatterplot(ax=ax, data=data, x='T0', y='Ka', hue='manipID', style='cellNum', s= 75, zorder=5)
+# # ax.scatter(data.T0, data.Ka, marker='o', c=stringSeries2catArray(data.cellID), cmap='tab20')
+# ax.set_xlim([0, ax.get_xlim()[1]])
+# ax.set_ylim([0, ax.get_ylim()[1]])
+# ax.set_xlabel('$T_0$ (mN/m)')
+# ax.set_ylabel('$K_A$ (mN/m)')
+# ax.legend().set_visible(False)
+# ax.grid()
+
+# ax=axes[]
+# sns.scatterplot(ax=ax, data=data, x='T0', y='Kh', hue='manipID', style='cellNum', s= 75, zorder=5)
+# ax.set_xlim([0, ax.get_xlim()[1]])
+# ax.set_ylim([0, ax.get_ylim()[1]])
+# ax.set_xlabel('$T_0$ (mN/m)')
+# ax.set_ylabel('$K_{Hertz}$ (Pa)')
+# ax.legend().set_visible(False)
+# ax.grid()
+
+ 
+
+data = df_chiaro_f
 fig, axes = plt.subplots(1, 3, figsize = (12, 4))
 ax=axes[0]
-sns.scatterplot(ax=ax, data=data, x='T0', y='Ka', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='T0', y='Ka', hue='manipID', style='cellNum', s= 75, zorder=5)
 # ax.scatter(data.T0, data.Ka, marker='o', c=stringSeries2catArray(data.cellID), cmap='tab20')
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
@@ -108,7 +184,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axes[1]
-sns.scatterplot(ax=ax, data=data, x='T0', y='Kh', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='T0', y='Kh', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$T_0$ (mN/m)')
@@ -117,7 +193,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axes[2]
-sns.scatterplot(ax=ax, data=data, x='Ka', y='Kh', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='Ka', y='Kh', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$K_A$ (mN/m)')
@@ -129,10 +205,10 @@ fig.suptitle("All indentations")
 fig.tight_layout()
 
 
-data = df_chiaro_g
+data = df_chiaro_g 
 fig, axes = plt.subplots(1, 3, figsize = (12, 4))
 ax=axes[0]
-sns.scatterplot(ax=ax, data=data, x='T0', y='Ka', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='T0', y='Ka', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$T_0$ (mN/m)')
@@ -141,7 +217,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axes[1]
-sns.scatterplot(ax=ax, data=data, x='T0', y='Kh', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='T0', y='Kh', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$T_0$ (mN/m)')
@@ -150,7 +226,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axes[2]
-sns.scatterplot(ax=ax, data=data, x='Ka', y='Kh', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='Ka', y='Kh', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$K_A$ (mN/m)')
@@ -167,7 +243,7 @@ plt.show()
 data = df_chiaro_f
 fig, ax = plt.subplots(1, 1, figsize = (6, 6))
 ax=ax
-sns.scatterplot(ax=ax, data=data, x='T0', y='T0_relax', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='T0', y='T0_relax', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.plot([0, ax.get_xlim()[1]], [0, ax.get_xlim()[1]], 'k--', lw=1)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
@@ -181,22 +257,11 @@ fig.suptitle("$T_{0}$ from compression vs from relaxation")
 plt.show()
 
 
-
-
-                    
-
-# %%% Plot stuff
-
-df_merged['E_eq'] = ((df_merged['Ka']*1e-3)/(df_merged['bestH0']*1e-9))
-
-df_merged['E_eq_kPa'] = df_merged['E_eq'] * 1e-3
-df_merged['E' + _stiff + '_kPa'] = df_merged['E' + _stiff] * 1e-3
-
-
-data = df_merged
-figM, axesM = plt.subplots(3, 2, figsize = (8, 8), sharex='col', sharey='row')
+    
+data=df_merged
+figM, axesM = plt.subplots(3, 2, figsize = (12, 8), sharex='col', sharey='row')
 ax=axesM[0, 0]
-sns.scatterplot(ax=ax, data=data, x='bestH0', y='T0', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='bestH0', y='T0', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$H_{cortex}$ (nm)')
@@ -205,7 +270,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axesM[1, 0]
-sns.scatterplot(ax=ax, data=data, x='bestH0', y='Ka', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='bestH0', y='Ka', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$H_{cortex}$ (nm)')
@@ -214,7 +279,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axesM[2, 0]
-sns.scatterplot(ax=ax, data=data, x='bestH0', y='E_eq_kPa', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='bestH0', y='E_eq_kPa', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$H_{cortex}$ (nm)')
@@ -223,17 +288,17 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axesM[0, 1]
-sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='T0', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='T0', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$E_{cortex}$ (kPa)')
 ax.set_ylabel('$T_0$ (mN/m)')
-ax.legend(bbox_to_anchor=(1.05, 1), fontsize = 8,
+ax.legend(bbox_to_anchor=(1.05, 1), fontsize = 8, ncol = 2,
                          loc='upper left', borderaxespad=0.)
 ax.grid()
 
 ax=axesM[1, 1]
-sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='Ka', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='Ka', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$E_{cortex}$ (kPa)')
@@ -242,7 +307,7 @@ ax.legend().set_visible(False)
 ax.grid()
 
 ax=axesM[2, 1]
-sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='E_eq_kPa', hue='cellNum', style='manipID', s= 75, zorder=5)
+sns.scatterplot(ax=ax, data=data, x='E' + _stiff + '_kPa', y='E_eq_kPa', hue='manipID', style='cellNum', s= 75, zorder=5)
 ax.set_xlim([0, ax.get_xlim()[1]])
 ax.set_ylim([0, ax.get_ylim()[1]])
 ax.set_xlabel('$E_{cortex}$ (kPa)')
@@ -254,6 +319,27 @@ figM.suptitle("$E_{eq}$ = $K_A$ / $H_{cortex}$")
 
 plt.tight_layout()
 plt.show()
+
+         
+# %%% Plot stuff
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

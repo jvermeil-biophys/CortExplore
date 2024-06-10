@@ -9,8 +9,8 @@ To use this code, run the following in the Anaconda Powershell:
     
 conda create -n cellpose pytorch=1.8.2 cudatoolkit=10.2 -c pytorch-lts
 conda activate cellpose
-conda install seaborn pandas scikit-image
 conda install -c conda-forge spyder-kernels
+conda install seaborn pandas scikit-image
 conda install -c anaconda statsmodels
 pip install opencv-python
 pip install cellpose
@@ -282,12 +282,20 @@ cv2.destroyAllWindows()
 allCells = os.listdir(dirProcessed)
 # allCells = [x for x in allCells if 'P1' in x and 'M1' not in x ]
 allCells = [x for x in allCells if 'M2' in x ]
-
+# allCells = ['22-12-02_M3_P1_C5_disc20um',
+#             '22-12-02_M3_P1_C11_disc20um', '22-12-02_M3_P1_C14_disc20um',
+#             '22-12-02_M3_P1_C15_disc20um', 
+#             '22-12-02_M3_P1_C17_disc20um', '22-12-02_M3_P1_C18_disc20um',
+#             '22-12-02_M3_P1_C19_disc20um']
 
 fluoDict = {'cellID': [], 
             'fluoFront': [],
             'fluoBack': [], 
+            'fluoTotal': [],
             'frame':[]}
+
+allKymoNorm = []
+
 
 for j in range(len(allCells)):
     currentCell = allCells[j]
@@ -355,7 +363,7 @@ for j in range(len(allCells)):
     for i in range(len(masks)):
         mask = masks[i]
         img = imgs[i]
-        bg = np.mean(img[0:50, 0:50])
+        bg = np.mean(img[0:100, 0:100])
         
         img = img - bg
         outlines = img.copy()
@@ -383,21 +391,22 @@ for j in range(len(allCells)):
             # maxval = int(maxInter[j])
             maxval = np.argmax(warped_mask[j,:])
             # innerMean = np.mean(warped_img[j, 0:cortexThickness])
-            warped_copy[j] = np.max(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
+            warped_copy[j] = np.average(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
             maskVerifyBounds[j, maxval - cortexThickness], maskVerifyBounds[j, maxval] =  0, 0
             
             # maxval = int(maxInter[j])
             # warped_copy[j] = np.average(warped_img[j, maxval - cortexThickness:maxval + cortexThickness])
             # warped_mask[j, maxval - cortexThickness],  warped_mask[j, maxval + cortexThickness] = 0, 0
         
-        final = warped_copy
-        plt.imshow(maskVerifyBounds)
-        plt.show()
+        # final = warped_copy
+        # plt.imshow(maskVerifyBounds)
+        # plt.show()
         
         allKymo.append(warped_copy)
     
     
-    plt.style.use('default')
+    plt.style.use('dark_background')
+
     cmap = 'plasma'
     # cmap = 'viridis'
     allKymo = np.asarray(allKymo)
@@ -408,13 +417,15 @@ for j in range(len(allCells)):
     
     kymo_norm = np.asarray(kymoNorm).T
     allKymo = np.asarray(allKymo).T
+    allKymoNorm.append(kymo_norm)
     
     for i in range(np.shape(kymo_norm)[1]-1):
         frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
-        medFront = np.average(kymo_norm[150:200, i])
+        medFront = np.average(kymo_norm[100:200, i])
         fluoDict['fluoFront'].append(medFront)
-        medBack = np.average(kymo_norm[300:350, i])
+        medBack = np.average(kymo_norm[250:350, i])
         fluoDict['fluoBack'].append(medBack)
+        fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
         fluoDict['cellID'].append(currentCell)
         fluoDict['frame'].append(i)
         
@@ -472,7 +483,7 @@ for j in range(len(allCells)):
 
 # plt.close('all')
 
-#%%
+#%% Plotting normalised actin fluroscence intensity in time
 plt.style.use('dark_background')
 fluoDf = pd.DataFrame(fluoDict)
 plt.figure(figsize=(15,10))
@@ -487,14 +498,14 @@ data = data[(data['frame'] < 27)]
 x = data['frame']*timeRes
 
 
-flatui =  ["#FFD700", "#ee82ee"]
+flatui =  ["#FFD700", "#ee82ee", "#1AFFC6"]
 sns.set_palette(flatui)
 
 sns.lineplot(data=data, x = x ,y="fluoFront") #, hue ='cellID')
 sns.lineplot(data=data, x = x ,y="fluoBack")
 
-control = mpatches.Patch(color=flatui[0], label='Activated rear')
-activated = mpatches.Patch(color=flatui[1], label='Non-activated front')
+control = mpatches.Patch(color=flatui[0], label='Polarised rear (activated)')
+activated = mpatches.Patch(color=flatui[1], label='Polarised front')
 
 plt.legend(handles=[activated, control], fontsize = 20, loc = 'upper left')
 plt.xticks(fontsize=25)
@@ -503,12 +514,38 @@ plt.xlabel('Time (secs)', fontsize=30)
 plt.ylabel('Normalised Actin fluoresence intensity', fontsize=30)
 plt.axvline(x = 120, color = 'red')
 plt.tight_layout()
-plt.ylim(0.6, 1.8)
+plt.ylim(0.4, 1.8)
 
 plt.savefig('{}/{}_{}_ActinRecruitmentvTime.png'.format(cp.DirDataFigToday, currentCell, channel), dpi = 100)
 
 plt.show()
 
+#%% Plotting total actin intensity
+plt.figure(figsize=(15,10))
+flatui =  ["#1AFFC6", "#FFD700", "#ee82ee"]
+sns.set_palette(flatui)
+
+sns.lineplot(data=data, x = x ,y="fluoTotal")
+plt.ylim(0.4, 1.8)
+plt.axvline(x = 120, color = 'red')
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.xlabel('Time (secs)', fontsize=30)
+# plt.ylabel('Total Normalised Actin fluoresence intensity', fontsize=30)
+plt.axvline(x = 120, color = 'red')
+plt.tight_layout()
+
+plt.savefig('{}/{}_TotalActinRecruitmentvTime.png'.format(cp.DirDataFigToday, channel), dpi = 100)
+plt.show()
+
+#%% Plotting actin intensity box plots before / after activation
+# fluoDf = pd.DataFrame(fluoDict)
+# data = fluoDf[fluoDf['cellID'].str.contains('M3')]
+# dataPreAct =  data[(data['frame'] < 11)]
+# dataPostAct =  data[(data['frame'] < 27) & (data['frame'] > 11)]
+# fig1, axes = plt.subplots((1, 2), figsize = (15,10))
+
+# sns.pointplot(x = x, y = y, data=data, hue = 'cellID', ax = axes[0], dodge = True)
 
 
 #%%
@@ -525,14 +562,14 @@ plt.plot(allMedBack)
 plt.show()
 #%% Creating stacks from individual files
 
-expt = '20221202_rpe1-3t3_100x_ActivationTests'
-subDir = 'Rpe1Tiam_Fastact640'
+expt = '20230405_3t3optoLARG_ActinRecruitmentDynamics_SPY650'
+# subDir = 'Rpe1Tiam_Fastact640'
 dirExt = 'F:/Cortex Experiments/Fluorescence Experiments/'
 dirSave = 'D:/Anumita/MagneticPincherData/DataFluorescence/Raw/'
 prefix = 'cell'
 channel = 'w4CSU561'
 
-excludedCells = AllMMTriplets2Stack(dirExt, dirSave, expt = expt, prefix = prefix, channel = channel, subDir = subDir)
+excludedCells = AllMMTriplets2Stack(dirExt, dirSave, expt = expt, prefix = prefix, channel = channel)
 
 #%% Extras
 

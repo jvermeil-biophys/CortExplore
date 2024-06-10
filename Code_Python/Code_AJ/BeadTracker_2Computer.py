@@ -235,8 +235,7 @@ class PincherTimeLapse:
             
                 
             if (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and pd.isna(self.activationLast):
-                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop + 1, self.activationFreq)])
-                print(self.LoopActivations)
+                self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.nLoop, self.activationFreq)])
                 # k-1 here cause we counted the loops starting from 1 but python start from 0.
             elif (not pd.isna(self.activationFreq)) and self.activationFreq > 0 and (not pd.isna(self.activationLast)):
                 self.LoopActivations = np.array([k-1 for k in range(self.activationFirst, self.activationLast + 1, self.activationFreq)])
@@ -344,7 +343,7 @@ class PincherTimeLapse:
                         totalExcludedOutward = np.sum(self.excludedFrames_outward[iLoop])
                         
                         j = int(((iLoop+1)*self.loop_mainSize) + totalExcludedOutward - self.excludedFrames_black[iLoop])
-                        # print(j)
+                        print(j)
                         self.dictLog['status_frame'][j] = -1
                         self.dictLog['status_nUp'][j] = -1
     
@@ -368,8 +367,8 @@ class PincherTimeLapse:
                 path = os.path.join(fluoDirPath, f[:-4] + '_Fluo_' + str(j+1) + '.tif')
                 io.imsave(path, Ifluo, check_contrast=False)
             
-                # print('excludedFrames_outward')
-                # print(self.excludedFrames_outward)
+                print('excludedFrames_outward')
+                print(self.excludedFrames_outward)
             # 
             # try: # Optogenetic activations behaviour
             #     print(gs.ORANGE + 'Trying optogen fluo detection...' + gs.NORMAL)
@@ -435,8 +434,6 @@ class PincherTimeLapse:
         """
         N0 = self.loop_mainSize
         Nramp0 = self.loop_rampSize
-        # print('Nramp0')
-        # print(Nramp0)
         # Nexclu = self.loop_excludedSize
         nUp = self.Nuplet
         # N = N0 - Nexclu
@@ -532,7 +529,7 @@ class PincherTimeLapse:
         i_nUp = 1
 
         # print(N0,Nramp0,Nexclu,nUp)
-        if self.microscope == 'metamorph' or self.microscope == 'zen':
+        if self.microscope == 'metamorph':
             for i in range(self.nLoop):
                 jstart = int(i*N0)
                 for j in range(N0): # N
@@ -560,12 +557,12 @@ class PincherTimeLapse:
         pass
     
     def makeOptoMetadata(self, fieldDf, display = 1, save = False, path = ''):
+        try:
             actFreq = self.activationFreq
             actExp = self.activationExp
             actType = [self.activationType]
             microscope = self.microscope
-            if microscope == 'labview' and actType != []:
-            # if microscope == 'labview':
+            if microscope == 'labview':
                 allActivationIndices = ufun.findActivation(fieldDf)[0]
                 # actFirst = idxActivation//self.loop_mainSize
                 timeScaleFactor = 1000
@@ -585,15 +582,17 @@ class PincherTimeLapse:
                 # print(len(metadataDict['T_abs']))
                 # print(len(metadataDict['T_0']))
                 
-                metadataDf = pd.DataFrame(metadataDict)    
-                metadataDf.to_csv(path, sep='\t')
-
+                metadataDf = pd.DataFrame(metadataDict)
+                if save:
+                    metadataDf.to_csv(path, sep='\t')
+        except:
+            pass
         
-        # if display == 1:
-        #     print('\n\n* Initialized Log Table:\n')
-        # if display == 2:
-        #     print('\n\n* Filled Log Table:\n')
-        #     print(metadataDf[metadataDf['UI']])
+        if display == 1:
+            print('\n\n* Initialized Log Table:\n')
+        if display == 2:
+            print('\n\n* Filled Log Table:\n')
+            print(metadataDf[metadataDf['UI']])
             
     def makeOptoMetadata_V1(self, fieldDf, display = 1, save = False, path = ''):
         actFreq = self.activationFreq
@@ -782,8 +781,7 @@ class PincherTimeLapse:
             if 'Unnamed' in c:
                 df.drop([c], axis = 1, inplace=True)
         self.detectBeadsResult = df
-        
-        
+
     def findBestStd(self):
         """
         Simpler and better than findBestStd_V0 using the status_nUp column of the dictLog.
@@ -798,76 +796,30 @@ class PincherTimeLapse:
         """
 
         Nup = self.Nuplet
-        nT = self.listTrajectories[0].nT      
-        
+        nT = self.listTrajectories[0].nT
         status_nUp = self.listTrajectories[0].dict['status_nUp']
-        status_frame = self.listTrajectories[0].dict['status_frame']
         sum_std = np.zeros(nT)
         for i in range(self.NB):
+            # print(nT)
+            # print(i)
+            # print(self.listTrajectories[i].dict['StdDev'])
+            # print(len(self.listTrajectories[i].dict['StdDev']))
             sum_std += np.array(self.listTrajectories[i].dict['StdDev'])
         
         bestStd = np.zeros(nT, dtype = bool)
-        # print('nT ', nT)
         i = 0
         while i < nT:
-            if status_nUp[i] == 0: #### Modified here !
+            if status_nUp[i] == 0:
                 bestStd[i] = True
                 i += 1
-            elif status_nUp[i] > 0: #### Modified here !
+            elif status_nUp[i] > 0:
                 s2 = status_nUp[i]
                 L = [i]
                 j = 0
                 while i+j < nT-1 and status_nUp[i+j+1] == s2: # lazy evaluation of booleans
                     j += 1
                     L.append(i+j)
-                # print(L)
-                loc_std = sum_std[L]
-                i_bestStd = i + int(np.argmax(loc_std))
-                bestStd[i_bestStd] = True
-                L = []
-                i = i + j + 1
-        # print('i ', i)
-        # print('sum ', np.sum(bestStd))
-        # print(bestStd[:300])
-                
-        return(bestStd)
-
-    def findBestStd_V0(self):
-        """
-        Simpler and better than findBestStd_V0 using the status_nUp column of the dictLog.
-        ---
-        For each frame of the timelapse that belongs to a N-uplet, I want to reconsititute this N-uplet
-        (meaning the list of 'Nup' consecutive images numbered from 1 to Nup,
-        minus the images eventually with no beads detected).
-        Then for each N-uplet of images, i want to find the max standard deviation
-        and report its position because it's for the max std that the X and Y detection is the most precise.
-        ---
-        This is very easy thanks to the 'status_nUp', because it contains a different number for each N-Uplet.
-        """
-
-        Nup = self.Nuplet
-        nT = self.listTrajectories[0].nT      
-        
-        status_nUp = self.listTrajectories[0].dict['status_nUp']
-        status_frame = self.listTrajectories[0].dict['status_frame']
-        sum_std = np.zeros(nT)
-        for i in range(self.NB):
-            sum_std += np.array(self.listTrajectories[i].dict['StdDev'])
-        
-        bestStd = np.zeros(nT, dtype = bool)
-        i = 0
-        while i < nT:
-            if status_frame[i] == 0:
-                bestStd[i] = True
-                i += 1
-            elif status_frame[i] > 0:
-                s2 = status_nUp[i]
-                L = [i]
-                j = 0
-                while i+j < nT-1 and status_nUp[i+j+1] == s2: # lazy evaluation of booleans
-                    j += 1
-                    L.append(i+j)
-                # print(L)
+                #print(L)
                 loc_std = sum_std[L]
                 i_bestStd = i + int(np.argmax(loc_std))
                 bestStd[i_bestStd] = True
@@ -964,8 +916,10 @@ class PincherTimeLapse:
             #### >>> Exp type dependance here (01)
             if 'compressions' in self.expType or 'constant field' in self.expType:
                 self.listTrajectories[iB].dict['idxAnalysis'].append((self.listFrames[init_iF].status_frame == 0))
+                
             #### TBC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             elif 'sinus' in self.expType:
+                 print('Passed expt type')
                  self.listTrajectories[iB].dict['idxAnalysis'].append(0)
                  
             elif 'brokenRamp' in self.expType:
@@ -1147,8 +1101,7 @@ class PincherTimeLapse:
                         * (max(self.listTrajectories[iB].dict['idxAnalysis']) + 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] <= 0)) \
                             - (self.listFrames[iF].status_frame == 0.1) \
                         * (abs(min(self.listTrajectories[iB].dict['idxAnalysis']) - 1*(self.listTrajectories[iB].dict['idxAnalysis'][-1] == 0)))
-                
-                    # print(idxAnalysis)
+                        
                 elif self.expType == 'constant field':
                     idxAnalysis = 0
                         
@@ -1218,7 +1171,7 @@ class PincherTimeLapse:
 
         # Add the pointer to the correct line of the _Field.txt file.
         # It's just exactly the iS already saved in the dict, except if there are black images at the end of loops.
-        # In that case you have to skip the X lines corresponding to the end of the ramp part, X being the nb of black images at the end of the current loop
+        # In that case you have to skip the X lines corresPathonding to the end of the ramp part, X being the nb of black images at the end of the current loop
         # This is because when black images occurs, they do because of the high frame rate during ramp parts and thus replace these last ramp images.
 
         # For now : excludedFrames_inward = excludedFrames_black
@@ -1248,8 +1201,7 @@ class PincherTimeLapse:
                 
                 # 'optoGen' or 'compressions' but probably necessary in all cases actually
                 if 'optoGen' in self.expType or 'compressions' in self.expType:
-                # if 'optoGen' in self.expType:
-
+                    # print(iLoop)
                     SField = iF + int(addOffset*offset) + self.excludedFrames_outward[iLoop]
                 else:
                     SField = iF + int(addOffset*offset)
@@ -1277,7 +1229,6 @@ class PincherTimeLapse:
         bestStd = self.findBestStd()
         for i in range(self.NB):
             self.listTrajectories[i].dict['bestStd'] = bestStd
-
 
 
     def importTrajectories(self, path, iB):
@@ -1542,7 +1493,6 @@ class Trajectory:
         self.HWScan_triplets = 1200 # Half width of the scans
         self.HWScan_singlets = 600
         
-        
     def __str__(self):
         text = 'iS : ' + str(self.series_iS)
         text += '\n'
@@ -1565,16 +1515,12 @@ class Trajectory:
             previousZ = -1
             
             
-            # ###################################################################
-            
             while iF <= max(self.dict['iF']):
-                
             #### Enable plots of Z detection  here
-                
                 plot = 0
                 # if (iF >= 0 and iF <= 30) or (iF > 178 and iF <= 208):
                 #     plot = 1
-
+                    
             # ###################################################################
 
                 if iF not in self.dict['iF']: # this index isn't in the trajectory list => the frame was removed for some reason.
@@ -1598,14 +1544,11 @@ class Trajectory:
                                 framesNuplet.append(nextF)
                                 iFNuplet.append(iF+jF)
                             jF += 1
-                            
-                        iF += jF
 
+                        iF += jF
 
                     Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
                                           matchingDirection, plot)
-                        
-                        
                     previousZ = Z
                     # This Z_pix has no meaning in itself, it needs to be compared to the depthograph Z reference point,
                     # which is depthoZFocus.
@@ -1616,11 +1559,11 @@ class Trajectory:
 
                     mask = np.array([(iF in iFNuplet) for iF in self.dict['iF']])
                     self.dict['Zr'][mask] = Zr
-                
-                
+
+
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot = False):
+                     matchingDirection, plot):
         # try:
         Nframes = len(framesNuplet)
         listStatus_1 = [F.status_frame for F in framesNuplet]
@@ -1698,15 +1641,14 @@ class Trajectory:
             Ztop = max(0, previousZ - halfScannedDepth_raw) 
             Zbot = min(depthoDepth, previousZ + halfScannedDepth_raw)
 
-        scannedDepth = Zbot - Ztop
+        scannedDepth = Zbot-Ztop
         # print(Nup, depthoDepth, Ztop, Zbot, scannedDepth)
         
         listDistances = np.zeros((Nframes, scannedDepth))
         listZ = np.zeros(Nframes, dtype = int)
-        Zscanned = np.arange(Ztop, Zbot, 1, dtype=int)
+        Zscanned = np.arange(Ztop,Zbot,1, dtype=int)
         
-        subDeptho = self.deptho[Ztop:Zbot, :]
-        # print(subDeptho)
+        subDeptho = self.deptho[Ztop:Zbot,:]
         
         for i in range(Nframes):
             
@@ -1768,6 +1710,8 @@ class Trajectory:
         
         # Z = np.array([i for i in range(Ddz)]) - depthoZFocusHD
         # plt.plot(Z, listZQuality)
+
+
 
 
         #### Important plotting option here
@@ -1846,10 +1790,10 @@ class Trajectory:
                 
                 # Show the distance map to the deptho
                 listDistances = np.array(listDistances)
-                # inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
-                # peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
+                inversed_listDistances = (listDistances[i] * (-1)) + np.max(listDistances[i])
+                peaks, peaks_prop = signal.find_peaks(inversed_listDistances, distance = self.HDZfactor * 20)
                 axes[3,i].plot(zPos, listDistances[i])
-                # axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
+                axes[3,i].plot(zPos, inversed_listDistances, ls='--', lw=0.75, c='k')
                 axes[3,i].xaxis.set_major_locator(deptho_zticks_loc)
                 axes[3,i].xaxis.set_major_formatter(deptho_zticks_format)
                 axes[3,i].set_xlabel('Position along the depthograph\n(Z-axis)', 
@@ -1862,11 +1806,11 @@ class Trajectory:
                 limy3 = axes[3,i].get_ylim()
                 min_i = zPos[np.argmin(listDistances[i])]
                 axes[3,i].plot([min_i, min_i], limy3, ls = '--', c = color_Nup[i])
-                # for p in peaks:
-                #     p_i = zPos[int(p)]
-                #     axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
-                #                   marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
-                #     axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
+                for p in peaks:
+                    p_i = zPos[int(p)]
+                    axes[3,i].plot([p_i], [np.mean(limy3)], ls = '',
+                                  marker = 'v',  c = 'orange', mec = 'k', markersize = 8)
+                    axes[3,i].text(p_i, np.mean(limy3)*1.1, str(p_i/self.HDZfactor), c = 'k')
                 axes[3,i].set_xlim([0, depthoDepth])
                 
                 #
@@ -1883,7 +1827,7 @@ class Trajectory:
                 limy4 = axes[4,i].get_ylim()
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
-                # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
+                axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
                 axes[4,i].set_xlim([0, depthoDepth])
 
                 axes[0,1].plot([axes[0,1].get_xlim()[0], axes[0,1].get_xlim()[1]-1], 
@@ -1944,7 +1888,6 @@ class Trajectory:
             plt.close(fig)
         
         plt.ion()
-
         return(Z)
 
         # except Exception:
@@ -1971,13 +1914,11 @@ class Trajectory:
         dictBestStd = {}
         bestStd = self.dict['bestStd']
         nT = int(np.sum(bestStd))
-        # nT = len(bestStd)
         for k in self.dict.keys():
             A = np.array(self.dict[k])
             dictBestStd[k] = A[bestStd]
         self.dict = dictBestStd
         self.nT = nT
-        
 
 
     def detectNeighbours_ui(self, Nimg, frequency, beadType): # NOT VERY WELL MADE FOR NOW
@@ -2144,7 +2085,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 0.2 - Begining of the Main Loop
     for i in range(len(fileRoots)):
         f = fileRoots[i]
-        # print(f)
+        print(f)
         imagePath, fieldPath, resPath = tifImagesPaths[i], txtfieldPaths[i], txtResultsPaths[i]
         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
@@ -2178,13 +2119,10 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             fieldDf = pd.read_csv(fieldPath, sep = '\t', names = fieldCols) # '\t'
         
         #### 0.51 Find index of first activation
-        #### Anumita's stuff
         try:
-            optoMetaPath = cp.DirDataRaw + '/' + dates
-            optoMetaName = os.path.join(optoMetaPath, cellID + '_OptoMetadata.txt')
-            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaName)
+            optoMetaPath = f_Res[:-12] + '_OptoMetadata.txt'
+            PTL.makeOptoMetadata(fieldDf, display = 1, save = True, path = optoMetaPath)
         except:
-            print(gs.RED + 'Not saving any OptoMetaData for: ' + manipID + gs.NORMAL)
             pass
         
         #### 0.6 - Check if a log file exists and load it if required
@@ -2219,7 +2157,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'compressions'
             if ('thickness' in f):
-                PTL.determineFramesStatus_optoGen()
+                PTL.determineFramesStatus_R40()
                 if PTL.expType == 'compressions and constant field':
                     PTL.expType = 'constant field'
             elif 'L40' in f:
@@ -2443,8 +2381,6 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
             print(gs.ORANGE + "Deptho detection 'downward' mode" + gs.NORMAL)
         elif PTL.microscope == 'labview' or PTL.microscope == 'old-labview':
             matchingDirection = 'upward'
-            #### !!!!!!!!! REMEMBER TO CHANGE BACK
-            # matchingDirection = 'downward'
             print(gs.ORANGE + "Deptho detection 'upward' mode" + gs.NORMAL)
             
         if redoAllSteps or not trajFilesImported:
@@ -2460,6 +2396,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         else:
             print(gs.BLUE + 'Computing Z...' + gs.NORMAL)
             print(gs.GREEN + 'Z had been already computed :)' + gs.NORMAL)
+        
 
         #### 4.3 - Save the raw traj (before Std selection)
         if redoAllSteps or not trajFilesImported:
@@ -2481,12 +2418,12 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
                 traj_df = pd.DataFrame(traj.dict)
                 trajPath = os.path.join(DirDataTimeseries, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 traj_df.to_csv(trajPath, sep = '\t', index = False)
-                # traj.dict['idxAnalysis']
+                
                 # save in ownCloud
                 # if ownCloud_timeSeriesDataDir != '':
                 #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
                 #     traj_df.to_csv(OC_trajPath, sep = '\t', index = False)
-                
+    
     
     #### 5. Define pairs and compute distances
         print(gs.BLUE + 'Computing distances...' + gs.NORMAL)
@@ -2513,9 +2450,7 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
 
             #### 5.1.2 - Input common values:
             T0 = fieldDf['T_abs'].values[0]/1000 # From ms to s conversion
-
             timeSeries['idxAnalysis'] = traj1.dict['idxAnalysis']
-            
             timeSeries['Tabs'] = (fieldDf['T_abs'][traj1.dict['iField']])/1000 # From ms to s conversion
             timeSeries['T'] = timeSeries['Tabs'].values - T0*np.ones(nT)
             timeSeries['B'] = fieldDf['B_set'][traj1.dict['iField']].values
@@ -2759,8 +2694,8 @@ class BeadDeptho:
         # Determine if the bead is to close to the edge on the max frame
         D0 = self.D0 + 4.5*(self.D0 == 0)
         roughSize = np.floor(1.1*D0*self.scale)
-        mx, Mx = np.min(self.X0 - 0.5*roughSize), np.max(self.X0 + 0.5*roughSize)
-        my, My = np.min(self.Y0 - 0.5*roughSize), np.max(self.Y0 + 0.5*roughSize)
+        mx, Mx = np.min(self.X0 - 0.2*roughSize), np.max(self.X0 + 0.2*roughSize)
+        my, My = np.min(self.Y0 - 0.2*roughSize), np.max(self.Y0 + 0.2*roughSize)
         testImageSize = mx > 0 and Mx < self.nx and my > 0 and My < self.ny
 
         # Aggregate the different validity test (for now only 1)
@@ -2793,57 +2728,60 @@ class BeadDeptho:
                     break
             zLast = z-1
 
-            roughSize = int(np.floor(1.15*self.D0*self.scale))
+            roughSize = int(np.floor(1*self.D0*self.scale))
             roughSize += 1 + roughSize%2
             roughCenter = int((roughSize+1)//2)
+            print(roughSize)
 
             cleanSize = ufun.getDepthoCleanSize(self.D0, self.scale)
+            print(cleanSize)
 
             I_cleanROI = np.zeros([self.nz, cleanSize, cleanSize])
 
-            try:
-                for i in range(zFirst, zLast):
-                    xmi, ymi = self.XYm[i,0], self.XYm[i,1]
-                    x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
-                    if not validBead:
-                        if x1 < 0 or x2 > self.nx:
-                            self.valid_h = False
-                        if y1 < 0 or y2 > self.ny:
-                            self.valid_v = False
+            # try:
+            for i in range(zFirst, zLast):
+                xmi, ymi = self.XYm[i,0], self.XYm[i,1]
+                x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
+                print(validBead)
+                if not validBead:
+                    if x1 < 0 or x2 > self.nx:
+                        self.valid_h = False
+                    if y1 < 0 or y2 > self.ny:
+                        self.valid_v = False
 
-        #                 fig, ax = plt.subplots(1,2)
-        #                 ax[0].imshow(self.I[i])
-                    xm1, ym1 = xmi-x1, ymi-y1
-                    I_roughRoi = self.I[i,y1:y2,x1:x2]
-        #                 ax[1].imshow(I_roughRoi)
-        #                 fig.show()
+                # fig, ax = plt.subplots(1,2)
+                # ax[0].imshow(self.I[i])
+                xm1, ym1 = xmi-x1, ymi-y1
+                I_roughRoi = self.I[i,y1:y2,x1:x2]
+                # ax[1].imshow(I_roughRoi)
+                # fig.show()
 
-                    translation = (xm1-roughCenter, ym1-roughCenter)
+                translation = (xm1-roughCenter, ym1-roughCenter)
 
-                    tform = transform.EuclideanTransform(rotation=0, \
-                                                         translation = (xm1-roughCenter, ym1-roughCenter))
+                tform = transform.EuclideanTransform(rotation=0, \
+                                                     translation = (xm1-roughCenter, ym1-roughCenter))
 
-                    I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+                I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
 
-                    I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
-                                                  roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+                I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                              roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
 
-                if not self.valid_v and not self.valid_h:
-                    self.validBead = False
+            if not self.valid_v and not self.valid_h:
+                self.validBead = False
 
-                else:
-                    self.zFirst = zFirst
-                    self.zLast = zLast
-                    self.validDepth = zLast-zFirst
-                    self.I_cleanROI = I_cleanROI.astype(np.uint16)
+            else:
+                self.zFirst = zFirst
+                self.zLast = zLast
+                self.validDepth = zLast-zFirst
+                self.I_cleanROI = I_cleanROI.astype(np.uint16)
 
-                # VISUALISE
-                if plot >= 2:
-                    for i in range(zFirst, zLast, 50):
-                        self.plotROI(i)
+            # VISUALISE
+            if plot >= 2:
+                for i in range(zFirst, zLast, 50):
+                    self.plotROI(i)
 
-            except:
-                print('Error for the file: ' + self.fileName)
+            # except:
+            #     print('Error for the file: ' + self.fileName)
 
 
     def buildDeptho(self, plot):
@@ -3181,7 +3119,6 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
         S0 = resDf['Slice'].values
         bestZ = S0[np.argmax(resDf['StdDev'].values)] - 1 # The index of the image with the highest Std
         # This image will be more or less the one with the brightest spot
-    
 
         # Create the BeadDeptho object
         BD = BeadDeptho(I, X0, Y0, S0, bestZ, scale, beadType, f)

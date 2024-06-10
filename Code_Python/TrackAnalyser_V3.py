@@ -229,7 +229,7 @@ def analyseTimeSeries_ctField(f, tsDf, expDf):
     
     thisManipID = ufun.findInfosInFileName(f, 'manipID')
     thisExpDf = expDf.loc[expDf['manipID'] == thisManipID]
-    # Deal with the asymmetric pair case
+    # Deal with the asymmetric pair case : the diameter can be for instance 4503 (float) or '4503_2691' (string)
     try:
         DIAMETER = int(thisExpDf.at[thisExpDf.index.values[0], 'bead diameter'])
     except:
@@ -410,6 +410,10 @@ def getGlobalTable_ctField(fileName = 'Global_CtFieldData'):
 
 # %%%% Mechanical models
 
+def VWC(h, K, Y, H0):
+    f  = 3.1416*2250*(K/6*(H0**3*h**-2+2*h-3*H0)+Y/3*H0*(1-h/H0)**2) #including factor 3 (K/6)
+    return f
+
 def chadwickModel(h, E, H0, DIAMETER):
     """
     Implement the Chadwick formula with force as a function of thickness.
@@ -571,6 +575,71 @@ def inversedConstitutiveRelation(stress, K, strain0):
     
 
 # %%%% General fitting functions
+
+def fitVWC_hf(h, f, D):
+    """
+    Fit the VWC model on a force-thickness curve.
+    This means the X-variable is h and the Y-variable is f.
+
+    Parameters
+    ----------
+    h : numpy array
+        Array of cortical thickness in nm.
+    f : numpy array
+        Array of pinching forces in pN.
+
+
+    Returns
+    -------
+    params : (3 x 1) numpy array
+        Parameters values as: [K, Y, H0]. [Van Wyk, Chadwick, H0]
+    ses : (3 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(Y), se(H0)].
+    error : bool
+        Error during the fit.
+        
+    Note
+    -------
+    Units in the fits: nm, pN, µPa; that is why the modulus will be multiplied by 1e6.
+    """
+    
+    Npts = len(h)
+    error = False
+    
+    R = D/2
+    
+    def VWC(h, K, Y, H0):
+        f = np.pi*R * (K/6*(H0**3 * h**(-2) + 2*h - 3*H0) + Y/3 * H0 * (1 - h/H0)**2) #including factor 3 (K/6)
+        return(f)
+    
+    try:
+        # some initial parameter values - must be within bounds\
+       
+        initH0 = h[0] + 10
+        initK = 0.2*1e-3
+        initY = 1*1e-3
+        
+        initialParameters = [initK, initY, initH0]
+    
+        # bounds on parameters - initial parameters must be within these
+        lowerBounds = (0, 0, h[0]) #K, Y, H0
+        upperBounds = (1e3, 1e6, 2*h[0]) #K, Y, H0
+        parameterBounds = [lowerBounds, upperBounds]
+
+
+        # params = [K, Y, H0] ; ses = [seK, seY, seH0]
+        params, covM = curve_fit(VWC, h, f, p0=initialParameters, bounds = parameterBounds, method = 'trf')
+        ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5, covM[2,2]**0.5])
+        params[0], params[1] = params[0]*1e6, params[1]*1e6
+        ses[0], ses[1] = ses[0]*1e6, ses[1]*1e6  # Convert E & seE to Pa
+        
+    except:
+        error = True
+        params = np.ones(3) * np.nan
+        ses = np.ones(3) * np.nan    
+    res = (params, ses, error)
+        
+    return(res)
         
 
 def fitChadwick_hf(h, f, D):
@@ -627,8 +696,7 @@ def fitChadwick_hf(h, f, D):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, 
-                                 p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -709,8 +777,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
 
     
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(dimitriadisModel, h, f, 
-                                 p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(dimitriadisModel, h, f, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
         
@@ -933,8 +1000,7 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
 
 
         # params = [E, H0] ; ses = [seE, seH0]
-        params, covM = curve_fit(inversedChadwickModel, f, h, 
-                                 p0=initialParameters, bounds = parameterBounds)
+        params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         
         ses = np.array([covM[0,0]**0.5])
         params[0], ses[0] = params[0]*1e6, ses[0]*1e6 # Convert E & seE to Pa
@@ -961,12 +1027,12 @@ def makeDictFit_CVW_hf(params, ses, error,
 
     Parameters
     ----------
-    params : (2 x 1) numpy array
-        Parameters values as: [E, H0]. 
-    ses : (2 x 1) numpy array
-        Standard errors for the parameters: [se(E), se(H0)].
+    params : (3 x 1) numpy array
+        Parameters values as: [K, Y, H0]. 
+    ses : (3 x 1) numpy array
+        Standard errors for the parameters: [se(K), se(Y), se(H0)].
     error : bool
-        Error during the fit. From the function fitChadwick_hf().
+        Error during the fit. From the function fitVWC_hf().
     x : (N x 1) numpy array
         The x-variable values array used for the fit.
     y : (N x 1) numpy array
@@ -994,7 +1060,7 @@ def makeDictFit_CVW_hf(params, ses, error,
     Note
     -------
     1. The inputs params, ses, error should be taken from the output of the functions 
-       **fitChadwick_hf()** or **fitDimitriadis_hf()**.
+       **fitChadwick_hf()** or **fitDimitriadis_hf()** or **fitVWC_hf**.
     
     2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
         i) from scipy import stats
@@ -1044,6 +1110,7 @@ def makeDictFit_CVW_hf(params, ses, error,
         ciwK, ciwY, ciwH0 = np.nan, np.nan, np.nan
         isValidated = False
         issue = 'error'
+    
 
     res =  {'error': error,
             'nbPts':len(y),
@@ -1111,7 +1178,7 @@ def makeDictFit_hf(params, ses, error,
     
     2. How to compute confidence intervals of fitted parameters with (1-alpha) confidence:
         i) from scipy import stats
-        ii) dof = nb_pts - nb_parms ; se = diag(cov)**0.5
+        ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
         iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
         iv) ConfInt = [params - q*se, params + q*se]
 
@@ -1551,46 +1618,27 @@ class CellCompression:
         
         
     def correctJumpForCompression(self, i):
-        colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
+        colToCorrect = ['dx', 'dy', 'dz']
         mask = self.getMaskForCompression(i, task = 'compression & precompression')
         iStart = ufun.findFirst(np.abs(self.tsDf['idxAnalysis']), i+1)
         for c in colToCorrect:
             #### CHANGE HERE: iStart+5 -> iStart+15
             jump = np.median(self.tsDf[c].values[iStart:iStart+5]) - np.median(self.tsDf[c].values[iStart-2:iStart])
             self.tsDf.loc[mask, c] -= jump
-            if c == 'D3':
-                D3corrected = True
-                jumpD3 = jump
+        
+        #### D2
+        newD2 = (self.tsDf.loc[mask, 'dx']**2 + self.tsDf.loc[mask, 'dy']**2)**0.5
+        self.tsDf.loc[mask, 'D2'] = newD2
+        #### D3
+        newD3 = (newD2**2 + self.tsDf.loc[mask, 'dz']**2)**0.5
+        jumpD3 = np.mean(newD3 - self.tsDf.loc[mask, 'D3'])
+        D3corrected = True
         self.listJumpsD3[i] = jumpD3
+        self.tsDf.loc[mask, 'D3'] = newD3
         
     
-    def correctAllJumpsByLoop(self):
-        colToCorrect = ['dx', 'dy', 'dz', 'D2', 'D3']
-        N = np.max(self.tsDf['idxLoop'])
-        for i in range(1, N+1):
-            idx_loop = self.tsDf[self.tsDf['idxLoop'] == i].index
-            df_loop = self.tsDf.loc[idx_loop]
+
             
-            idx_action = df_loop[df_loop['idxAnalysis'] != 0].index
-            iStart = idx_action[0]
-            
-            # print(df_loop)
-            # print(idx_loop)
-            # print(idx_action)
-            # print(iStart)
-            
-            for c in colToCorrect:
-                jump = np.median(df_loop.loc[iStart:iStart+5, c].values) \
-                     - np.median(df_loop.loc[iStart-2:iStart, c].values)
-                # print(jump)     
-                df_loop.loc[idx_action, c] -= jump
-                if c == 'D3':
-                    D3corrected = True
-                    jumpD3 = jump
-                    
-                    
-            self.tsDf.loc[idx_loop] = df_loop
-            self.listJumpsD3[i-1] = jumpD3
 
     def plot_Timeseries(self, plotSettings):
         fig, ax = plt.subplots(1,1,
@@ -1620,7 +1668,7 @@ class CellCompression:
                     
                     if not IC.error_bestH0:
                         ax.plot(IC.Df['T'].values[0], IC.bestH0, 
-                                color = gs.colorList40[30], marker = 'o', markersize = 2, zorder = 3)
+                                color = '#b29600', marker = '*', markersize = 4, zorder = 3)
                         
                 else:
                     ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
@@ -1714,6 +1762,34 @@ class CellCompression:
         axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
         
         axes = [ax, axbis]
+        fig.tight_layout()
+        return(fig, axes)
+    
+    def plot_FH_VWC(self, plotSettings, plotH0 = True, plotFit = True):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 # figsize = (3, 4))
+                                figsize = (4*nColsSubplot, 4*nRowsSubplot))
+        figTitle = 'Thickness-Force of indentations\n'
+        if plotH0:
+            figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        if plotFit:
+            figTitle += 'with fit (Van Wyk-Chadwick)'
+        
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_FH_VWC(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
+            
         fig.tight_layout()
         return(fig, axes)
     
@@ -1881,6 +1957,15 @@ class CellCompression:
             # except:
             #     pass
         
+        if plotSettings['F(H)_VWC']:
+            
+            # try:
+                
+            name = self.cellID + '_VWC_F(h)'
+            fig, ax = self.plot_FH_VWC(plotSettings, plotH0 = True, plotFit = True)
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass 
         
         # 2.
         if plotSettings['F(H)']:
@@ -2123,6 +2208,22 @@ class CellCompression:
                            'method_bestH0':'',
                            }
         
+        if fitSettings['doVWCFit']:
+            for m in fitSettings['VWCFitMethods']:
+                m2 = 'vwc_' + m
+                d = {'error_'+ m2 : True,
+                     'nbPts_'+ m2 : np.nan, 
+                     'K_'+ m2 : np.nan, 
+                     'ciwK_'+ m2 : np.nan, 
+                     'Y_'+ m2 : np.nan, 
+                     'ciwY_'+ m2 : np.nan, 
+                     'H0_'+ m2 : np.nan, 
+                     'R2_'+ m2 : np.nan,
+                     'Chi2_'+ m2 : np.nan,
+                     'valid_'+ m2 : False,
+                     'issue_' + m2 : '',
+                     }
+                dictColumnsMeca = {**dictColumnsMeca, **d}
                 
         if fitSettings['doChadwickFit']:
             for m in fitSettings['ChadwickFitMethods']:
@@ -2243,6 +2344,24 @@ class CellCompression:
             results['maxStrain'][i] = np.max(IC.strainCompr)
             
             # Whole curve fits related
+            
+            if fitSettings['doVWCFit'] and IC.isValidForAnalysis:
+                for m in fitSettings['VWCFitMethods']:
+                    try:
+                        m2 = 'vwc_' + m
+                        results['error_'+ m2][i] = IC.dictFitFH_VWC[m]['error']
+                        results['nbPts_'+ m2][i] = IC.dictFitFH_VWC[m]['nbPts']
+                        results['K_'+ m2][i] = IC.dictFitFH_VWC[m]['K']
+                        results['ciwK_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwK']
+                        results['Y_'+ m2][i] = IC.dictFitFH_VWC[m]['Y']
+                        results['ciwY_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwY']
+                        results['H0_'+ m2][i] = IC.dictFitFH_VWC[m]['H0']
+                        results['R2_'+ m2][i] = IC.dictFitFH_VWC[m]['R2']
+                        results['Chi2_'+ m2][i] = IC.dictFitFH_VWC[m]['Chi2']
+                        results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
+                        results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
+                    except:
+                        print(IC.dictFitFH_VWC)
                         
                         
             if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
@@ -2453,6 +2572,7 @@ class IndentCompression:
         # fitFH_Chadwick() & fitFH_Dimitriadis()
         self.dictFitFH_Chadwick = {}
         self.dictFitFH_Dimitriadis = {}
+        self.dictFitFH_VWC = {}
         
         # Test of new chad fit
         # self.dictFitFH_Chadwick_fixedH0 = {}
@@ -2623,7 +2743,7 @@ class IndentCompression:
 
         """
         
-        listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax']
+        listAllMethods = ['Chadwick', 'Dimitriadis', 'NaiveMax', 'VWC']
         listAllZones = ['pts_15', 'pts_30', 
                         '%f_10', '%f_20', '%f_30', '%f_40', 
                         '%h_10', '%h_20', '%h_30', '%h_40']
@@ -2700,6 +2820,17 @@ class IndentCompression:
             
         dH0 = {}
         
+        if method == 'VWC':
+            h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+            params, covM, error = fitVWC_hf(h, f, D)
+            K, Y, H0 = params[0], params[1], params[2]
+            dH0['H0_' + method + '_' + zone] = H0
+            dH0['K_' + method + '_' + zone] = K
+            dH0['Y_' + method + '_' + zone] = Y
+            dH0['error_' + method + '_' + zone] = error
+            dH0['nbPts_' + method + '_' + zone] = np.sum(mask)
+            dH0['fArray_' + method + '_' + zone] = VWC(h, K, Y, H0)
+            dH0['hArray_' + method + '_' + zone] = h
         
         if method == 'Chadwick':
             h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
@@ -2794,7 +2925,7 @@ class IndentCompression:
         for k in self.dictH0.keys():
             if k.startswith('H0'):
                 infos = k.split('_') # k = method_zoneType_zoneVal
-                if infos[1] in ['Chadwick', 'Dimitriadis']:
+                if infos[1] in ['Chadwick', 'Dimitriadis', 'VWC']:
                     cellID  = self.cellID
                     compNum = self.i_indent + 1
                     method = infos[1]
@@ -2912,6 +3043,46 @@ class IndentCompression:
         print(listDicts)
         return(listDicts[-1])
     
+    def fitFH_VWC(self, fitValidationSettings, method = 'Full', mask = []):
+        """
+        
+
+        Parameters
+        ----------
+        fitValidationSettings : TYPE
+            DESCRIPTION.
+        mask : TYPE, optional
+            DESCRIPTION. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        if len(mask) == 0:
+            mask = np.ones_like(self.hCompr, dtype = bool)
+        h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
+        params, ses, error = fitVWC_hf(h, f, D)
+        
+        K, Y, H0 = params
+        # x = np.linspace(np.min(h), np.max(h), len(h))
+        
+        #### Test here
+        [h_sort, f_sort] = ufun.sortMatrixByCol(np.array([h, f]).T, col=0, direction = -1).T
+       
+        fPredict = VWC(h_sort, K/1e6, Y/1e6, H0)
+        kPredict = VWC(h_sort, K/1e6, 0, H0)
+        ePredict = VWC(h_sort, 0, Y/1e6, H0)
+        y, yPredict = f_sort, fPredict
+        #### err_Chi2 for distance (nm)
+        err_chi2 = 10
+        dictFit = makeDictFit_CVW_hf(params, ses, error, 
+                                 h_sort, y, yPredict, kPredict, ePredict, # h_sort instead of h
+                                 err_chi2, fitValidationSettings)
+        
+        self.dictFitFH_VWC[method] = dictFit
+        
     
     def fitFH_Chadwick(self, fitValidationSettings, method = 'Full', mask = []):
         """
@@ -3198,6 +3369,165 @@ class IndentCompression:
             df.insert(0, 'cellID', [self.cellID for i in range(nRows)])
             self.df_3parts = df
     
+    
+    def plot_FH_VWC(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotH0 : TYPE, optional
+            DESCRIPTION. The default is True.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        if self.isValidForAnalysis and plotSettings['F(H)_VWC']:
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            # ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('f (pN)')
+    
+            if plotFit:
+                
+                method = 'Full'
+                dictFit = self.dictFitFH_VWC[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    K, Y, H0 = dictFit['K'], dictFit['Y'], dictFit['H0']
+                    R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
+                    hFit = dictFit['x']
+                    fPredict = dictFit['yPredict']
+                    kPredict = dictFit['kPredict']
+                    ePredict = dictFit['ePredict']
+                    Eeff = Y + K * (0.8**-4)
+                    
+                    legendTextE = 'VWC Fit ;H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, Eeff, R2, Chi2)
+                    legendTextK = 'Van Wyk ;K = {:.2e}Pa'.format(K)
+                    legendTextY = 'Chadwick ;Y = {:.2e}Pa'.format(Y)
+
+                    
+                    ax.plot(hFit, (fPredict),'k--', linewidth = 0.8, label = legendTextE, zorder = 2)
+                    ax.plot(hFit, (kPredict),'--', linewidth = 0.8, label = legendTextK, zorder = 2, color = '#940000')
+                    ax.plot(hFit, (ePredict),'--', linewidth = 0.8, label = legendTextY, zorder = 2, color = '#237e76')
+                    
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+                # method = 'f_<_400'
+                # # dictFit = self.dictFitFH_Chadwick[method]
+                # dictFit = self.dictFitFH_Chadwick[method]
+                # fitError = dictFit['error']
+                    
+                # if not fitError:
+                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                #     fFit = dictFit['x']
+                #     hPredict = dictFit['yPredict']
+                    
+                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                #     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
+                #             label = legendText, zorder = 2)
+                # # else:
+                # #     titleText += '\nFIT ERROR'
+                
+                # method = 'f_in_400_800'
+                # # dictFit = self.dictFitFH_Chadwick[method]
+                # dictFit = self.dictFitFH_Chadwick[method]
+                # fitError = dictFit['error']
+                    
+                # if not fitError:
+                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                #     fFit = dictFit['x']
+                #     hPredict = dictFit['yPredict']
+                    
+                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                #     ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                #             label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+            if plotH0 and self.method_bestH0 == 'VWC':
+                bestH0 = self.bestH0
+                method = self.method_bestH0
+                zone = self.zone_bestH0
+                str_m_z = method + '_' + zone
+                K_bestH0 = self.dictH0['K_' + method + '_' + zone]
+                Y_bestH0 = self.dictH0['Y_' + method + '_' + zone]
+                
+                if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, bestH0, 20)
+                    # if self.method_bestH0 == 'Dimitriadis':
+                    #     low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    # elif self.method_bestH0 == 'Chadwick':
+                    #     # chadwickModel(h, E, H0, DIAMETER)
+                    #     low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    if self.method_bestH0 == 'VWC':
+                        low_f = VWC(high_h/1000, K_bestH0, Y_bestH0, bestH0/1000)
+                    else:
+                        low_f = np.ones_like(high_h) * bestH0
+                    
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    # plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    # plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#b29600', markersize = 5, 
+                            label = legendText)
+                    # ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+
+                    
+                # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
+                #     H0_ratio = self.dictH0['H0_Chadwick_ratio_2-2.5']
+                #     E_ratio = self.dictH0['E_Chadwick_ratio_2-2.5']
+                #     str_m_z = 'Chadwick_ratio_2-2.5'
+                #     max_h = np.max(self.hCompr)
+                #     high_h = np.linspace(max_h, H0_ratio, 20)
+                #     low_f = chadwickModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+
+                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                #             # label = legendText)
+                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    
+
+                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.title.set_text(titleText)
+
+                
+                
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.title.set_text(titleText)
+            
+                    
+            # if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+            #     ax_r = ax.twinx()
+            #     ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+            #     ax_r.set_ylabel('a/h0')
+            #     ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+            #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+            #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+            #     ax_r.set_ylim([0,10])
+    
+    
+    
     def plot_FH(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
         """
         
@@ -3321,12 +3651,10 @@ class IndentCompression:
                 #             # label = legendText)
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
-# <<<<<<<
+
                 ax.legend(loc = 'upper right', prop={'size': 6})
                 ax.title.set_text(titleText)
-# =======
-                # darkslateblue
-# >>>>>>>
+
                 
                 
             ax = ufun.setAllTextFontSize(ax, size = 9)
@@ -4281,8 +4609,8 @@ DEFAULT_fitSettings = {# H0
                        'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
-                       'doDimitriadisFit' : False,
-                       'DimitriadisFitMethods' : ['Full'],
+                       'doVWCFit' : True,
+                       'VWCFitMethods' : ['Full'],
                        'doChadwickFit' : True,
                        'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
@@ -4332,6 +4660,7 @@ DEFAULT_plot_strainHalfWidth = 0.0125
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True,
                         'S(e)_stressRegion':True,
                         'K(S)_stressRegion':True,
                         'S(e)_stressGaussian':True,
@@ -4454,23 +4783,15 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
     CC = CellCompression(cellID, tsDf, thisExpDf, f)
     CC.method_bestH0 = method_bestH0
     
-    #### 2.1 Test - Correct jumps
-    doJumpCorr = True
-    try:
-        CC.correctAllJumpsByLoop()
-        doJumpCorr = False
-    except:
-        doJumpCorr = True
+    #### 2.1 Correct jumps
+    for i in range(Ncomp):
+        CC.correctJumpForCompression(i)
 
     # idxAnalysisVals = tsDf['idxAnalysis'].unique()
     # idxComps = [i-1 for i in range(1, Ncomp+1) if i in idxAnalysisVals]    
 
     #### 3. Start looping over indents
     for i in range(Ncomp):
-        
-        #### 3.1 Correct jumps
-        if doJumpCorr:
-            CC.correctJumpForCompression(i)
             
         #### 3.2 Segment the i-th compression
         maskComp = CC.getMaskForCompression(i, task = 'compression')
@@ -4478,21 +4799,16 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         i_tsDf = ufun.findFirst(1, maskComp)
         
         #### 3.3 Create IndentCompression object
-        try:
-            IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
-            CC.listIndent.append(IC)
-        except:
-            print(cellID, i)
-            return(thisCompDf)
-            
-
+        IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
+        CC.listIndent.append(IC)
+        
         #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
 
         if doThisCompAnalysis:
             
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
-            # IC.refineStartStop()            
+            IC.refineStartStop()            
             
             #### 3.7 Fit with Chadwick model of the force-thickness curve
             if fitSettings['doChadwickFit']:
@@ -4507,6 +4823,18 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                             # except:
                             #     pass
                         
+            if fitSettings['doVWCFit']:
+                
+                for m in fitSettings['VWCFitMethods']:
+                    if m == 'Full':
+                        IC.fitFH_VWC(fitValidationSettings, method = m)
+                    else:
+                        if m.startswith('f'):
+                            # try:
+                            mask = ufun.strToMask(IC.fCompr, m)
+                            IC.fitFH_VWC(fitValidationSettings, method = m, mask = mask)
+                            # except:
+                            #     pass
             
             #### 3.8 Find the best H0
             IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
@@ -4520,11 +4848,11 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
             IC.computeContactRadius(method = 'Chadwick')
             
-# <<<<<<<
+
             #### 3.9.2 IN DEV : Re-Compute the best H0 
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
-# =======
+
             #### 3.9.2 Re-Compute the best H0
             # try:
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
@@ -4534,7 +4862,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
             # except:
             #     pass
-# >>>>>>>
+
             
             #### 3.10 Local fits of stress-strain curves
             
@@ -4667,7 +4995,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
 
-# f = '23-11-01_M1_P1_C2-2_L50_disc20um_nanoIndent_PY.csv'
+# f = '23-02-23_M1_P1_C7_L40_disc20um_PY.csv'
 
 # stressCenters = [ii for ii in range(50, 1550, 25)]
 # stressHalfWidths = [25]
@@ -4677,9 +5005,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
 
 # fitSettings = {# H0
 #                 'methods_H0':['Chadwick', 'Dimitriadis'],
-#                 'zones_H0':['%f_5', '%f_10', '%f_15'],
+#                 'zones_H0':['%f_5', '%f_10', '%f_20'],
 #                 'method_bestH0':'Chadwick',
-#                 'zone_bestH0':'%f_15',
+#                 'zone_bestH0':'%f_10',
 #                 # Stress regions
 #                 'doStressRegionFits' : False,
 #                 'doStressGaussianFits' : True,
@@ -4765,7 +5093,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
             if k == 'results_main':
                 #### The main results data for a cell are grabbed here!
                 res_main = df
-                list_resultDf.append(res_main) # Append res_main to list for concatenation
+                
             else: # Other result dataframe : H0 detection or local fit...
                 
                 if df.size > 0:
@@ -4787,7 +5115,7 @@ def buildDf_meca(list_mecaFiles, task, expDf, PLOT=False, SHOW = False, **kwargs
                         cloudpath = os.path.join(cp.DirCloudAnalysisFits, fileName)
                         df.to_csv(cloudpath, sep=';', index=False)
                     
-        # list_resultDf.append(res_main) # Append res_main to list for concatenation
+        list_resultDf.append(res_main) # Append res_main to list for concatenation
 
     mecaDf = pd.concat(list_resultDf) # Concatenation at the end of the loop
     return(mecaDf)
@@ -4995,7 +5323,7 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     if imported_mecaDf:
         listMecaDf.append(existing_mecaDf)
     
-    print(list_selectedMecaFiles)
+    # print(list_selectedMecaFiles)
     if Nfiles > 0:
         
         for i in range(0, Nfiles, 10):
@@ -5398,14 +5726,14 @@ def getFitsInTable(mecaDf, fitsSubDir = '', fitType = 'stressGaussian', filter_f
     >>> # the nPoints method (specified number of points).
     
     >>> # Ex2.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressGaussian', filter_fitID = '200_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'gaussianStress', filter_fitID = '200_75')
     >>> # Return only fits in the region 200+/-75 Pa obtained with 
-    >>> # the stressGaussian method (gaussian stress window).
+    >>> # the gaussianStress method (gaussian stress window).
     
     >>> # Ex3.
-    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'stressRegion', filter_fitID = '_75')
+    >>> mecaDf = taka.getFitsInTable(mecaDf_main, fitType = 'regionStress', filter_fitID = '_75')
     >>> # Return only fits in regions of half width 75 Pa, obtained with 
-    >>> # the stressRegion method (discrete stress window).
+    >>> # the regionStress method (discrete stress window).
 
     """
     

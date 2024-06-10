@@ -35,7 +35,7 @@ import pyjokes as pj
 from skimage import io
 
 #### Local Imports
-
+""
 import sys
 import CortexPaths as cp
 os.chdir(cp.DirRepoPython)
@@ -44,27 +44,27 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
+
 #%% Define parameters # Numi
 
-# date = '23.03.28'
-# DirSave = os.path.join(cp.DirDataRaw, date)
-# # DirExt = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date
-# DirExt  = 'E:/Cortex Experiments/20230328_3t3optolarg_100xobjective_4.5StreptBeads_Mechanics/'+ date + '_Deptho'
+date = '24.05.22'
+# DirDeptho = '24.05.29_Deptho/Deptho_P3'
 
-# # prefix = 'cell'
-# # channel = 'w1TIRF DIC'
-# microscope = 'labview'
+DirSave = os.path.join(cp.DirDataRaw, date) 
 
+DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
 
+# DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
+# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 #%% Define parameters # Jojo
-date = '24.04.11'
-DirExt = 'E:\\24-04-11_3T3Atcc-LaGFP_P+I-25um_Y27_patternSize\\M5_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
-DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M5') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '24.04.18'
+DirExt = 'E:\\24-04-18_3T3Atcc-LaGFP_P+I-25um_Y27\\M3_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date  + '_depthos', 'M3') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
-# prefix = ''
-# channel = ''
+# prefix = 'cell'
+# channel = 'w1TIRF DIC'
 microscope = 'labview'
-imagePrefix = 'im' # 'Image'
+imagePrefix = 'tif'
 
 
 #%% Define parameters # Eloise
@@ -82,7 +82,7 @@ imagePrefix = 'im' # 'Image'
 
 def getListOfSourceFolders(Dir, 
                            forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
-                                               'film', 'films', 'capture', 'captures', # 'deptho', 'depthos',
+                                               'film', 'films', 'capture', 'captures' # ,  'deptho', 'depthos',
                                              ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """
@@ -136,7 +136,6 @@ def copyFieldFiles(ListDirSrc, DirDst, suffix = '_Field.txt'):
     Calls the copyFilesWithString from ufun with suffix = '_Field.txt'
     
     """
-    
     for DirSrc in ListDirSrc:
         ufun.copyFilesWithString(DirSrc, DirDst, suffix)
 
@@ -274,8 +273,10 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
     elif microscope == 'labview':
         allFiles = [path+'/'+string for string in allFiles if imagePrefix in string]
         
-    idx = slice(0, len(allFiles), 20) 
-    #### 100
+    elif microscope == 'zen':
+        allFiles = [path+'/'+string for string in allFiles if '.czi' in string]
+        
+    idx = slice(0, len(allFiles), 100)
     
     allFiles = allFiles[idx]
     frame = cv2.imread(allFiles[0])
@@ -495,11 +496,12 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 80
+limiter = 30
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 
 # if reset == 1:
+    
 #     allZimg = np.copy(allZimg_og)
 #     ref_point = []
 #     allRefPoints = []

@@ -57,17 +57,17 @@ elif COMPUTERNAME == 'DESKTOP-K9KOJR2':
     DirRepo = "C://Users//anumi//OneDrive//Desktop//CortExplore"
     DirData = "D:/Anumita/MagneticPincherData"
     #### TBC !!!
-    DirCloud = "C://Users//anumi//ownCloud//MagneticPincherData" + suffix
+    DirCloud = ""# + suffix
     DirTempPlots = 'C://Users//anumi//OneDrive//Desktop//TempPlots'
-    CloudSaving = 'OwnCloud'
+    CloudSaving = ''
     
     
 elif COMPUTERNAME =='DATA2JHODR':
-    suffix = '_EE'
+    suffix = '_DB'
     DirRepo = "C://Users//BioMecaCell//Desktop//CortExplore"
-    DirData = "D:/Eloise/MagneticPincherData"
+    DirData = "D:/Anumita/MagneticPincherData"
     DirCloud = ""# + suffix
-    DirTempPlots = DirData + '//TempPlots'
+    DirTempPlots = 'C://Users//BioMecaCell//Desktop//TempPlots'
     CloudSaving = ''
     
     
