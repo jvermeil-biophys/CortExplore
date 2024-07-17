@@ -4,8 +4,8 @@ Created on Tue Nov 23 16:50:16 2021
 @authors: Joseph Vermeil, Anumita Jawahar
 
 BeadTracker.py - contains the classes to perform bead tracking in a movie
-(see the function mainTracker and the Tracker classes), and to make a Depthograph
-(see the function depthoMaker and the Depthograph classes).
+(see the function smallTracker and the Tracker classes), 
+and to make a Depthograph (see the function depthoMaker and the Depthograph classes).
 Joseph Vermeil, Anumita Jawahar, 2021
 
 This program is free software: you can redistribute it and/or modify
@@ -44,16 +44,10 @@ from skimage import io, filters, exposure, measure, transform, util, color
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 from matplotlib.gridspec import GridSpec
-from matplotlib.colors import to_hex
 from matplotlib import ticker
 from datetime import date
 
 #### Local Imports
-
-import sys
-# import CortexPaths as cp
-# sys.path.append(cp.DirRepoPython)
-
 import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
@@ -102,7 +96,6 @@ class PincherTimeLapse:
         self.MagCorrFactor = manipDict['magnetic field correction']
         self.Nuplet = manipDict['normal field multi images']
         self.Zstep = manipDict['multi image Z step']
-        self.BeadsZDelta = manipDict['beads bright spot delta']
         
         try:
             self.insideBeadType = str(manipDict['inside bead type'])
@@ -164,7 +157,7 @@ class PincherTimeLapse:
         log_UIxy = np.zeros((self.nS, self.NB, 2), dtype = int)
         #
         
-        self.NLoops = int(np.max(logDf['iL']))
+        self.NLoops = np.max(logDf['iL'])
         Nuplet = self.Nuplet
         
         # Passive Part
@@ -179,39 +172,38 @@ class PincherTimeLapse:
         indexAction = logDf[logDf['Status'].apply(lambda x : x.startswith('Action'))].index
         
         # idxAnalysis
-        if len(indexAction.values) > 0:
-            logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
-            for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
-                index_iL = logDf[logDf['iL'] == iL].index
-                
-                i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-                i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
-                i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
-                #
-                logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
-                # logDf.loc[i_startOfCompression:i_endOfCompression+1, 'idxAnalysis']
+        logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
+        for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
+            index_iL = logDf[logDf['iL'] == iL].index
+            
+            i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
+            i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
+            #
+            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
         
-            # idxAnalysis for loops with repeated compressions
-            previous_idx = 0
-            for i in range(1, self.NLoops+1):
-                indexLoop_i = logDf[logDf['iL'] == i].index
-                maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
-                maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
-                maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
-                # print(maskMainPhase_i)
-                
-                lab_main, nlab_main = ndi.label(maskMainPhase_i)
-                # print(lab, nlab)
-                
-                if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
-                    logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
-                    lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
-                    logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
-                    # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
-                    previous_idx = np.max(lab_main)
+        # idxAnalysis for loops with repeated compressions
+        previous_idx = 0
+        for i in range(1, self.NLoops+1):
+            indexLoop_i = logDf[logDf['iL'] == i].index
+            maskActionPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action')).values.astype(int)
+            maskMainPhase_i = logDf.loc[indexLoop_i, 'Status'].apply(lambda x : x.startswith('Action_main')).values.astype(int)
+            maskActionPhase_nonMain_i = np.logical_xor(maskMainPhase_i, maskActionPhase_i)
+            # print(maskMainPhase_i)
+            
+            lab_main, nlab_main = ndi.label(maskMainPhase_i)
+            # print(lab, nlab)
+            
+            if nlab_main > 1: # This means there are repeated compressions. Nothing was modified before this test
+                logDf.loc[indexLoop_i, 'idxAnalysis'] = (lab_main + (previous_idx*maskMainPhase_i))
+                lab_nonMain, nlab_nonMain = ndi.label(maskActionPhase_nonMain_i)
+                logDf.loc[indexLoop_i, 'idxAnalysis'] -= (lab_nonMain + (previous_idx*maskActionPhase_nonMain_i))
+                # print(logDf.loc[indexLoop_i, 'idxAnalysis'].values
+                previous_idx = np.max(lab_main)
 
         self.logDf = logDf
         self.log_UIxy = log_UIxy
+        
         
         
         
@@ -232,26 +224,25 @@ class PincherTimeLapse:
                 iS = logDf_loop['iS'].values[-1]
                 
                 logDf_fast = logDf_loop[logDf_loop['Status'].apply(lambda x : x.startswith(fastestPhase))]
-                if len(logDf_fast) > 0:
-                    iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
+                iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
+                
+                while np.sum(self.I[iS-1]) == 0: # while a black image is detected
+                    nullFrames.append(iS_fast)
+                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
+                    self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
+                    iS -= 1
+                    iS_fast -= 1
+                if len(nullFrames) > 0:
+                    print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
                     
-                    while np.sum(self.I[iS-1]) == 0: # while a black image is detected
-                        nullFrames.append(iS_fast)
-                        self.logDf.loc[self.logDf['iS'] == iS_fast, 'nullFrame'] = 1
-                        self.logDf.loc[self.logDf['iS'] == iS_fast, 'trackFrame'] = False
-                        iS -= 1
-                        iS_fast -= 1
-                    if len(nullFrames) > 0:
-                        print('Loop {:.0f}: {:.0f} null image(s) found'.format(i, len(nullFrames)))
-                        
-                    A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
-                    self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
-                    # logDf_loop = self.logDf[self.logDf['iL'] == i]
-                    # A = np.cumsum(logDf_loop['nullFrame'].values)
-                    # logDf_loop['iS'] = logDf_loop['iS'] - A
-                        
-                    self.nullFramesPerLoop.append(nullFrames[::-1])
-                    # print(self.nullFramesPerLoop)
+                A = np.cumsum(self.logDf[self.logDf['iL'] == i]['nullFrame'].values)
+                self.logDf.loc[self.logDf['iL'] == i, 'iS'] = self.logDf[self.logDf['iL'] == i]['iS'] - A
+                # logDf_loop = self.logDf[self.logDf['iL'] == i]
+                # A = np.cumsum(logDf_loop['nullFrame'].values)
+                # logDf_loop['iS'] = logDf_loop['iS'] - A
+                    
+                self.nullFramesPerLoop.append(nullFrames[::-1])
+                # print(self.nullFramesPerLoop)
 
     
         else:
@@ -740,7 +731,7 @@ class PincherTimeLapse:
     def importTrajectories(self, path, iB):
         """
         """
-        self.listTrajectories.append(Trajectory(self.I, self.cellID, self.listFrames, self.scale, self.Zstep, iB))
+        self.listTrajectories.append(Trajectory(self.I, self.cellID, self.listFrames, self.scale, self.Zstep, iB, ))
         if '_In_' in path:
             self.listTrajectories[-1].beadInOut = 'In'
         elif '_Out_' in path:
@@ -1025,10 +1016,10 @@ class Trajectory:
         
         #### Z detection settings here
         self.HDZfactor = 5
-        self.maxDz_triplets = 60*6 # Max Dz allowed between images
-        self.maxDz_singlets = 30*6
-        self.HWScan_triplets = 3000 # Half width of the scans
-        self.HWScan_singlets = 600
+        self.maxDz_triplets = 80 # Max Dz allowed between images
+        self.maxDz_singlets = 40
+        self.HWScan_triplets = 1600 # Half width of the scans
+        self.HWScan_singlets = 800
         
         
     def __str__(self):
@@ -1041,7 +1032,8 @@ class Trajectory:
         df = pd.DataFrame(self.dict)
         df.to_csv(path, sep = '\t', index = False)
 
-    def computeZ(self, matchingDirection, plot = 0, plotpath=''):
+    def computeZ(self, matchingDirection, 
+                 PLOT = False, PLOT_RANGE = [0, 0], PLOT_PATH = ''):
 
         if len(self.deptho) == 0:
             return('Error, no depthograph associated with this trajectory')
@@ -1051,20 +1043,16 @@ class Trajectory:
             iF = self.dict['iF'][0]
             previousZ = -1
             
-            
-            # ###################################################################
-            
             while iF <= max(self.dict['iF']):
                 
-            #### Enable plots of Z detection  here
-                
-                plot = 0
-                # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
-                # if (iF <= 21):
-                # # if (iF >= 225 and iF <= 265):
-                #     plot = 1
-
-            # ###################################################################
+                #### Enable plots of Z detection here
+                iS = self.listFrames[iF].iS
+                PLOT_THIS_i = False
+                if PLOT:
+                    i1, i2 = PLOT_RANGE[0], PLOT_RANGE[1]
+                    if (iS >= i1 and iS < i2):
+                        PLOT_THIS_i = True
+                        
 
                 if iF not in self.dict['iF']: # this index isn't in the trajectory list => the frame was removed for some reason.
                     iF += 1 # Let's just go to the next index
@@ -1089,17 +1077,19 @@ class Trajectory:
                             jF += 1
                             
                         iF += jF
-
-
-                    Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                          matchingDirection, plot, plotpath=plotpath)
                         
+                    Z, Zerror = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
+                                          matchingDirection, PLOT_THIS_i, PLOT_PATH = PLOT_PATH)
+                    
+                    if Zerror:
+                        Z = previousZ
+  
                         
                     previousZ = Z
                     # This Z_pix has no meaning in itself, it needs to be compared to the depthograph Z reference point,
                     # which is depthoZFocus.
 
-                    Zr = self.depthoZFocus - Z # If you want to find it back, Z = depthoZFocus - Zr                        
+                    Zr = self.depthoZFocus - Z # If you want to find it back, Z = depthoZFocus - Zr
                     # This definition was chosen so that when Zr > 0, the plane of observation of the bead is HIGHER than the focus
                     # and accordingly when Zr < 0, the plane of observation of the bead is LOWER than the focus
 
@@ -1109,7 +1099,8 @@ class Trajectory:
                 
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot = False, plotpath=''):
+                     matchingDirection, PLOT_THIS_i, PLOT_PATH):
+        error = False
         # try:
         Nframes = len(framesNuplet)
         listStatus_1 = [F.idx_inNUp for F in framesNuplet]
@@ -1150,24 +1141,125 @@ class Trajectory:
                 
                 profileROI = F_cleanRoi[:, cleanCenter-2:cleanCenter+3] # line that is 5 pixels wide     
                 profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize)
-               
+                
+                # if plot:
+                #     plt.ioff()
+                #     figtest, axestest = plt.subplots(2, 4, figsize=(16,4))
+                    
+                #     figtest.suptitle(f"X, Y = {X:.1f}, {Y:.1f}")
+                    
+                #     ax = axestest[0, 0]
+                #     ax.imshow(framesNuplet[i].F)
+                #     ax.plot(X, Y, 'r+')
+                #     Xro, Yro = np.round(X), np.round(Y)
+                #     ax.plot(Xro, Yro, 'g+')
+                #     ax.axvline(xb1, c='r', ls='--')
+                #     ax.axvline(xb2-1, c='r', ls='--')
+                #     ax.axhline(yb1, c='r', ls='--')
+                #     ax.axhline(yb2-1, c='r', ls='--')
+                #     ax.set_xlim(xb1-11, xb2+10)
+                #     ax.set_ylim(yb2+10, yb1-11)
+                    
+                #     ax = axestest[1, 0]
+                #     ax.imshow(framesNuplet[i].F)
+                #     ax.plot(X, Y, 'r+')
+                #     ax.plot(np.round(X), np.round(Y), 'g+')
+                #     ax.set_xlim(Xro-3, Xro+3)
+                #     ax.set_ylim(Yro+3, Yro-3)
+
+                #     ax = axestest[0, 1]
+                #     ax.imshow(F_roughRoi)
+                #     ax.plot(roughSize//2, roughSize//2, 'b+')
+                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+')
+                    
+                #     ax = axestest[1, 1]
+                #     ax.imshow(F_roughRoi)
+                #     ax.axvline(roughCenter, c='b', ls='--')
+                #     ax.axhline(roughCenter, c='b', ls='--')
+                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+', zorder = 6)
+                #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                #     ax.set_ylim(roughCenter+3, roughCenter-3)
+
+                #     ax = axestest[0, 2]
+                #     ax.imshow(F_tmp)
+                #     ax.axvline(roughCenter, c='r', ls='--')
+                    
+                #     ax = axestest[1, 2]
+                #     ax.imshow(F_tmp)
+                #     ax.axvline(roughCenter, c='b', ls='--')
+                #     ax.axhline(roughCenter, c='b', ls='--')
+                #     ax.set_xlim(roughCenter-3, roughCenter+3)
+                #     ax.set_ylim(roughCenter+3, roughCenter-3)
+                    
+                #     Y2, X2 = ndi.center_of_mass(F_cleanRoi[cleanCenter-10:cleanCenter+11, cleanCenter-10:cleanCenter+11])
+                #     Y2, X2 = Y2 + (cleanCenter-10), X2 + (cleanCenter-10)
+                #     ax = axestest[0, 3]
+                #     ax.imshow(F_cleanRoi)
+                #     ax.plot(X2, Y2, 'r+')
+                #     ax.axvline(cleanCenter, c='b', ls='--')
+                    
+                #     ax = axestest[1, 3]
+                #     ax.imshow(F_cleanRoi)
+                #     ax.plot(X2, Y2, 'r+')
+                #     ax.axvline(cleanCenter, c='b', ls='--')
+                #     ax.axhline(cleanCenter, c='b', ls='--')
+                #     ax.set_xlim(cleanCenter-3, cleanCenter+3)
+                #     ax.set_ylim(cleanCenter+3, cleanCenter-3)
+
+                #     thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
+                #     if not os.path.isdir(thisCellTempPlots):
+                #         os.mkdir(thisCellTempPlots)
+                        
+                #     saveName = '00_S{:.0f}_B{:.0f}.png'.format(framesNuplet[i].iS, self.iB+1)
+                #     savePath = os.path.join(thisCellTempPlots, saveName)
+                #     figtest.savefig(savePath)
+                #     plt.close(figtest)
+                #     plt.ion()
+                
 
             except: # If the vertical slice doesn't work, try the horizontal one
-                print(gs.ORANGE + 'error with the vertical slice -> trying with horizontal one')
-                print('iFNuplet')
-                print(iFNuplet)
-                print('Roi')
-                print(Y-2,Y+3, X-cleanSize//2,X+cleanSize//2+1)
-                print('' + gs.NORMAL)
-
-                xx, yy = yy, xx
-                # > We could also try to recenter the image to keep a subpixel resolution here
-                X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
-                cleanCenter = Y
-                
-                F_cleanRoi = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
-                profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1] # line that is 5 pixels wide              
-                profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize).T
+                try:
+                    print(gs.ORANGE + 'error with the vertical slice -> trying with horizontal one')
+                    print('iFNuplet')
+                    print(iFNuplet)
+                    print('Roi')
+                    print(Y-2,Y+3, X-cleanSize//2,X+cleanSize//2+1)
+                    print('' + gs.NORMAL)
+    
+                    # xx, yy = yy, xx
+                    # # > We could also try to recenter the image to keep a subpixel resolution here
+                    # X, Y = int(np.round(listXY[i][0])), int(np.round(listXY[i][1])) 
+                    # cleanCenter = Y
+                    
+                    # F_cleanRoi = framesNuplet[i].F[Y-cleanSize//2:Y+cleanSize//2+1, X-cleanSize//2:X+cleanSize//2+1]
+                    # profileROI = framesNuplet[i].F[Y-2:Y+3, X-cleanSize//2:X+cleanSize//2+1] # line that is 5 pixels wide              
+                    # profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize).T
+                    
+                    X, Y = listXY[i][0], listXY[i][1]
+                    roughSize = cleanSize + 4
+                    roughCenter = roughSize // 2
+                    xb1, yb1, xb2, yb2, validROI = ufun.getROI(roughSize, X, Y, self.nx, self.ny)
+                    F_roughRoi = framesNuplet[i].F[yb1:yb2, xb1:xb2]
+                    
+                    xc1, yc1 = X-xb1-0.5, Y-yb1-0.5
+                    translation = (xc1-roughCenter, yc1-roughCenter)
+                    
+                    tform = transform.EuclideanTransform(rotation=0, translation = translation)
+                    F_tmp = transform.warp(F_roughRoi, tform, order = 1, preserve_range = True)
+    
+                    F_cleanRoi = np.copy(F_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+                                               roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+                    cleanCenter = cleanSize // 2
+                    
+                    
+                    profileROI = F_cleanRoi[cleanCenter-2:cleanCenter+3, :] # line that is 5 pixels wide     
+                    profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = hdSize, new_ny = 5).T
+                    
+                except:
+                    print(gs.RED + 'Fatal Error in Z detection')
+                    print('' + gs.NORMAL)
+                    error = True
+                    return(0, error)
 
 
             listROI.append(profileROI)
@@ -1216,6 +1308,7 @@ class Trajectory:
         subDeptho = self.deptho[Ztop:Zbot, :]
         
         for i in range(Nframes):
+            
             listDistances[i] = ufun.squareDistance(subDeptho, listProfiles[i], normalize = True) # Utility functions
             #### HERE - NEW: Filtering the cost function
             listDistances[i] = savgol_filter(listDistances[i], 31, 3, mode='mirror')
@@ -1248,16 +1341,14 @@ class Trajectory:
             Z = Ztop + limInf + np.argmin(sumFinalD[limInf:limSup])
 
         #### Important plotting option here
-        if plot >= 1:
+        if PLOT_THIS_i:
             plt.ioff()
-            gs.set_smallText_options_jv()
-            fig, axes = plt.subplots(5, Nframes, figsize = (3*Nframes, 16))
+            fig, axes = plt.subplots(5, 3, figsize = (16,16))
             
             cmap = 'magma'
             color_image = 'cyan'
-            viridis_rgba = plt.cm.viridis(np.linspace(0.1, 0.9, Nframes))
-            color_Nup = [to_hex(c) for c in viridis_rgba]
-            color_result = 'darkred'
+            color_Nup = ['gold', 'darkorange', 'red']
+            color_result = 'darkgreen'
             color_previousResult = 'turquoise'
             color_margin = 'aquamarine'
             
@@ -1366,12 +1457,12 @@ class Trajectory:
                 min_i = zPos[np.argmin(finalDists[i])]
                 axes[4,i].plot([min_i, min_i], limy4, ls = '--', c = color_Nup[i])
                 
-                axes[4,i].set_xlabel('Corrected position - (Z-axis)', 
+                axes[4,i].set_xlabel('Corrected position along the depthograph - (Z-axis)', 
                                       fontsize = 9)
                 axes[4,i].set_ylabel('Cost\n(Squared diff to deptho)', 
                                       fontsize = 9)
                 pos_nm = min_i/self.HDZfactor
-                axes[4,i].set_title(f'Corrected pos {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
+                axes[4,i].set_title(f'Cost curve with corrected position {idx_inNUp:.0f}/{Nup:.0f} - pos = {pos_nm:.0f}',
                                     fontsize = 11)
                 
                 # axes[4,i].text(min_i+5, np.mean(limy4), str(min_i/self.HDZfactor), c = 'k')
@@ -1421,24 +1512,24 @@ class Trajectory:
             
             fig.suptitle('Frames '+str(iFNuplet)+' - Slices '+str(iSNuplet)+' ; '+\
                           'Z = {:.1f} slices = '.format(Z/self.HDZfactor) + \
-                          '{:.4f} µm'.format(Z*(self.depthoStep/1000)),
+                          '{:.3f} µm'.format(Z*(self.depthoStep/1000)),
                           y=0.98)
             
-            ZPlots_path = f'{plotpath}/Zplots/{self.cellID}/'
-            if not os.path.isdir(f'{plotpath}/Zplots/'):
-                os.mkdir(f'{plotpath}/Zplots/')
-            if not os.path.isdir(ZPlots_path):
-                os.mkdir(ZPlots_path)
+            if not os.path.isdir(PLOT_PATH):
+                os.mkdir(PLOT_PATH)
+                
+            thisCellTempPlots = os.path.join(PLOT_PATH, self.cellID)
+            if not os.path.isdir(thisCellTempPlots):
+                os.mkdir(thisCellTempPlots)
             
             saveName = 'ZCheckPlot_S{:.0f}_B{:.0f}.png'.format(iSNuplet[0], self.iB+1)
-            savePath = os.path.join(ZPlots_path, saveName)
+            savePath = os.path.join(thisCellTempPlots, saveName)
             fig.savefig(savePath)
             plt.close(fig)
         
         plt.ion()
-        gs.set_mediumText_options_jv()
 
-        return(Z)
+        return(Z, error)
 
 
     def keepBestStdOnly(self):
@@ -1534,258 +1625,7 @@ class Trajectory:
 
 
 
-# %%%% Wrapper for the stand-alone
-
-# def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
-#                 metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False,
-#                 DirData = cp.DirData, 
-#                 DirDataRaw = cp.DirDataRaw, 
-#                 DirDataRawDeptho = cp.DirDataRawDeptho, 
-#                 DirDataTimeseries = cp.DirDataTimeseries,
-#                 CloudSaving = cp.CloudSaving,
-#                 DirCloudTimeseries = cp.DirCloudTimeseries):
-    
-#     Tstart = time.time()
-
-#     dictOptions = {'redoAllSteps' : redoAllSteps,
-#                    'trackAll' : trackAll,
-#                    'importLogFile' : True,
-#                    'saveLogFile' : True,
-#                    'saveFluo' : True,
-#                    'importTrajFile' : True,
-#                   }
-
-#     #### 1 - Make list of files to analyse
-    
-#     sourceDirsPaths = []
-#     fileRoots = []
-#     txtResultsNames = []
-#     tifImagesNames = []
-#     txtFieldNames = []
-#     txtStatusNames = []
-#     if not isinstance(dates, str):
-#         rawDirList = [os.path.join(DirDataRaw, d) for d in dates]
-#     else:
-#         rawDirList = [os.path.join(DirDataRaw, dates)]
-
-        
-#     for rd in rawDirList:
-#         fileList = os.listdir(rd)
-#         for f in fileList:
-#             if ufun.isFileOfInterest(f, manips, wells, cells, mode = 'soft', suffix = '_Results.txt'): # See Utility Functions > isFileOfInterest
-#                 validFileGroup = False
-#                 f_Res = f # A result file was found
-#                 f_root = '_'.join(f_Res.split('_')[:-1])
-#                 f_root_simple = ufun.simplifyCellId(f_root) # The common 'root' to the .tif and _Field.txt files.
-#                 # With a call to ufun.simplifyCellId(), 'M1_P1_C2-1' become 'M1_P1_C2'
-#                 # This is useful cause like that, the image and field files 
-#                 # do not have to be duplicated if there are 2 results files.
-                
-#                 print(f_root_simple)
-                
-#                 if metaDataFormatting == 'statusFile':
-#                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
-#                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
-#                     test_status = os.path.isfile(os.path.join(rd, f_root_simple + '_Status.txt'))
-                    
-#                     if test_image and test_field and test_status:
-#                         f_Tif = f_root_simple + '.tif'
-#                         f_Field = f_root_simple + '_Field.txt'
-#                         f_Status = f_root_simple + '_Status.txt'
-                        
-#                         sourceDirsPaths.append(rd)
-#                         fileRoots.append(f_root)
-#                         tifImagesNames.append(f_Tif)
-#                         txtFieldNames.append(f_Field)
-#                         txtStatusNames.append(f_Status)
-#                         txtResultsNames.append(f_Res)
-#                         validFileGroup = True
-                    
-#                     else: # Retry in case there was a duplicated image
-#                     # No call to the function that simplifies the names
-#                         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
-#                         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
-#                         test_status = os.path.isfile(os.path.join(rd, f_root + '_Status.txt'))
-                        
-#                         if test_image and test_field and test_status:
-#                             f_Tif = f_root + '.tif'
-#                             f_Field = f_root + '_Field.txt'
-#                             f_Status = f_root + '_Status.txt'
-                            
-#                             sourceDirsPaths.append(rd)
-#                             fileRoots.append(f_root)
-#                             tifImagesNames.append(f_Tif)
-#                             txtFieldNames.append(f_Field)
-#                             txtStatusNames.append(f_Status)
-#                             txtResultsNames.append(f_Res)
-#                             validFileGroup = True
-                    
-                    
-#                 elif metaDataFormatting == 'loopStruct':
-#                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
-#                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
-                    
-#                     if test_image and test_field:
-#                         f_Tif = f_root_simple + '.tif'
-#                         f_Field = f_root_simple + '_Field.txt'
-#                         sourceDirsPaths.append(rd)
-#                         fileRoots.append(f_root)
-#                         tifImagesNames.append(f_Tif)
-#                         txtFieldNames.append(f_Field)
-#                         txtStatusNames.append('')
-#                         txtResultsNames.append(f_Res)
-#                         validFileGroup = True
-                    
-#                     else: # Retry in case there was a duplicated image
-#                     # No call to the function that simplifies the names
-#                         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
-#                         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
-                        
-#                         if test_image and test_field:
-#                             f_Tif = f_root + '.tif'
-#                             f_Field = f_root + '_Field.txt'
-#                             sourceDirsPaths.append(rd)
-#                             fileRoots.append(f_root)
-#                             tifImagesNames.append(f_Tif)
-#                             txtFieldNames.append(f_Field)
-#                             txtStatusNames.append('')
-#                             txtResultsNames.append(f_Res)
-#                             validFileGroup = True
-                
-#                 if not validFileGroup:
-#                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
-        
-        
-#     #### 2 - Loop over the list of files to analyse
-#     for i in range(len(fileRoots)):
-#         f = fileRoots[i]
-#         print('\n')
-#         print(gs.YELLOW + 'Analysis of file {:.0f}/{:.0f} : {}'.format(i+1, len(fileRoots), f))
-
-#         dictPaths = {'sourceDirPath' : sourceDirsPaths[i],
-#                      'imageFileName' : tifImagesNames[i],
-#                      'resultsFileName' : txtResultsNames[i],
-#                      'depthoDir' : DirDataRawDeptho,
-#                      'depthoName' : depthoName,
-#                      'resultDirPath' : DirDataTimeseries,
-#                      }
-        
-#         manipID = ufun.findInfosInFileName(f, 'manipID') # See Utility Functions > findInfosInFileName
-#         cellID = ufun.findInfosInFileName(f, 'cellID') # See Utility Functions > findInfosInFileName
-#         fieldPath, statusPath = os.path.join(sourceDirsPaths[i], txtFieldNames[i]), os.path.join(sourceDirsPaths[i], txtStatusNames[i])
-        
-#         #### 3 - Load exp data (manipDict)
-#         if manipID not in expDf['manipID'].values:
-#             print(gs.RED + 'Error! No experimental data found for: ' + manipID + gs.NORMAL)
-#             break
-#         else:
-#             expDf_line = expDf.loc[expDf['manipID'] == manipID]
-#             manipDict = {}
-#             for c in expDf_line.columns.values:
-#                 manipDict[c] = expDf_line[c].values[0]
-        
-#         #### 4 - Make the appropriate metaDataFrame
-#         #### 4.1 - Mode using a status file
-#         if metaDataFormatting == 'statusFile': # ['T_raw', 'B_set', 'iL', 'Status']
-            
-#             # Columns from the field file
-#             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-#             metaDf = fieldDf[['T_raw', 'B_set']]
-            
-#             # Format the status file
-#             statusDf = pd.read_csv(statusPath, sep='_', names=['iL', 'Status', 'Status details'])
-#             Ns = len(statusDf)
-            
-#             statusDf['Action type'] = np.array(['' for i in range(Ns)], dtype = '<U16')
-#             statusDf['deltaB'] = np.zeros(Ns, dtype = float)
-#             statusDf['B_diff'] = np.array(['' for i in range(Ns)], dtype = '<U4')
-            
-#             indexAction = statusDf[statusDf['Status'] == 'Action'].index
-#             Bstart = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[1]))
-#             Bstop = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[2]))
-            
-#             statusDf.loc[indexAction, 'deltaB'] =  Bstop - Bstart
-#             statusDf.loc[statusDf['deltaB'] == 0, 'B_diff'] =  'none'
-#             statusDf.loc[statusDf['deltaB'] > 0, 'B_diff'] =  'up'
-#             statusDf.loc[statusDf['deltaB'] < 0, 'B_diff'] =  'down'
-            
-#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('t^')), 'Action type'] = 'power'
-#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('sigmoid')), 'Action type'] = 'sigmoid'
-#             statusDf.loc[statusDf['Status details'].apply(lambda x : x.startswith('constant')), 'Action type'] = 'constant'
-            
-#             statusDf.loc[indexAction, 'Action type'] = statusDf.loc[indexAction, 'Action type'] + '_' + statusDf.loc[indexAction, 'B_diff']
-#             statusDf = statusDf.drop(columns=['deltaB', 'B_diff'])
-            
-#             # Columns from the status file
-#             mainActionStep = 'power_up'
-#             metaDf['iL'] = statusDf['iL']
-#             metaDf['Status'] = statusDf['Status']
-#             metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
-            
-#         #### 4.2 - Mode using loopStruct for legacy data
-#         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
-#             print('Loop Structure Mode !')
-#             loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
-#             Nstruct = len(loopStructList)
-#             loop_total_length_woF = loopStructList[0]
-            
-#             if Nstruct >= 2:
-#                 loop_mainAction_length = loopStructList[1]
-#             else:
-#                 loop_mainAction_length = 0
-                
-#             if Nstruct >= 3:
-#                 loop_fluo_length = loopStructList[2]
-#             elif manipDict['with fluo images']:
-#                 loop_fluo_length = 1
-#             else:
-#                 loop_fluo_length = 0
-                
-#             # Columns from the field file
-#             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-#             metaDf = fieldDf[['T_raw', 'B_set']]
-            
-#             # 'iL' column
-#             N = len(metaDf)
-#             loop_total_length = loop_total_length_woF + loop_fluo_length
-#             NLoops = N // loop_total_length
-#             list_iL = [1 + i//loop_total_length for i in range(N)]
-#             metaDf['iL'] = list_iL
-            
-#             # 'Status' column
-#             expType = manipDict['experimentType']
-#             if 'compressionsLowStart' in expType:
-#                 loop_action_length = 2*loop_mainAction_length
-#             else:
-#                 loop_action_length = loop_mainAction_length
-                
-#             N_passive_1 = (loop_total_length_woF - loop_action_length)//2
-#             N_preAction = loop_action_length - loop_mainAction_length
-#             N_mainAction_up = loop_mainAction_length//2 + loop_mainAction_length%2
-#             N_mainAction_down = loop_mainAction_length//2
-#             N_passive_2 = N_passive_1
-#             N_Fluo = loop_fluo_length
-#             # print(N_passive_1, N_preAction, N_mainAction_up, N_mainAction_down, N_passive_2, N_Fluo)
-            
-#             loopStatus = ['Passive' for i in range(N_passive_1)] + ['Action' for i in range(N_preAction)] \
-#                        + ['Action_main' for i in range(N_mainAction_up)] + ['Action' for i in range(N_mainAction_down)] \
-#                        + ['Passive' for i in range(N_passive_2)] + ['Fluo' for i in range(N_Fluo)]
-#             # print(loopStatus)
-            
-#             list_Status = loopStatus*NLoops
-#             metaDf['Status'] = list_Status
-            
-#             # TBC
-        
-#         #### 5 - Call the smallTracker
-#         print('Calling the smallTracker...' + gs.NORMAL)
-#         timeSeries_Df = smallTracker(dictPaths, metaDf, manipDict, NB = 2, **dictOptions)
-        
-#     print(gs.YELLOW + 'Task over! Total time = {:.2f}'.format(time.time()-Tstart) + gs.NORMAL)
-    
-
-
-# %%%% Better stand-alone
+# %%%% Main tracking function
 
 def smallTracker(dictPaths, metaDf, dictConstants, 
                  NB = 2, **kwargs):
@@ -1795,12 +1635,9 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     #### 0.1 - Initialize default options and update them
     
     dictOptions = {'redoAllSteps' : True,
-                   'trackAll' : False,
-                   'importLogFile' : False,
-                   'saveLogFile' : False,
                    'saveFluo' : False,
-                   'importTrajFile' : False,
-                   'expandedResults' : False,
+                   'plotZ' : False,
+                   'plotZ_range' : [0, np.inf],
                    }
     
     dictOptions.update(kwargs)
@@ -1814,8 +1651,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     fluoDirPath = os.path.join(dictPaths['sourceDirPath'], 'FluoImages')
     
     cellID = ufun.findInfosInFileName(f, 'cellID')
-    if cellID == '':
-        cellID = f
     
     
 
@@ -1828,15 +1663,14 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     PTL.resultsDf = resultsDf
         
     #### 0.4 - Make the log table (PTL.logDf)
+    metaDf['iL'] = metaDf['iL'].astype(int)
     logFileImported = False
     if dictOptions['redoAllSteps']:
         pass
-    elif dictOptions['importLogFile']:
+    else:
         if os.path.isfile(logFilePath):
             PTL.importLogDf(logFilePath)
             logFileImported = True
-    else:
-        pass
     
     if not logFileImported:
         PTL.initializeLogDf(metaDf)
@@ -1855,9 +1689,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     #### 0.6 - Create list of Frame objects
     PTL.makeFramesList()
     
-    #### 0.7 - If specified, save log
-    if dictOptions['saveLogFile']:
-        PTL.saveLogDf(display = False, save = dictOptions['saveLogFile'], path = logFilePath)    
+    #### 0.7 - Save log
+    PTL.saveLogDf(display = False, save = True, path = logFilePath)    
         
     print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tc) + gs.NORMAL)
 
@@ -1871,7 +1704,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     #### 1.1 - Check if some trajectories exist already
     
     trajFilesImported = False
-    if dictOptions['redoAllSteps'] or not dictOptions['importTrajFile']:
+    if dictOptions['redoAllSteps']:
         pass
     
     else:
@@ -1898,16 +1731,16 @@ def smallTracker(dictPaths, metaDf, dictConstants,
 
     #### 1.3 - If no, compute them by tracking the beads
     if not trajFilesImported:
-        issue = PTL.buildTrajectories(trackAll = dictOptions['trackAll']) 
+        issue = PTL.buildTrajectories(trackAll = False) 
         # Main tracking function !
         if issue == 'Bug':
+            print('Tracking failed, zut!')
             return()
         else:
             pass
 
     #### 1.4 - Save the user inputs
-    if dictOptions['saveLogFile']:
-        PTL.saveLogDf(display = False, save = dictOptions['saveLogFile'], path = logFilePath)
+    PTL.saveLogDf(display = False, save = True, path = logFilePath)
 
     print(gs.BLUE + 'OK! dT = {:.3f}'.format(time.time()-Tt) + gs.NORMAL)
     
@@ -1920,28 +1753,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     args = np.argsort(avgX)
     listTrajectoriesBis = [PTL.listTrajectories[i] for i in args]
     PTL.listTrajectories = listTrajectoriesBis
-    
-    #### 2.1 - Infer Boi sizes in the first image
-    # if len(PTL.beadTypes) == 1:
-    #     if 'M450' in PTL.beadTypes[0]:
-    #         D = 4.5
-    #     elif 'M270' in PTL.beadTypes[0]:
-    #         D = 2.7
-
-    #     first_iF = PTL.listTrajectories[0].dict['iF'][0]
-    #     for B in PTL.listFrames[first_iF].listBeads:
-    #         B.D = D
-    # else:
-    #     PTL.listFrames[0].detectDiameter(plot = 0)
-
-    # # Propagate it across the trajectories
-    # for iB in range(PTL.NB):
-    #     traj = PTL.listTrajectories[iB]
-    #     B0 = traj.dict['Bead'][0]
-    #     D = B0.D
-    #     traj.D = D
-    #     for B in traj.dict['Bead']:
-    #         B.D = D
             
     #### 2.2 - Detect in/out bead
     # Current way, with user input
@@ -1992,10 +1803,11 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     #### 3.1 - Import depthographs
     HDZfactor = PTL.listTrajectories[0].HDZfactor
     
-    depthoPathRoot = os.path.join(dictPaths['depthoDir'], dictPaths['depthoName'])
-    depthoMetadata = pd.read_csv(depthoPathRoot+'_Metadata.csv', sep=';')
-    deptho = io.imread(depthoPathRoot+'_Deptho.tif')
-    #### HERE ! NEW FEATURE
+    depthoPath = os.path.join(dictPaths['depthoDir'], dictPaths['depthoName'])
+    deptho = io.imread(depthoPath)
+    depthoMetadataPath = '_'.join(depthoPath.split('_')[:-1]) + '_Metadata.csv'
+    depthoMetadata = pd.read_csv(depthoMetadataPath, sep=';')
+    
     deptho = filters.gaussian(deptho, sigma=(4,0))
     depthoStep = depthoMetadata.loc[0,'step']
     depthoZFocus = depthoMetadata.loc[0,'focus']
@@ -2007,7 +1819,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     for iB in range(PTL.NB):
         traj = PTL.listTrajectories[iB]
         traj.deptho = depthoHD
-        traj.depthoPath = depthoPathRoot+'_Deptho.tif'
+        traj.depthoPath = depthoPath
         traj.depthoStep = depthoStepHD
         traj.depthoZFocus = depthoZFocus
         traj.HDZfactor = HDZfactor
@@ -2022,7 +1834,10 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             print(gs.CYAN + 'Computing Z in traj  {:.0f}...'.format(iB+1) + gs.NORMAL)
             Tz = time.time()
             traj = PTL.listTrajectories[iB]
-            traj.computeZ(matchingDirection, plot = 0, plotpath=dictPaths['resultDirPath'])
+            traj.computeZ(matchingDirection, 
+                          PLOT = dictOptions['plotZ'], 
+                          PLOT_RANGE = dictOptions['plotZ_range'], 
+                          PLOT_PATH = os.path.join(dictPaths['sourceDirPath'], 'Zplots'))
             print(gs.CYAN + 'OK! dT = {:.3f}'.format(time.time()-Tz) + gs.NORMAL)
 
     else:
@@ -2054,11 +1869,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
                 os.mkdir(trajDir)
             trajPath = os.path.join(trajDir, f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
             traj_df.to_csv(trajPath, sep = '\t', index = False)
-            
-            # save in ownCloud
-            # if ownCloud_timeSeriesDataDir != '':
-            #     OC_trajPath = os.path.join(ownCloud_timeSeriesDataDir, 'Trajectories', f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
-            #     traj_df.to_csv(OC_trajPath, sep = '\t', index = False)
 
 
     #### 4. Define pairs and compute distances
@@ -2084,16 +1894,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             'D2' : np.zeros(nT),
             'D3' : np.zeros(nT),
         }
-        
-        if dictOptions['expandedResults']:
-            timeSeries = {
-                'X_in' : np.zeros(nT),
-                'X_out' : np.zeros(nT),
-                'Y_in' : np.zeros(nT),
-                'Y_out' : np.zeros(nT),
-                'Zr_in' : np.zeros(nT),
-                'Zr_out' : np.zeros(nT),
-            }
 
         #### 4.1.2 - Input common values:
         T0 = metaDf['T_raw'].values[0]/1000 # From ms to s conversion
@@ -2112,18 +1912,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
         timeSeries['dz'] = (traj2.dict['Zr']*traj2.depthoStep - traj1.dict['Zr']*traj1.depthoStep)/1000
         timeSeries['dz'] *= PTL.OptCorrFactor
         timeSeries['D3'] = (timeSeries['D2']**2 +  timeSeries['dz']**2)**0.5
-        
-        if dictOptions['expandedResults']:
-            if order == 'InOut':
-                t_in, t_out = traj1, traj2
-            elif order == 'OutIn':
-                t_out, t_in = traj1, traj2
-            timeSeries['X_in'] = t_in.dict['X']/PTL.scale
-            timeSeries['Y_in'] = t_in.dict['Y']/PTL.scale
-            timeSeries['Zr_in'] = t_in.dict['Zr']*(t_in.depthoStep/1000)*PTL.OptCorrFactor
-            timeSeries['X_out'] = t_out.dict['X']/PTL.scale
-            timeSeries['Y_out'] = t_out.dict['Y']/PTL.scale
-            timeSeries['Zr_out'] = t_out.dict['Zr']*(t_out.depthoStep/1000)*PTL.OptCorrFactor
 
         #print('\n\n* timeSeries:\n')
         #print(timeSeries_DF[['T','B','F','dx','dy','dz','D2','D3']])
@@ -2209,7 +1997,9 @@ class BeadDeptho:
         self.profileDict = {}
         self.ZfocusDict = {}
 
-    def buildCleanROI(self, plot):
+
+
+    def buildCleanROI(self, plot = 0):
         # Determine if the bead is to close to the edge on the max frame
         D0 = self.D0
         roughSize = np.floor(1.1*D0*self.scale)
@@ -2287,6 +2077,80 @@ class BeadDeptho:
 
             # except:
             #     print('Error for the file: ' + self.fileName)
+
+
+    # def buildCleanROI(self, plot = 0):
+    #     # Determine if the bead is to close to the edge on the max frame
+    #     D0 = self.D0
+    #     roughSize = np.floor(1.1*D0*self.scale)
+    #     mx, Mx = np.min(self.X0 - 0.5*roughSize), np.max(self.X0 + 0.5*roughSize)
+    #     my, My = np.min(self.Y0 - 0.5*roughSize), np.max(self.Y0 + 0.5*roughSize)
+    #     testImageSize = mx > 0 and Mx < self.nx and my > 0 and My < self.ny
+
+    #     # Aggregate the different validity test (for now only 1)
+    #     validBead = testImageSize
+
+    #     # If the bead is valid we can proceed
+    #     self.validBead = validBead
+
+    #     if validBead:
+    #         for z in range(self.bestZ, -1, -1):
+    #             if not z in self.S0:
+    #                 break
+    #         zFirst = z
+    #         for z in range(self.bestZ, self.nz, +1):
+    #             if not z in self.S0:
+    #                 break
+    #         zLast = z-1
+
+    #         roughSize = int(np.floor(1.05*self.D0*self.scale))
+    #         roughSize += 1 + roughSize%2
+    #         roughCenter = int((roughSize+1)//2)
+
+    #         cleanSize = ufun.getDepthoCleanSize(self.D0, self.scale)
+    #         I_cleanROI = np.zeros([self.nz, cleanSize, cleanSize])
+
+    #         # try:
+    #         for i in range(zFirst, zLast):
+    #             xmi, ymi = self.XYm[i,0], self.XYm[i,1]
+    #             x1, y1, x2, y2, validBead = ufun.getROI(roughSize, xmi, ymi, self.nx, self.ny)
+    #             if not validBead:
+    #                 if y1 < 0 or y2 > self.ny:
+    #                     self.valid_v = False
+
+
+    #             xm1, ym1 = xmi-x1, ymi-y1
+    #             I_roughRoi = self.I[i,y1:y2,x1:x2]
+
+    #             translation = (xm1-roughCenter, ym1-roughCenter)
+
+    #             tform = transform.EuclideanTransform(rotation=0, translation = translation)
+
+    #             I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+
+    #             I_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
+    #                                           roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
+
+    #         if not self.valid_v:
+    #             self.validBead = False
+
+    #         else:
+    #             self.zFirst = zFirst
+    #             self.zLast = zLast
+    #             self.validDepth = zLast-zFirst
+    #             self.I_cleanROI = I_cleanROI.astype(np.uint16)
+                
+    #         if self.validDepth < self.nz * (2/3):
+    #             self.validBead = False
+
+    #         # VISUALISE
+    #         if plot >= 2:
+    #             self.plotROI()
+    #             # for i in range(zFirst, zLast, 50):
+    #             #     self.plotROI(i)
+
+    #         # except:
+    #         #     print('Error for the file: ' + self.fileName)
 
 
     def buildDeptho(self, nbPixToAvg = 5, interpolationFactor = 5):
@@ -2475,24 +2339,6 @@ class BeadDeptho:
         
         fig.show()
 
-    # def plotProfiles(self):
-    #     Z = np.array([z for z in range(self.I_cleanROI.shape[0])])
-    #     Z_hd = np.arange(0, self.I_cleanROI.shape[0], 0.2)
-    #     intensity_raw = self.profileDict['intensity_raw']
-    #     intensity_interp = self.profileDict['intensity_interp']
-    #     Zm_raw = self.ZfocusDict['Zm_raw']
-    #     Zm_interp = self.ZfocusDict['Zm_interp']
-
-    #     fig, ax = plt.subplots(1,2, figsize = (12, 4))
-    #     ax[0].plot(Z, intensity_raw)
-    #     ax[1].plot(Z, intensity_interp)
-    #     ax[0].plot([Zm_raw, Zm_raw], [0, ax[0].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_raw = {:.2f}'.format(Zm_raw))
-    #     ax[1].plot([Zm_interp, Zm_interp], [0, ax[1].get_ylim()[1]], 'r--', lw = 0.8, label = 'Zm_interp = {:.2f}'.format(Zm_interp))
-    #     ax[0].legend(loc = 'lower right')
-    #     ax[1].legend(loc = 'lower right')
-
-    #     fig.show()
-
 
     def plotDeptho(self, d = '_interp'):
         fig, ax = plt.subplots(1,1, figsize = (4, 6))
@@ -2511,21 +2357,31 @@ class BeadDeptho:
         fig.suptitle('File ' + self.fileName + ' - Bead ' + str(self.iValid))
         fig.show()
 
+
 # %%%% depthoMaker
 
-def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', step = 20, plot = 0):
-    rawFileList = os.listdir(dirPath)
-    listFileNames = [f[:-4] for f in rawFileList if (os.path.isfile(os.path.join(dirPath, f)) and f.endswith(".tif"))]
-    L = []
+
+def depthoMaker(dictPaths, dictConstants):
+        
+    PathZStacks = dictPaths['PathZStacks']
+    PathDeptho = dictPaths['PathDeptho']
+    NameDeptho = dictPaths['NameDeptho']
+    
+    bead_type = dictConstants['bead type']
+    scale = dictConstants['scale pixel per um']
+    step = dictConstants['step']
     
     #### SETTINGS
     bestDetphoType = 'interp'
     bestFocusType = 'intensity_interp'
+    
+    rawFileList = os.listdir(PathZStacks)
+    listFileNames = [f[:-4] for f in rawFileList if (os.path.isfile(os.path.join(PathZStacks, f)) and f.endswith(".tif"))]
+    L = []
 
     for f in listFileNames:
-        test1 = (specif in f) or (specif == 'all')
-        test2 = ((f + '_Results.txt') in os.listdir(dirPath))
-        valid = test1 and test2
+        test1 = ((f + '_Results.txt') in os.listdir(PathZStacks))
+        valid = test1 and True
         if valid:
             L.append(f)
 
@@ -2536,7 +2392,7 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
 
 #     print(listFileNames)
     for f in listFileNames:
-        filePath = os.path.join(dirPath, f)
+        filePath = os.path.join(PathZStacks, f)
         I = io.imread(filePath + '.tif')
         resDf = pd.read_csv((filePath + '_Results.txt'), sep = '\t').drop(columns = [' '])
         # Area,StdDev,XM,YM,Slice
@@ -2547,10 +2403,10 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
         # This image will be more or less the one with the brightest spot
 
         # Create the BeadDeptho object
-        BD = BeadDeptho(I, X0, Y0, S0, bestZ, scale, beadType, f)
+        BD = BeadDeptho(I, X0, Y0, S0, bestZ, scale, bead_type, f)
 
         # Creation of the clean ROI where the center of mass is always perfectly centered.
-        BD.buildCleanROI(plot)
+        BD.buildCleanROI()
 
         # If the bead was not acceptable (for instance too close to the edge of the image)
         # then BD.validBead will be False
@@ -2561,15 +2417,13 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
         else:
             # Creation of the z profiles
             BD.buildDeptho()
-            BD.computeFocus(plot)
+            BD.computeFocus()
             listBD.append(BD)
             print(gs.BLUE + 'Job done for the file: ' + f + gs.NORMAL)
             
         i = 1
         for BD in listBD:
-#             BD_manipID = findInfosInFileName(BD.fileName, 'manipID')
-            subFileSavePath = os.path.join(savePath, 'Intermediate_Py', saveLabel + '_step' + str(step))
-            # BD.saveBeadDeptho(subFileSavePath, specif +  '_' + str(i), step = step, bestDetphoType = 'HD', bestFocusType = 'HD_hd')
+            subFileSavePath = os.path.join(PathDeptho, 'Intermediate_Py', NameDeptho)
             BD.saveBeadDeptho(subFileSavePath, f, step = step, bestDetphoType = bestDetphoType, bestFocusType = bestFocusType)
             i += 1
 
@@ -2619,12 +2473,12 @@ def depthoMaker(dirPath, savePath, specif, saveLabel, scale, beadType = 'M450', 
     fig, ax = plt.subplots(1,1)
     ax.imshow(finalDeptho)
 
-    fig.suptitle(beadType)
+    fig.suptitle(NameDeptho)
     fig.show()
 
-    depthoSavePath = os.path.join(savePath, saveLabel + '_Deptho.tif')
+    depthoSavePath = os.path.join(PathDeptho, NameDeptho)
     io.imsave(depthoSavePath, finalDeptho)
-    metadataPath = os.path.join(savePath, saveLabel + '_Metadata.csv')
+    metadataPath = os.path.join(PathDeptho, NameDeptho[:-4] + '_Metadata.csv')
     with open(metadataPath, 'w') as f:
         f.write('step;focus')
         f.write('\n')

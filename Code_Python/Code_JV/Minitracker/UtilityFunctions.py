@@ -4,7 +4,7 @@ Created on Tue Mar  1 11:21:02 2022
 @authors: Joseph Vermeil, Anumita Jawahar
 
 UtilityFunctions.py - contains all kind of small functions used by CortExplore programs, 
-to be imported with "import UtilityFunctions as ufun" and call with "cp.my_function".
+to be imported with "import UtilityFunctions as ufun" and call with "ufun.my_function".
 Joseph Vermeil, Anumita Jawahar, 2022
 
 This program is free software: you can redistribute it and/or modify
@@ -58,8 +58,6 @@ from sklearn.linear_model import HuberRegressor
 #### Local Imports
 
 import sys
-import CortexPaths as cp
-sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
 import GlobalConstants as gc
@@ -190,191 +188,6 @@ def renamePrefix(DirExt, currentCell, newPrefix):
             
 # %%% Data management
 
-def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix):
-    """
-    Import the table with all the conditions in a clean way.
-    It is a tedious function to read because it's doing a boring job:
-    Converting strings into numbers when possible; 
-    Converting commas into dots to correct for the French decimal notation; 
-    Converting semicolon separated values into lists when needed; 
-    \n
-    NEW FEATURE: Thanks to "engine='python'" in pd.read_csv() the separator can now be detected automatically !
-    """
-    
-    top = time.time()
-    
-    #### 0. Import the table
-    if suffix == '':
-        experimentalDataFile = 'ExperimentalConditions.csv'
-    else:
-        experimentalDataFile = 'ExperimentalConditions' + suffix + '.csv'
-        
-    experimentalDataFilePath = os.path.join(DirExp, experimentalDataFile)
-    expDf = pd.read_csv(experimentalDataFilePath, sep=None, header=0, engine='python')
-    # print(gs.BLUE + 'Importing Experimental Conditions' + gs.NORMAL)
-    print(gs.BLUE + 'Experimental Conditions Table has ' + str(expDf.shape[0]) + ' lines and ' + str(expDf.shape[1]) + ' columns' + gs.NORMAL)
-    #### 1. Clean the table
-    
-    #### 1.1 Remove useless columns
-    for c in expDf.columns:
-        if 'Unnamed' in c:
-            expDf = expDf.drop([c], axis=1)
-        if '.1' in c:
-            expDf = expDf.drop([c], axis=1)
-        
-    expDf = expDf.convert_dtypes()
-
-    #### 1.2 Convert commas into dots
-    listTextColumns = []
-    for col in expDf.columns:
-        try:
-            if expDf[col].dtype == 'string':
-                listTextColumns.append(col)
-        except:
-            pass
-    expDf[listTextColumns] = expDf[listTextColumns].apply(lambda x: x.str.replace(',','.'))
-
-    #### 1.3 Format 'scale'
-    expDf['scale pixel per um'] = expDf['scale pixel per um'].astype(float)
-    
-    #### 1.4 Format 'optical index correction'
-    try: # In case the format is 'n1/n2'
-        expDf['optical index correction'] = \
-                  expDf['optical index correction'].apply(lambda x: x.split('/')[0]).astype(float) \
-                / expDf['optical index correction'].apply(lambda x: x.split('/')[1]).astype(float)
-        print(gs.ORANGE + 'optical index correction : format changed' + gs.NORMAL)
-    except:
-        pass
-    
-    #### 1.5 Format 'magnetic field correction'
-    expDf['magnetic field correction'] = expDf['magnetic field correction'].astype(float)
-    
-    #### 1.6 Format 'with fluo images'
-    expDf['with fluo images'] = expDf['with fluo images'].astype(bool)
-
-    # #### 1.7 Format 'ramp field'
-    # try:
-    #     print(ORANGE + 'ramp field : converted to list successfully' + gs.NORMAL)
-    #     expDf['ramp field'] = \
-    #     expDf['ramp field'].apply(lambda x: [x.split(';')[0], x.split(';')[1]] if not pd.isnull(x) else [])
-    # except:
-    #     pass
-
-    #### 1.8 Format 'date'
-    dateExemple = expDf.loc[expDf.index[1],'date']
-    if re.match(dateFormatExcel, dateExemple):
-        print(gs.ORANGE + 'dates : format corrected' + gs.NORMAL)
-        expDf.loc[:,'date'] = expDf.loc[:,'date'].apply(lambda x: x.split('/')[0] + '-' + x.split('/')[1] + '-' + x.split('/')[2][2:])        
-    elif re.match(dateFormatExcel2, dateExemple):
-        print(gs.ORANGE + 'dates : format corrected' + gs.NORMAL)
-        expDf.loc[:,'date'] = expDf.loc[:,'date'].apply(lambda x: x.split('-')[0] + '-' + x.split('-')[1] + '-' + x.split('-')[2][2:])  
-        
-    #### 1.9 Format activation fields
-    try:
-        expDf['first activation'] = expDf['first activation'].astype(np.float)
-        expDf['activation frequency'] = expDf['activation frequency'].astype(np.float)
-    except:
-        pass
-
-    #### 2. Save the table, if required
-    if save:
-        saveName = 'ExperimentalConditions' + suffix + '.csv'
-        savePath = os.path.join(DirExp, saveName)
-        expDf.to_csv(savePath, sep=';', index = False)
-        
-        if not cp.CloudSaving == '':
-            savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
-            expDf.to_csv(savePath_cloud, sep=';', index = False)
-
-    #### 3. Generate additionnal field that won't be saved
-    
-    #### 3.1 Make 'manipID'
-    expDf['manipID'] = expDf['date'] + '_' + expDf['manip']
-    
-    
-    
-    #### 3.2 Make 'first time point'
-    dict_firstTimePoint = {}
-    unique_dates = expDf.date.unique()
-    unique_T0 = np.zeros_like(unique_dates, dtype = np.float64)
-    for kk in range(len(unique_dates)):
-        d = unique_dates[kk]
-        d_T0 = findFirstAbsTimeOfDate(cp.DirDataTimeseries, d, suffix = '.csv')
-        unique_T0[kk] = d_T0
-        
-    dictT0 = {unique_dates[ii]:unique_T0[ii] for ii in range(len(unique_dates))}
-    all_T0 = np.array([dictT0[d] for d in expDf.date.values])
-    expDf['date_T0'] = all_T0
-    
-    #### 3.3 Drop the 'comments' column
-    try:
-        expDf = expDf.drop(['comments'], axis=1)
-    except:
-        pass
-    
-    # def str2int(s):
-    #     try:
-    #         x = int(s)
-    #     except:
-    #         x = np.nan
-    #     return(x)
-    
-    # def str2float(s):
-    #     try:
-    #         x = float(s)
-    #     except:
-    #         x = np.nan
-    #     return(x)
-    
-    
-    # #### 3.2 Format 'bead diameter'
-    # diameters = expDf.loc[:,'bead diameter'].apply(lambda x: str(x).split('_'))
-    # diameters = diameters.apply(lambda x: [int(xx) for xx in x])
-    # expDf.loc[:,'bead diameter'] = diameters
-    # # print(ORANGE + 'ramp field : converted to list successfully' + NORMAL)
-    
-    # #### 3.3 Format 'bead type'
-    # bt = expDf.loc[:,'bead type'].apply(lambda x: str(x).split('_'))
-    # bt = bt.apply(lambda x: [str(xx) for xx in x])
-    # expDf.loc[:,'bead type'] = bt
-    
-    # #### 3.4 Format 'ramp field'
-    # rf = expDf.loc[:,'ramp field'].apply(lambda x: str(x).split('_'))
-    # rf = rf.apply(lambda x: [str2float(xx) for xx in x])
-    # expDf.loc[:,'ramp field'] = rf
-    
-    # #### 3.5 Format 'loop structure'
-    # ls = expDf.loc[:,'loop structure'].apply(lambda x: str(x).split('_'))
-    # ls = ls.apply(lambda x: [str2int(xx) for xx in x])
-    # expDf.loc[:,'loop structure'] = ls
-
-    #### 4. END
-    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
-    
-    return(expDf)
-
-
-def mergeExpDf(suffixes = [], save = False):
-    # getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix)
-    all_expDf = []
-    DirExp_root = '_'.join(cp.DirRepoExp.split('_')[:-1])
-    for suf in suffixes:
-        DirExp = DirExp_root + suf
-        expDf = getExperimentalConditions(DirExp = DirExp, save = False, suffix = suf)
-        expDf['author'] = suf
-        expDf.insert(0, 'author', expDf.pop('author'))
-        all_expDf.append(expDf)
-        
-    new_expDf = pd.concat(all_expDf, axis=0, join='outer').reset_index(drop = True)
-    new_expDf = new_expDf.sort_values(by = ['date', 'manip'])
-    
-    if save:
-        saveName = 'ExperimentalConditions' + ''.join(suffixes) + '.csv'     
-        if not cp.CloudSaving == '':
-            savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
-            new_expDf.to_csv(savePath_cloud, sep=';', index = False)
-        
-    return(all_expDf)
     
 
 def correctExcelDatesInDf(df, dateColumn, dateExample = ''):
@@ -723,45 +536,7 @@ def getDictAggMean(df):
 #     return(dictAggMean)
 
 
-def archiveData(df, name = '', sep = ';', descText = '',
-                saveDir = '', subDir = '', cloudSave = 'none'):
-    # Generate unique name if needed
-    if name == '':
-        dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-        name = 'df_' + dt
-        
-    saveDesc = (descText != '')
-        
-    # Generate default save path if needed
-    if saveDir == '':
-        saveDir = cp.DirDataFigToday
-        saveCloudDir = cp.DirCloudFigToday
-    else:
-        saveDir = os.path.join(cp.DirDataFig, saveDir)
-        saveCloudDir = os.path.join(cp.DirCloudFig, saveDir)
-        
-    # Normal save
-    savePath = os.path.join(saveDir, subDir, name+'.csv')
-    df.to_csv(savePath, sep = sep, index = False)
-    if saveDesc:
-        descPath = os.path.join(saveDir, subDir, name+'_infos.txt')
-        f = open(descPath, 'w')
-        f.write(descText)
-        f.close()
-    
-    # Cloud save if specified
-    doCloudSave = (not (cloudSave == 'none')) \
-                  or (cloudSave == 'strict') \
-                  or (cloudSave == 'flexible' and cp.CloudSaving != '')
-                  
-    if doCloudSave:
-        cloudSavePath = os.path.join(saveCloudDir, subDir, name+'.csv')
-        df.to_csv(cloudSavePath, sep = sep, index = False)
-        if saveDesc:
-            descPathCloud = os.path.join(saveCloudDir, subDir, name+'_infos.txt')
-            f = open(descPathCloud, 'w')
-            f.write(descText)
-            f.close()
+
         
     
 def updateDefaultSettingsDict(settingsDict, defaultSettingsDict):
@@ -854,7 +629,6 @@ def copyFile(DirSrc, DirDst, filename):
     """
     PathSrc = os.path.join(DirSrc, filename)
     PathDst = os.path.join(DirDst, filename)
-    print(PathDst)
     shutil.copyfile(PathSrc, PathDst)
     
 def copyFolder(DirSrc, DirDst, folderName):
@@ -872,7 +646,6 @@ def copyFilesWithString(DirSrc, DirDst, stringInName):
     SrcFilesList = os.listdir(DirSrc)
     for SrcFile in SrcFilesList:
         if stringInName in SrcFile:
-            print(SrcFile)
             copyFile(DirSrc, DirDst, SrcFile)
             
 def containsFilesWithExt(Dir, ext):
@@ -920,7 +693,6 @@ def getDepthoCleanSize(D, scale):
     """
     cleanSize = int(np.floor(1*D*scale))
     cleanSize += 1 + cleanSize%2
-    
     return(cleanSize)
 
 def compute_cost_matrix(XY1,XY2):
@@ -1397,16 +1169,6 @@ def argmedian(x):
     return(np.argpartition(x, len(x) // 2)[len(x) // 2])
 
 
-def sortMatrixByCol(A, col=0, direction = 1):
-    """
-    Return the matrix A where all columns where sorted by the column i
-    Increasing order if direction = 1
-    Decreasing order if direction = -1
-    """
-    return(A[A[:, col].argsort()[::direction]])
-
-
-
 def fitLine(X, Y):
     """
     returns: results.params, results \n
@@ -1576,41 +1338,7 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
     fig.savefig(figPath, dpi=dpi)
     
 
-def archiveFig(fig, name = '', ext = '.pdf', dpi = 150,
-               figDir = '', figSubDir = '', cloudSave = 'flexible'):
-    """
-    This is supposed to be a "smart" figure saver.
-    
-    1. Main save
-        - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100).
-        - If you give a name, it will be used to save your file; if not, a name will be generated based on the date.
-        - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday.
-        - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir.
-    
-    2. Backup save (optional). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
-        - If 'strict', this function will attempt to do a cloud save not matter what.
-        - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save.
-        - If 'none', this function will not do a cloud save.
-    """
-    # Generate unique name if needed
-    if name == '':
-        dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-        name = 'fig_' + dt
-    # Generate default save path if needed
-    if figDir == '':
-        figDir = cp.DirDataFigToday
-        figCloudDir = cp.DirCloudFigToday
-    else:
-        figDir = os.path.join(cp.DirDataFig, figDir)
-        figCloudDir = os.path.join(cp.DirCloudFig, figDir)
-    # Normal save
-    savePath = os.path.join(figDir, figSubDir)
-    simpleSaveFig(fig, name, savePath, ext, dpi)
-    # Cloud save if specified
-    doCloudSave = ((cloudSave == 'strict') or (cloudSave == 'flexible' and cp.CloudSaving != ''))
-    if doCloudSave:
-        cloudSavePath = os.path.join(figCloudDir, figSubDir)
-        simpleSaveFig(fig, name, cloudSavePath, ext, dpi)
+
         
    
 def setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'],
@@ -1704,9 +1432,6 @@ def setCommonBounds_V2(axes, mode = 'firstLine', xb = [0, 'auto'], yb = [0, 'aut
                 ax.set_ylim(Y_BOUND)
         else:
             pass
-    
-    # except:
-    #      pass 
     
     return(axes)
 

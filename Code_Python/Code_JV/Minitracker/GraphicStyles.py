@@ -119,7 +119,7 @@ def colorTester():
     ax.set_yticks([j for j in range(M)])
     ax.set_xticklabels([i for i in range(N)])
     ax.set_yticklabels([j for j in range(M)])
-    ax.set_xlabel(r'colorList')
+    ax.set_xlabel('colorList')
     ax.set_ylabel('markerList')
     plt.tight_layout()
     plt.show()
@@ -129,8 +129,6 @@ def colorTester():
 # %% 2. Global constants
 
 # %%% 2.1 Console text styles
-
-cm_in = 2.52
 
 NORMAL  = '\033[1;0m'
 RED  = '\033[0;31m' # red
@@ -215,35 +213,21 @@ def set_default_options_jv():
 def set_mediumText_options_jv():
     SMALLER_SIZE = 8
     SMALL_SIZE = 10
-    MEDIUM_SIZE = 11
-    BIGGER_SIZE = 12
+    MEDIUM_SIZE = 12
+    BIGGER_SIZE = 16
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    
-def set_manuscript_options_jv(palette = 'Set2'):
-    SMALLER_SIZE = 8
-    SMALL_SIZE = 10
-    MEDIUM_SIZE = 11
-    BIGGER_SIZE = 12
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    sns.set_palette(sns.color_palette(palette))
 
 def set_smallText_options_jv():
-    SMALLER_SIZE = 6
-    SMALL_SIZE = 8
+    SMALLER_SIZE = 5
+    SMALL_SIZE = 7
     MEDIUM_SIZE = 10
-    BIGGER_SIZE = 11
+    BIGGER_SIZE = 12
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
@@ -281,31 +265,3 @@ def set_bigText_options_jv():
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 # set_default_options_jv()    
-
-# %% Other color lists (cL)
-
-palette_Set2 = sns.color_palette("Set2")
-cL_Set2 = palette_Set2.as_hex()
-
-palette_Set1 = sns.color_palette("Set1")
-cL_Set1 = palette_Set1.as_hex()[:-1]
-
-cL_Set12 = cL_Set1 + cL_Set2
-cL_Set21 = cL_Set2 + cL_Set1
-
-X1, Y1 = np.arange(len(cL_Set1)), np.arange(len(cL_Set1))
-X2, Y2 = np.arange(len(cL_Set2)), np.arange(len(cL_Set2))-1
-fig, ax = plt.subplots(1, 1)
-ax.scatter(X1, Y1, c=cL_Set1, s=200)
-ax.scatter(X2, Y2, c=cL_Set2, s=200)
-plt.show()
-
-# pal = sns.mpl_palette("Set2", 14)
-# cL = pal.as_hex()
-
-# X1, Y1 = np.arange(len(cL)), np.arange(len(cL))
-# # X2, Y2 = np.arange(len(colorList_Set2)), np.arange(len(colorList_Set2))-1
-# fig, ax = plt.subplots(1, 1)
-# ax.scatter(X1, Y1, c=cL, s=200)
-# # ax.scatter(X2, Y2, c=colorList_Set2, s=200)
-# plt.show()

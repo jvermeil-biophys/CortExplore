@@ -9,6 +9,7 @@ Created on Thu Nov 25 13:37:51 2021
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import skimage as skm
 import scipy.stats as st
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
@@ -26,6 +27,66 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+# %% Test colors 
+
+cl = matplotlib.colormaps['Set2'].colors + matplotlib.colormaps['Set1'].colors
+
+N = 20
+fig, ax = plt.subplots(1, 1)
+ax.set_prop_cycle(plt.cycler("color", cl))
+TT = np.linspace(0, 2*np.pi, 360)
+dT = np.linspace(0, 1*np.pi, N)
+A = np.zeros((N, 360))
+for k in range(len(dT)):
+    t = dT[k]
+    A[k,:] = np.sin(TT + t)
+    ax.plot(TT, A[k,:])
+    
+plt.show()
+
+# %%
+
+list_image = ['im   0', 'im   1', 'im   2', 'im   3', 'im 100', 'im 101', 'im 102', 'im 103',
+              'im 200', 'im 201', 'im 202', 'im 203', 'im 300', 'im 301', 'im 302', 'im 303',]
+
+array_images = np.array(list_image)
+array_images_2 = np.sort(array_images)
+
+
+# %%
+
+list_image = ['C1', 'C2', 'C10', 'C11', 'C20', 'C21']
+
+array_images = np.array(list_image)
+array_images_2 = np.sort(array_images)
+
+print(array_images)
+print(array_images_2)
+
+# %%
+
+# srcDir = 'E:/24-06-14_Chameleon_Compressions/All_tifs/24-06-14_M2_P1_C2-1_disc20um_L501'
+srcDir = 'D:/MagneticPincherData/Raw/24.06.14_Chameleon/24-06-14_M2_P1_C2-2_disc20um_L502'
+
+lst_f = os.listdir(srcDir)
+allFiles = [os.path.join(srcDir, f) for f in lst_f]
+
+ic = skm.io.ImageCollection(allFiles, conserve_memory = True)
+stack = skm.io.concatenate_images(ic)
+
+# %%
+
+ic.files.sort()
+
+# %%
+
+print(ic.files)
+
+# %%
+
+fig, ax = plt.subplots(1, 1)
+
+# ax.plot([1, 2], [1, 2], ls='=')
 
 # %% Sort
 
@@ -367,6 +428,25 @@ plt.show()
 A = np.array([3.2, 1.6, 6.4, 0.8])
 r = np.argsort(A)
 B = list(A[r])
+
+
+# %% Test sorting
+
+import numpy as np
+import pandas as pd
+
+d = {'grade':[13, 16, 18, 12, 6, 7, 15, 14, 4, 18, 4, 13], 
+     'coeff':[2, 1, 5, 4, 1, 7, 3, 2, 5, 4, 9, 8], 
+     'course':['m', 'p', 'l', 'm', 'm', 'p', 'p', 'l','l','l','l', 'l']}
+
+df = pd.DataFrame(d)
+
+order = ['l', 'm', 'p']
+dict_order = {order[i]:i for i in range(len(order))}
+df['course_order'] = df['course'].apply(lambda x : dict_order[x])
+
+df_sorted = df.sort_values(by='course_order', axis=0)
+
 
 # %% Test new interp function
 

@@ -57,9 +57,9 @@ DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
 # DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 #%% Define parameters # Jojo
-date = '24.04.18'
-DirExt = 'E:\\24-04-18_3T3Atcc-LaGFP_P+I-25um_Y27\\M3_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
-DirSave = os.path.join(cp.DirDataRaw, date  + '_depthos', 'M3') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '24.07.04'
+DirExt = 'E:/24-07-04_3T3Atcc-LaGFP_Drugs/' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date) #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
@@ -85,7 +85,7 @@ imagePrefix = 'tif'
 
 def getListOfSourceFolders(Dir, 
                            forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
-                                               'film', 'films', 'capture', 'captures' # ,  'deptho', 'depthos',
+                                               'film', 'films', 'capture', 'captures',  'deptho', 'depthos',
                                              ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos'
     """
@@ -499,7 +499,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 30
+limiter = 120
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

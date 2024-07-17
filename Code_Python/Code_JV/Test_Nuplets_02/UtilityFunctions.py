@@ -1341,12 +1341,56 @@ def plotMagAndForce2(d = 0):
     fig2.tight_layout()
     
     path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
-    simpleSaveFig(fig1, 'Example_M-B', path, '.png', 150)
-    simpleSaveFig(fig2, 'Example_F-B', path, '.png', 150)
+    simpleSaveFig(fig1, 'Example_M-B', path, '.pdf', 150)
+    simpleSaveFig(fig2, 'Example_F-B', path, '.pdf', 150)
     
     plt.show()
 
 # plotMagAndForce2(d = 0)
+
+def plotMagAndForce3(d = 0):
+    SMALLER_SIZE = 8
+    SMALL_SIZE = 10
+    MEDIUM_SIZE = 11
+    BIGGER_SIZE = 12
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    D = 4500e-9
+    
+    # for small range plots
+    B1 = np.linspace(0, 80, 1000)
+    M1 = computeMag_M450(B1)
+    F1 = computeForce_M450(B1, D, d)
+    
+    fig1, axes1 = plt.subplots(2, 1, figsize = (11/cm_in, 8.5/cm_in), sharex=True)
+    
+    ax = axes1[0]
+    ax.plot(B1, M1/1e3, c='indigo')
+    # ax.set_xlabel('B (mT)')
+    ax.set_ylabel('M (kA/m)')
+    ax.grid()
+    
+    ax = axes1[1]
+    ax.plot(B1, F1/1e3, c='darkred')
+    ax.set_xlabel('B (mT)')
+    ax.set_ylabel('F (nN)')
+    ax.grid()
+    
+    # fig1.suptitle(f'M(B) for a M-450 bead (D = {D*1e6:.2f} µm)')
+    fig1.tight_layout()
+
+    
+    path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
+    simpleSaveFig(fig1, 'Example_MF-B', path, '.pdf', 150)
+    
+    plt.show()
+    
+# plotMagAndForce3(d = 0)
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
