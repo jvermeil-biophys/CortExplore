@@ -1759,6 +1759,30 @@ class CellCompression:
         return(fig, axes)
     
     
+    def Mplot_FH400(self, plotSettings):
+        gs.set_smallText_options_jv()
+        nColsSubplot = 1
+        nRowsSubplot = 5
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 figsize = (9/gs.cm_in, 25.7/gs.cm_in))
+        # figTitle = 'Thickness-Force of indentations\n'
+        # if plotH0:
+        #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        # if plotFit:
+        #     figTitle += 'with fit (Chadwick)'
+        # fig.suptitle(figTitle)
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
+            ax = axes[i]
+            IC = self.listIndent[i]
+            IC.Mplot_FH400(fig, ax, plotSettings)
+        
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    
     def Mplot_FHR(self, plotSettings):
         gs.set_smallText_options_jv()
         nColsSubplot = 3
@@ -1771,8 +1795,9 @@ class CellCompression:
         # if plotFit:
         #     figTitle += 'with fit (Chadwick)'
         # fig.suptitle(figTitle)
+        Np = min(5, len(self.listIndent))
         
-        for i in range(5):
+        for i in range(Np):
             axes_row = axes[i, :]
             IC = self.listIndent[i]
             IC.Mplot_FHR(fig, axes_row, plotSettings)
@@ -1780,7 +1805,7 @@ class CellCompression:
         xxM1 = []
         xxM2 = []
         yyM2 = []
-        for i in range(5):
+        for i in range(Np):
             xxM1.append(max([np.abs(x) for x in axes[i, 1].get_xlim()]))
             xxM2.append(axes[i, 2].get_xlim()[-1])
             yyM2.append(axes[i, 2].get_ylim()[-1])
@@ -1788,10 +1813,13 @@ class CellCompression:
         xM1 = max(xxM1)
         xM2 = max(xxM2)
         yM2 = max(yyM2)
-        for i in range(5):
-            axes[i, 1].set_xlim([-xM1, xM1])
-            axes[i, 2].set_xlim([0, xM2])
-            axes[i, 2].set_ylim([0, yM2])
+        for i in range(Np):
+            # axes[i, 1].set_xlim([-xM1, xM1])
+            # axes[i, 2].set_xlim([0, xM2])
+            # axes[i, 2].set_ylim([0, yM2])
+            axes[i, 1].set_xlim([-26, 26])
+            axes[i, 2].set_xlim([0, 0.27])
+            axes[i, 2].set_ylim([0, 1800])
         
         fig.tight_layout()
         return(fig, axes)
@@ -1811,7 +1839,9 @@ class CellCompression:
         #     figTitle += 'with fit (Chadwick)'
         # fig.suptitle(figTitle)
         
-        for i in range(5):
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
             axes_row = axes[i, :]
             IC = self.listIndent[i]
             IC.Mplot_NL1(fig, axes_row, plotSettings)
@@ -1820,7 +1850,7 @@ class CellCompression:
         yyM1 = []
         xxM2 = []
         yyM2 = []
-        for i in range(5):
+        for i in range(Np):
             xxM1.append(axes[i, 1].get_xlim()[-1])
             yyM1.append(axes[i, 1].get_ylim()[-1])
             xxM2.append(axes[i, 2].get_xlim()[-1])
@@ -1830,14 +1860,88 @@ class CellCompression:
         yM1 = max(yyM1)
         xM2 = max(xxM2)
         yM2 = max(yyM2)
-        for i in range(5):
-            axes[i, 1].set_xlim([0, xM1])
-            axes[i, 1].set_ylim([0, yM1])
+        for i in range(Np):
+            # axes[i, 1].set_xlim([0, xM1])
+            # axes[i, 1].set_ylim([0, yM1])
+            # axes[i, 2].set_xlim([0, xM2])
+            # axes[i, 2].set_ylim([0, yM2])
+            axes[i, 1].set_xlim([0, 0.27])
+            axes[i, 1].set_ylim([0, 1800])
+        
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    
+    def Mplot_NL2(self, plotSettings):
+        gs.set_smallText_options_jv()
+        nColsSubplot = 3
+        nRowsSubplot = 5
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 figsize = (17/gs.cm_in, 25/gs.cm_in))
+        # figTitle = 'Thickness-Force of indentations\n'
+        # if plotH0:
+        #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        # if plotFit:
+        #     figTitle += 'with fit (Chadwick)'
+        # fig.suptitle(figTitle)
+        
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
+            axes_row = axes[i, :]
+            IC = self.listIndent[i]
+            IC.Mplot_NL2(fig, axes_row, plotSettings)
+        
+        # xxM1 = []
+        # yyM1 = []
+        xxM2 = []
+        yyM2 = []
+        for i in range(Np):
+            # xxM1.append(axes[i, 1].get_xlim()[-1])
+            # yyM1.append(axes[i, 1].get_ylim()[-1])
+            xxM2.append(axes[i, 2].get_xlim()[-1])
+            yyM2.append(axes[i, 2].get_ylim()[-1])
+        
+        # xM1 = max(xxM1)
+        # yM1 = max(yyM1)
+        xM2 = max(xxM2)
+        yM2 = max(yyM2)
+        for i in range(Np):
+            # axes[i, 1].set_xlim([0, xM1])
+            # axes[i, 1].set_ylim([0, yM1])
             axes[i, 2].set_xlim([0, xM2])
             axes[i, 2].set_ylim([0, yM2])
         
         fig.tight_layout()
         return(fig, axes)
+    
+    
+    
+    def Mplot_NL2_v2(self, plotSettings):
+        gs.set_smallText_options_jv()
+        nColsSubplot = 1
+        nRowsSubplot = 5
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 figsize = (9/gs.cm_in, 25.7/gs.cm_in))
+        # figTitle = 'Thickness-Force of indentations\n'
+        # if plotH0:
+        #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        # if plotFit:
+        #     figTitle += 'with fit (Chadwick)'
+        # fig.suptitle(figTitle)
+        
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
+            ax = axes[i]
+            IC = self.listIndent[i]
+            IC.Mplot_NL2_v2(fig, ax, plotSettings)
+        
+        fig.tight_layout()
+        return(fig, axes)
+            
+    
             
 
     def plot_Timeseries(self, plotSettings):
@@ -2108,17 +2212,46 @@ class CellCompression:
         # 0.
         if plotSettings['Plots_Manuscript']:
             # try:
+                
             # name = self.cellID + '_M01_h(t)'
             # fig, ax = self.Mplot_TimeseriesZoom(plotSettings)
             # ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             
-            name = self.cellID + '_M02_F(h)_Residuals'
-            fig, ax = self.Mplot_FHR(plotSettings)
-            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            try:
+                name = self.cellID + '_M02-1_F(h)_E400'
+                fig, ax = self.Mplot_FH400(plotSettings)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
             
-            name = self.cellID + '_M03_NonLin'
-            fig, ax = self.Mplot_NL1(plotSettings)
+            # try:
+            #     name = self.cellID + '_M02-2_F(h)_Residuals'
+            #     fig, ax = self.Mplot_FHR(plotSettings)
+            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+            
+            # try:
+            #     name = self.cellID + '_M03_NonLin'
+            #     fig, ax = self.Mplot_NL1(plotSettings)
+            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+            
+            # try:
+            #     name = self.cellID + '_M04_VW-NonLin'
+            #     fig, ax = self.Mplot_NL2(plotSettings)
+            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+            
+            # try:
+            name = self.cellID + '_M04bis_VW2-NonLin'
+            fig, ax = self.Mplot_NL2_v2(plotSettings)
             ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass
+            
             # except:
             #     pass
         
@@ -3220,6 +3353,9 @@ class IndentCompression:
         print(listDicts)
         return(listDicts[-1])
     
+    
+    
+    
     def fitFH_VWC(self, fitValidationSettings, method = 'Full', mask = []):
         """
         
@@ -3547,16 +3683,22 @@ class IndentCompression:
             self.df_3parts = df
             
             
-            
-            
-            
-            
-    def Mplot_FHR(self, fig, axes, plotSettings):
+    
+    def Mplot_FH400(self, fig, ax, plotSettings):
+        color_base = 'lightblue'
+        color_relax = 'palegreen'
+        color_VW   = 'red'
+        color_Chad = 'deepskyblue'
+        color_H0   = 'mediumseagreen'
+        color_total= 'indigo'
+        color_Chad400 = 'darkorange'
+        
         #### Plot 1
-        ax = axes[0]
+        ax = ax
         if self.isValidForAnalysis:
-            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color='dodgerblue')
-            # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base, label = 'Compression', zorder=3)
+            ax.plot(self.hRelax[::10], self.fRelax[::10], ls='', marker='.', ms=4, color=color_relax, label = 'Relaxation', zorder=2)
+            # ax.plot([], [], ls='-', color='w', label = ' ', zorder=2)
             titleText = self.cellID + '_c' + str(self.i_indent + 1)
             legendText = ''
             ax.set_xlabel('h (nm)')
@@ -3572,9 +3714,112 @@ class IndentCompression:
                 fFit = dictFit['x']
                 hPredict = dictFit['yPredict']
                 
+                legendText = r'$\bf{Fit\ full\ curve}$'
+                legendText += '\n$H_0$ = '     + f'{H0:.0f} nm'
+                legendText += '\n$E$ = ' + f'{E/1000:.2f} kPa'
+                legendText += '\n$R^2$ = '     + f'{R2:.3f}'
+                ax.plot(hPredict, fFit, ls='--', color = color_Chad, linewidth = 1.5, 
+                        label = legendText, zorder = 5)
+                
+            else:
+                titleText += '\nFIT ERROR'
+                
+                
+            method = 'f_<_400'
+            # dictFit = self.dictFitFH_Chadwick[method]
+            dictFit = self.dictFitFH_Chadwick[method]
+            fitError = dictFit['error']
+                
+            if not fitError:
+                H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                fFit = dictFit['x']
+                hPredict = dictFit['yPredict']
+                
+                legendText = r'$\bf{Fit\ F < 400 pN}$'
+                legendText += '\n$H_0$ = '     + f'{H0:.0f} nm'
+                legendText += '\n$E_{400}$ = ' + f'{E/1000:.2f} kPa'
+                legendText += '\n$R^2$ = '     + f'{R2:.3f}'
+                ax.plot(hPredict, fFit, ls='--', color = color_Chad400, linewidth = 1.5, 
+                        label = legendText, zorder = 6)
+            else:
+                titleText += '\nFIT ERROR'
+                
+                    
+            bestH0 = self.bestH0
+            method = self.method_bestH0
+            zone = self.zone_bestH0
+            str_m_z = method + '_' + zone
+            E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+            
+            if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                max_h = np.max(self.hCompr)
+                high_h = np.linspace(max_h, bestH0, 20)
+                if self.method_bestH0 == 'Dimitriadis':
+                    low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                elif self.method_bestH0 == 'Chadwick':
+                    # chadwickModel(h, E, H0, DIAMETER)
+                    low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                else:
+                    low_f = np.ones_like(high_h) * bestH0
+                
+                legendText = r'$\bf{Fit\ F < 15\%\ of\ max}$'
+                legendText += '\nPrecise $H_0$ = ' + f'{bestH0:.0f} nm' #+ '\n' + str_m_z
+                plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                ax.plot([bestH0], [0], ls = '', marker = 'o', color = color_H0, markersize = 5, 
+                        label = legendText, zorder = 4)
+                ax.plot(plot_startH, plot_startF, ls = '--', color = color_H0, linewidth = 1.5, zorder = 2)
+
+            # ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc='upper left', bbox_to_anchor=(1, 1.01), fontsize = 6)
+            # ax.title.set_text(titleText)
+            ax.grid(axis='y')
+            
+        #### Style
+        for ax in [ax]:
+            ax.xaxis.label.set_size(8)
+            ax.yaxis.label.set_size(8)
+            for item in ax.get_xticklabels() + ax.get_yticklabels():
+                item.set_fontsize(6)
+                    
+        
+            
+            
+            
+    def Mplot_FHR(self, fig, axes, plotSettings):
+        color_base = 'lightblue'
+        color_VW   = 'red'
+        color_Chad = 'deepskyblue'
+        color_H0   = 'mediumseagreen'
+        color_total= 'indigo'
+        
+        #### Plot 1
+        ax = axes[0]
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base)
+            # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
+            titleText = self.cellID + '_c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('F (pN)')
+    
+            method = 'Full'
+            # dictFit = self.dictFitFH_Chadwick[method]
+            dictFit = self.dictFitFH_Chadwick[method]
+            fitError = dictFit['error']
+            
+            ss_slope_error = fitError
+            
+            if not fitError:
+                H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                ss_slope = E
+                fFit = dictFit['x']
+                hPredict = dictFit['yPredict']
+                
                 legendText = f'$H_0$ = {H0:.0f} nm\n$E$ = {E/1000:.2f} kPa\n$R^2$ = {R2:.3f}\n' # '$ \chi^2$ = {Chi2:.1f}'
-                ax.plot(hPredict, fFit, ls='--', color = 'red', linewidth = 1.5, 
-                        label = legendText, zorder = 2)
+                ax.plot(hPredict, fFit, ls='--', color = color_Chad, linewidth = 1.5, 
+                        label = legendText, zorder = 5)
             else:
                 titleText += '\nFIT ERROR'
                     
@@ -3599,9 +3844,9 @@ class IndentCompression:
                 plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                 plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 6, 
+                ax.plot([bestH0], [0], ls = '', marker = 'o', color = color_H0, markersize = 5, 
                         label = legendText)
-                ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.5, zorder = 4)
+                ax.plot(plot_startH, plot_startF, ls = '--', color = color_H0, linewidth = 1.5, zorder = 4)
 
             # ax = ufun.setAllTextFontSize(ax, size = 9)
             ax.legend(loc = 'upper right', prop={'size': 6})
@@ -3631,7 +3876,7 @@ class IndentCompression:
                 hResid = dictFit['yPredict'] - dictFit['y'] 
                 
                 # legendText = f'$H_0$ = {H0:.0f} nm\n$E$ = {E:.2e} Pa\n$R^2$ = {R2:.3f}\n' # '$ \chi^2$ = {Chi2:.1f}'
-                ax.plot(hResid, fFit, ls = '', marker='o', ms = 2, color = 'red', zorder = 2)
+                ax.plot(hResid, fFit, ls = '', marker='o', ms = 2, color = color_Chad, zorder = 5)
                         # label = legendText)
                 # ax.set_xlim([-26, 26])
                 ax.grid(axis = 'both')
@@ -3656,6 +3901,11 @@ class IndentCompression:
             # ax.set_ylim([0, 900])
             ax.grid(axis = 'both')
             
+            if not ss_slope_error:
+                ax.axline((0, 0), slope = ss_slope, linestyle = '--', linewidth = 1.5, color = color_Chad,
+                          label = 'Slope from\nthe linear fit')
+                ax.legend(loc='upper left')
+            
         #### Style
         for ax in axes:
             ax.xaxis.label.set_size(8)
@@ -3667,10 +3917,16 @@ class IndentCompression:
 
 
     def Mplot_NL1(self, fig, axes, plotSettings):
+        color_base = 'lightblue'
+        color_VW   = 'red'
+        color_Chad = 'deepskyblue'
+        color_H0   = 'mediumseagreen'
+        color_total= 'indigo'
+        
         #### Plot 1
         ax = axes[0]
         if self.isValidForAnalysis:
-            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color='dodgerblue', linewidth = 0.8)
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base, linewidth = 0.8)
             # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
             titleText = self.cellID + '_c' + str(self.i_indent + 1)
             legendText = ''
@@ -3687,8 +3943,8 @@ class IndentCompression:
                 hPredict = dictFit['yPredict']
                 
                 legendText = f'$H_0$ = {H0:.0f} nm\n$E$ = {E/1000:.2f} kPa\n$R^2$ = {R2:.3f}\n' # '$ \chi^2$ = {Chi2:.1f}'
-                ax.plot(hPredict, fFit, ls='--', color = 'red', linewidth = 1.5, 
-                        label = legendText, zorder = 2)
+                ax.plot(hPredict, fFit, ls='--', color = color_Chad, linewidth = 1.5, 
+                        label = legendText, zorder = 5)
             else:
                 titleText += '\nFIT ERROR'
                     
@@ -3713,9 +3969,9 @@ class IndentCompression:
                 plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                 plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
     
-                ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 6, 
+                ax.plot([bestH0], [0], ls = '', marker = 'o', color = color_H0, markersize = 5, 
                         label = legendText)
-                ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.5, zorder = 4)
+                ax.plot(plot_startH, plot_startF, ls = '--', color = color_H0, linewidth = 1.5, zorder = 4)
     
             # ax = ufun.setAllTextFontSize(ax, size = 9)
             ax.legend(loc = 'upper right', prop={'size': 6})
@@ -3839,7 +4095,7 @@ class IndentCompression:
                 Y = df_fltr['K'].values[k]/1000
                 Xvals.append(X)
                 Yvals.append(Y)
-                Yerr = df_fltr['ciwK'].values[k]/1000
+                Yerr = (df_fltr['ciwK'].values[k]/1000)/2
                 if df_fltr['valid'].values[k]:
                     color = colors[k%N_col]
                     mec = 'k'
@@ -3903,16 +4159,319 @@ class IndentCompression:
             # ax.set_xlim([0, Ym *1.2])
             
             Xm = max(Xvals)
-            ax.set_xlim([0, Xm + 50])
+            ax.set_xlim([0, 1550])
             
             ax.grid(axis='both')
             
-            #### Style
-            for ax in axes:
-                ax.xaxis.label.set_size(8)
-                ax.yaxis.label.set_size(8)
-                for item in ax.get_xticklabels() + ax.get_yticklabels():
-                    item.set_fontsize(6)
+        #### Style
+        for ax in axes:
+            ax.xaxis.label.set_size(8)
+            ax.yaxis.label.set_size(8)
+            for item in ax.get_xticklabels() + ax.get_yticklabels():
+                item.set_fontsize(6)
+                    
+    
+    def Mplot_NL2(self, fig, axes, plotSettings):
+        color_base = 'lightblue'
+        color_VW   = 'red'
+        color_Chad = 'deepskyblue'
+        color_H0   = 'mediumseagreen'
+        color_total= 'indigo'
+            
+            
+            
+        #### Plot 1 - VW
+        ax = axes[0]
+        if self.isValidForAnalysis and not self.error_bestH0:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base, linewidth = 0.8)
+            # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
+            titleText = self.cellID + '_c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('F (pN)')
+    
+            method = 'Full'
+            dictFit = self.dictFitFH_VWC[method]
+            fitError = dictFit['error']
+                
+            if not fitError:
+                K, Y, H0 = dictFit['K'], dictFit['Y'], dictFit['H0']
+                R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
+                hFit = dictFit['x']
+                fPredict = dictFit['yPredict']
+                kPredict = dictFit['kPredict']
+                ePredict = dictFit['ePredict']
+                Eeff = Y + K * (0.8**-4)
+                NLI = np.log10((0.8)**-4 * K/Y)
+                
+                legendTextY = r'$\bf{Hooke\ part}$'
+                legendTextY += f'\nY = {Y/1000:.2f} kPa'
+                legendTextK = r'$\bf{Van\ Wyk\ part}$'
+                legendTextK += f'\nK = {K/1000:.3f} kPa'
+                legendTextE = r'$\bf{Total\ fit}$'
+                # legendTextE += '\n$H_0$ = '     + f'{H0:.1f} nm'
+                legendTextE += '\n$E_{eff}$ = ' + f'{Eeff/1000:.2f} kPa'
+                # legendTextE += '\n$R^2$ = '     + f'{R2:.2f}'
+                legendTextE += '\n$NLI$ = '     + f'{NLI:.2f}'
+                
+                ax.plot(hFit, (ePredict), ls=(0, (3, 2)), c=color_Chad, lw = 1.5, label = legendTextY, zorder = 2)
+                ax.plot(hFit, (kPredict), ls=(0, (3, 2)), c=color_VW, lw = 1.5, label = legendTextK, zorder = 2)
+                ax.plot(hFit, (fPredict), ls=(2, (3, 2)), c=color_total, lw = 1.5, label = legendTextE, zorder = 3)
+                    
+                    
+            # bestH0 = self.bestH0
+            # method = self.method_bestH0
+            # zone = self.zone_bestH0
+            # str_m_z = method + '_' + zone
+            # E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+            
+            # if (not self.error_bestH0) and (method not in ['NaiveMax']):
+            #     max_h = np.max(self.hCompr)
+            #     high_h = np.linspace(max_h, bestH0, 20)
+            #     if self.method_bestH0 == 'Dimitriadis':
+            #         low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+            #     elif self.method_bestH0 == 'Chadwick':
+            #         # chadwickModel(h, E, H0, DIAMETER)
+            #         low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+            #     else:
+            #         low_f = np.ones_like(high_h) * bestH0
+                
+            #     legendText = f'$H_0$ = {bestH0:.0f} nm' #+ '\n' + str_m_z
+            #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+            #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+    
+            #     ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 6, 
+            #             label = legendText)
+            #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.5, zorder = 4)
+                   
+
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.grid(axis='y')
+            
+            
+            
+            
+        #### Plot 2
+        ax = axes[1]
+        ax.sharey(axes[0])
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base, linewidth = 0.8)
+            # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
+            titleText = self.cellID + '_c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('F (pN)')
+    
+            method = 'Full'
+            # dictFit = self.dictFitFH_Chadwick[method]
+            dictFit = self.dictFitFH_Chadwick[method]
+            fitError = dictFit['error']
+            if not fitError:
+                H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                fFit = dictFit['x']
+                hPredict = dictFit['yPredict']
+                
+                legendText = f'$H_0$ = {H0:.0f} nm\n$E$ = {E/1000:.2f} kPa\n$R^2$ = {R2:.3f}\n' # '$ \chi^2$ = {Chi2:.1f}'
+                ax.plot(hPredict, fFit, ls='--', color = color_Chad, linewidth = 1.5, 
+                        label = legendText, zorder = 5)
+            else:
+                titleText += '\nFIT ERROR'
+                    
+            bestH0 = self.bestH0
+            method = self.method_bestH0
+            zone = self.zone_bestH0
+            str_m_z = method + '_' + zone
+            E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+            
+            if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                max_h = np.max(self.hCompr)
+                high_h = np.linspace(max_h, bestH0, 20)
+                if self.method_bestH0 == 'Dimitriadis':
+                    low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                elif self.method_bestH0 == 'Chadwick':
+                    # chadwickModel(h, E, H0, DIAMETER)
+                    low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                else:
+                    low_f = np.ones_like(high_h) * bestH0
+                
+                legendText = f'$H_0$ = {bestH0:.0f} nm' #+ '\n' + str_m_z
+                plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+    
+                ax.plot([bestH0], [0], ls = '', marker = 'o', color = color_H0, markersize = 5, 
+                        label = legendText)
+                ax.plot(plot_startH, plot_startF, ls = '--', color = color_H0, linewidth = 1.5, zorder = 4)
+    
+            # ax = ufun.setAllTextFontSize(ax, size = 9)
+            lims = ax.get_xlim()
+            axes[0].set_xlim(lims)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.grid(axis='y')
+            
+        
+        #### Plot 3
+        ax = axes[2]
+        if self.isValidForAnalysis and not self.error_bestH0:
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            # ax.title.set_text(titleText)
+            ax.set_ylabel('K (kPa)')
+            # ax.set_ylim([0, 16])
+            
+            #### Stress
+            df = self.df_stressGaussian
+            ax.set_xlabel('Stress (Pa)')
+            # ax.set_xlim([0, 1200])
+            
+            # Read settings
+            HW = plotSettings['plotStressHW']
+            centers = plotSettings['plotStressCenters']
+            # N = len(centers)
+            # colors = gs.colorList30[:N]
+            
+            fltr = (df['center_x'].apply(lambda x : x in centers)) & \
+                   (df['halfWidth_x'] == HW)
+                       
+            
+            df_fltr = df[fltr]
+            N = len(df_fltr['center_x'].values)
+            colors = gs.colorList30[:N]
+            N_col = len(colors)
+            
+            # relativeError[k] = (Err/K_fit)
+            # # mec = None
+            Xvals = []
+            Yvals = []
+            
+            for k in range(N):
+                X = df_fltr['center_x'].values[k]
+                Y = df_fltr['K'].values[k]/1000
+                Xvals.append(X)
+                Yvals.append(Y)
+                Yerr = (df_fltr['ciwK'].values[k]/1000)/2
+                if df_fltr['valid'].values[k]:
+                    color = colors[k%N_col]
+                    mec = 'k'
+                    
+                else:
+                    # color = 'w'
+                    # mec = colors[k%N_col]
+                    color = colors[k%N_col]
+                    mec = 'k'
+                    
+                if (not pd.isnull(Y)) and (Y > 0):
+                    ax.errorbar(X, Y, yerr = Yerr, color = color, marker = 'o', 
+                                ms = 5, mec = mec, mew = 0.8, ecolor = color, lw = 1.5)             
+            
+            Ym = max(Yvals)
+            # Log
+            ax.set_ylim([0.8, 150])
+            ax.set_yscale('log')
+            # Lin
+            # ax.set_xlim([0, Ym *1.2])
+            
+            Xm = max(Xvals)
+            ax.set_xlim([0, 1550])
+            
+            ax.grid(axis='both')
+            
+            
+            
+            
+        #### Style
+        for ax in axes:
+            ax.xaxis.label.set_size(8)
+            ax.yaxis.label.set_size(8)
+            for item in ax.get_xticklabels() + ax.get_yticklabels():
+                item.set_fontsize(6)
+                
+                
+                
+                
+    def Mplot_NL2_v2(self, fig, ax, plotSettings):
+        color_base = 'lightblue'
+        color_VW   = 'red'
+        color_Chad = 'deepskyblue'
+        color_H0   = 'mediumseagreen'
+        color_total= 'indigo'
+            
+            
+            
+        #### Plot 1 - VW
+        ax = ax
+        if self.isValidForAnalysis and not self.error_bestH0:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, color=color_base, linewidth = 0.8)
+            # ax.plot(self.hRelax, self.fRelax, ls='', marker='.', ms=6, color='darkcyan', linewidth = 0.8)
+            titleText = self.cellID + '_c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('F (pN)')
+    
+            method = 'Full'
+            dictFit = self.dictFitFH_VWC[method]
+            fitError = dictFit['error']
+                
+            if not fitError:
+                K, Y, H0 = dictFit['K'], dictFit['Y'], dictFit['H0']
+                R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
+                hFit = dictFit['x']
+                fPredict = dictFit['yPredict']
+                kPredict = dictFit['kPredict']
+                ePredict = dictFit['ePredict']
+                Eeff = Y + K * (0.8**-4)
+                NLI = np.log10((0.8)**-4 * K/Y)
+                
+                legendTextY = r'$\bf{Hooke\ part}$'
+                legendTextY += f'\nY = {Y/1000:.2f} kPa'
+                legendTextK = r'$\bf{Van\ Wyk\ part}$'
+                legendTextK += f'\nK = {K/1000:.3f} kPa'
+                legendTextE = r'$\bf{Total\ fit}$'
+                legendTextE += '\n$H_0$ = '     + f'{H0:.1f} nm'
+                legendTextE += '\n$E_{eff}$ = ' + f'{Eeff/1000:.2f} kPa'
+                # legendTextE += '\n$R^2$ = '     + f'{R2:.2f}'
+                legendTextE += '\n$NLI$ = '     + f'{NLI:.2f}'
+                
+                ax.plot(hFit, (ePredict), ls=(0, (3, 2)), c=color_Chad, lw = 1.5, label = legendTextY, zorder = 2)
+                ax.plot(hFit, (kPredict), ls=(0, (3, 2)), c=color_VW, lw = 1.5, label = legendTextK, zorder = 2)
+                ax.plot(hFit, (fPredict), ls=(2, (3, 2)), c=color_total, lw = 1.5, label = legendTextE, zorder = 3)
+                    
+                    
+            # bestH0 = self.bestH0
+            # method = self.method_bestH0
+            # zone = self.zone_bestH0
+            # str_m_z = method + '_' + zone
+            # E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+            
+            # if (not self.error_bestH0) and (method not in ['NaiveMax']):
+            #     max_h = np.max(self.hCompr)
+            #     high_h = np.linspace(max_h, bestH0, 20)
+            #     if self.method_bestH0 == 'Dimitriadis':
+            #         low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+            #     elif self.method_bestH0 == 'Chadwick':
+            #         # chadwickModel(h, E, H0, DIAMETER)
+            #         low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+            #     else:
+            #         low_f = np.ones_like(high_h) * bestH0
+                
+            #     legendText = f'$H_0$ = {bestH0:.0f} nm' #+ '\n' + str_m_z
+            #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+            #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+    
+            #     ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 6, 
+            #             label = legendText)
+            #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.5, zorder = 4)
+                   
+
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize = 8)
+            ax.grid(axis='y')         
+            
+            
+            
+        #### Style
+        # for ax in axes:
+        ax.xaxis.label.set_size(8)
+        ax.yaxis.label.set_size(8)
+        for item in ax.get_xticklabels() + ax.get_yticklabels():
+            item.set_fontsize(6)
 
     
     

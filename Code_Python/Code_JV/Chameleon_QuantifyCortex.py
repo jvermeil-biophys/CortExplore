@@ -16,8 +16,11 @@ import skimage as skm
 import scipy.ndimage as ndi
 
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.path as mpltPath
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
 
 from PIL import Image
 from PIL.TiffTags import TAGS
@@ -663,11 +666,11 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
 
 # %%% Paths
 
-date = '24-02-27'
+# date = '24-02-27'
 # date = '24-05-24'
-# date = '24-06-14'
+date = '24-06-14'
 date2 = dateFormat(date)
-cell = 'C11'
+cell = 'C16'
 
 #### Added here
 # for i in range(10, 19):
@@ -676,11 +679,11 @@ cell = 'C11'
         #### Added here
         
 cellId = f'{date}_{cell}'
-specif = '_off4um' # '_off4um' # '_off3-5um' # '_off4um'
+specif = '' #'_off4um' # '_off4um' # '_off3-5um' # '_off4um'
 specifFolder = '' # 'M2-20um/B5mT/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 specifDeptho = '' #'-Andor_M2' # 'M2_'
 
-srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF/'
+srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF/M1/'
 
 bfName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_BF.tif'
 bfPath = os.path.join(srcDir, bfName)
@@ -2079,14 +2082,14 @@ def doFluoAnalysis(date, cell,
 
 #### Call the function
 
-date = '24-06-14'
+# date = '24-06-14'
 
-cells = ['C' + str(i) for i in range(1, 9)]
-for cell in cells:
-    if cell != 'C10':
-        doFluoAnalysis(date, cell,
-                       SAVE_RESULTS = True,
-                       PLOT_WARP = True, PLOT_MAP = True, PLOT_NORMAL = True)
+# cells = ['C' + str(i) for i in range(1, 9)]
+# for cell in cells:
+#     if cell != 'C10':
+#         doFluoAnalysis(date, cell,
+#                        SAVE_RESULTS = True,
+#                        PLOT_WARP = True, PLOT_MAP = True, PLOT_NORMAL = True)
 
 
 
@@ -2094,17 +2097,18 @@ for cell in cells:
 
 # %%%% Load files
 
-date = '24-02-27'
+# date = '24-02-27'
 # date = '24-05-24'
+date = '24-06-14'
 
 date2 = dateFormat(date)
 
-cell = 'C11'
+cell = 'C4'
 cellId = f'{date}_{cell}'
-specif = '_off4um' #'_off4um' #'_off4um'
+specif = '' # '_off4um' #'_off4um' #'_off4um'
 specifFolder = '' # 'M2-20um/B5mT/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 
-srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF'
+srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF/M3'
 # fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_Fluo.tif'
 
 dstDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
@@ -2162,6 +2166,7 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
     list_Q_gf = []
     list_W_vb = []
     list_S_gf = []
+    list_R2_gf = []
     
     nA_scan = 5
     nZ_scan = 3
@@ -2234,15 +2239,23 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
                     # m = eR
                     return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
                 
-                try:                
+                try:
+                    x_data = np.arange(ri, rf)
+                    y_data = profile_n[ri:rf]
                     popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
                                                     bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
                     m_gf, Q_gf, s_gf = popt
                     xfit = np.linspace(eR-20, eR+20, 200)
                     yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
+                    residuals = y_data - Gfit(x_data, m_gf, Q_gf, s_gf)
+                    ss_res = np.sum(residuals**2)
+                    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+                    r_squared = 1 - (ss_res / ss_tot)
                     list_Q_gf.append(Q_gf)
                     list_S_gf.append(s_gf)
+                    list_R2_gf.append(r_squared)
                     fitError = False
+                    
                 except:
                     fitError = True
                 
@@ -2260,7 +2273,7 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
                 ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
                 # 3
                 if not fitError:
-                    ax.plot(xfit, yfit, c='gold', label=f'Gaussian fit: Q={Q_gf:.1f}')
+                    ax.plot(xfit, yfit, c='gold', label=f'Gaussian fit: Q={Q_gf:.1f}\nR2={r_squared:.2f}')
                 
                 ax.legend(fontsize=8, loc='lower left')
                 
@@ -2275,93 +2288,93 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
     plt.show()
     
     #### Manuscript Plot
-    if PLOT_M:
-        figM, axM = plt.subplots(1, 3, figsize=(17/gs.cm_in, 5.5/gs.cm_in))
-        Ac = pM.shape[1]//2
-        profile = pM[izr + iiz, Ac + iia, :]  
-        eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
-        Np = len(profile)
+    # if PLOT_M:
+    #     figM, axM = plt.subplots(1, 3, figsize=(17/gs.cm_in, 5.5/gs.cm_in))
+    #     Ac = pM.shape[1]//2
+    #     profile = pM[izr + iiz, Ac + iia, :]  
+    #     eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
+    #     Np = len(profile)
         
-        Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
-        Ibeadin = fluoBeadIn[t, izr + iiz]
+    #     Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
+    #     Ibeadin = fluoBeadIn[t, izr + iiz]
         
-        def normalize_Icell(x):
-            return((x - Iback)/(Icell - Iback))
-        profile_n = normalize_Icell(profile)
+    #     def normalize_Icell(x):
+    #         return((x - Iback)/(Icell - Iback))
+    #     profile_n = normalize_Icell(profile)
 
-        eV = profile_n[eR]
+    #     eV = profile_n[eR]
         
-        bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
-        bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
-        ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
-        rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
+    #     bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
+    #     bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
+    #     ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
+    #     rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
 
-        # Calculation 1
-        n_in, n_out = 10, 5
-        Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
+    #     # Calculation 1
+    #     n_in, n_out = 10, 5
+    #     Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
         
-        # Calculation 1
-        n_inN, n_outN = 5, 3
-        Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
+    #     # Calculation 1
+    #     n_inN, n_outN = 5, 3
+    #     Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
         
-        # Calculation 2
-        Q_vb = np.sum(profile_n[ri:rf+1])
+    #     # Calculation 2
+    #     Q_vb = np.sum(profile_n[ri:rf+1])
 
-        # Calculation 3
-        ### bead_in_level = 0.9
-        ### bead_out_level = 0.95
-        ###(2*bead_in_level+eV)/3)
-        def Gfit(x, m, Q, s):
-            # m = eR
-            return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
+    #     # Calculation 3
+    #     ### bead_in_level = 0.9
+    #     ### bead_out_level = 0.95
+    #     ###(2*bead_in_level+eV)/3)
+    #     def Gfit(x, m, Q, s):
+    #         # m = eR
+    #         return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
         
-        try:                
-            popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
-                                            bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
-            m_gf, Q_gf, s_gf = popt
-            xfit = np.linspace(eR-20, eR+20, 200)
-            yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
-            list_Q_gf.append(Q_gf)
-            list_S_gf.append(s_gf)
-            fitError = False
-        except:
-            fitError = True
+    #     try:                
+    #         popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
+    #                                         bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
+    #         m_gf, Q_gf, s_gf = popt
+    #         xfit = np.linspace(eR-20, eR+20, 200)
+    #         yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
+    #         list_Q_gf.append(Q_gf)
+    #         list_S_gf.append(s_gf)
+    #         fitError = False
+    #     except:
+    #         fitError = True
         
-        ax = axM[2]            
-        ax.plot(np.arange(Np)/7.4588, profile_n)
-        ax.axvline(eR/7.4588, c='r', ls='-', lw=0.75)
-        # 1
-        # ax.axvline(eR-n_in/7.4588, c='cyan', ls='--', lw=1)
-        # ax.axvline((eR+n_out+1)/7.4588, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
-        # 2
-        # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
-        # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
-        # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
-        # ax.axvline(ri, c='orange', ls='--', lw=1)
-        # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
-        # 3
-        if not fitError:
-            ax.plot(xfit/7.4588, yfit, c='gold', ls='--', lw = 1, label=f'Gaussian fit:\nQ={Q_gf:.1f}')
+    #     ax = axM[2]            
+    #     ax.plot(np.arange(Np)/7.4588, profile_n)
+    #     ax.axvline(eR/7.4588, c='r', ls='-', lw=0.75)
+    #     # 1
+    #     # ax.axvline(eR-n_in/7.4588, c='cyan', ls='--', lw=1)
+    #     # ax.axvline((eR+n_out+1)/7.4588, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
+    #     # 2
+    #     # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
+    #     # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
+    #     # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
+    #     # ax.axvline(ri, c='orange', ls='--', lw=1)
+    #     # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
+    #     # 3
+    #     if not fitError:
+    #         ax.plot(xfit/7.4588, yfit, c='gold', ls='--', lw = 1, label=f'Gaussian fit:\nQ={Q_gf:.1f}')
         
-        ax.legend(fontsize=6, loc='upper left')
-        ax.set_title('Actin quantification')
-        ax.set_ylabel(f'Normalized intensity', fontsize = 8)
-        ax.set_xlabel(f'r (µm)', fontsize = 8)
-        ax.tick_params(axis='both', which='major', labelsize=6)
-        ax.grid(axis = 'y')
-        # if z==nZ_scan-1:
-        #     ax.set_title(f'a = {iia:.0f} (°)')
-        figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-        ufun.archiveFig(figM, name = f'ProfileMetrics_t{t+1:.0f}', ext = '.pdf', dpi = 100,
-                        figDir = figDir, figSubDir = 'E-h-Fluo', cloudSave = 'flexible')
+    #     ax.legend(fontsize=6, loc='upper left')
+    #     ax.set_title('Actin quantification')
+    #     ax.set_ylabel(f'Normalized intensity', fontsize = 8)
+    #     ax.set_xlabel(f'r (µm)', fontsize = 8)
+    #     ax.tick_params(axis='both', which='major', labelsize=6)
+    #     ax.grid(axis = 'y')
+    #     # if z==nZ_scan-1:
+    #     #     ax.set_title(f'a = {iia:.0f} (°)')
+    #     figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
+    #     ufun.archiveFig(figM, name = f'ProfileMetrics_t{t+1:.0f}', ext = '.pdf', dpi = 100,
+    #                     figDir = figDir, figSubDir = 'E-h-Fluo', cloudSave = 'flexible')
             
             
-    avg_Q_fbL = np.mean(list_Q_fbL)
-    avg_Q_fbN = np.mean(list_Q_fbN)
-    avg_Q_vb = np.mean(list_Q_vb)
-    avg_Q_gf = np.mean(list_Q_gf)
-    avg_S_gf = np.mean(list_S_gf)
-    avg_W_vb = np.mean(list_W_vb)
+    avg_Q_fbL = np.mean(np.sort(list_Q_fbL)[2:-3])
+    avg_Q_fbN = np.mean(np.sort(list_Q_fbN)[2:-3])
+    avg_Q_vb = np.mean(np.sort(list_Q_vb)[2:-3])
+    avg_Q_gf = np.mean(np.sort(list_Q_gf)[2:-3])
+    avg_S_gf = np.mean(np.sort(list_S_gf)[2:-3])
+    avg_W_vb = np.mean(np.sort(list_W_vb)[2:-3])
     # print(f'Average score: Q_fb = {avg_Q_fb:.1f}')
     # print(f'Average score: Q_vb = {avg_Q_vb:.1f}')
     # print(f'Average score: Q_gf = {avg_Q_gf:.1f}')
@@ -2376,22 +2389,22 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
     dfContact.loc[dfContact['iT']==t, 'nZ_scan'] = nZ_scanCount
     
     # Compare the metrics
-    if comparePlot:
-        fig2, axes2 = plt.subplots(1, 3, figsize=(12, 5))
-        ax=axes2[0]
-        ax.plot(list_Q_fbL, list_Q_vb, 'bo')
-        ax.set_xlabel('Fixed b.')
-        ax.set_ylabel('Variable b.')
-        ax=axes2[1]
-        ax.plot(list_Q_fbL, list_Q_gf, 'go')
-        ax.set_xlabel('Fixed b.')
-        ax.set_ylabel('Gaussian f.')
-        ax=axes2[2]
-        ax.plot(list_Q_vb, list_Q_gf, 'ro')
-        ax.set_xlabel('Variable b.')
-        ax.set_ylabel('Gaussian f.')
-        fig2.tight_layout()
-        plt.show()
+    # if comparePlot:
+    #     fig2, axes2 = plt.subplots(1, 3, figsize=(12, 5))
+    #     ax=axes2[0]
+    #     ax.plot(list_Q_fbL, list_Q_vb, 'bo')
+    #     ax.set_xlabel('Fixed b.')
+    #     ax.set_ylabel('Variable b.')
+    #     ax=axes2[1]
+    #     ax.plot(list_Q_fbL, list_Q_gf, 'go')
+    #     ax.set_xlabel('Fixed b.')
+    #     ax.set_ylabel('Gaussian f.')
+    #     ax=axes2[2]
+    #     ax.plot(list_Q_vb, list_Q_gf, 'ro')
+    #     ax.set_xlabel('Variable b.')
+    #     ax.set_ylabel('Gaussian f.')
+    #     fig2.tight_layout()
+    #     plt.show()
     
     return(dfContact)
 
@@ -2408,9 +2421,9 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
 
 
 
-dfContact = actinQuantity(cellId, 1, profileMatrix, dfContact,
-                          fluoCell, fluoCyto, fluoBack, fluoBeadIn,
-                          figSavePath, PLOT_M = True)
+# dfContact = actinQuantity(cellId, 5, profileMatrix, dfContact,
+#                           fluoCell, fluoCyto, fluoBack, fluoBeadIn,
+#                           figSavePath, PLOT_M = True)
 
 # actinQuantity(cellId, t, profileMatrix, dfContact,
 #                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
@@ -2472,6 +2485,15 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
 # for cell in cells:
 #     actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
 #     plt.close('all')
+
+
+# date = '24-02-27'
+# specif = '_off4um'
+# specifFolder = ''
+# cells = ['C6'] # 
+# for cell in cells:
+#     actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
+#     plt.close('all')
     
 #### Call the function - 24-05-24
 
@@ -2500,65 +2522,71 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
 date = '24-06-14'
 
 specif = ''
-specifFolder = 'M3/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
-cells = ['C' + str(i) for i in range(6, 10)]
+specifFolder = 'M1/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
+cells = ['C' + str(i) for i in range(1, 9)]
 for cell in cells:
-    if cell != 'C10':
+    # if cell != 'C10':
+    try:
         actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
         plt.close('all')
+    except:
+        continue
 
 # %%%% Cross results - '24-06-14'
 
 # srcDir = 'D:/MagneticPincherData/Raw/24.02.27_Chameleon/Clean_Fluo_BF'
 date = '24-06-14'
 specif = '' #'_off4um'
-specifFolder = 'M3/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
+specifFolder = 'M1/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 date2 = dateFormat(date)
-cells = ['C' + str(i) for i in range(1, 5)] + ['C' + str(i) for i in range(6, 9)]
+cells = ['C' + str(i) for i in range(1, 20)] #+ ['C' + str(i) for i in range(6, 9)]
 Dmoy = 4.4995
 
 list_df = []
 
 for cell in cells:
-    cellId = f'{date}_{cell}'
-    srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/Clean_Fluo_BF/{specifFolder}'
-
-    dstDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
-
-    fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_Fluo.tif'
-    fluoPath = os.path.join(srcDir, fluoName)
-
-    OMEfilepath = os.path.join(srcDir, f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_OME.txt')
-    CTZ_tz = OMEDataParser(OMEfilepath)
-    [nC, nT, nZ] = CTZ_tz.shape[:3]
+    try:
+        cellId = f'{date}_{cell}'
+        srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/Clean_Fluo_BF/{specifFolder}'
     
-    # fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}_off4um_Fluo.tif'
-    bfName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_BF.tif'
+        dstDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
     
-    bfPath = os.path.join(srcDir, bfName)
-    resBfDir = os.path.join(srcDir, 'Results_Tracker')
-    resBfPath = os.path.join(resBfDir, bfName[:-4] + '_PY.csv')
-    tsdf = pd.read_csv(resBfPath, sep=None, engine='python')
+        fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_Fluo.tif'
+        fluoPath = os.path.join(srcDir, fluoName)
     
-    fluoPath = os.path.join(srcDir, fluoName)
-    resFluoDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
-    cdf = pd.read_csv(os.path.join(resFluoDir, f'{cellId}_DfContact.csv'), sep=None, engine='python')
+        OMEfilepath = os.path.join(srcDir, f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_OME.txt')
+        CTZ_tz = OMEDataParser(OMEfilepath)
+        [nC, nT, nZ] = CTZ_tz.shape[:3]
+        
+        # fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}_off4um_Fluo.tif'
+        bfName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_BF.tif'
+        
+        bfPath = os.path.join(srcDir, bfName)
+        resBfDir = os.path.join(srcDir, 'Results_Tracker')
+        resBfPath = os.path.join(resBfDir, bfName[:-4] + '_PY.csv')
+        tsdf = pd.read_csv(resBfPath, sep=None, engine='python')
+        
+        fluoPath = os.path.join(srcDir, fluoName)
+        resFluoDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
+        cdf = pd.read_csv(os.path.join(resFluoDir, f'{cellId}_DfContact.csv'), sep=None, engine='python')
+        
+        czt_shape, czt_seq = get_CZT_fromTiff(fluoPath)
+        [nC, nZ, nT] = czt_shape
+        
+        resCrossDir = os.path.join(srcDir, 'Results_Cross')
+        
+        mdf = pd.merge(cdf, tsdf, left_index=True, right_index=True)
+        mdf.to_csv(os.path.join(resCrossDir, f'{cellId}_DfMerged.csv'), sep=';', index=False)
+        
+        nT = len(mdf)
+        cell_col = np.array([cell]*nT)
+        # df = mdf[['D2', 'D3', 'F', 'I_viterbi_w5', 'I_viterbi_inout7-3', 'I_viterbi_flexW']]
+        df = mdf[['D2', 'D3', 'F', 'Q_fbL', 'Q_fbN', 'Q_vb', 'W_vb', 'Q_gf', 'S_gf', 'nA_scan', 'nZ_scan']]
     
-    czt_shape, czt_seq = get_CZT_fromTiff(fluoPath)
-    [nC, nZ, nT] = czt_shape
-    
-    resCrossDir = os.path.join(srcDir, 'Results_Cross')
-    
-    mdf = pd.merge(cdf, tsdf, left_index=True, right_index=True)
-    mdf.to_csv(os.path.join(resCrossDir, f'{cellId}_DfMerged.csv'), sep=';', index=False)
-    
-    nT = len(mdf)
-    cell_col = np.array([cell]*nT)
-    # df = mdf[['D2', 'D3', 'F', 'I_viterbi_w5', 'I_viterbi_inout7-3', 'I_viterbi_flexW']]
-    df = mdf[['D2', 'D3', 'F', 'Q_fbL', 'Q_fbN', 'Q_vb', 'W_vb', 'Q_gf', 'S_gf', 'nA_scan', 'nZ_scan']]
-
-    df['cell'] = cell_col
-    list_df.append(df)
+        df['cell'] = cell_col
+        list_df.append(df)
+    except:
+        continue
 
 
 global_df = pd.concat(list_df)
@@ -2578,7 +2606,8 @@ date = '24-02-27'
 specif = '_off4um' #'_off4um'
 specifFolder = '' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 date2 = dateFormat(date)
-cells = ['C' + str(i) for i in range(1, 11)] + ['C' + str(i) for i in range(12, 11)]
+cells = ['C2'] + ['C' + str(i) for i in range(5, 13)]
+# cells = ['C11']
 Dmoy = 4.4995
 
 list_df = []
@@ -2765,10 +2794,1404 @@ global_df.to_csv(os.path.join(resCrossDir, f'{date}_global_DfMerged.csv'), sep='
 
 
 
+# %% Plots -- Manuscript
+
+# %%% Dataset
+
+#### Standard
+global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
+global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
+global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
+# global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
+
+figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
+figSubDir = '24-07-21'
+
+global_df['D_fbL'] = global_df['Q_fbL']/global_df['h3']
+global_df['D_fbN'] = global_df['Q_fbN']/global_df['h3']
+global_df['D_vb'] = global_df['Q_vb']/global_df['h3']
+global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
+
+excludedCells = ['24-05-24_M2_P1_C4', '24-05-24_M2_P1_C13',
+                 '24-06-14_M1_P1_C3', '24-06-14_M1_P1_C5', 
+                 '24-06-14_M1_P1_C10', '24-06-14_M1_P1_C12', 
+                 '24-06-14_M1_P1_C17', '24-06-14_M3_P1_C4']
+
+Filters = [(global_df['cellID'].apply(lambda x : x not in excludedCells)),
+           ]
+
+global_df = filterDf(global_df, Filters)
+
+#### Wtih compressions
+Filters = [(global_df['date'] == '24-06-14'),
+           (global_df['manip'].apply(lambda x : x in ['M2', 'M3'])),
+           (global_df['cellID'].apply(lambda x : x not in ['24-06-14_M2_P1_C1'])),
+           ]
+fluo_df_f = filterDf(global_df, Filters)
+fluo_df_f = fluo_df_f.dropna(subset = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf'])
+fluo_df_f['D1_fbN'] = fluo_df_f['Q_fbN']/fluo_df_f['h3']
+fluo_df_f['D1_fbL'] = fluo_df_f['Q_fbL']/fluo_df_f['h3']
+fluo_df_f['D1_vb'] = fluo_df_f['Q_vb']/fluo_df_f['h3']
+fluo_df_f['D1_gf'] = fluo_df_f['Q_gf']/fluo_df_f['h3']
+
+fluo_df_fg = dataGroup(fluo_df_f, groupCol = 'cellID', idCols = ['date', 'manip', 'cell'], 
+                       numCols = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h3', 'D1_fbN', 'D1_fbL', 'D1_vb', 'D1_gf'],
+                       aggFun = 'median')
+
+meca_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/MecaData_Chameleon_CompFluo.csv", sep=None, engine='python')
+meca_df['cellID_2'] = meca_df['cellID'].apply(lambda x : '-'.join(x.split('-')[:-1]))
+Filters = [(meca_df['date'] == '24-06-14'),
+           (meca_df['surroundingThickness'] <= 900),
+           ]
+
+meca_df_f = filterDf(meca_df, Filters)
+
+merged_df = fluo_df_fg.merge(meca_df_f, left_on = 'cellID', right_on = 'cellID_2', how = 'inner')
+
+merged_df['D2_fbN'] = 1000*merged_df['Q_fbN']/merged_df['surroundingThickness']
+merged_df['D2_fbL'] = 1000*merged_df['Q_fbL']/merged_df['surroundingThickness']
+merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
+merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
+
+figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
+figSubDir = '24-07-23'
+
+# %%% Plot quantity - per comp
+
+gs.set_manuscript_options_jv()
+
+Set2 = matplotlib.colormaps['Set2'].colors
+cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
+
+fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot 1 - Lin scale
+
+ax = axes[0]
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', zorder=4, lw = 1.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+    
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# print(params)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', zorder = 4,
+#         label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+ax.legend(loc = 'upper left')
+
+ax.set_xlim([0, 1100])
+ax.set_ylim([0, 42])
+
+
+
+#### Plot 2 - Log scale
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+n = np.log10(200)
+m = np.log10(10)
+
+expo = +1
+A = (10**(m-n*expo))
+# A = 0.1
+Xplot = np.logspace(2, 3.1, 50)
+Yplot = A*(Xplot**expo)
+ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+        label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+
+# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 2.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+
+# sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+ax.set_xlim([100, 1100])
+ax.legend(loc = 'upper left')
+
+
+for ax in axes:
+    ax.set_ylabel('Actin Quantity (a.u.)')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.grid(which = 'both', alpha = 0.4)
+    
+# ax.legend().set_visible(False)
+
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Qactin_GF_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
 
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%% Plot density - per comp
+
+gs.set_manuscript_options_jv()
+
+Set2 = matplotlib.colormaps['Set2'].colors
+cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
+
+fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot 1 - Lin scale
+
+ax = axes[0]
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', zorder=4, lw = 1.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+    
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# print(params)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', zorder = 4,
+#         label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+ax.legend(loc = 'lower left')
+
+ax.set_xlim([0, 1100])
+ax.set_ylim([0, 62])
+
+
+
+#### Plot 2 - Log scale
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.0,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+
+# n = np.log10(100)
+# m = np.log10(80)
+
+# expo = -0.5
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-0.5}}$')
+
+# expo = -1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-1}}$')
+
+
+
+# expo = -2
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '--', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-2}}$')
+
+ax.set_xlim([100, 1100])
+ax.legend(loc = 'lower left')
+
+# sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+# ax.set_xlim([190, 1200])
+# ax.set_ylim([5, 150])
+
+
+# ax.set_ylabel('Actin Quantity')
+# ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+    
+    
+for ax in axes:
+    ax.set_ylabel('Actin Density (a.u.)')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.grid(which = 'both', alpha = 0.4)
+    
+# ax.legend().set_visible(False)
+
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Dactin_GF_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+    
+
+# %%% Plots crossing Stiff & Density
+
+# %%%% 1.
+
+fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+# gs.set_manuscript_options_jv(palette = 'Set2')
+
+# Filter global_df
+
+df = merged_df.copy()
+df = df.rename(columns={'surroundingThickness':'H 5mT'})
+
+x = 'H 5mT'
+y = 'D2_gf'
+style = None
+s = 60
+alpha = 1
+zo = 5
+ec = 'None'
+
+hue = 'E_f_<_400'
+df[hue] /= 1000
+
+ax = axes[0]
+
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylabel('Cortex density (a.u.)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylabel('Cortex density (a.u.)')
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+Xfit, Yfit = np.log(df[x].values), np.log(df[y].values)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results=True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.5,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+ax.legend()
+
+for ax in axes:
+    ax.grid(which = 'both', alpha = 0.4)
+    
+
+
+# fig.suptitle('density v thickness 2 - with cell w. avg.')
+fig.tight_layout()
+plt.show()
+
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Comp_Dactin_GF_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%%% 2.
+
+fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+# gs.set_manuscript_options_jv(palette = 'Set2')
+
+# Filter global_df
+
+df = merged_df.copy()
+df = df.rename(columns={'surroundingThickness':'H 5mT'})
+hue = 'H 5mT'
+# x = 'D2_fbL'
+x = 'D2_gf'
+y = 'E_f_<_400'
+style = None
+s = 60
+alpha = 1
+zo = 5
+ec = 'None'
+
+df[y] /= 1000
+# df = df[df[x] < 40]
+
+
+ax = axes[0]
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('Cortex density (au)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('Cortex density (au)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+Xfit, Yfit = np.log(df[x].values), np.log(df[y].values)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results=True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.5,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+ax.legend()
+
+
+for ax in axes:
+    ax.grid(which = 'both', alpha = 0.4)
+
+# fig.suptitle('Stiffness v density 2 - with cell w. avg.')
+fig.tight_layout()
+plt.show()
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Comp_E_vs_Dactin_GF'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% 3.
+
+fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+# gs.set_manuscript_options_jv(palette = 'Set2')
+
+# Filter global_df
+
+df = merged_df.copy()
+df = df.rename(columns={'surroundingThickness':'H 5mT'})
+
+hue = 'D2_gf'
+x = 'H 5mT'
+y = 'E_f_<_400'
+style = None
+s = 60
+alpha = 1
+zo = 5
+ec = 'None'
+
+df[y] /= 1000
+
+
+ax = axes[0]
+# ax.plot([], [], label=r'$\bf{Density\ (a.u.)}$', ls='-', color='w')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+# ax.plot([], [], label=r' ', ls='-', color='w')
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([0, ax.get_xlim()[-1]])
+ax.legend(fontsize = 8, loc='upper right', 
+          title = r'$\bf{Density\ (a.u.)}$', title_fontsize = 9, ncol = 2)
+ax.grid()
+
+
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+Xfit, Yfit = np.log(df[x].values), np.log(df[y].values)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results=True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.5,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+ax.legend(fontsize = 8, loc='upper right', )
+
+
+for ax in axes:
+    ax.grid(which = 'both', alpha = 0.4)
+
+
+# fig.suptitle('Stiffness v density 2 - with cell w. avg.')
+fig.tight_layout()
+plt.show()
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Comp_E_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %% Plots -- Test Manuscript
+
+# %%% Plot -- standard
+
+global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
+global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
+global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
+# global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
+
+figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
+figSubDir = '24-07-19'
+
+global_df['D_fbL'] = global_df['Q_fbL']/global_df['h3']
+global_df['D_fbN'] = global_df['Q_fbN']/global_df['h3']
+global_df['D_vb'] = global_df['Q_vb']/global_df['h3']
+global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
+
+
+# %%% Plot quantity - per cell
+
+gs.set_manuscript_options_jv()
+
+Set2 = matplotlib.colormaps['Set2'].colors
+cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
+
+fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+            (global_df['date'] != '24-02-27'),
+           # (global_df['date'] == '24-06-14'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+agg_dict = {'manipID':'first', 'manipNum':'first', 'h3':['mean', 'std'], metric:['mean', 'std']}
+df_f = df_f[['cellID'] + list(agg_dict.keys())].groupby('cellID').agg(agg_dict)
+df_f.columns = ["_".join(a) for a in df_f.columns.to_flat_index()]
+df_f['h3_CV'] = df_f['h3_std']/df_f['h3_mean']
+df_f[metric + '_CV'] = df_f[metric + '_std']/df_f[metric + '_mean']
+
+figCV, axCV = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))
+axCV.axline((0,0), slope=1, ls='--', color='dimgray')
+axCV.scatter(df_f['h3_CV'].values, df_f[metric + '_CV'].values, c = df_f['manipNum_first'],
+             marker='o', s=20, zorder=3, cmap = cMap)
+axCV.set_xlim([0, 0.5])
+axCV.set_ylim([0, 0.5])
+axCV.set_xlabel('CV of the thickness')
+axCV.set_ylabel('CV of the actin quantity')
+figCV.tight_layout()
+
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3_mean'].values, bins = bins)
+df_fg = df_f[[metric + '_mean', 'h3_mean', 'h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot 1 - Lin scale
+
+ax = axes[0]
+
+X = df_f['h3_mean'].values
+Y = df_f[metric + '_mean'].values
+C = df_f['manipNum_first'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=20, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3_mean', 'median'].values
+Yg = df_fg[metric + '_mean', 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric + '_mean', 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+# Xfit, Yfit = df_f['h3_mean'].values, df_f[metric + '_mean'].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', zorder=4, lw = 1.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+    
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# print(params)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', zorder = 4,
+#         label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+ax.legend()
+
+ax.set_xlim([0, 1100])
+ax.set_ylim([0, 30])
+
+
+
+#### Plot 2 - Log scale
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3_mean'].values
+Y = df_f[metric + '_mean'].values
+C = df_f['manipNum' + '_first'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=20, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3_mean', 'median'].values
+Yg = df_fg[metric + '_mean', 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric + '_mean', 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xm, Ym = np.median(X), np.median(Y)
+A = 1.1*min(Yg)/min(Xg)
+# A = 0.1
+Xplot = np.logspace(1.9, 3.1, 50)
+Yplot = A*Xplot
+ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+        label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+
+# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 2.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+
+# sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+ax.set_xlim([190, 1200])
+# ax.set_ylim([5, 150])
+ax.legend()
+
+# ax.set_ylabel('Actin Quantity')
+# ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+for ax in axes:
+    ax.grid()
+
+
+# %%%% Plot - Lin - all dates V1
+
+gs.set_manuscript_options_jv()
+# fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+# spec = fig.add_gridspec(4, 1)
+# ax0 = fig.add_subplot(spec[0])
+# ax1 = fig.add_subplot(spec[1])
+# ax2 = fig.add_subplot(spec[2])
+# ax3 = fig.add_subplot(spec[3])
+# ax4 = fig.add_subplot(spec[2,1])
+
+fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+
+# axes = [ax1, ax2, ax3] #, ax4]
+
+cL = matplotlib.colormaps['Set2']
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 0.95),
+           # (global_df['date'] != ''),
+           ]
+df_f = filterDf(global_df, Filters)
+df_f['h3'] *= 1000
+dates = df_f['date'].unique()
+
+# LegendMark = mlines.Line2D([], [], color='gray', ls='', marker='o', 
+#                            markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                            label=f'Average intra-cell CV = {CV_per_cell_avg*100:.1f} %')
+# ax.legend(handles=[LegendMark])
+
+ax = axes[0]
+sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
+# ax.set_xlim([0, 0.8])
+ax.set_ylim([0, 30])
+ax.set_ylabel('Actin Quantity')
+ax.set_xlabel('Cortex thickness (nm)')
+ax.legend().set_visible(False)
+ax.grid()
+
+for i, ax in enumerate(axes[1:]):
+    date = dates[i]
+    sns.scatterplot(ax=ax, data=df_f[df_f['date']==date], x='h3', y=metric, hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
+    # ax.set_xlim([0, 0.8])
+    ax.set_ylim([0, 30])
+    ax.set_ylabel('Actin Quantity')
+    ax.set_xlabel('Cortex thickness (nm)')
+    ax.legend().set_visible(False)
+    ax.grid()
+
+
+
+fig.tight_layout()
+plt.show()
+
+ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V1', ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+# %%%% Plot - Lin - all dates V2
+
+gs.set_manuscript_options_jv()
+fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+spec = fig.add_gridspec(3, 2)
+ax0 = fig.add_subplot(spec[0,:])
+ax1 = fig.add_subplot(spec[1,0])
+ax2 = fig.add_subplot(spec[1,1])
+ax3 = fig.add_subplot(spec[2,0])
+ax4 = fig.add_subplot(spec[2,1])
+
+# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+
+axes = [ax1, ax2, ax3, ax4]
+
+cL = matplotlib.colormaps['Set2'].colors
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+Filters = [(global_df['h3'] < 1),
+            (global_df['date'] != '24-02-27'),
+           ]
+df_f = filterDf(global_df, Filters)
+df_f['h3'] *= 1000
+df_f = df_f.dropna(subset=metric)
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+
+
+
+
+ax = ax0
+sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+xfit = df_f['h3'].values
+yfit = df_f[metric].values
+params, res = ufun.fitLineHuber(xfit, yfit)
+print(params)
+xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
+                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+ax.legend(handles=[LegendMark])
+
+ax.set_xlim([0, 1100])
+ax.set_ylim([0, 30])
+ax.set_ylabel('Actin Quantity')
+ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+ax.grid()
+
+for i, ax in enumerate(axes):
+    c = cL[i]
+    manip = manipes[i]
+    data = df_f[df_f['manipID']==manip]
+
+    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
+    
+    xfit = data['h3'].values
+    yfit = data[metric].values
+    params, res = ufun.fitLineHuber(xfit, yfit)
+    print(params)
+    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
+    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+    
+    ax.set_xlim([0, 1100])
+    ax.set_ylim([0, 30])
+    ax.set_ylabel('Actin Quantity')
+    ax.set_xlabel('Cortex thickness (nm)')
+    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
+    ax.grid()
+
+
+
+fig.tight_layout()
+plt.show()
+
+ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V2', ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+# %%%% Plot - Lin - all dates V3
+
+gs.set_manuscript_options_jv()
+fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+spec = fig.add_gridspec(3, 2)
+ax0 = fig.add_subplot(spec[0,:])
+ax1 = fig.add_subplot(spec[1,0])
+ax2 = fig.add_subplot(spec[1,1])
+ax3 = fig.add_subplot(spec[2,0])
+ax4 = fig.add_subplot(spec[2,1])
+
+# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+
+axes = [ax1, ax2, ax3, ax4]
+
+cL = matplotlib.colormaps['Set2'].colors
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 0.6),
+           (global_df['date'] != '24-02-27'),
+           ]
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+
+
+
+
+ax = ax0
+sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+xfit = df_f['h3'].values
+yfit = df_f[metric].values
+params, res = ufun.fitLineHuber(xfit, yfit)
+print(params)
+xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
+                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+ax.legend(handles=[LegendMark])
+
+ax.set_xlim([0, 650])
+ax.set_ylim([0, 30])
+ax.set_ylabel('Actin Quantity')
+ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+ax.grid()
+
+for i, ax in enumerate(axes):
+    c = cL[i]
+    manip = manipes[i]
+    data = df_f[df_f['manipID']==manip]
+
+    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
+    
+    xfit = data['h3'].values
+    yfit = data[metric].values
+    params, res = ufun.fitLineHuber(xfit, yfit)
+    print(params)
+    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
+    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+    
+    ax.set_xlim([0, 650])
+    ax.set_ylim([0, 30])
+    ax.set_ylabel('Actin Quantity')
+    ax.set_xlabel('Cortex thickness (nm)')
+    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
+    ax.grid()
+
+
+
+fig.tight_layout()
+plt.show()
+
+ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V3', ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+# %%%% Plot - Log - all dates V3
+
+gs.set_manuscript_options_jv()
+fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+spec = fig.add_gridspec(3, 2)
+ax0 = fig.add_subplot(spec[0,:])
+ax1 = fig.add_subplot(spec[1,0])
+ax2 = fig.add_subplot(spec[1,1])
+ax3 = fig.add_subplot(spec[2,0])
+ax4 = fig.add_subplot(spec[2,1])
+
+# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+
+axes = [ax1, ax2, ax3, ax4]
+
+for ax in ([ax0] + axes):
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+cL = matplotlib.colormaps['Set2'].colors
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 0.6),
+           (global_df['date'] != '24-02-27'),
+           ]
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+
+
+
+
+ax = ax0
+sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+xfit = df_f['h3'].values
+yfit = df_f[metric].values
+params, res = ufun.fitLineHuber(xfit, yfit)
+print(params)
+xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
+                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+ax.legend(handles=[LegendMark])
+
+ax.set_xlim([180, 650])
+ax.set_ylim([6, 30])
+ax.set_ylabel('Actin Quantity')
+ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+ax.grid()
+
+for i, ax in enumerate(axes):
+    c = cL[i]
+    manip = manipes[i]
+    data = df_f[df_f['manipID']==manip]
+
+    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
+    
+    xfit = data['h3'].values
+    yfit = data[metric].values
+    params, res = ufun.fitLineHuber(xfit, yfit)
+    print(params)
+    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
+    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+    
+    ax.set_xlim([180, 650])
+    ax.set_ylim([6, 30])
+    ax.set_ylabel('Actin Quantity')
+    ax.set_xlabel('Cortex thickness (nm)')
+    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
+    ax.grid()
+
+
+
+fig.tight_layout()
+plt.show()
+
+ufun.archiveFig(fig, name = 'Log_AllDates_GF_V3', ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+# %%%% Plot - Log Density - all dates V3
+
+gs.set_manuscript_options_jv()
+fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+spec = fig.add_gridspec(3, 2)
+ax0 = fig.add_subplot(spec[0,:])
+ax1 = fig.add_subplot(spec[1,0])
+ax2 = fig.add_subplot(spec[1,1])
+ax3 = fig.add_subplot(spec[2,0])
+ax4 = fig.add_subplot(spec[2,1])
+
+# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+
+axes = [ax1, ax2, ax3, ax4]
+
+for ax in ([ax0] + axes):
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+cL = matplotlib.colormaps['Set2'].colors
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1),
+           (global_df['date'] != '24-02-27'),
+           ]
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+
+
+
+
+ax = ax0
+sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+xfit = df_f['h3'].values
+yfit = df_f[metric].values
+params, res = ufun.fitLineHuber(xfit, yfit)
+print(params)
+xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
+                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+ax.legend(handles=[LegendMark])
+
+# ax.set_xlim([180, 650])
+# ax.set_ylim([6, 30])
+ax.set_ylabel('Actin Quantity')
+ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
+ax.grid()
+
+for i, ax in enumerate(axes):
+    c = cL[i]
+    manip = manipes[i]
+    data = df_f[df_f['manipID']==manip]
+
+    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
+    
+    xfit = data['h3'].values
+    yfit = data[metric].values
+    params, res = ufun.fitLineHuber(xfit, yfit)
+    print(params)
+    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
+    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+    
+    # ax.set_xlim([180, 650])
+    # ax.set_ylim([6, 30])
+    ax.set_ylabel('Actin Quantity')
+    ax.set_xlabel('Cortex thickness (nm)')
+    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
+    ax.grid()
+
+
+
+fig.tight_layout()
+plt.show()
+
+ufun.archiveFig(fig, name = 'Log_AllDates_Density_GF_V3', ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
@@ -2777,11 +4200,12 @@ global_df.to_csv(os.path.join(resCrossDir, f'{date}_global_DfMerged.csv'), sep='
 # %%% Plot -- standard
 
 global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
-# global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
+global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
+global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
 # global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
 
 figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-06-28'
+figSubDir = '24-07-19'
 
 # %%%% Plot - Lin - all dates V1
 
@@ -2790,7 +4214,7 @@ fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 # style = 'date'
 # hue = 'cell'
 
-hue = 'date'
+hue = 'manipID'
 style = 'cell'
 
 # Filter global_df

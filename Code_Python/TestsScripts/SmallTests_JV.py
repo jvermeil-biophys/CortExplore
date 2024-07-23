@@ -27,6 +27,35 @@ import matplotlib
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 
+
+# %%
+
+A = np.array([1, 3, 6, 2, 10, 9, 4, 5])
+print(A)
+print(np.sort(A))
+print(np.sort(A)[2:-3])
+
+# %%
+
+N = 20
+
+# P = sns.color_palette("hls", N)
+P = sns.color_palette("husl", N)
+P_cmap = matplotlib.colors.ListedColormap(P, 'my_cmap')
+
+print(P_cmap.colors)
+
+fig, ax = plt.subplots(1, 1)
+ax.set_prop_cycle(plt.cycler("color", P_cmap.colors))
+TT = np.linspace(0, 2*np.pi, 360)
+dT = np.linspace(0, 1*np.pi, N)
+A = np.zeros((N, 360))
+for k in range(len(dT)):
+    t = dT[k]
+    A[k,:] = np.sin(TT + t)
+    ax.plot(TT, A[k,:])
+
+
 # %% Test colors 
 
 cl = matplotlib.colormaps['Set2'].colors + matplotlib.colormaps['Set1'].colors
@@ -43,6 +72,18 @@ for k in range(len(dT)):
     ax.plot(TT, A[k,:])
     
 plt.show()
+
+# %%
+
+V = np.linspace(1, 1000, 1600)
+
+Npp = 50
+Ntot = len(V)
+Nb = Ntot//Npp
+step = 100//Nb
+Lp = [p for p in range(0, 100, step)]
+bins = np.percentile(V, Lp)
+
 
 # %%
 
@@ -663,7 +704,8 @@ swarmplot_parameters = {'ax' : ax,
 
 sns.swarmplot(**swarmplot_parameters)
 
-ax.set_ylim([0, 20])
+ax.set_ylim([0, 40])
+ax.set_xlabel(r"$\bf{This\ is\ bold}$")
 
 # annotator = Annotator(ax, box_pairs, **plotting_parameters)
 # annotator.configure(test=test, verbose=verbose).apply_and_annotate()
