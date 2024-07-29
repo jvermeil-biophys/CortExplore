@@ -1526,8 +1526,8 @@ data = data_main
 Filters = [(data['validatedThickness'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
             (data['bead type'] == 'M450'),
-            (data['UI_Valid'] == True),
-            (data['R2_Full'] > 0.85),
+         #   (data['UI_Valid'] == True),
+            (data['R2_vwc_Full'] > 0.85),
             (data['bestH0'] <= 1500),
             (data['date'].apply(lambda x : x in dates)),
             (data['manip'].apply(lambda x : x in manips)),
@@ -1543,7 +1543,7 @@ dfToPlot['E_eff'] = [np.nan]*len(data)
 # plt.style.use('seaborn')
 plt.style.use('dark_background')
 
-K, Y = dfToPlot['K_Full']*1e6, dfToPlot['Y_Full']*1e6
+K, Y = dfToPlot['K_vwc_Full'], dfToPlot['Y_vwc_Full']
 E = Y + K*(0.8)**-4
 
 dfToPlot['E_eff'] = E

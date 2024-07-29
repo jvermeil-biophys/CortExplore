@@ -22,7 +22,7 @@ import getInfoFromCZI as giczi
 import UtilityFunctions as ufun
 import cv2 as cv
 import pandas as pd
-import seaborn.objects as so
+#import seaborn.objects as so
 import seaborn as sns
 import statistics as stat
 #%%
@@ -550,10 +550,12 @@ def intensityCellShrimp(images,dir_crop,dir_file):
     intens_data['ratio G/R']=intens_data['EGFP']/intens_data['DsRed']
    #intens_data['ratio R/G']=intens_data['DsRed']/intens_data['EGFP']
     intens_data['Color']=intens_data['ratio G/R']
-    intens_data.loc[intens_data['ratio G/R'] > 2, ['Color']] = 'Green'
-    intens_data.loc[intens_data['ratio G/R'] < 0.5, ['Color']] = 'Red'
-    intens_data.loc[(intens_data['ratio G/R'] > 0.5) & (intens_data['ratio G/R']<2), ['Color']] = 'Yellow'
-
+    intens_data.loc[intens_data['ratio G/R'] > 3, ['Color']] = 'Green'
+    intens_data.loc[intens_data['ratio G/R'] < 0.3, ['Color']] = 'Red'
+    intens_data.loc[(intens_data['ratio G/R'] > 0.3) & (intens_data['ratio G/R']<3), ['Color']] = 'Yellow'
+    intens_data.loc[intens_data['Color']=='Green', ['phase']] = 'S/G2'
+    intens_data.loc[intens_data['Color']=='Red', ['phase']] = 'G1'
+    intens_data.loc[intens_data['Color']=='Yellow', ['phase']] = 'G1/S'
     return intens_data
     
 #%%
@@ -597,9 +599,9 @@ def normalize_crop_bg(cells,bg):
                 cells_normS.at[i,'EGFP']=(cells_all.at[i,'EGFP']-bgS.at[bgS.index[k],'EGFP'])
                 cells_normS.at[i,'DsRed']=(cells_all.at[i,'DsRed']-bgS.at[bgS.index[k],'DsRed'])
                 cells_normS.at[i,'ratio G/R']=cells_normS.at[i,'EGFP']/cells_normS.at[i,'DsRed']
-    cells_normS.loc[cells_normS['ratio G/R'] > 2, ['Color']] = 'Green'
-    cells_normS.loc[cells_normS['ratio G/R'] < 0.5, ['Color']] = 'Red'
-    cells_normS.loc[(cells_normS['ratio G/R'] > 0.5) & (cells_normS['ratio G/R']<2), ['Color']] = 'Yellow'
+    cells_normS.loc[cells_normS['ratio G/R'] > 3, ['Color']] = 'Green'
+    cells_normS.loc[cells_normS['ratio G/R'] < 0.3, ['Color']] = 'Red'
+    cells_normS.loc[(cells_normS['ratio G/R'] > 0.3) & (cells_normS['ratio G/R']<3), ['Color']] = 'Yellow'
     cells_normS.loc[cells_normS['Color'] =='Green', ['phase']] = 'S/G2'
     cells_normS.loc[cells_normS['Color'] =='Red', ['phase']] = 'G1'
     cells_normS.loc[cells_normS['Color'] =='Yellow', ['phase']] = 'G1/S'
@@ -624,7 +626,7 @@ cells_norm.to_csv(path + '/data_fluo_24.05.23.txt', sep='\t')
 
 
 #%%
-path_crop="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo/crop"
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo/crop_wobg"
 path="D:/Eloise/MagneticPincherData/Raw/24.06.04_fluo"
 all_dircrops=os.listdir(path_crop)
 allcrops=os.listdir(path_crop)
@@ -659,8 +661,14 @@ cells_norm=normalize_crop_bg(cells, bgS)
 cells_norm.loc[cells_norm.index=='P2_C12', ['phase']] = 'M'
 cells_norm.loc[cells_norm.index=='P2_C13', ['phase']] = 'M'
 cells_norm.loc[cells_norm.index=='P2_C5', ['phase']] = 'M'
-cells_norm.to_csv(path + '/data_fluo_24.06.04.txt', sep='\t')
 
+#%%
+cells.to_csv(path + '/data_fluo_24.06.04_wobg.txt', sep='\t')
+
+#%%
+mitotic=['P2_C12','P2_C13','P2_C5']
+for i in mitotic:
+    cells.at[i,'phase']='M'
 #%%
 p2=sns.scatterplot(data=cells,x='EGFP',y='DsRed',hue='Color',palette=['gold','g','r'])
 plt.xscale('log')
@@ -673,3 +681,176 @@ plt.xscale('log')
 plt.xlim(10,10**4)
 plt.yscale('log')
 plt.ylim(10,10**4)
+
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.06.12_fluo/crop"
+path="D:/Eloise/MagneticPincherData/Raw/24.06.12_fluo"
+all_dircrops=os.listdir(path_crop)
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-19]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+    
+
+#%% background for shrimp
+path_crop_bg="D:/Eloise/MagneticPincherData/Raw/24.06.12_fluo/background"
+path="D:/Eloise/MagneticPincherData/Raw/24.06.12_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops_bg=os.listdir(path_crop_bg)
+fileInfotxt_bg=[i[:-5]+'_info.txt' for i in allcrops_bg]
+
+bgS=pd.DataFrame()
+
+for j in range(len(allcrops_bg)):
+    name=allcrops_bg[j][12:-17]
+    test= intensityCellShrimp(allcrops_bg[j],path_crop_bg,path)
+    bgS=pd.concat([bgS,test])
+bgS=bgS.replace('Yellow','bg')
+
+#%%
+cells_norm=normalize_crop_bg(cells, bgS)
+#%%
+mitotic=['P2_C8','P2_C9','P2_C4','P2_C3','P2_C15','P1_C7','P1_C5']
+for i in mitotic:
+    cells_norm.at[i,'phase']='M'
+
+#%%
+cells_norm.to_csv(path + '/data_fluo_24.06.12.txt', sep='\t')
+
+#%%
+p1=sns.scatterplot(data=cells_norm,x='EGFP',y='DsRed',hue='phase',palette=['gold','r','g','k'])
+p1.axhline(np.min(bgS['DsRed']))
+p1.axvline(np.min(bgS['EGFP']))
+plt.xscale('log')
+plt.xlim(10**0,10**4)
+plt.yscale('log')
+plt.ylim(10**0,10**4)
+
+
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.07.03_fluo/crop"
+path="D:/Eloise/MagneticPincherData/Raw/24.07.03_fluo"
+all_dircrops=os.listdir(path_crop)
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-19]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+    
+#%%
+path_crop_bg="D:/Eloise/MagneticPincherData/Raw/24.07.03_fluo/background"
+path="D:/Eloise/MagneticPincherData/Raw/24.07.03_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops_bg=os.listdir(path_crop_bg)
+fileInfotxt_bg=[i[:-5]+'_info.txt' for i in allcrops_bg]
+
+bgS=pd.DataFrame()
+
+for j in range(len(allcrops_bg)):
+    name=allcrops_bg[j][12:-17]
+    test= intensityCellShrimp(allcrops_bg[j],path_crop_bg,path)
+    bgS=pd.concat([bgS,test])
+bgS=bgS.replace('Yellow','bg')
+
+#%%
+cells_norm=normalize_crop_bg(cells, bgS)
+#%%
+mitotic=['P2_C5','P2_C6','P2_C9','P3_C6','P3_C7']
+for i in mitotic:
+    cells_norm.at[i,'phase']='M'
+    
+#%%
+p1=sns.scatterplot(data=cells,x='EGFP',y='DsRed',hue='phase',palette=['gold','r','g','k'])
+#p1.axhline(np.min(bgS['DsRed']))
+#p1.axvline(np.min(bgS['EGFP']))
+plt.xscale('log')
+#plt.xlim(10**0,10**4)
+plt.yscale('log')
+#plt.ylim(10**0,10**4)
+plt.show()
+#%%
+cells.to_csv(path + '/data_fluo_24.07.11.txt', sep='\t')
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.07.11_fluo/crop_wobg"
+path="D:/Eloise/MagneticPincherData/Raw/24.07.11_fluo"
+all_dircrops=os.listdir(path_crop)
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+#%%
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-19]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+
+
+#%%
+path_crop_bg="D:/Eloise/MagneticPincherData/Raw/24.07.11_fluo/bg"
+path="D:/Eloise/MagneticPincherData/Raw/24.07.11_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops_bg=os.listdir(path_crop_bg)
+fileInfotxt_bg=[i[:-5]+'_info.txt' for i in allcrops_bg]
+
+bgS=pd.DataFrame()
+
+for j in range(len(allcrops_bg)):
+    name=allcrops_bg[j][12:-17]
+    test= intensityCellShrimp(allcrops_bg[j],path_crop_bg,path)
+    bgS=pd.concat([bgS,test])
+bgS=bgS.replace('Yellow','bg')
+
+#%%
+cells_norm=normalize_crop_bg(cells, bgS)
+#%%
+mitotic=['P2_C4','P2_C6','P2_C8','P2_C2','P1_C4']
+for i in mitotic:
+    cells.at[i,'phase']='M'
+
+#%%
+cells_norm.to_csv(path + '/data_fluo_24.07.11bg.txt', sep='\t')
+
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.07.18_fluo/crop_wobg"
+path="D:/Eloise/MagneticPincherData/Raw/24.07.18_fluo"
+all_dircrops=os.listdir(path_crop)
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+#%%
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-19]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+    
+#%%
+#%%
+mitotic=['P1_C3','P1_C4','P2_C4']
+for i in mitotic:
+    cells.at[i,'phase']='M'
+    
+#%%
+cells.to_csv(path + '/data_fluo_24.07.18.txt', sep='\t')
+#%%
+p1=sns.scatterplot(data=cells,x='EGFP',y='DsRed',hue='phase',hue_order=['G1/S','G1','S/G2','M'],palette=['gold','r','g','k'])
+#p1.axhline(np.min(bgS['DsRed']))
+#p1.axvline(np.min(bgS['EGFP']))
+plt.xscale('log')
+plt.xlim(10**1,10**4)
+plt.yscale('log')
+plt.ylim(10**1,10**4)
+plt.show()

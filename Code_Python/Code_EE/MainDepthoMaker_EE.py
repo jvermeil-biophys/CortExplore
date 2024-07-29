@@ -63,22 +63,23 @@ gs.set_default_options_jv()
 # %% Deptho for the 24-05-23
 
 DirDataRaw = cp.DirDataRaw
-date = '24.06.04'
+date = '24.07.18'
 
 
 
 # subdir = ''
-DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_Deptho')
+DirDataRawDate_Deptho = os.path.join(DirDataRaw, date + '_deptho_P2')
 DirDataRawDepthoLibrary = os.path.join(DirDataRaw, 'DepthoLibrary')
 
 specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
 beadType = 'M450'
-saveLabel = date + '_M450_step20_100X'
+saveLabel = date + '_M450_step20_100X_p2'
 # convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
 scale = gc.SCALE_100X # pix/µm
 
 depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary, 
             specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
 
 
 

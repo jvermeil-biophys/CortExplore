@@ -68,9 +68,9 @@ imagePrefix = 'tif'
 
 
 #%% Define parameters # Eloise
-date = '24.06.04'
-DirExt = 'E:/Eloise/Data/24-06-04_helafucci_100x_450beads/24-06-04_deptho_p2' #'/M4_patterns_ctrl' // \\M1_depthos
-DirSave = os.path.join(cp.DirDataRaw, date + 'Deptho_p2') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '24.07.18'
+DirExt = 'E:/Eloise/Data/24-07-18_helafucci_100x_450beads_PLL/24-07-18_M1_P2_PLL' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date + '_P2') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = ''
 # channel = ''
@@ -471,7 +471,7 @@ for i in range(len(allCellsRaw)):
         
     if validCell:
         # try:
-        Zimg = Zprojection(currentCell, microscope, kind='max')
+        Zimg = Zprojection(currentCell, microscope, kind='min')
         allCells.append(currentCell)
         allZimg.append(Zimg)
         print(gs.CYAN + '--> Will be copied' + gs.NORMAL)

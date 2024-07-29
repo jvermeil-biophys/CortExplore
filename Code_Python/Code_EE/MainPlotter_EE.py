@@ -88,6 +88,7 @@ from bokeh.layouts import gridplot
 output_notebook()
 
 
+
 # %% Reminders
 
 # %%%  Stats
@@ -1715,3 +1716,25 @@ sns.move_legend(p2,'upper center')
 axes[1].set_title('simple')
 axes[1].set_yscale('log')
 plt.show()
+
+
+
+#%%% Data from 12/06
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

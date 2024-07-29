@@ -1064,7 +1064,7 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 1250 and iF <= 1350):
+                # if (iF >= 2000 and iF <= 2100):
                 #     plot = 1
 
             # ###################################################################

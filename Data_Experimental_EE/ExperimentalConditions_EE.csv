@@ -4,3 +4,8 @@ date;manip;experimentType;drug;substrate;microscope;objective magnification;scal
 24-05-23;M1;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.988;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
 24-05-23;M2;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.988;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
 24-06-04;M1;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.92;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
+24-06-12;M1;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
+24-06-12;M2;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.96;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
+24-07-03;M1;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;1.0;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
+24-07-11;M1;compressionsLowStart;none;20um fibronectin discs;labview;100X;15.8;oil;0.875;0.92;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
+24-07-18;M1;compressionsLowStart;none;PLL coated fluorodish;labview;100X;15.8;oil;0.875;0.96;HeLa;fucci;M450-2025;4493;0.969;fibronectin;M450-Strept;4506;1.005;PEG-biotin;0;5;2_50;1.5s;False;3;500;upward;;
