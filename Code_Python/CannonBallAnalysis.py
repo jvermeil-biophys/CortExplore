@@ -149,15 +149,15 @@ def B2M(x, k):
     M = 1600 * k * (0.001991*x**3 + 17.54*x**2 + 153.4*x) / (x**2 + 35.53*x + 158.1)
     return(M)
 
-
-fig, axes = plt.subplots(1, 3, figsize = (15,5), sharey = True)
+gs.set_manuscript_options_jv()
+fig, axes = plt.subplots(1, 3, figsize = (17/gs.cm_in,8/gs.cm_in), sharex = True, sharey = True)
 # fig.sharey()
 
 # 2023
 ax = axes[0]
 ax.grid()
 ax.set_xlim([0, 32])
-ax.set_ylim([0, 18000])
+ax.set_ylim([0, 18])
 manip = "M450-2023"
 
 
@@ -170,18 +170,17 @@ q = st.t.ppf(alpha, dof) # Student coefficient
 print(q*ste)
 
 ax.set_title(manip)
-ax.plot(B0, M0, 'r-', label='Litterature formula', zorder = 4)
-ax.scatter(df_CB_2023['B'], df_CB_2023['M'], c=df_CB_2023['expt'], marker = '+', cmap='Set1', label='Measured - Nexp = 3')
-ax.plot(B0, B2M(B0, k_exp), 'g--', label='Fit: k = {:.3f} +/- {:.3f}'.format(k_exp, q*ste), zorder = 5)
+ax.plot(B0, M0/1e3, 'r-', label='Litterature formula', zorder = 4)
+ax.scatter(df_CB_2023['B'], df_CB_2023['M']/1e3, c=df_CB_2023['expt'], marker = '.', s=40, alpha = 0.4,
+           cmap='Set1', label='Measured - Nexp = 3')
+ax.plot(B0, B2M(B0, k_exp)/1e3, 'g--', label='Fit: $k_{corrMag}$' + ' = {:.3f} $\pm$ {:.3f}'.format(k_exp, q*ste), zorder = 5)
 ax.set_xlabel('B (mT)')
-ax.set_ylabel('M (A/m)')
-ax.legend()
+ax.set_ylabel('M (kA/m)')
+ax.legend(fontsize=6, loc='lower right')
 
 # 2025
 ax = axes[1]
 ax.grid()
-ax.set_xlim([0, 32])
-ax.set_ylim([0, 18000])
 manip = "M450-2025"
 
 [k_exp], covM = curve_fit(B2M, df_CB_2025['B'], df_CB_2025['M'], absolute_sigma=False)
@@ -193,18 +192,17 @@ q = st.t.ppf(alpha, dof) # Student coefficient
 print(q*ste)
 
 ax.set_title(manip)
-ax.plot(B0, M0, 'r-', label='Litterature formula', zorder = 4)
-ax.scatter(df_CB_2025['B'], df_CB_2025['M'], c=df_CB_2025['expt'], marker = '+', cmap='Set2', label='Measured - Nexp = 2')
-ax.plot(B0, B2M(B0, k_exp), 'g--', label='Fit: k = {:.3f} +/- {:.3f}'.format(k_exp, q*ste), zorder = 5)
+ax.plot(B0, M0/1e3, 'r-', label='Litterature formula', zorder = 4)
+ax.scatter(df_CB_2025['B'], df_CB_2025['M']/1e3, c=df_CB_2025['expt'], marker = '.', s=40, alpha = 0.4,
+           cmap='Set2', label='Measured - Nexp = 2')
+ax.plot(B0, B2M(B0, k_exp)/1e3, 'g--', label='Fit: $k_{corrMag}$' + ' = {:.3f} $\pm$ {:.3f}'.format(k_exp, q*ste), zorder = 5)
 ax.set_xlabel('B (mT)')
-ax.set_ylabel('M (A/m)')
-ax.legend()
+# ax.set_ylabel('M (A/m)')
+ax.legend(fontsize=6, loc='lower right')
 
 # M450-Strept
 ax = axes[2]
 ax.grid()
-ax.set_xlim([0, 32])
-ax.set_ylim([0, 18000])
 manip = "M450-Strept"
 
 [k_exp], covM = curve_fit(B2M, df_CB_Strept['B'], df_CB_Strept['M'], absolute_sigma=False)
@@ -216,16 +214,25 @@ q = st.t.ppf(alpha, dof) # Student coefficient
 print(q*ste)
 
 ax.set_title(manip)
-ax.plot(B0, M0, 'r-', label='Litterature formula', zorder = 4)
-ax.scatter(df_CB_Strept['B'], df_CB_Strept['M'], c=df_CB_Strept['expt'], marker = '+', cmap='Set1', label='Measured - Nexp = 1')
-ax.plot(B0, B2M(B0, k_exp), 'g--', label='Fit: k = {:.3f} +/- {:.3f}'.format(k_exp, q*ste), zorder = 5)
+ax.plot(B0, M0/1e3, 'r-', label='Litterature formula', zorder = 4)
+ax.scatter(df_CB_Strept['B'], df_CB_Strept['M']/1e3, c=df_CB_Strept['expt'], marker = '.', s=40, alpha = 0.4,
+           cmap='Accent', label='Measured - Nexp = 1')
+ax.plot(B0, B2M(B0, k_exp)/1e3, 'g--', label='Fit: $k_{corrMag}$' + ' = {:.3f} $\pm$ {:.3f}'.format(k_exp, q*ste), zorder = 5)
 ax.set_xlabel('B (mT)')
-ax.set_ylabel('M (A/m)')
-ax.legend()
+# ax.set_ylabel('M (A/m)')
+ax.legend(fontsize=6, loc='lower right')
 
 
 plt.tight_layout()
 plt.show()
+
+
+#### Save
+figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
+figSubDir = 'Mat&Meth'
+name = 'CannonBall_Results'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %% TEST OF DIFFERENT FITTING FUNCTIONS
 

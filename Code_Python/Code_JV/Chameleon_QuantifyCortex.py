@@ -670,7 +670,7 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
 # date = '24-05-24'
 date = '24-06-14'
 date2 = dateFormat(date)
-cell = 'C16'
+cell = 'C2'
 
 #### Added here
 # for i in range(10, 19):
@@ -764,7 +764,7 @@ metaDf = makeMetaData(BF_T, B_set, loopStructure)
 
 # %%%% Call mainTracker()
 
-tsdf = smallTracker(dictPaths, metaDf, dictConstants, NB = 2, **dictOptions)
+# tsdf = smallTracker(dictPaths, metaDf, dictConstants, NB = 2, **dictOptions)
 
 
 # %%% Mappemonde fluo
@@ -843,6 +843,7 @@ colsContact = ['iT', 'T', 'X', 'Y', 'iZ', 'Z', 'R', 'A', 'Xc', 'Yc', 'Rc',
                'Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout', 
                ]
 dfContact = pd.DataFrame(np.zeros((nT, len(colsContact))), columns=colsContact)
+dfBeforeContact = pd.DataFrame(np.zeros((nT, len(colsContact))), columns=colsContact)
 
 fluoCell = np.zeros((nT, nZ))
 fluoCyto = np.zeros((nT, nZ))
@@ -853,7 +854,7 @@ fluoBeadIn = np.zeros((nT, nZ))
 arrayViterbiContours = np.zeros((nT, nZ, 360, 2))
 profileMatrix = np.zeros((nT, nZ, N_profilesMatrix, warp_radius))
 
-for t in range(1):#(nT):
+for t in range(nT):#(nT):
     intensityMap_t = []
     tsd_t = tsdf.iloc[t,:].to_dict()
         
@@ -880,8 +881,8 @@ for t in range(1):#(nT):
     
     dfContact.loc[t, ['iT', 'T', 'X', 'Y', 'iZ', 'Z']] = [t, Fluo_T[t], x_contact, y_contact, iz_contact, iz_contact*dz]
     dfContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
-
-    
+    dfBeforeContact.loc[t, ['iT', 'T', 'X', 'Y', 'iZ', 'Z']] = [t, Fluo_T[t], x_contact, y_contact, iz_contact, iz_contact*dz]
+    dfBeforeContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
     # Zr = (-1) * (tsd_t['Zr_in']+tsd_t['Zr_out'])/2 # Taking the opposite cause the depthograph is upside down for these experiments
     # izmid = (nZ-1)//2 # If 11 points in Z, izmid = 5
     # zz = dz * np.arange(-izmid, +izmid, 1) # If 11 points in Z, zz = [-5, -4, ..., 4, 5] * dz
@@ -892,9 +893,11 @@ for t in range(1):#(nT):
     
     A_contact_map = 0
     foundContact = False
+    foundBeforeContact = False
     
     for z in range(nZ):
         contactSlice = False
+        beforeContactSlice = False
         i_zt = z + nZ*t
         I_zt = I[i_zt]
         
@@ -990,6 +993,13 @@ for t in range(1):#(nT):
             # print(z, R_contact, A_contact)
             A_contact_map = A_contact
             dfContact.loc[t, ['R', 'A']] = [R_contact, A_contact]
+            
+        if (z == np.round(iz_contact)-1) or (not foundContact and z == nZ-1):
+            beforeContactSlice = True
+            foundBeforeContact = True
+            # print(z, R_contact, A_contact)
+            A_BeforeContact_map = A_contact
+            dfBeforeContact.loc[t, ['R', 'A']] = [R_contact, A_contact]
         
         dfContact.loc[t, ['Xc', 'Yc', 'Rc']] += np.array([(Xc/SCALE_100X_ZEN)/(nZ), (Yc/SCALE_100X_ZEN)/(nZ), (Rc/SCALE_100X_ZEN)/(nZ)])
         
@@ -1163,7 +1173,7 @@ for t in range(1):#(nT):
             
         if PLOTS_MANUSCRIPT:
             figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-            if contactSlice:
+            if beforeContactSlice:
                 #### First M plot
                 gs.set_manuscript_options_jv()
                 Ibf = skm.io.imread(bfPath)
@@ -1289,7 +1299,7 @@ for t in range(1):#(nT):
                 ax.set_title('Intensity profile', fontsize = 8)
                 ax.plot(viterbi_Npix_values, Angles, c='forestgreen', ls='-', label = 'Intensity profile')
                 ax.set_xlim([0, 3])
-                ax.grid(axis='y')
+                ax.grid(axis='both')
                 ax.tick_params(axis='both', which='major', labelsize=6)
                 
                 # figV2.suptitle(f'Warp - {cellId} - t = {t+1:.0f}/{nT:.0f} - z = {z+1:.0f}/{nZ:.0f}')
@@ -2103,12 +2113,12 @@ date = '24-06-14'
 
 date2 = dateFormat(date)
 
-cell = 'C4'
+cell = 'C2'
 cellId = f'{date}_{cell}'
 specif = '' # '_off4um' #'_off4um' #'_off4um'
 specifFolder = '' # 'M2-20um/B5mT/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 
-srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF/M3'
+srcDir = f'D:/MagneticPincherData/Raw/{date2}_Chameleon/{specifFolder}Clean_Fluo_BF/M1'
 # fluoName = f'3T3-LifeActGFP_PincherFluo_{cell}{specif}_Fluo.tif'
 
 dstDir =  os.path.join(srcDir, 'Results_Fluo', f'{cell}')
@@ -2134,6 +2144,262 @@ arrayViterbiContours = np.load(os.path.join(resFluoDir, f'{cellId}_xyContours.np
 profileMatrix = np.load(os.path.join(resFluoDir, f'{cellId}_profileMatrix.npy'))
 # edgeMatrix = np.load(os.path.join(resFluoDir, f'{cellId}_edgeMatrix.npy'))
 
+# %%%% Plot for Manuscript M&M
+
+def plotActinQuantity(cellId, t, profileMatrix, dfContact,
+                  fluoCell, fluoCyto, fluoBack, fluoBeadIn,
+                  figSavePath):
+    pM = profileMatrix[t]
+    approxR = round(dfContact.loc[dfContact['iT']==t, 'R'].values[0])
+    iz = dfContact.loc[dfContact['iT']==t, 'iZ'].values[0]
+    izr = round(iz)
+    # Icell, Icyto, Iback = fluoCell[t, izr], fluoCyto[t, izr], fluoBack[t, izr]
+    
+    list_Q_fbL = []
+    list_Q_fbN = []
+    list_Q_vb = []
+    list_Q_gf = []
+    list_W_vb = []
+    list_S_gf = []
+    list_R2_gf = []
+    
+    nA_scan = 5
+    nZ_scan = 3
+    nZ_scanCount = 0
+    
+    for z in range(nZ_scan):
+        iiz = z - nZ_scan + 1
+        
+        if (izr + iiz) >= 0:
+            nZ_scanCount += 1
+            
+            for a in range(nA_scan):
+                iia = a - nA_scan//2
+                Ac = pM.shape[1]//2
+            
+                # print(izr + iiz, Ac + iia)
+                profile = pM[izr + iiz, Ac + iia, :] 
+                eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
+                Np = len(profile)
+                
+                Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
+                Ibeadin = fluoBeadIn[t, izr + iiz]
+                
+                
+                def normalize_Icell(x):
+                    return((x - Iback)/(Icell - Iback))
+                profile_n = normalize_Icell(profile)
+    
+                eV = profile_n[eR]
+                
+                bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
+                # bead_out_level = normalize_Icell(Ibeadin)
+                bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
+                ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
+                rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
+                # ri = eR - 10
+                # rf = eR + 5
+                
+                # if eR-ri <= 5:
+                #     bead_in_level = normalize_Icell(Ibeadin)
+                #     ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
+                # if rf-eR <= 3:
+                #     bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
+                #     rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
+                # print(eR, ri, rf)
+                
+                #### Calculation 1
+                n_in, n_out = 10, 5
+                Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
+                list_Q_fbL.append(Q_fbL)
+                
+                #### Calculation 1
+                n_inN, n_outN = 5, 3
+                Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
+                list_Q_fbN.append(Q_fbN)
+                
+                #### Calculation 2
+                Q_vb = np.sum(profile_n[ri:rf+1])
+                list_Q_vb.append(Q_vb)
+                list_W_vb.append(1+rf-ri)
+    
+                #### Calculation 3
+                ### bead_in_level = 0.9
+                ### bead_out_level = 0.95
+                ###(2*bead_in_level+eV)/3)
+                def Gfit(x, m, Q, s):
+                    # m = eR
+                    return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
+                
+                try:
+                    x_data = np.arange(ri, rf)
+                    y_data = profile_n[ri:rf]
+                    popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
+                                                    bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
+                    m_gf, Q_gf, s_gf = popt
+                    xfit = np.linspace(eR-20, eR+20, 200)
+                    yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
+                    residuals = y_data - Gfit(x_data, m_gf, Q_gf, s_gf)
+                    ss_res = np.sum(residuals**2)
+                    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+                    r_squared = 1 - (ss_res / ss_tot)
+                    list_Q_gf.append(Q_gf)
+                    list_S_gf.append(s_gf)
+                    list_R2_gf.append(r_squared)
+                    fitError = False
+                    
+                except:
+                    fitError = True
+                
+                # ax = axes[nZ_scan-z-1, a]            
+                # ax.plot(np.arange(Np), profile_n)
+                # ax.axvline(eR, c='r', ls='--')
+                # # 1
+                # ax.axvline(eR-n_in, c='cyan', ls='--', lw=1)
+                # ax.axvline(eR+n_out+1, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
+                # # 2
+                # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
+                # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
+                # # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
+                # ax.axvline(ri, c='orange', ls='--', lw=1)
+                # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
+                # # 3
+                # if not fitError:
+                #     ax.plot(xfit, yfit, c='gold', label=f'Gaussian fit: Q={Q_gf:.1f}\nR2={r_squared:.2f}')
+                
+                # ax.legend(fontsize=8, loc='lower left')
+                
+                # if a==0:
+                #     ax.set_ylabel(f'z={izr + iiz:.0f}; zr={iiz:.0f} (steps)')
+                # if z==nZ_scan-1:
+                #     ax.set_title(f'a = {iia:.0f} (°)')
+    
+    # fig.suptitle(f'{cellId} - t={t+1:.0f}')
+    # fig.tight_layout()
+    # ufun.simpleSaveFig(fig, f'ProfileMetrics_t{t+1:.0f}', figSavePath, '.png', 150)
+    # plt.show()
+    
+    ### Manuscript Plot
+    gs.set_manuscript_options_jv()
+    figM = plt.figure(figsize = (10/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
+    spec = figM.add_gridspec(2, 3)
+    # figM, axM = plt.subplots(1, 3, figsize=(17/gs.cm_in, 6/gs.cm_in))
+    
+    Ac = pM.shape[1]//2
+    profile = pM[izr-1, Ac, :]  
+    eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
+    Np = len(profile)
+    
+    Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
+    Ibeadin = fluoBeadIn[t, izr + iiz]
+    
+    def normalize_Icell(x):
+        return((x - Iback)/(Icell - Iback))
+    profile_n = normalize_Icell(profile)
+
+    eV = profile_n[eR]
+    
+    bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
+    bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
+    ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
+    rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
+
+    # Calculation 1
+    n_in, n_out = 10, 5
+    Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
+    
+    # Calculation 1
+    n_inN, n_outN = 5, 3
+    Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
+    
+    # Calculation 2
+    Q_vb = np.sum(profile_n[ri:rf+1])
+
+    # Calculation 3
+    ### bead_in_level = 0.9
+    ### bead_out_level = 0.95
+    ###(2*bead_in_level+eV)/3)
+    def Gfit(x, m, Q, s):
+        # m = eR
+        return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
+    
+    try:                
+        popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
+                                        bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
+        m_gf, Q_gf, s_gf = popt
+        xfit = np.linspace(eR-20, eR+20, 200)
+        yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
+        list_Q_gf.append(Q_gf)
+        list_S_gf.append(s_gf)
+        fitError = False
+    except:
+        fitError = True
+        
+    # ax = axM[0]
+    ax = figM.add_subplot(spec[0,:])
+    ax.imshow(pM[izr-1])
+    ax.axhline(Ac, color='r', ls='--', lw=1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    
+    ax = figM.add_subplot(spec[1,:])          
+    ax.plot(np.arange(Np)/7.4588, profile_n)
+    ax.axvline(eR/7.4588, c='r', ls='-', lw=1)
+    # 1
+    # ax.axvline(eR-n_in/7.4588, c='cyan', ls='--', lw=1)
+    # ax.axvline((eR+n_out+1)/7.4588, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
+    # 2
+    # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
+    # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
+    # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
+    # ax.axvline(ri, c='orange', ls='--', lw=1)
+    # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
+    # 3
+    if not fitError:
+        ax.plot(xfit/7.4588, yfit, c='brown', ls='--', lw = 1, label=f'Gaussian fit:\nQ={Q_gf:.1f}')
+    
+    ax.legend(fontsize=7)
+    # ax.set_title('Actin quantification')
+    ax.set_ylabel(f'Normalized intensity', fontsize = 8)
+    ax.set_xlabel(f'r (µm)', fontsize = 8)
+    ax.set_xlim([0, 12.3])
+    ax.tick_params(axis='both', which='major', labelsize=6)
+    ax.grid(axis = 'y')
+    # if z==nZ_scan-1:
+    #     ax.set_title(f'a = {iia:.0f} (°)')
+    figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
+    ufun.archiveFig(figM, name = f'ProfileMetrics_t{t+1:.0f}_V2', ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = 'E-h-Fluo', cloudSave = 'flexible')
+    
+    plt.show()
+            
+    avg_Q_fbL = np.mean(np.sort(list_Q_fbL)[2:-3])
+    avg_Q_fbN = np.mean(np.sort(list_Q_fbN)[2:-3])
+    avg_Q_vb = np.mean(np.sort(list_Q_vb)[2:-3])
+    avg_Q_gf = np.mean(np.sort(list_Q_gf)[2:-3])
+    avg_S_gf = np.mean(np.sort(list_S_gf)[2:-3])
+    avg_W_vb = np.mean(np.sort(list_W_vb)[2:-3])
+    
+    dfContact.loc[dfContact['iT']==t, 'Q_fbL'] = avg_Q_fbL
+    dfContact.loc[dfContact['iT']==t, 'Q_fbN'] = avg_Q_fbN
+    dfContact.loc[dfContact['iT']==t, 'Q_vb'] = avg_Q_vb
+    dfContact.loc[dfContact['iT']==t, 'Q_gf'] = avg_Q_gf
+    dfContact.loc[dfContact['iT']==t, 'S_gf'] = avg_S_gf
+    dfContact.loc[dfContact['iT']==t, 'W_vb'] = avg_W_vb
+    dfContact.loc[dfContact['iT']==t, 'nA_scan'] = nA_scan
+    dfContact.loc[dfContact['iT']==t, 'nZ_scan'] = nZ_scanCount
+    
+    return(dfContact)
+
+plotActinQuantity(cellId, 1, profileMatrix, dfContact,
+                  fluoCell, fluoCyto, fluoBack, fluoBeadIn,
+                  figSavePath)
+
+# plotActinQuantity(cellId, t, profileMatrix, dfContact,
+#                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
+#                   figSavePath, comparePlot = False, PLOT_M = False)
 
 # %%%% actin Quantitif
 
@@ -2815,7 +3081,7 @@ global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
 excludedCells = ['24-05-24_M2_P1_C4', '24-05-24_M2_P1_C13',
                  '24-06-14_M1_P1_C3', '24-06-14_M1_P1_C5', 
                  '24-06-14_M1_P1_C10', '24-06-14_M1_P1_C12', 
-                 '24-06-14_M1_P1_C17', '24-06-14_M3_P1_C4']
+                 '24-06-14_M1_P1_C17', ] # '24-06-14_M3_P1_C4'
 
 Filters = [(global_df['cellID'].apply(lambda x : x not in excludedCells)),
            ]
@@ -3049,6 +3315,102 @@ CountByCond, CountByCell = makeCountDf_Fluo(df_f)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%% Plot quantity - One cell !
+
+gs.set_manuscript_options_jv()
+
+Set2 = matplotlib.colormaps['Set2'].colors
+cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
+
+fig, ax = plt.subplots(1, 1, figsize = (6/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
+
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
+
+
+# Filter global_df
+
+Filters = [
+           #  (global_df['h3'] < 1.1),
+           # (global_df['Q_gf'] < 40),
+           # (global_df['date'] == '24-06-14'),
+            (global_df['cellID'] == '24-06-14_M1_P1_C2'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot 1 - Lin scale
+
+ax = ax
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=40, zorder=3, cmap = cMap, ec='w', linewidth=0.5, alpha=0.75) # , style='cellNum'
+
+
+# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# R2 = w_results.rsquared
+# pval = results.pvalues[1]
+# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
+# Yplot = b + a*Xplot
+
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', zorder=4, lw = 1.0,
+#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
+#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+    
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# print(params)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', zorder = 4,
+#         label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+# ax.legend(loc = 'upper left')
+
+ax.set_xlim([0, 550])
+ax.set_ylim([0, 15])
+
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+    
+# ax.legend().set_visible(False)
+
+
+#### Save
+figSubDir = 'E-h-Fluo'
+name = 'ONE_CELL_Qactin_GF_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Plot density - per comp
 

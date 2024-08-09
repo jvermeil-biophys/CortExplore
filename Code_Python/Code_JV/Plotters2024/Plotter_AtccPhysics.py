@@ -1036,8 +1036,6 @@ def StressRange_2D_V3(data, fig=None, ax=None):
         s = 4
         ec = 'None'
         labels = ['Minimum stress', 'Maximum stress', 'Compression']
-        
-            
             
         ax.scatter(data_co['bestH0'], data_co['minStress'], marker = 'o', s = s, color = 'deepskyblue', edgecolor = ec, zorder=zo, 
                    label = labels[0])
@@ -1293,17 +1291,22 @@ ax = axes[0,0]
 ax.set_title('Thickness')
 ax.set_xlabel('Fitted $H_0$ (nm)')
 ax.set_ylabel('Count (cells)')
-N, bins, patches = ax.hist(x=df_fg['bestH0'].values, bins = 16, color = color)
+N, bins, patches = ax.hist(x=(df_fg['bestH0'].values), bins = 16, color = color)
 ax.set_xlim([0, ax.get_xlim()[1]])
-medianH0 = np.median(df_fg['bestH0'].values)
+medianH0 = np.median((df_fg['bestH0'].values))
 ax.axvline(medianH0, c='darkred', label = f'Median $H_0$ = {medianH0:.0f} nm')
 ax.legend()
 
+print(np.median(df_fg['bestH0'].values))
+print(np.mean(np.log10(df_fg['bestH0'].values)))
+print(10**(np.mean(np.log10(df_fg['bestH0'].values))))
+print(np.std(np.log10(df_fg['bestH0'].values)))
+print(10**(np.std(np.log10(df_fg['bestH0'].values))))
 
 #### 02 - E_400
 ax = axes[0,1]
 
-# Order
+# Order²
 # co_order = ['none', 'dmso']
 
 # Plot
@@ -1320,6 +1323,12 @@ ax.set_xlim([0, ax.get_xlim()[1]])
 medianE400 = np.median(df_fgw2['E_f_<_400_wAvg'].values)
 ax.axvline(medianE400, c='darkred', label = 'Median $E_{400}$ = ' + f'{medianE400:.2f} kPa')
 ax.legend()
+
+print(np.median(df_fgw2['E_f_<_400_wAvg'].values))
+print(np.mean(np.log10(df_fgw2['E_f_<_400_wAvg'].values)))
+print(10**(np.mean(np.log10(df_fgw2['E_f_<_400_wAvg'].values))))
+print(np.std(np.log10(df_fgw2['E_f_<_400_wAvg'].values)))
+print(10**(np.std(np.log10(df_fgw2['E_f_<_400_wAvg'].values))))
     
 # Prettify
 rD = {'none' : 'No drug',
@@ -1417,9 +1426,9 @@ plt.show()
 name = 'Fig_NC1-1_V2'
 figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
 figSubDir = 'Manuscript'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = 'Manuscript', cloudSave = 'flexible')
-CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                 figDir = figDir, figSubDir = 'Manuscript', cloudSave = 'flexible')
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 # %%% Figure NC1.2 - Fluctuations
@@ -2681,6 +2690,9 @@ Filters = [(df['validatedThickness'] == True),
 
 df_f = filterDf(df, Filters)
 
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
 # Order
 # co_order = ['none', 'dmso']
 co_order = []
@@ -2727,8 +2739,7 @@ for ax in axes:
     ax.grid(visible=True, which='major', axis='y')
     # ax.set_xlabel('')
 
-# Count
-CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
 
 # Show
 plt.tight_layout()
@@ -3863,6 +3874,9 @@ XCol = 'bestH0'
 YCol = 'fit_K'
 fitID='300_100'
 
+lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
 # Filter
 Filters = [(df['validatedThickness'] == True), 
            (df['substrate'] == substrate),
@@ -3922,8 +3936,8 @@ ax.plot(Xplot, Yplot, ls = '--', c = 'darkorange', lw = 2.0,
                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
 
 ax.legend(fontsize = 9, loc = 'lower left')
-ax.set_title(f'Tangeantial Modulus (on [200, 400] Pa) - Average per cell - N = {len(Xfit)}')
-ax.set_ylabel('$K_{[200, 400]}$ (kPa)')
+ax.set_title(f'Tangeantial Modulus (on [{lb}, {ub}] Pa) - Average per cell - N = {len(Xfit)}')
+ax.set_ylabel('$K_{[{lb}, {ub}]}$ (kPa)')
 ax.set_xlabel('$H_0$ (nm)')
 ax.grid(axis = 'both')
 ax.set_xlim([50, 1100])
@@ -4029,7 +4043,7 @@ plt.show()
 
 #### Save
 figSubDir = 'E-h'
-name = 'K-200-400_AND_Eeff_vs_h0'
+name = f'K-{lb}-{ub}_AND_Eeff_vs_h0'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond1.to_csv(os.path.join(figDir, figSubDir, name+'_K_count.txt'), sep='\t')

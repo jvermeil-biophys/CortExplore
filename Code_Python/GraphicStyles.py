@@ -208,7 +208,7 @@ def set_default_options_jv():
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
+    plt.rc('legend', fontsize=SMALLER_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     
     
@@ -293,12 +293,12 @@ cL_Set1 = palette_Set1.as_hex()[:-1]
 cL_Set12 = cL_Set1 + cL_Set2
 cL_Set21 = cL_Set2 + cL_Set1
 
-X1, Y1 = np.arange(len(cL_Set1)), np.arange(len(cL_Set1))
-X2, Y2 = np.arange(len(cL_Set2)), np.arange(len(cL_Set2))-1
-fig, ax = plt.subplots(1, 1)
-ax.scatter(X1, Y1, c=cL_Set1, s=200)
-ax.scatter(X2, Y2, c=cL_Set2, s=200)
-plt.show()
+# X1, Y1 = np.arange(len(cL_Set1)), np.arange(len(cL_Set1))
+# X2, Y2 = np.arange(len(cL_Set2)), np.arange(len(cL_Set2))-1
+# fig, ax = plt.subplots(1, 1)
+# ax.scatter(X1, Y1, c=cL_Set1, s=200)
+# ax.scatter(X2, Y2, c=cL_Set2, s=200)
+# plt.show()
 
 # pal = sns.mpl_palette("Set2", 14)
 # cL = pal.as_hex()
@@ -309,3 +309,18 @@ plt.show()
 # ax.scatter(X1, Y1, c=cL, s=200)
 # # ax.scatter(X2, Y2, c=colorList_Set2, s=200)
 # plt.show()
+
+# %%
+
+c1 = plt.cm.GnBu(0.2)
+c2 = plt.cm.GnBu(0.4)
+c3 = plt.cm.GnBu(0.6)
+c4 = plt.cm.GnBu(0.8)
+
+cL = [c1, c2, c3, c4]
+
+X1, Y1 = np.arange(len(cL)), np.arange(len(cL))
+fig, ax = plt.subplots(1, 1)
+ax.scatter(X1, Y1, c=cL, s=200)
+plt.show()
+

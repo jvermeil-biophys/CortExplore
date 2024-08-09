@@ -654,17 +654,17 @@ plot_stressCenters = [ii for ii in range(100, 4000, 100)]
 plot_stressHalfWidth = 100
 
 plotSettings = {# ON/OFF switchs plot by plot
-                        'FH(t)':True,
-                        'F(H)':True,
+                        'FH(t)':False,
+                        'F(H)':False,
                         'F(H)_VWC':True, # NEW - Numi
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
-                        'S(e)_stressGaussian':True,
-                        'K(S)_stressGaussian':True,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
                         'S(e)_strainGaussian':False, # NEW - Jojo
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
@@ -673,18 +673,19 @@ plotSettings = {# ON/OFF switchs plot by plot
 
 
 # drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
-# drugTask += ' & 22-11-23 & 23-11-26 & 23-12-03' # LatA
-# drugTask += ' & 23-03-08 & 23-03-09' # Y27
-# drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
-# drugTask += ' & 23-04-26 & 23-04-28' # Ck666
-# drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
-# drugTask += ' & 23-09-19' # JLY
-# drugTask = '24-03-13' # Limki + Y27
-drugTask = '24-07-04' # Limki + Y27 + Blebbi
+# drugTask += ' & 22-11-23' # LatA
+drugTask += '23-11-26 & 23-12-03' # LatA
+drugTask += ' & 23-03-08 & 23-03-09' # Y27
+drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
+drugTask += ' & 23-04-26 & 23-04-28' # Ck666
+drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
+drugTask += ' & 23-09-19' # JLY
+drugTask +=  '24-03-13' # Limki + Y27
+drugTask +=  '24-07-04' # Limki + Y27 + Blebbi
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs_V3', 
-                                    save = True, PLOT = True, source = 'Python', 
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs_V4', 
+                                    save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 

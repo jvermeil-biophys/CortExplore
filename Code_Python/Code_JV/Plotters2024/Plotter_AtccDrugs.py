@@ -767,7 +767,7 @@ def StressRange_2D(data, condition='', split = False, defaultColors = False):
     
     return(out)
 
-# %% Numi's awesome plot
+# %% > Anumita's awesome plots
 
 def plotNLI(fig, ax, data, condCat, condCol, pairs, labels = [],  palette = ['#b96a9b', '#d6c9bc', '#92bda4'],
             colorScheme = 'black', **plotChars):
@@ -805,14 +805,14 @@ def plotNLI(fig, ax, data, condCat, condCol, pairs, labels = [],  palette = ['#b
     xticks = np.arange(len(condCat))
 
     for xpos, ypos, yval in zip(xticks, y1/2, y1):
-        plt.text(xpos, ypos, "%.1f"%yval + '%', ha="center", va="center", color = '#000000', fontsize = 16)
+        plt.text(xpos, ypos, "%.1f"%yval + '%', ha="center", va="center", color = '#000000', fontsize = 8)
     for xpos, ypos, yval in zip(xticks, y1+y2/2, y2):
-        plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center", color = '#000000', fontsize = 16)
+        plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center", color = '#000000', fontsize = 8)
     for xpos, ypos, yval in zip(xticks, y1+y2+y3/2, y3):
-        plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center", color = '#000000', fontsize = 16)
+        plt.text(xpos, ypos, "%.1f"%yval+ '%', ha="center", va="center", color = '#000000', fontsize = 8)
     # add text annotation corresponding to the "total" value of each bar
     for xpos, ypos, yval in zip(xticks, y1+y2+y3+0.5, N):
-        plt.text(xpos, ypos, "N=%d"%yval, ha="center", va="bottom", fontsize = 16)
+        plt.text(xpos, ypos, "N=%d"%yval, ha="center", va="bottom", fontsize = 8)
 
     try:
         pvals = []
@@ -833,17 +833,18 @@ def plotNLI(fig, ax, data, condCat, condCol, pairs, labels = [],  palette = ['#b
 
     if labels != []:
         plt.xticks(xticks, labels, **plotChars)
-
+    
+    ax.set_ylim([0, 110])
     plt.xticks(xticks, **plotChars)
     plt.yticks(**plotChars)
     plt.tight_layout()
-    plt.legend(handles = patches, bbox_to_anchor=(1.01,0.5), fontsize = 15, labelcolor='linecolor')
+    plt.legend(handles = patches, bbox_to_anchor=(1.01, 0.5), fontsize = 10, labelcolor='linecolor')
     plt.show()
 
-    return fig, ax, pvals
+    return(fig, ax, pvals)
 
 
-def createDataTable(GlobalTable):
+def computeNLMetrics(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
 
     data_main = GlobalTable
     data_main['dateID'] = GlobalTable['date']
@@ -851,8 +852,8 @@ def createDataTable(GlobalTable):
     data_main['cellId'] = GlobalTable['cellID']
     data_main['dateCell'] = GlobalTable['date'] + '_' + GlobalTable['cellCode']
 
-    nBins = 11
-    bins = np.linspace(1, 2000, nBins)
+    nBins = 10
+    bins = np.linspace(0, 1000, nBins)
     data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
     data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
     
@@ -861,79 +862,85 @@ def createDataTable(GlobalTable):
     data_main['E_eff'] = [np.nan]*len(data_main)
 
     K, Y = data_main['K_vwc_Full'], data_main['Y_vwc_Full']
-    E = Y + K*(0.8)**-4
+    E = Y + (K*(1 - ref_strain)**-4)
 
     data_main['E_eff'] = E
-    data_main['NLI'] = np.log10((0.8)**-4 * K/Y)
+    data_main['NLI'] = np.log10(((1 - ref_strain)**-4 * K)/Y)
+    
+    ciwK, ciwY = data_main['ciwK_vwc_Full'], data_main['ciwY_vwc_Full']
+    ciwE = ciwY + (ciwK*(1 - ref_strain)**-4)
+    data_main['ciwE_eff'] = ciwE
     
     NLItypes = ['linear', 'intermediate', 'non-linear']
+    th_NLI = np.abs(th_NLI)
     for i in NLItypes:
         if i == 'linear':
-            index = data_main[data_main['NLI'] < -0.3].index
+            index = data_main[data_main['NLI'] < -th_NLI].index
             ID = 1
         elif i =='non-linear':
-            index =  data_main[data_main['NLI'] > 0.3].index
+            index =  data_main[data_main['NLI'] > th_NLI].index
             ID = 0
         elif i =='intermediate':
-            index = data_main[(data_main['NLI'] > -0.3) & (data_main['NLI'] < 0.3)].index
+            index = data_main[(data_main['NLI'] > -th_NLI) & (data_main['NLI'] < th_NLI)].index
             ID = 0.5
-        for j in index:
-            data_main['NLI_Plot'][j] = i
-            data_main['NLI_Ind'][j] = ID
+        # for j in index:
+        data_main.loc[index, 'NLI_Plot'] = i
+        data_main.loc[index, 'NLI_Ind'] = ID
     
-    return data_main
-
-#%%% Analysing with VWC global tables
-
-#%%%% Define data
-
-MecaData_DrugV3 = taka2.getMergedTable('MecaData_Drugs_V3')
-
-figSubDir = 'DrugSummary_LIMKi_02'
-drugSuffix = '_LIMKi'
-gs.set_manuscript_options_jv()
-
-# Define
-df = MecaData_DrugV3
-# dates = ['24-03-13', '24-07-04']
-dates = ['24-07-04']
-substrate = '20um fibronectin discs'
-# df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
-parameter = 'bestH0'
-figname = 'bestH0' + drugSuffix
-
-# Filter
-Filters = [(df['validatedThickness'] == True), 
-           (df['substrate'] == substrate),
-           (df['date'].apply(lambda x : x in dates)),
-           (df['compNum'] <= 5),
-            (df['bestH0'] > 50),
-            (df['bestH0'] < 1000),
-           ]
-df_f = filterDf(df, Filters)
+    return(data_main)
 
 
-df_f = createDataTable(df_f)
+# #%%% Analysing with VWC global tables
+
+# #%%%% Define data
+
+# MecaData_DrugV3 = taka2.getMergedTable('MecaData_Drugs_V3')
+
+# figSubDir = 'DrugSummary_LIMKi_02'
+# drugSuffix = '_LIMKi'
+# gs.set_manuscript_options_jv()
+
+# # Define
+# df = MecaData_DrugV3
+# # dates = ['24-03-13', '24-07-04']
+# dates = ['24-07-04']
+# substrate = '20um fibronectin discs'
+# # df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+# parameter = 'bestH0'
+# figname = 'bestH0' + drugSuffix
+
+# # Filter
+# Filters = [(df['validatedThickness'] == True), 
+#            (df['substrate'] == substrate),
+#            (df['date'].apply(lambda x : x in dates)),
+#            (df['compNum'] <= 5),
+#             (df['bestH0'] > 50),
+#             (df['bestH0'] < 1000),
+#            ]
+# df_f = filterDf(df, Filters)
+
+
+# df_f = createDataTable(df_f)
 
 
 
-#%%%% Plot NLI
+# #%%%% Plot NLI
 
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# condCol, condCat = 'drug', drugs
-condCat = ['dmso & 0.0', 'blebbistatin & 50.0', 'blebbistatin & 100.0', 'LIMKi & 20.0', 'Y27 & 50.0', 'none & 0.0']
-df_f, condCol = makeCompositeCol(df_f, cols=['drug', 'concentration'])
+# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+# # condCol, condCat = 'drug', drugs
+# condCat = ['dmso & 0.0', 'blebbistatin & 50.0', 'blebbistatin & 100.0', 'LIMKi & 20.0', 'Y27 & 50.0', 'none & 0.0']
+# df_f, condCol = makeCompositeCol(df_f, cols=['drug', 'concentration'])
 
-bp = [['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 50.0', 'blebbistatin & 100.0'], 
-      ['dmso & 0.0', 'LIMKi & 20.0'], ['none & 0.0', 'Y27 & 50.0'],
-      ['blebbistatin & 100.0', 'Y27 & 50.0'], ['LIMKi & 20.0', 'Y27 & 50.0']]
+# bp = [['dmso & 0.0', 'blebbistatin & 50.0'], ['blebbistatin & 50.0', 'blebbistatin & 100.0'], 
+#       ['dmso & 0.0', 'LIMKi & 20.0'], ['none & 0.0', 'Y27 & 50.0'],
+#       ['blebbistatin & 100.0', 'Y27 & 50.0'], ['LIMKi & 20.0', 'Y27 & 50.0']]
 
-plotChars = {'color' : 'black', 'fontsize' : 15}
+# plotChars = {'color' : 'black', 'fontsize' : 15}
 
-fig, ax, pvals = plotNLI(fig, ax, df_f, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+# fig, ax, pvals = plotNLI(fig, ax, df_f, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
 
 
