@@ -103,6 +103,7 @@ class PincherTimeLapse:
         self.Zstep = manipDict['multi image Z step']
         self.BeadsZDelta = manipDict['beads bright spot delta']
         
+        
         try:
             self.insideBeadType = str(manipDict['inside bead type'])
             self.outsideBeadType = str(manipDict['outside bead type'])
@@ -1295,6 +1296,8 @@ class Trajectory:
 
         # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
         # and don't move the others (idx_inNUp 2 if Nup = 3 or the 1 profile when Nup = 1)
+        
+        
         if Nup > 1:
             finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
                                         nVoxels, direction = matchingDirection)

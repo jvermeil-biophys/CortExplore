@@ -55,6 +55,8 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser_V2 as taka
+import TrackAnalyser_V3 as taka
+
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -94,7 +96,7 @@ plotLabels = 25
 plotTicks = 18 
 plotTitle = 25
 plotLegend = 25
-fontColour = '#ffffff'
+fontColour = '#000000'
 
 
 # %%%% Default settings for mechanics analysis
@@ -123,24 +125,32 @@ DEFAULT_fitSettings = {# H0
                        'method_bestH0':'Chadwick',
                        'zone_bestH0':'%f_10',
                        # Global fits
-                       'doChadwickFit' : True,
+                       'doVWCFit' : True,
+                       'VWCFitMethods' : ['Full'],
                        'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
+                       'doChadwickFit' : False,
+                       'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
+                       'doDimitriadisFit' : False,
+                       'DimitriadisFitMethods' : ['Full'],
                        # Local fits
-                       'doStressRegionFits' : True,
-                       'doStressGaussianFits' : True,
+                       'doStressRegionFits' : False,
+                       'doStressGaussianFits' : False,
                        'centers_StressFits' : DEFAULT_stressCenters,
                        'halfWidths_StressFits' : DEFAULT_stressHalfWidths,
-                       'doNPointsFits' : True,
+                       'doNPointsFits' : False,
                        'nbPtsFit' : 13,
                        'overlapFit' : 3,
                        # NEW - Numi
-                       'doLogFits' : True,
+                       'doLogFits' : False,
                        'nbPtsFitLog' : 10,
                        'overlapFitLog' : 5,
                        # NEW - Jojo
-                       'doStrainGaussianFits' : True,
+                       'doStrainGaussianFits' : False,
                        'centers_StrainFits' : DEFAULT_strainCenters,
                        'halfWidths_StrainFits' : DEFAULT_strainHalfWidths,
+                       # TEST - Jojo
+                       'do3partsFits' : False,
                        }
 
 #### 2. For Validation
@@ -169,6 +179,7 @@ DEFAULT_plot_strainHalfWidth = 0.0125
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_VWC':True,
                         'S(e)_stressRegion':True,
                         'K(S)_stressRegion':True,
                         'S(e)_stressGaussian':True,
@@ -193,6 +204,7 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'plotLog':str(DEFAULT_fitSettings['nbPtsFitLog']) \
                                      + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
                         }
+
 
 #%% Functions
 
@@ -357,6 +369,15 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
     plt.style.use('default')
 
     df = dfAllCells
+
+    if FIT_MODE == 'linlin':
+        params = ['A', 'B']
+        ax_titles = ['Slope (A)', 'Linear Intercept (B)']
+    elif FIT_MODE == 'loglog':
+        params = ['a', 'q']
+        ax_titles = ['Exponent (a)', 'Coefficient (q)']
+        
+
     condPairs = condSelection
 
     
@@ -1114,31 +1135,24 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '22-10-06_M5 & 22-12-07_M4 & 23-02-02_M1 & 23-04-19_M1 & 23-04-25_M1 & 23-05-10_M1 & 23-05-10_M3 \
-23-05-23_M1 & 23-06-28 & 23-07-07 & 23-07-12_M1'
-fitsSubDir = 'Chad_f15_AllControl3T3optoRhoA_24-01-19'
+Task = '23-05-10 & 23-04-19 & 23-04-25'
+fitsSubDir = 'Chad_f15_GlobalActivation_24-01-16'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
-#%% Calling data
+#%%% Calling data
 
-GlobalTable = taka.getMergedTable('GlobalTable_MergeATCC_OptoPRG')
-fitsSubDir = 'GlobalTable_MergeATCC_OptoPRG'
-
+GlobalTable = taka.getMergedTable('Chad_f15_GlobalActivation_24-01-16')
+fitsSubDir = 'Chad_f15_GlobalActivation_24-01-16'
 
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
 data_main['cellId'] = GlobalTable['cellID']
-
-nBins = 21
-bins = np.linspace(0, 2000, nBins)
-data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
-data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
 
 fitType = 'stressGaussian'
 # fitType = 'nPoints'
@@ -1147,71 +1161,60 @@ fitWidth = 75
 
 dirToSave = 'G:/CortexMeetings/CortexMeeting_23-12-19/Plots'
 
-
 #%%%% Non - linearity
+
 plt.style.use('seaborn')
 
 data = data_main
 
 ########## Declare variables ##########
-# dates = ['23-07-12']
+dates = ['23-05-10']#, '23-04-25']
 stressRange = '200_500'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
+condCol = 'drug'
 order = None
 
-# method = 'f_<_400'
-# stiffnessType = 'E_' + method
-# data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
 
 pathSubDir,pathFits,pathBoxPlots,pathNonlinDir,pathSSPlots,pathKSPlots = makeDirs(fitsSubDir, FIT_MODE)
 
 ###########################################
-     
-condCol = 'drug'
-condSelection = ['none', 'dmso']
-styleDict1 =  {'none':{'color':   "#000000",'marker':'o', 'label':'none'},
-               
-               'dmso':{'color':   gs.colorList40[20],'marker':'o', 'label':'none'},
+
+
+# manips = ['M3', 'M4']
+# condSelection = manips
+
+# styleDict1 =  {'M4':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
+#                 'M3':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
+#                 }
+
+manipIDs = ['23-05-10_M3', '23-05-10_M4',  '23-04-19_M2', '23-04-19_M1']
+
+condSelection = ['none','activation']
+
+styleDict1 =  {'activation':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
+                'none':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
                 }
-        
-
-#Effect of thickness / H0 on mechanics
-# dates = []
-# condCol = 'Thickness_Bin'
-# condSelection = bins
-# styleDict1 = {}
-# keys = np.rint(np.linspace(1,nBins,nBins)).astype(int)
-# values = gs.colorList40[5:nBins+5]
-
-# for key, value in zip(keys, values):
-#     print(key)
-#     key = int(key)
-#     if key < nBins - 1:
-#         styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : str(bins[key-1]) + "-" + str(bins[key])}
-#         styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : key}
 
 
 Filters = [(data['validatedThickness'] == True),
-            (data['substrate'] == '20um fibronectin discs'), 
+            # (data['substrate'] == '20um fibronectin discs'), 
             # (data['valid_' + method] == True),
-            # (data[stiffnessType + '_kPa'] <= 80),
-            (data['cell subtype'] == 'Atcc-2023'),
-            ((data['drug'] == 'none') | (data['drug'] == 'dmso')),
+            # (data[stiffnessType + '_kPa'] <= 20),
+            # (data['drug'] == 'none'), 
             (data['bead type'] == 'M450'),
             # (data['UI_Valid'] == True),
-            (data['bestH0'] <= 1500),
-            # ((data['Thickness_Bin'] == 3) | (data['Thickness_Bin'] == 2)),
-            # (data['ramp field'] == '1_50'),
-            # (data['compression duration'] == '1.5s'),
-            # (data['normal field'] == 15.0),
-            # (data['first activation'] != 1),
+            (data['bestH0'] <= 2000),
+            (data['compNum'] <= 6),
+            # (data['surroundingThickness'] <= 1500),
             # (data['date'].apply(lambda x : x in dates)),
             # (data['manip'].apply(lambda x : x in manips)),
-            # (data['manipId'].apply(lambda x : x in manipIDs)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
-
 
 mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
@@ -1223,14 +1226,13 @@ out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitT
 
 mainFig1, mainAx1, exportDf1, countDf1 = out1
 
-# # plt.legend(fontsize = 20, loc = 'upper left')
-# # plt.legend(fontsize = 12, loc = 'upper left')
-plt.ylim(0,20)
-plt.tight_layout()
-mainFig1.suptitle(condCol, color = fontColour)
-
+# plt.legend(fontsize = 20, loc = 'upper left')
+# plt.legend(fontsize = 12, loc = 'upper left')
+# plt.ylim(0,20)
+# plt.tight_layout()
 # plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_wholeCurve.png')  
-plt.show()
+# plt.show()
+# plt.close()
 
 mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
@@ -1244,7 +1246,6 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 
 plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylim(0,8)
-mainFig2.suptitle(condCol, color = fontColour)
 plt.tight_layout()
 # plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_' + stressRange +'.png')  
 plt.show()
@@ -1283,7 +1284,8 @@ ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
 #     activationTime.append(times.values)
 #     # except:
 #     #     print('No activation data')
-# fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
+
+fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
 plt.xticks(fontsize=40, color = fontColour)
 plt.yticks(fontsize=40, color = fontColour)
 plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
@@ -1291,6 +1293,261 @@ plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
 plt.legend(fontsize = 30, loc = 'upper left')
 
 plt.ylim(0,1200)
+
+plt.savefig(dirToSave + '/Thickness/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
+
+plt.show()
+
+#%%%% Thickness boxplots
+
+measure = 'surroundingThickness'
+labels = []
+order= None
+
+savePath = dirToSave + '/Thickness/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
+                   stats = False, average = True)
+
+#%%%% Fluctuations boxplots
+
+measure = 'ctFieldFluctuAmpli'
+labels = []
+order= None
+
+savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
+                   stats = False, average = True)
+
+#%%%% E_F_<_400pN
+
+measure = stiffnessType
+labels = []
+order= None
+
+measureName = 'E_400pN'
+
+savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
+
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
+                   stats = False, average = True)
+
+
+#%% Mechanics - II
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'VWC'],
+                'zones_H0':['%f_100'],
+                'method_bestH0':'VWC', 
+                'zone_bestH0':'%f_100',
+                'doVWCFit' : True,
+                'VWCFitMethods' : ['Full'],
+                'doStressRegionFits' : False,
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+Task = '23-05-10 & 23-04-19 & 23-04-25'
+fitsSubDir = 'VWC_GlobalActivation_24-06-12'
+
+GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
+                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
+                            fitSettings = fitSettings, plotSettings = plotSettings,
+                            fitsSubDir = fitsSubDir) # task = 'updateExisting'
+
+#%%% Calling data
+
+GlobalTable = taka.getMergedTable('VWC_GlobalActivation_24-06-12')
+fitsSubDir = 'VWC_GlobalActivation_24-06-12'
+
+data_main = GlobalTable
+data_main['dateID'] = GlobalTable['date']
+data_main['manipId'] = GlobalTable['manipID']
+data_main['cellId'] = GlobalTable['cellID']
+
+fitType = 'stressGaussian'
+# fitType = 'nPoints'
+fitId = '_75'
+fitWidth = 75
+
+dirToSave = 'G:/CortexMeetings/CortexMeeting_23-12-19/Plots'
+
+#%%%% Non - linearity
+
+plt.style.use('seaborn')
+
+data = data_main
+
+########## Declare variables ##########
+dates = ['23-05-10']#, '23-04-25']
+stressRange = '200_500'
+interceptStress = 250
+plot = False
+FIT_MODE = 'loglog'
+condCol = 'drug'
+order = None
+
+method = 'f_<_400'
+stiffnessType = 'E_' + method
+data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+
+pathSubDir,pathFits,pathBoxPlots,pathNonlinDir,pathSSPlots,pathKSPlots = makeDirs(fitsSubDir, FIT_MODE)
+
+###########################################
+
+
+# manips = ['M3', 'M4']
+# condSelection = manips
+
+# styleDict1 =  {'M4':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
+#                 'M3':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
+#                 }
+
+manipIDs = ['23-05-10_M3', '23-05-10_M4',  '23-04-19_M2', '23-04-19_M1']
+
+condSelection = ['none','activation']
+
+styleDict1 =  {'activation':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
+                'none':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
+                }
+
+
+Filters = [(data['validatedThickness'] == True),
+            # (data['substrate'] == '20um fibronectin discs'), 
+            # (data['valid_' + method] == True),
+            # (data[stiffnessType + '_kPa'] <= 20),
+            # (data['drug'] == 'none'), 
+            (data['bead type'] == 'M450'),
+            # (data['UI_Valid'] == True),
+            (data['bestH0'] <= 1000),
+            # (data['surroundingThickness'] <= 1500),
+            # (data['date'].apply(lambda x : x in dates)),
+            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manipId'].apply(lambda x : x in manipIDs)),
+            ]
+
+mainFig1, mainAx1 = plt.subplots(1,1)
+mainFig1.patch.set_facecolor('black')
+
+
+out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitType = 'stressGaussian', fitWidth=75, Filters = Filters, 
+                   condCol = condCol, mode = 'wholeCurve', scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig1, mainAx1, exportDf1, countDf1 = out1
+
+# plt.legend(fontsize = 20, loc = 'upper left')
+# plt.legend(fontsize = 12, loc = 'upper left')
+# plt.ylim(0,20)
+# plt.tight_layout()
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_wholeCurve.png')  
+# plt.show()
+# plt.close()
+
+mainFig2, mainAx2 = plt.subplots(1,1)
+mainFig2.patch.set_facecolor('black')
+
+
+out2, cellDf2 = plotPopKS(data, mainFig2, mainAx2, fitsSubDir = fitsSubDir, fitType =  'stressGaussian', 
+                  fitWidth=75, Filters = Filters, condCol = condCol, mode = stressRange, scale = 'lin', printText = False,
+                                returnData = 1, returnCount = 1)
+
+mainFig2, mainAx2, exportDf2, countDf2 = out2
+
+plt.legend(fontsize = 12, loc = 'upper left')
+plt.ylim(0,8)
+plt.tight_layout()
+# plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_' + stressRange +'.png')  
+plt.show()
+
+dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FIT_MODE, pathFits, plot = plot)
+
+
+#%%%% Thickness vs. time
+
+plt.style.use('seaborn')
+plt.style.use('default')
+
+
+measure = 'surroundingThickness'
+activationTime = []
+
+globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+for k in range(0, len(Filters)):
+    globalFilter = globalFilter & Filters[k]
+data_f = data[globalFilter]
+
+
+fig1, axes = plt.subplots(1,1, figsize=(15,10))
+# fig1.patch.set_facecolor('black')
+flatui = ["#000000", "#0000ff"]
+
+flatui = ["#000000", "#bb2fa6"]
+sns.set_palette(flatui)
+
+x = (data_f['compNum']-1)*20
+ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
+
+x2 = (data_f['compNum'].unique()[:-1])*20
+# ax = sns.scatterplot(x = x, y = measure, data = data_f, hue = 'cellID')
+
+# ax.axvline(x = 5, color = 'red')
+for i in x2:
+    ax.axvline(x = i, color = "#bb2fa6", linewidth=4, ymax=0.10)
+
+# for cell in allCells:
+#     # try:
+#     meta = pd.read_csv(os.path.join(cp.DirDataRaw+'/'+dateDir, cell+'_disc20um_L40_OptoMetadata.txt'), sep = '\t')
+#     times = meta['T_abs'] - meta['T_0']
+#     activationTime.append(times.values)
+#     # except:
+#     #     print('No activation data')
+fontColour = '#000000'
+fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
+plt.xticks(fontsize=30, color = fontColour)
+plt.yticks(fontsize=30, color = fontColour)
+plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
+plt.ylabel(measure+' (nm)', fontsize = 25, color = fontColour)
+plt.legend(fontsize = 30, loc = 'upper left')
+
+plt.ylim(0,1200)
+plt.xlim(0,180)
+
 
 # plt.savefig(dirToSave + '/Thickness/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
 
@@ -1301,66 +1558,32 @@ plt.show()
 measure = 'surroundingThickness'
 labels = []
 order= None
-for i in range(len(bins)-3):
-    labels.append(str(bins[i]) + "-" + str(bins[i+1]))
-    
-savePath = dirToSave + '/Thickness/'+str(1)+'_'+measure+'_boxplot_'+str(1)+'.png'
 
-makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath,
-                   stats = False, average = False)
+savePath = dirToSave + '/Thickness/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
 
-
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
+                   stats = False, average = True)
 
 #%%%% Fluctuations boxplots
 
 measure = 'ctFieldFluctuAmpli'
 labels = []
 order= None
-for i in range(len(bins)-5):
-    labels.append(str(bins[i]) + "-" + str(bins[i+1]))
 
-# savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
 
 makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = False)
+                   stats = False, average = True)
 
 #%%%% E_F_<_400pN
 
 measure = stiffnessType
 labels = []
 order= None
-for i in range(len(bins)-3):
-    labels.append(str(bins[i]) + "-" + str(bins[i+1]))
 
 measureName = 'E_400pN'
 
-savePath = dirToSave + '/E_400pN/'+str(1)+'_'+measureName+'_'+str(1)+'.png'
+savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
 
 makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = False)
-
-#%%%% Slopes of K vs S
-
-measure = 'ctFieldFluctuAmpli'
-labels = []
-order= None
-makeBoxPlotParametric
-
-#%%%% Fluctuations vs Thickness
-y = 'ctFieldFluctuAmpli'
-x = 'ctFieldThickness'
-sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
-plt.legend(fontsize = 15, loc = 'upper left')
-plt.xticks(fontsize=10)
-plt.yticks(fontsize=10)
-plt.show()
-
-#%%%% Fluctuations vs Thickness
-x = 'surroundingThickness'
-y = 'bestH0'
-sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
-plt.legend(fontsize = 15, loc = 'upper left')
-plt.xticks(fontsize=10)
-plt.yticks(fontsize=10)
-plt.show()
-
+                   stats = False, average = True)

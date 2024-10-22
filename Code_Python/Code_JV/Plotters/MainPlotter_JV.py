@@ -9110,7 +9110,6 @@ plt.show()
 
 # %%%%%
 
-
 data = MecaData_Atcc
 dates = ['22-01-12']
 fit = '50<s<250Pa_150included' # 's<400Pa', '300<s<700Pa', '600<s<1000Pa'
