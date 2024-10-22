@@ -35,7 +35,7 @@ import pyjokes as pj
 from skimage import io
 
 #### Local Imports
-""
+
 import sys
 import CortexPaths as cp
 os.chdir(cp.DirRepoPython)
@@ -47,24 +47,16 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '24.05.22/Archive'
-# DirDeptho = '24.05.29_Deptho/Deptho_P3'
-
+date = '24.10.21'
 DirSave = os.path.join(cp.DirDataRaw, date) 
+DirExt = 'E:/20241021_3t3optorhoa-VB-MediumExpressing_100xobj_4.5Fibro-PEGBeads_Mechanics/24.10.21'
 
-DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
-
-# DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
+# DirDeptho = '24.10.21_Deptho/Deptho_P3'
+# DirExt  = 'E:/20241021_3t3optorhoa-VB-MediumExpressing_100xobj_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
-#%% Define parameters # Jojo
-date = '24.04.18'
-DirExt = 'E:\\24-04-18_3T3Atcc-LaGFP_P+I-25um_Y27\\M3_depthos' #'/M4_patterns_ctrl' // \\M1_depthos
-DirSave = os.path.join(cp.DirDataRaw, date  + '_depthos', 'M3') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
-# prefix = 'cell'
-# channel = 'w1TIRF DIC'
 microscope = 'labview'
-imagePrefix = 'tif'
+imagePrefix = 'im'
 
 
 #%% Define parameters # Jojo
@@ -81,13 +73,10 @@ imagePrefix = 'tif'
 # microscope = 'labview'
 # imagePrefix = 'Image'
 
+
 # %% Functions
 
-def getListOfSourceFolders(Dir, 
-                           forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
-                                               'film', 'films', 'capture', 'captures' # ,  'deptho', 'depthos',
-                                             ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
-                           compulsaryWords = []): # 'depthos'
+def getListOfSourceFolders(Dir, forbiddenWords = [], compulsaryWords = []): # 'depthos'
     """
     Given a root folder Dir, search recursively inside for all folders containing .tif images 
     and whose name do not contains any of the forbiddenWords.
@@ -114,8 +103,9 @@ def getListOfSourceFolders(Dir,
             res = [Dir] # List with 1 element - the name of this dir
         else:
             return(res)
-    
+        
     else:
+        
         listDirs = os.listdir(Dir)
         print(listDirs)
         for D in listDirs:
@@ -430,9 +420,8 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             
         count = count + 1
 
-
-
 # preprocess(DirExt, DirSave, microscope, reset = 0)    
+
 
 #%% Main function 1/2
 
@@ -445,7 +434,6 @@ ref_point = []
 allRefPoints = []
 allZimg = []
 allZimg_og = []
-
 
 # reset = 0
 checkIfAlreadyExist = True
@@ -466,7 +454,7 @@ for i in range(len(allCellsRaw)):
         
     if not ufun.containsFilesWithExt(currentCell, '.tif'):
         validCell = False
-        print(gs.BRIGHTRED + '/!\ Is not a valid cell' + gs.NORMAL)
+        print(gs.BRIGHTRED + '/! Is not a valid cell' + gs.NORMAL)
         
     elif checkIfAlreadyExist and os.path.isfile(os.path.join(DirSave, currentCellName + '.tif')):
         validCell = False
@@ -496,10 +484,9 @@ instructionText += "or 's' if you have a supplementary selection to make (you ca
 instructionText += "(3) Make sure to choose the number of files you want to crop at once\nin the variable 'limiter'"
 instructionText += "\n\nC'est parti !\n"
 
-
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 30
+limiter = 23
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

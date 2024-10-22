@@ -1114,8 +1114,6 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '22-10-06_M5 & 22-12-07_M4 & 23-02-02_M1 & 23-04-19_M1 & 23-04-25_M1 & 23-05-10_M1 & 23-05-10_M3 \
-23-05-23_M1 & 23-06-28 & 23-07-07 & 23-07-12_M1'
 fitsSubDir = 'Chad_f15_AllControl3T3optoRhoA_24-01-19'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 

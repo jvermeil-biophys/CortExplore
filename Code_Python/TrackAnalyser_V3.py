@@ -1457,6 +1457,7 @@ class CellCompression:
     Attributes filled by other methods
     ----------------------------------
     
+    
     listIndent : list
         List that will contains pointers toward all the IndentCompressions objects
         created in the main function. Filled in the main function analyseTimeSeries_meca().
@@ -1696,7 +1697,11 @@ class CellCompression:
         minh = np.min(self.tsDf['D3'].values-self.DIAMETER)
         ratio = min(1/abs(minh/axM), 5)
         (axmbis, axMbis) = axbis.get_ylim()
-        axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
+        
+        try:
+            axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
+        except:
+            pass
         
         axes = [ax, axbis]
         fig.tight_layout()
@@ -2218,6 +2223,7 @@ class CellCompression:
                      'Y_'+ m2 : np.nan, 
                      'ciwY_'+ m2 : np.nan, 
                      'H0_'+ m2 : np.nan, 
+                     'ciwH0_' + m2 : np.nan,
                      'R2_'+ m2 : np.nan,
                      'Chi2_'+ m2 : np.nan,
                      'valid_'+ m2 : False,
@@ -2356,6 +2362,7 @@ class CellCompression:
                         results['Y_'+ m2][i] = IC.dictFitFH_VWC[m]['Y']
                         results['ciwY_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwY']
                         results['H0_'+ m2][i] = IC.dictFitFH_VWC[m]['H0']
+                        results['ciwH0_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwH0']
                         results['R2_'+ m2][i] = IC.dictFitFH_VWC[m]['R2']
                         results['Chi2_'+ m2][i] = IC.dictFitFH_VWC[m]['Chi2']
                         results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
@@ -2510,12 +2517,11 @@ class IndentCompression:
     """
     
     def __init__(self, CC, indentDf, thisExpDf, i_indent, i_tsDf):
+        
         self.rawDf = indentDf
         self.thisExpDf = thisExpDf
         self.i_indent = i_indent
         self.i_tsDf = i_tsDf
-        
-        self.rawT0 = self.rawDf['T'].values[0]
         
         self.cellID = CC.cellID
         self.DIAMETER = CC.DIAMETER
@@ -2524,6 +2530,7 @@ class IndentCompression:
         self.minCompField = CC.minCompField
         self.maxCompField = CC.maxCompField
         self.nUplet = CC.nUplet
+        
         try:
             self.loopStruct = CC.loopStruct
             self.loop_totalSize = CC.loop_totalSize
@@ -2536,10 +2543,11 @@ class IndentCompression:
         
         # validateForAnalysis()
         self.isValidForAnalysis = False
-        
+
         # refineStartStop()
         self.isRefined = False
         self.jMax = np.argmax(self.rawDf.B)
+        self.rawT0 = self.rawDf['T'].values[0]
         self.jStart = 0
         self.jStop = len(self.rawDf.D3.values)
         self.hCompr = (self.rawDf.D3.values[:self.jMax+1] - self.DIAMETER)
@@ -2549,7 +2557,8 @@ class IndentCompression:
         self.TCompr = (self.rawDf['T'].values[:self.jMax+1])
         self.TRelax = (self.rawDf['T'].values[self.jMax+1:])
         self.BCompr = (self.rawDf.B.values[:self.jMax+1])
-        self.BRelax = (self.rawDf.B.values[self.jMax+1:])
+        self.BRelax = (self.rawDf.B.values[self.jMax+1:])   
+
         
         self.Df = self.rawDf
         
@@ -3394,7 +3403,7 @@ class IndentCompression:
         """
         
         if self.isValidForAnalysis and plotSettings['F(H)_VWC']:
-            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 1.5)
             # ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             legendText = ''
@@ -3419,11 +3428,11 @@ class IndentCompression:
                     legendTextE = 'VWC Fit ;H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, Eeff, R2, Chi2)
                     legendTextK = 'Van Wyk ;K = {:.2e}Pa'.format(K)
                     legendTextY = 'Chadwick ;Y = {:.2e}Pa'.format(Y)
-
                     
-                    ax.plot(hFit, (fPredict),'k--', linewidth = 0.8, label = legendTextE, zorder = 2)
-                    ax.plot(hFit, (kPredict),'--', linewidth = 0.8, label = legendTextK, zorder = 2, color = '#940000')
-                    ax.plot(hFit, (ePredict),'--', linewidth = 0.8, label = legendTextY, zorder = 2, color = '#237e76')
+                    
+                    ax.plot(hFit, (fPredict),'k--', linewidth = 1.5, label = legendTextE, zorder = 2)
+                    ax.plot(hFit, (kPredict),'--', linewidth =1.5, label = legendTextK, zorder = 2, color = '#75305b') # '#75305b') #'#940000')
+                    ax.plot(hFit, (ePredict),'--', linewidth = 1.5, label = legendTextY, zorder = 2, color = '#62a07c') #'#62a07c') #'#237e76')
                     
                 # else:
                 #     titleText += '\nFIT ERROR'
@@ -4797,13 +4806,15 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         maskComp = CC.getMaskForCompression(i, task = 'compression')
         thisCompDf = tsDf.loc[maskComp,:]
         i_tsDf = ufun.findFirst(1, maskComp)
-        
+                
         #### 3.3 Create IndentCompression object
+
         IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
         CC.listIndent.append(IC)
-        
+    
         #### 3.4 State if i-th compression is valid for analysis
         doThisCompAnalysis = IC.validateForAnalysis()
+
 
         if doThisCompAnalysis:
             

@@ -24,10 +24,12 @@ from datetime import date
 import sys
 from skimage import io
 import CortexPaths as cp
+import TrackAnalyser_V3 as taka
+
 
 import scipy.stats as st
 import tifffile as tiff
-import cv2
+# import cv2
 import GraphicStyles as gs
 
 # Local imports
@@ -387,7 +389,23 @@ for file in files:
         oldName[1] = 'M5'
     oldName = '_'.join(oldName)
     os.rename(os.path.join(path, file), os.path.join(newPath, oldName))  
-        
+    
+#%% Changing the names of some mis-named files
+
+path = "D:/Anumita/MagneticPincherData/Data_TimeSeries/24-07-15/"
+newPath = 'D:/Anumita/MagneticPincherData/Data_TimeSeries/'
+
+files = os.listdir(path)
+
+for file in files:
+    
+    oldName = file.split('_')
+    pouille = oldName[2]
+    if pouille == 'P1':
+        oldName[2] = 'P2'
+    oldName = '_'.join(oldName)
+    os.rename(os.path.join(path, file), os.path.join(newPath, oldName))  
+    
 #%% Changing the names of some mis-named files #2
 
 path = 'D:/Anumita/MagneticPincherData/Raw/23.10.22/'
@@ -606,35 +624,40 @@ def sigmoid(x):
   return 1 / (1 + np.exp(-6*x))
 
 freq = 10000 #in Hz
-tConst = 1 # in secs
+tConst = 2 # in secs
 tComp = 1.5 #in sec
-factor = 1000
-constfield = 15 # mT 
-lowfield = 1
+factor = 1
+constfield = 5 # mT 
+lowfield = 2.0
 highfield = 50
 
 xRelease = np.linspace(-1, 1, freq*1)
 yRelease = (1 - sigmoid(xRelease))*(constfield-lowfield) + lowfield
-constRelease = np.asarray(freq*1*[lowfield])
+constRelease = np.asarray(freq*2*[lowfield])
 
-x = np.linspace(lowfield, highfield**(1/4), int(freq*tComp))
+x = np.linspace(np.sqrt(lowfield), np.sqrt(highfield+1), int(freq*tComp))
+x_relax = np.linspace(np.sqrt(highfield+1), np.sqrt(constfield), int(freq*tComp))
 constArray = np.asarray(freq*tConst*[constfield])
-compArray = x**4
-relaxArray = np.flip(compArray)
+comp = np.asarray((x**2))
+relaxArray = x_relax**2
 wholeArray = []
 
 wholeArray.extend(constArray*factor)
 wholeArray.extend(yRelease*factor)
 wholeArray.extend(constRelease*factor)
-wholeArray.extend(compArray*factor)
+wholeArray.extend(comp*factor)
 wholeArray.extend(relaxArray*factor)
-wholeArray.extend(constRelease*factor)
-
 wholeArray.extend(constArray*factor)
 
-np.savetxt(rawDir + "/CompressionFieldFiles/10mT_1-50_t4_1.5s.txt", wholeArray, fmt='%i')
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
 
-plt.plot(wholeArray)
+time = np.linspace(0, len(wholeArray), len(wholeArray))/10000
+
+np.savetxt(rawDir + "/CompressionFieldFiles/5mT_2.5-50_t2_1.5s.txt", wholeArray, fmt='%i')
+
+plt.plot(time, wholeArray, linewidth = 4)
+plt.show()
 #%% Calculating the forces from the magnetic field and thickness
 
 def computeMag_M450(B):
@@ -755,13 +778,15 @@ for i in range(len(allTifs)):
 #%% Code to change values of magnetic field for experiments with permanent magnetic coils
 # For Field files
 
-path = 'D:/Anumita/MagneticPincherData/Raw/24.05.22/Archive'
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.22'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.05.30/Files'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.30'
 allFiles = os.listdir(path)
-offset = 32 #mT
+offset = 30 #mT
 
 allField = [i for i in allFiles if '_Field' in i]
 allStatus = [i for i in allFiles if '_Status' in i]
+
+passive = '0.00'
 
 # allField =[allField[0]]
 # allStatus = [allStatus[0]]
@@ -770,18 +795,17 @@ for field, status in zip(allField, allStatus):
         print(field)
         statusFile = pd.read_csv(os.path.join(path, status), sep = '_')
         
-        for i in range(len(statusFile['-2.00'])):
-            if statusFile['-2.00'].iloc[i] == 'sigmoid--2.00--30.50':
-                
-                statusFile['-2.00'].iloc[i] = 'sigmoid-30.00-2.00'
-            elif statusFile['-2.00'].iloc[i] == '-2.00':
-                statusFile['-2.00'].iloc[i] = '30.00'
-            if statusFile['-2.00'].iloc[i] == 'constant--30.50--30.50':
-                statusFile['-2.00'].iloc[i] = 'constant-2.00-2.00'
-            if statusFile['-2.00'].iloc[i] == 't^4--30.50-38.00':
-                statusFile['-2.00'].iloc[i] = 't^4-2.00-70.00'
-            if statusFile['-2.00'].iloc[i] == 't^4-38.00--2.00':
-                statusFile['-2.00'].iloc[i] = 't^4-70.00-30.00'
+        for i in range(len(statusFile[passive])):
+            if statusFile[passive].iloc[i] == 'sigmoid-0.00--28.50':
+                statusFile[passive].iloc[i] = 'sigmoid-30.00-1.50'
+            elif statusFile[passive].iloc[i] == '0.00':
+                statusFile[passive].iloc[i] = '30.00'
+            if statusFile[passive].iloc[i] == 'constant--28.50--28.50':
+                statusFile[passive].iloc[i] = 'constant-1.50-1.50'
+            if statusFile[passive].iloc[i] == 't^4--28.50-38.00':
+                statusFile[passive].iloc[i] = 't^4-1.50-70.00'
+            if statusFile[passive].iloc[i] == 't^4-38.00-0.00':
+                statusFile[passive].iloc[i] = 't^4-70.00-30.00'
                 
         toAdd = np.asarray([1, 'Passive', '30.00'], dtype = object)
         newStatusFile = np.insert(statusFile.values, [0], toAdd, axis = 0)
@@ -795,8 +819,8 @@ for field, status in zip(allField, allStatus):
 #%% Code to modify results file from Hugo
 
 
-path = 'D:/Anumita/MagneticPincherData/Raw/24.05.22/Archive'
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.22'
+path = 'D:/Anumita/MagneticPincherData/Raw/24.05.30/Files'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/24.05.30'
 
 allFiles = os.listdir(path)
 offset = 30 #mT
@@ -811,7 +835,7 @@ for results in (allResults):
         
         cols = np.asarray(['Area', 'Mean', 'StdDev', 'XM', 'YM', 'Slice'], dtype = object)
         
-        newName = results.split('_Results')[0] + '2mT_Results'
+        newName = results.split('_Results')[0] + '0mT_Results'
         
         newResults.to_csv(os.path.join(pathSave, newName) + '.txt', sep='\t')
     
@@ -892,4 +916,45 @@ for i in range(len(allTifs)):
             cv2.circle(new_stack[z, :, :], (233, 5), 150, (0,0,255), 3)
     
     io.imsave(os.path.join(pathSave, tif), new_stack)
-        
+
+#%%%%New NLImodified test
+filename = 'VWC_3T3ATCC-OptoRhoA_24-06-12'
+data = taka.getMergedTable(filename)
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Crosslinkers/24-08-20_Mechanics'
+
+data['Y_err_div10'], data['K_err_div10'] = data['ciwY_vwc_Full']/10, data['ciwK_vwc_Full']/10
+data['Y_NLImod'] = data[["Y_vwc_Full", "Y_err_div10"]].max(axis=1)
+data['K_NLImod'] = data[["K_vwc_Full", "K_err_div10"]].max(axis=1)
+Y_nli, K_nli = data['Y_NLImod'].values, data['K_NLImod'].values
+
+data['NLI_mod'] = np.log10((0.8)**-4 * K_nli/Y_nli)
+
+
+#%% Plotting 
+
+# fig, ax = plt.subplots(figsize = (15,6))
+
+# fig.patch.set_facecolor('black')
+ts = pd.read_csv('D:/Anumita/MagneticPincherData/Data_TimeSeries/24-02-21_M2_P2_C2_disc20um_L50_PY.csv', sep = ';')
+field = pd.read_csv('D:/Anumita/MagneticPincherData/Raw/24.02.21/24-02-21_M2_P2_C2_disc20um_L50_Field.txt',
+                    header = None, sep = '\t')
+field[3] = field[3].astype(str)
+act_times = field[1][field[3].str.contains("73.4")]
+act_times = (act_times/1000 - ts['Tabs'][0]).values[:5]
+ts = ts[ts.idxLoop < 6]
+
+ts_loop = []
+for i in range(1,6):
+    ts_loop.append(ts['T'][ts['idxAnalysis'] == i].values[0])
+
+
+# plt.scatter(ts['T'].values, ts['D3'].values - 4.5, linestyle = '-.')
+
+# for i in act_times:
+#     plt.axvline(i, ymin = 0, ymax = 1, color = 'red')
+
+
+# plt.xticks(fontsize=25, color = '#ffffff')
+# plt.yticks(fontsize=25, color = '#ffffff')
+
+
