@@ -663,12 +663,17 @@ cells_norm.loc[cells_norm.index=='P2_C13', ['phase']] = 'M'
 cells_norm.loc[cells_norm.index=='P2_C5', ['phase']] = 'M'
 
 #%%
-cells.to_csv(path + '/data_fluo_24.06.04_wobg.txt', sep='\t')
+#cells.to_csv(path + '/data_fluo_24.06.04_wobg.txt', sep='\t')
 
 #%%
 mitotic=['P2_C12','P2_C13','P2_C5']
 for i in mitotic:
     cells.at[i,'phase']='M'
+#%%
+cells['EGFP norm']=cells['EGFP']/np.max(cells['EGFP'])
+cells['DsRed norm']=cells['DsRed']/np.max(cells['DsRed'])
+
+
 #%%
 p2=sns.scatterplot(data=cells,x='EGFP',y='DsRed',hue='Color',palette=['gold','g','r'])
 plt.xscale('log')
@@ -721,7 +726,13 @@ for i in mitotic:
     cells_norm.at[i,'phase']='M'
 
 #%%
-cells_norm.to_csv(path + '/data_fluo_24.06.12.txt', sep='\t')
+cells_norm['EGFP norm']=cells_norm['EGFP']/np.max(cells_norm['EGFP'])
+cells_norm['DsRed norm']=cells_norm['DsRed']/np.max(cells_norm['DsRed'])
+
+
+
+#%%
+#cells_norm.to_csv(path + '/data_fluo_24.06.12.txt', sep='\t')
 
 #%%
 p1=sns.scatterplot(data=cells_norm,x='EGFP',y='DsRed',hue='phase',palette=['gold','r','g','k'])
@@ -853,4 +864,65 @@ plt.xscale('log')
 plt.xlim(10**1,10**4)
 plt.yscale('log')
 plt.ylim(10**1,10**4)
+plt.show()
+
+#%%
+path_crop_bg="D:/Eloise/MagneticPincherData/Raw/24.05.16_fluo/background"
+path="D:/Eloise/MagneticPincherData/Raw/24.05.16_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops_bg=os.listdir(path_crop_bg)
+fileInfotxt_bg=[i[:-5]+'_info.txt' for i in allcrops_bg]
+
+bgS=pd.DataFrame()
+
+for j in range(len(allcrops_bg)):
+    name=allcrops_bg[j][12:-17]
+    test= intensityCellShrimp(allcrops_bg[j],path_crop_bg,path)
+    bgS=pd.concat([bgS,test])
+bgS=bgS.replace('Yellow','bg')
+
+#%%
+path_crop="D:/Eloise/MagneticPincherData/Raw/24.05.16_fluo/crop"
+path="D:/Eloise/MagneticPincherData/Raw/24.05.16_fluo"
+#cell='24-05-16_M1_P2_C1'
+allcrops=os.listdir(path_crop)
+fileInfotxt=[i[:-5]+'_info.txt' for i in allcrops]
+
+cells=pd.DataFrame()
+
+for j in range(len(allcrops)):
+    name=allcrops[j][12:-17]
+    test= intensityCellShrimp(allcrops[j],path_crop,path)
+    cells=pd.concat([cells,test])
+    
+#%%
+cells_norm=normalize_crop_bg(cells, bgS)
+cells_norm.to_csv(path + '/data_fluo_24.05.16_new.txt', sep='\t')
+
+#%%
+p1=sns.scatterplot(data=cells_norm,x='EGFP',y='DsRed',hue='Color',palette=['g','r','gold'])
+#p1.axhline(np.min(cells_norm[cells_norm['Color'].str.contains('Red') == True]['DsRed']))
+#p1.axvline(np.min(cells_norm[cells_norm['Color'].str.contains('Green') == True]['EGFP']))
+plt.xscale('log')
+plt.xlim(10**1,10**4)
+plt.yscale('log')
+plt.ylim(10**1,10**4)
+
+plt.show()
+#%%
+cells_norm['EGFP norm']=cells_norm['EGFP']/np.max(cells_norm['EGFP'])
+cells_norm['DsRed norm']=cells_norm['DsRed']/np.max(cells_norm['DsRed'])
+
+#%%
+p1=sns.scatterplot(data=cells_norm,x='EGFP norm',y='DsRed norm',hue='phase',hue_order=['G1/S','G1','S/G2','M'],palette=['gold','r','g','k'])
+#p1.axhline(np.min(cells_norm[cells_norm['Color'].str.contains('Red') == True]['DsRed']))
+#p1.axvline(np.min(cells_norm[cells_norm['Color'].str.contains('Green') == True]['EGFP']))
+plt.xscale('log')
+plt.yscale('log')
+x=np.linspace(0,1,50)
+y1=x*3
+y2=x*0.3
+
+plt.plot(x,y1)
+plt.plot(x,y2)
 plt.show()

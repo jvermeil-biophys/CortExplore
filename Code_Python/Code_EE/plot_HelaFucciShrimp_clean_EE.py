@@ -311,7 +311,7 @@ data=addNLI(data)
 
 #%%
 out=['24-06-04_M1_P1_C2','24-06-04_M1_P2_C13','24-06-04_M1_P2_C12']
-for i in excluded:
+for i in out:
     data= data[data['cellID'].str.contains(i) == False]
 #%%
 for i in range(150,160):
