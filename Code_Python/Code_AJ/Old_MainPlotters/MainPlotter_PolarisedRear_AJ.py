@@ -29,6 +29,8 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+import PlottingFunctions_AJ as pf
+import distinctipy
 
 
 import os
@@ -1756,49 +1758,91 @@ fitType = 'stressGaussian'
 fitId = '_75'
 fitWidth = 75
 
-dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Poster_IBPS/White Background/Polarity'
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/OptoRhoA_Old/PolarisedRear/'
 
-#%%%%'Plot whole timeseries with activation
-beadDia = 4.51
-data = data_main
 
-method = 'f_<_400'
-stiffnessType = 'E_' + method
-data[stiffnessType + '_kPa'] = data[stiffnessType] / 1000
+#%%%% Create dataframe for plotting
 
+data = pf.createDataTable(GlobalTable)
+
+dates = ['22-12-07', '23-01-23', '23-02-02']
 normalFields = [15.0, 14.0]
 drugs = ['none', 'activation']
 
-# dates = data['date'][data['activation frequency'] == 1.0].values.unique()
-
-dates = ['22-12-07', '23-01-23', '23-02-02']
-# dates = ['23-07-12', '23-05-23']
-# dates = ['22-12-07']
-
-
 Filters = [(data['validatedThickness'] == True),
+            (data['error_vwc_Full'] == False),
             (data['substrate'] == '20um fibronectin discs'), 
-            (data['valid_' + method] == True),
-            (data[stiffnessType + '_kPa'] <= 60),
-             (data['drug'].apply(lambda x : x in drugs)),
-            (data['bead type'] == 'M450'),
-            (data['bestH0'] <= 1000),
-            # (data['normal field'].apply(lambda x : x in normalFields)),
+            (data['R2_vwc_Full'] > 0.90),
+            (data['bestH0'] <= 1500),
+            (data['E_eff'] <= 30000),
             (data['date'].apply(lambda x : x in dates)),   
             (data['manipID'] != '23-07-12_M3'),
-           #  (data['activation type'] == 'at beads'),
-           #  (data['activation frequency'] == 1.0),
-            
+            (data['drug'].apply(lambda x : x in drugs)),
+            (data['normal field'].apply(lambda x : x in normalFields))
             ]
 
-globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
-for k in range(0, len(Filters)):
-    globalFilter = globalFilter & Filters[k]
-data_f = data[globalFilter]
+df = pf.filterDf(Filters, data)
+
+condCol, condCat = 'drug', drugs
+
+labels = ['Control', 'Polarised rear']
+avgDf = pf.createAvgDf(df, condCol)
+
+plotChars = {'color' : '#ffffff', 'fontsize' : 20}
+pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
+
+pairs = [['none', 'activation']]
+
+N = len(df['cellID'].unique())
+palette_cell = distinctipy.get_colors(N)
+palette_cond = ['#808080', '#1919ff']
+
+swarmPointSize = 6
+
+#%%%% Plot NLI Barplots
+
+plt.style.use('dark_background')
+
+fig, ax = plt.subplots(figsize = (13,9))
+fig, ax, pvals = pf.plotNLI(fig, ax, df, condCat, condCol,
+                            pairs = pairs, labels = labels, **plotChars)
+
+fig.suptitle(str(dates), **plotChars)
+plt.xticks(rotation = 45)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(1b)_{:}_{:}_NLIPLot.png').format(str(dates), str(condCat)))
+
+plt.style.use('default')
+
+#%%%% Plot NLImod
+
+cm_in = 2.52
+fig, ax = plt.subplots(figsize = (14/cm_in,10/cm_in))
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, colorScheme = 'black',
+                                    hueType = None, palette = palette_cond, plotType = 'swarm',
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
+
+ax.grid(axis='y')
+plt.xticks(**pltTicks)
+plt.yticks(**pltTicks)
+plt.ylim(-4,4)
+# fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
+plt.show()
+
 
 #%%%
-allDates = data_f['date'].values.unique()
-cellIDs = data_f['cellId'].unique()
+allDates = df['date'].values.unique()
+cellIDs = df['cellId'].unique()
 # cellIDs = ['22-12-07_M5_P3_C1']
 
 fig, ax = plt.subplots(2, figsize = (15,10))
@@ -1937,28 +1981,28 @@ dfAllCells = plot2Params(data, Filters, fitsSubDir, fitType, interceptStress, FI
 
 #%%% Thickness vs. time
 
-# plt.style.use('seaborn')
-plt.style.use('default')
+plt.style.use('seaborn-v0_8')
+# plt.style.use('default')
 
 
 measure = 'surroundingThickness'
 activationTime = []
 
 fig1, axes = plt.subplots(1,1, figsize=(15,10))
-# fig1.patch.set_facecolor('black')
+fig1.patch.set_facecolor('black')
 # flatui = ["#000000", "#0000ff"]
 
-flatui = ["#000000", "#bb2fa6"]
+flatui = ['#808080', '#1919ff']
 
 sns.set_palette(flatui)
 
-x = (data_f['compNum']-1)*20
-ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
+x = (df['compNum']-1)*20
+ax = sns.lineplot(x = x, y = measure, data = df, hue = condCol)
 # ax = sns.lineplot(x = x, y = measure, data = data_f, hue = 'manip', markers = True, style = 'cellID')
 
-x2 = (data_f['compNum'].unique())*20
+x2 = (df['compNum'].unique() - 1)*20
 for i in x2:
-    ax.axvline(x = i, color = "#bb2fa6", linewidth=4, ymax=0.10)
+    ax.axvline(x = i, color = '#1919ff', linewidth=4, ymax=0.10)
 
 # for cell in allCells:
 #     # try:
@@ -1969,7 +2013,7 @@ for i in x2:
     #     print('No activation data')
 # fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
 
-fontColour = '#000000'
+fontColour = '#ffffff'
 plt.xticks(fontsize=30, color = fontColour)
 plt.yticks(fontsize=30, color = fontColour)
 plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
@@ -1978,9 +2022,9 @@ plt.legend(fontsize = 30, loc = 'upper left')
 ax.get_legend().remove()
 
 plt.ylim(0,1200)
-plt.xlim(0,180)
+plt.xlim(0,140)
 
-# plt.savefig(dirToSave + '/Thickness/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
+plt.savefig((dirToSave + '{:}_{:}_ThicknessvTime.png').format(str(dates), str(condCat)))
 
 plt.show()
 
@@ -2119,3 +2163,152 @@ plt.ylabel(measure+' (nm)', fontsize = 12, color = fontColour)
 plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylim(0.8,1.20)
 plt.show()
+
+#%%% Pointplots 
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+
+N_point = len(dfPairs['dateCell', 'first'].unique())
+palette_cell_point = distinctipy.get_colors(N_point)
+
+testH0 = 'two-sided'
+testE = 'less'
+testNli = 'greater'
+
+stats = 'mean'
+plottingParams = { 'x' : (condCol, 'first'), 
+                  'y' : ('H0_vwc_Full', stats),
+                  'linewidth' : 1, 
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+ylim = 1500
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
+                                          pairs = pairs, normalize = False, marker = stats,
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+# plt.xlim((-2,3))
+plt.tight_layout()
+plt.savefig((dirToSave + '(7a)_{:}_{:}_{:}_H0Pointplot.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP_H = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,3), 
+                                          pairs = pairs, normalize = True, marker = stats,
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+plt.savefig((dirToSave + '(7b)_{:}_{:}_{:}_H0Pointplot-Normalised.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+
+ylim = 10000
+plottingParams = {'x' : (condCol, 'first'), 
+                  'y' : ('E_eff', 'wAvg'),
+                  'linewidth' : 1,
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
+                                          pairs = pairs, normalize = False, marker = 'wAvg',
+                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '(8a)_{:}_{:}_{:}_EPointplot.png').format(str(dates), str(condCat), stats))
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP_E = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,4), 
+                                          pairs = pairs, normalize = True, marker = 'wAvg',
+                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+
+plt.show()
+plt.savefig((dirToSave + '(8b)_{:}_{:}_{:}_EPointplot-Normalised.png').format(str(dates), str(condCat), stats))
+
+nonOutliers_E = np.asarray(dfP_E['dateCell', 'first'][(dfP_E[condCol, 'first'] == condCat[1]) & (dfP_E['normMeasure', 'wAvg'] < 3.0)].values)
+
+plottingParams = {'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', stats),
+                  'linewidth' : 1,
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), 
+                                          pairs = pairs, normalize = False, marker = stats,
+                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+ax.get_legend().remove()
+plt.show()
+plt.savefig((dirToSave + '(9a)_{:}_{:}_{:}_NLImodPointplot.png').format(str(dates), str(condCat), stats))
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), styleType = ('dateCell', 'first'),
+                                          pairs = pairs, normalize = False, marker = stats, hueType = ('date', 'first'),
+                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '(9b)_{:}_{:}_{:}_NLImodPointplot_dates.png').format(str(dates), str(condCat), stats))
+
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-1.5,1.5), 
+                                          pairs = pairs, normalize = False, marker = stats, hueType = ('date', 'first'),
+                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '(9c)_{:}_{:}_{:}_NLImodPointplot_datesAvg.png').format(str(dates), str(condCat), stats))
+
+
+# fig, ax = plt.subplots(figsize = (10,10))
+# fig, ax, pvals, dfP_nli = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-6,6), 
+#                                           pairs = pairs, normalize = True, marker = stats,
+#                                           test = 'greater', plottingParams = plottingParams,  palette = palette_cell_point,
+#                                           plotChars = plotChars)
+
+
+plt.show()
+plt.savefig((dirToSave + '(9b)_{:}_{:}_{:}_NLImodPointplot-Normalised.png').format(str(dates), str(condCat), stats))
+
+#### E-normalised 
+
+plottingParams = {'x' : (condCol, 'first'), 
+                  'y' : ('E_norm', 'wAvg'),
+                  'linewidth' : 1,
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim =(0,ylim), 
+                                          pairs = pairs, normalize = False, marker = 'wAvg', 
+                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '(10a)_{:}_{:}_E-norm.png').format(str(dates), str(condCat)))
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,4), 
+                                          pairs = pairs, normalize = True, marker = 'wAvg', 
+                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '(10b)_{:}_{:}_E-doubleNorm.png').format(str(dates), str(condCat)))

@@ -39,6 +39,7 @@ import UtilityFunctions as ufun
 from BeadTracker import mainTracker
 from BeadTracker_V2 import mainTracker_V2
 from BeadTracker_V3 import mainTracker_V3
+from BeadTracker_V4 import mainTracker_V4
 
 
 
@@ -1735,8 +1736,8 @@ mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '24.09.26'
-manips, wells, cells = 5, 'all', 'all'
+manips, wells, cells = 1, 1, 1
 depthoNames = '24.09.26_M450_step20_100X'
 
-mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
-                                 redoAllSteps = False, trackAll = False)
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)

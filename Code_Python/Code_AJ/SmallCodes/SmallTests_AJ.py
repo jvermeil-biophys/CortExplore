@@ -24,6 +24,7 @@ from datetime import date
 import sys
 from skimage import io
 import CortexPaths as cp
+import shutil
 import TrackAnalyser_V3 as taka
 
 
@@ -957,4 +958,138 @@ for i in range(1,6):
 # plt.xticks(fontsize=25, color = '#ffffff')
 # plt.yticks(fontsize=25, color = '#ffffff')
 
+#%% Testing new matchDists modif
 
+
+path = 'D:/Anumita/MagneticPincherData/Raw/24.10.21/'
+fieldFile = '24-10-21_M1_P1_C1_disc20um_L50_Field.txt'
+logFile = '24-10-21_M1_P1_C1_disc20um_L50_LogPY.txt'
+
+fieldDf = pd.read_csv(os.path.join(path, fieldFile), sep = '\t', header=None)
+logDf =  pd.read_csv(os.path.join(path, logFile), sep = '\t')
+
+
+fieldDf.rename(columns={0: 'B_read', 1: 'T', 2: 'B_set', 3: 'z_piezo'}, inplace=True)
+
+
+#%%%tests
+
+logDf['z_diff'] = fieldDf['z_piezo'] - np.roll(fieldDf['z_piezo'], 1)
+logDf.loc[(logDf['z_diff'] < 0), 'z_diff'] = 0
+
+#%%% tests
+
+idx_z1, idx_z2, idx_z3 = logDf['idx_inNUp'] == 1, logDf['idx_inNUp'] == 2, logDf['idx_inNUp'] == 3
+
+logDf.loc[idx_z1, 'z_diff'] = fieldDf.loc[idx_z1, 'z_piezo'].values - fieldDf.loc[idx_z2, 'z_piezo'].values
+# logDf.loc[(logDf['idx_inNUp'] == 3), 'z_diff'] = fieldDf.loc[(logDf['idx_inNUp'] == 3), 'z_piezo'].values - fieldDf.loc[(logDf['idx_inNUp'] == 2), 'z_piezo'].values
+
+
+#%%stitchig status files through confocal microscope
+
+expt = 'E:/20241021_3t3optorhoa-VB-MediumExpressing_100xobj_4.5Fibro-PEGBeads_Mechanics/24.10.21'
+pathSave ='D:/Anumita/MagneticPincherData/Raw/24.10.21'
+
+cells = ['24-10-21_M2_P1_C4_disc20um_L50',
+         '24-10-21_M2_P1_C5_disc20um_L50', '24-10-21_M2_P1_C10_disc20um_L50', 
+         '24-10-21_M2_P1_C11_disc20um_L50', '24-10-21_M2_P2_C3_disc20um_L50',
+         '24-10-21_M2_P2_C5_disc20um_L50', '24-10-21_M2_P2_C6_disc20um_L50', 
+         '24-10-21_M2_P2_C7_disc20um_L50', '24-10-21_M2_P2_C8_disc20um_L50', 
+         '24-10-21_M2_P3_C4_disc20um_L50', '24-10-21_M2_P3_C2_disc20um_L50', 
+         '24-10-21_M2_P3_C3_disc20um_L50', '24-10-21_M2_P3_C6_disc20um_L50',
+         '24-10-21_M2_P3_C8_disc20um_L50']
+
+allFiles = np.asarray(os.listdir(expt))
+
+for i in cells:
+    subCells = [j for j in allFiles if i in j]
+    newStatus = pd.DataFrame(columns=[0, 1, 2])
+    newField = pd.DataFrame()
+    maxLoop = 0
+    for k in range(len(subCells)):
+        cellPath = os.path.join(expt, subCells[k])
+        status = pd.read_csv(os.path.join(cellPath, subCells[k] + '_Status.txt'), sep = '_', header = None)
+        newLoopCol = status[0] + maxLoop
+        maxLoop = newLoopCol.max()
+        status[0] = newLoopCol
+        newStatus = pd.concat([newStatus, status])
+        
+        field = pd.read_csv(os.path.join(cellPath, subCells[k] + '_Field.txt'), sep = '\t', header = None)
+        newField = pd.concat([newField, field])
+        
+    newStatus.to_csv(os.path.join(pathSave, i + '_Status.txt'), sep='_', index=False, header=False )
+    newField.to_csv(os.path.join(pathSave, i + '_Field.txt'), sep='\t', index=False, header=False )
+        
+        
+#%%% Concatenate all images with the same file / cell name
+
+expt = 'E:/20241113_Clones-E5_B5_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/24.11.13'
+pathSave ='D:/Anumita/MagneticPincherData/Raw/24.11.13'
+
+
+allCells = np.asarray(os.listdir(expt))
+cellNames = ['-'.join(cell.split('-')[:3]) for cell in allCells if 'M3' in cell][:2]
+cellNames = list(set(cellNames))
+
+imagePrefix = 'im'
+
+for i in cellNames:
+    subCells = [j for j in allCells if i in j]
+    allFrames = []
+    for k in range(len(subCells)):
+        cellFramesPath = os.path.join(expt, subCells[k])
+        cellFrames = os.listdir(cellFramesPath)
+        cellFrames = [cellFramesPath+'/'+string for string in cellFrames if imagePrefix in string]
+        allFrames.extend(cellFrames)
+    ic = io.ImageCollection(allFrames, conserve_memory = True)
+    stack = io.concatenate_images(ic)
+    io.imsave(pathSave + '/' + i  + '.tif', stack)
+
+
+#%%% Renaming confocal files
+
+imagePrefix = 'im'
+DirExt = 'E:/20241113_Clones-E5_B5_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/24.11.13'
+condition = 'M3'
+
+allCells = np.asarray(os.listdir(DirExt))
+cellNames = ['-'.join(cell.split('-')[:3]) for cell in allCells if condition in cell][:6]
+cellNames = list(set(cellNames))
+
+for i in cellNames:
+    subCells = [j for j in allCells if i in j]
+    cellPath = os.path.join(DirExt, i)
+    cnt = 1
+    newStatus = pd.DataFrame(columns=[0, 1, 2])
+    newField = pd.DataFrame()
+    maxLoop = 0
+    
+    if not os.path.exists(cellPath):
+        os.mkdir(cellPath)
+        
+    for k in subCells:
+        
+        cellFramesPath = os.path.join(DirExt, k)
+        cellFrames = os.listdir(cellFramesPath)
+        cellFrames = [frame for frame in cellFrames if imagePrefix in frame]
+        for imgNo in range(1, len(cellFrames) + 1):
+            srcPath = '{:}/{:}{:}.tif'.format(cellFramesPath, imagePrefix, imgNo)
+            destPath = '{:}/{:}{:}.tif'.format(cellPath, imagePrefix, cnt)
+            shutil.copy(srcPath, destPath)
+            
+            cnt = cnt + 1
+        
+        status = pd.read_csv(os.path.join(cellFramesPath , k+'_Status.txt'), sep = '_', header = None)
+        newLoopCol = status[0] + maxLoop
+        maxLoop = newLoopCol.max()
+        status[0] = newLoopCol
+        newStatus = pd.concat([newStatus, status])
+        
+        field = pd.read_csv(os.path.join(cellFramesPath, k+'_Field.txt'), sep = '\t', header = None)
+        newField = pd.concat([newField, field])
+        
+        log = os.path.join(cellFramesPath , k+'_log.txt')
+        shutil.copy(log, os.path.join(cellPath , k+'_log.txt'))
+        
+    newStatus.to_csv(os.path.join(cellPath, i + '_Status.txt'), sep='_', index=False, header=False )
+    newField.to_csv(os.path.join(cellPath, i + '_Field.txt'), sep='\t', index=False, header=False )

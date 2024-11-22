@@ -2113,3 +2113,4 @@ saveLabel = date +'_M450_step20_100X'
 scale = SCALE_100X # pix/µm
 
 depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+

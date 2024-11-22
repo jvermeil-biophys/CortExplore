@@ -80,3 +80,63 @@ saveLabel = date +'_P3_M450_step20_100X'
 scale = SCALE_100X # pix/µm
 
 depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+#%% Deptho from experiment 24-11-13
+
+mainDirPath = 'D:/Anumita/MagneticPincherData/Raw/'
+
+date = '24.11.13'
+
+subdir = 'Deptho_P1'
+depthoPath = os.path.join(mainDirPath, date + '_Deptho', subdir)
+savePath = os.path.join(mainDirPath, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date +'_P1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = SCALE_100X # pix/µm
+
+depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'Deptho_P2'
+depthoPath = os.path.join(mainDirPath, date + '_Deptho', subdir)
+savePath = os.path.join(mainDirPath, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date +'_P2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = SCALE_100X # pix/µm
+
+depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+#%% Deptho from experiment 24-11-15
+
+mainDirPath = 'D:/Anumita/MagneticPincherData/Raw/'
+
+date = '24.11.15'
+
+subdir = 'Deptho_P1'
+depthoPath = os.path.join(mainDirPath, date + '_Deptho', subdir)
+savePath = os.path.join(mainDirPath, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date +'_P1_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = SCALE_100X # pix/µm
+
+depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)
+
+subdir = 'Deptho_P2'
+depthoPath = os.path.join(mainDirPath, date + '_Deptho', subdir)
+savePath = os.path.join(mainDirPath, 'DepthoLibrary')
+
+specif = 'all' # can be 'all' or any string that you want to have in the deptho file name
+beadType = 'M450'
+saveLabel = date +'_P2_M450_step20_100X'
+# convention - saveLabel = 'date_manip_beadType_stepSize_otherSpecs'
+scale = SCALE_100X # pix/µm
+
+depthoMaker(depthoPath, savePath, specif, saveLabel, scale, beadType = beadType, step = 20, d = 'HD', plot = 0)

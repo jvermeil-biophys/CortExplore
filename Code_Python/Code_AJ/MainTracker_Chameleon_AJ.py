@@ -59,8 +59,30 @@ expDf = ufun.getExperimentalConditions(DirExp = cp.DirRepoExp, save = True, suff
 # %%%% M1 : 
 
 dates = '24.10.21'
-manips, wells, cells = 1, 1, 1
-depthoNames = '24.10.21_P'+str(wells)+'_M450_step20_100X'
+manips, wells, cells = 2, 1, 'all'
+depthoNames = '24.10.21_P'+str(1)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-11-13 - LE.E5 and HB.B5 (mostly)
+
+# %%%% M1 : 
+
+dates = '24.11.13'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '24.11.13_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-11-15 - LE.E2 
+
+# %%%% M1 : 
+
+dates = '24.11.15'
+manips, wells, cells = 4, 1, 'all'
+depthoNames = '24.11.15_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)

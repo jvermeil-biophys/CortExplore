@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
-
 import os
 import sys
 import time
@@ -35,7 +34,7 @@ import matplotlib.lines as lines
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from scipy.stats import mannwhitneyu, wilcoxon, ranksums
-from statannotations.Annotator import Annotator
+# from statannotations.Annotator import Annotator
 
 #### Local Imports
 
@@ -178,6 +177,7 @@ def createAvgDf(data, condCol):
                                'NLI_Plot' : 'first', 
                                'dateCell':'first',
                                'ctFieldFluctuAmpli' : 'first', 
+                               'ctFieldThickness' : 'first', 
                                'normFluctu' : 'first',
                                'NLI_mod':['mean', 'count', 'std', 'var'], 
                                'date' : 'first',
@@ -506,7 +506,6 @@ def plotNLI_V0(fig, ax, data, condCat, condCol, pairs, palette = ['#b96a9b', '#d
         
         dfStats[i] = frac['NLI'].values
     
-    
     N = np.asarray(N)
     linear = (np.asarray(linear)/N)*100
     intermediate = (np.asarray(intermediate)/N)*100
@@ -565,7 +564,7 @@ def plotNLI_V0(fig, ax, data, condCat, condCol, pairs, palette = ['#b96a9b', '#d
 
 
 
-def plotNLImod(fig, ax, data, palette = sns.color_palette("tab10"),  colorScheme = 'black'):
+def plotNLImod(fig, ax, data, palette = sns.color_palette("tab10"), plot = 'line', colorScheme = 'black'):
     
     if colorScheme == 'black':
         plt.style.use('default')
@@ -575,9 +574,9 @@ def plotNLImod(fig, ax, data, palette = sns.color_palette("tab10"),  colorScheme
         plt.style.use('default')
         fontColor = '#000000'
         
-    
-    ax = sns.lineplot(x = 'K_vwc_Full', y = 'Y_vwc_Full', data = data,  hue = ('dateCell', 'first'), 
-                      marker = 'o', markersize = 12, markeredgecolor='black' )
+    if plot == 'line':
+        ax = sns.lineplot(x = 'K_vwc_Full', y = 'Y_vwc_Full', data = data,  hue = ('dateCell', 'first'), 
+                          marker = 'o', markersize = 12, markeredgecolor='black' )
     
     return fig, ax
 
@@ -626,7 +625,7 @@ def NLIcorrvFluctu(fig, ax, data, palette = sns.color_palette("tab10"),
                 
         diff = np.ma.array(diff, mask=np.isnan(diff), fill_value=None)
         data_nli.loc[dataCell.index, 'NLI_corr'] = [np.sqrt(np.mean(diff**2) / len(dataCell))]*len(dataCell)
-        print(len(dataCell))
+
     data['NLI_corr'] = data_nli['NLI_corr']
     ax = sns.scatterplot(data = data, x = 'normFluctu', y = 'NLI_corr', **plottingParams)
     
@@ -887,12 +886,12 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
                            plottingParams = {}, plotChars = {}):
     
     if colorScheme == 'black':
-        plt.style.use('default')
+        # plt.style.use('default')
         fig.patch.set_facecolor('black')
         fontColor = plotChars['color']
     else: 
         plt.style.use('default')
-        fontColor = plotChars['color']
+        fontColor = '#000000'
     
     measure = plottingParams['y']
     condCol = plottingParams['x']
@@ -908,7 +907,7 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
             
                              
         elif plotType == 'violin':
-            ax = sns.violinplot(hue = hueType, palette = palette,
+            ax = sns.violinplot(hue = hueType, palette = palette, alpha = 0.2,
                                 inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
                                 **plottingParams) 
             
@@ -968,12 +967,12 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
         xticks = np.arange(len(condCat))
         plt.xticks(xticks, labels, **plotChars)
         
-    plt.xticks(**plotChars)
-    plt.yticks(**plotChars)
+    # plt.xticks(**plotChars)
+    # plt.yticks(**plotChars)
     plt.ylabel(measure, **plotChars)
     plt.xlabel(condCol, **plotChars)
     
-    return fig, ax
+    return fig, ax, pvals
 
 def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palette("tab10"), 
                     labels = [], pairs = None,  colorScheme = 'black', plottingParams = {}, 

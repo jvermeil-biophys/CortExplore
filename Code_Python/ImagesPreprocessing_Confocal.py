@@ -30,7 +30,6 @@ import shutil
 import traceback
 
 import numpy as np
-import pandas as pd
 import pyjokes as pj
 
 from skimage import io
@@ -48,65 +47,20 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-# date = '24.11.15'
-# DirExt = 'E:/20241115_Clones-E2_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/24.11.15'
-# DirSave = os.path.join(cp.DirDataRaw, date) 
+date = '24.11.13'
+DirSave = os.path.join(cp.DirDataRaw, date) 
+DirExt = 'E:/20241113_Clones-E5_B5_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/24.11.13/'
 
-DirDeptho = '24.11.15_Deptho/Deptho_P3'
-DirExt  = 'E:/20241115_Clones-E2_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
-DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+# DirDeptho = '24.10.21_Deptho/Deptho_P3'
+# DirExt  = 'E:/20241021_3t3optorhoa-VB-MediumExpressing_100xobj_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
+# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
-microscope = 'labview'
+microscope = 'labview_confocal'
 imagePrefix = 'im'
-confocal = True
+condToConcat = 'M3'
+
 
 # %% Functions
-
-def preprocessing_confocal(DirExt, imagePrefix, condition):
-    allCells = np.asarray(os.listdir(DirExt))
-    cellNames = ['-'.join(cell.split('-')[:3]) for cell in allCells if condition in cell]
-    cellNames = list(set(cellNames))
-    
-    for i in cellNames:
-        print(gs.BLUE + 'Moving files for ' + i + '...' + gs.NORMAL)
-
-        subCells = [j for j in allCells if i in j]
-        cellPath = os.path.join(DirExt, i)
-        cnt = 1
-        newStatus = pd.DataFrame(columns=[0, 1, 2])
-        newField = pd.DataFrame()
-        maxLoop = 0
-        
-        if not os.path.exists(cellPath):
-            os.mkdir(cellPath)
-            
-        for k in subCells:
-            
-            cellFramesPath = os.path.join(DirExt, k)
-            cellFrames = os.listdir(cellFramesPath)
-            cellFrames = [frame for frame in cellFrames if imagePrefix in frame]
-            for imgNo in range(1, len(cellFrames) + 1):
-                srcPath = '{:}/{:}{:}.tif'.format(cellFramesPath, imagePrefix, imgNo)
-                destPath = '{:}/{:}{:}.tif'.format(cellPath, imagePrefix, cnt)
-                shutil.copy(srcPath, destPath)
-                
-                cnt = cnt + 1
-            
-            status = pd.read_csv(os.path.join(cellFramesPath , k+'_Status.txt'), sep = '_', header = None)
-            newLoopCol = status[0] + maxLoop
-            maxLoop = newLoopCol.max()
-            status[0] = newLoopCol
-            newStatus = pd.concat([newStatus, status])
-            
-            field = pd.read_csv(os.path.join(cellFramesPath, k+'_Field.txt'), sep = '\t', header = None)
-            newField = pd.concat([newField, field])
-            
-            log = os.path.join(cellFramesPath , k+'_log.txt')
-            shutil.copy(log, os.path.join(cellPath , k+'_log.txt'))
-            
-        newStatus.to_csv(os.path.join(cellPath, i + '_Status.txt'), sep='_', index=False, header=False )
-        newField.to_csv(os.path.join(cellPath, i + '_Field.txt'), sep='\t', index=False, header=False )
-            
 
 def getListOfSourceFolders(Dir, forbiddenWords = [], compulsaryWords = []): # 'depthos'
     """
@@ -286,25 +240,36 @@ def Zprojection(currentCell, microscope, concatenate = True, kind = 'min', chann
     """
     
     scaleFactor = 4
-    path = os.path.join(DirExt, currentCell)
-    allFiles = os.listdir(path)
+    
     
     if microscope == 'metamorph':
-        
+        path = os.path.join(DirExt, currentCell)
+        allFiles = os.listdir(path)
         allFiles = [path+'/'+string for string in allFiles if channel in string]
         #+4 at the end corrosponds to the '_t' part to sort the array well
         limiter = len(path)+len(prefix)+len(channel)+4 
         allFiles.sort(key=lambda x: int(x[limiter:-4]))
     
     elif microscope == 'labview':
-
+        path = os.path.join(DirExt, currentCell)
+        allFiles = os.listdir(path)
         allFiles = [path+'/'+string for string in allFiles if imagePrefix in string]
-
+        # if concatenate 
         
     elif microscope == 'zen':
-
+        path = os.path.join(DirExt, currentCell)
+        allFiles = os.listdir(path)
         allFiles = [path+'/'+string for string in allFiles if '.czi' in string]
-
+        
+    elif microscope == 'labview_concat':
+        allCells = os.listdir(DirExt)
+        subCells = [j for j in allCells if i in j]
+        allFiles = []
+        for k in range(len(subCells)):
+            cellFramesPath = os.path.join(DirExt, subCells[k])
+            cellFrames = os.listdir(cellFramesPath)
+            cellFrames = [cellFramesPath+'/'+string for string in cellFrames if imagePrefix in string]
+            allFiles.extend(cellFrames)
         
     idx = slice(0, len(allFiles), 100)
     
@@ -403,10 +368,10 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
     # for refPts, cellPath in zip(allRefPoints, allCellPaths):
         
         refPts = np.array(allRefPoints[i])
-        cellPath = allCellPaths[i]
-        allFiles = os.listdir(cellPath)
-        cellName = cellPath.split('\\')[-1]
         
+        cellPath = allCellPaths[i]
+        cellName = cellPath.split('\\')[-1]
+        allFiles = os.listdir(cellPath)
         
         # to detect supplementary selections
         try:
@@ -429,7 +394,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         elif microscope == 'labview':
             allFiles = [cellPath+'/'+string for string in allFiles if imagePrefix in string]
             
-            
+        
         print(gs.BLUE + 'Loading '+ cellPath +'...' + gs.NORMAL)
         
         ic = io.ImageCollection(allFiles, conserve_memory = True)
@@ -441,6 +406,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         # To avoid that the cropped region gets bigger than the image itself
         ny, nx = stack.shape[1], stack.shape[2]
         x1, x2, y1, y2 = max(0, x1), min(nx, x2), max(0, y1), min(ny, y2)
+        
         
         try:
             cropped = stack[:, y1:y2, x1:x2]
@@ -458,14 +424,13 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
             
         count = count + 1
 
-#%% Copying and renaming files in the case of using the confocal
+# preprocess(DirExt, DirSave, microscope, reset = 0)    
 
-# condition = 'M4'
-# preprocessing_confocal(DirExt, imagePrefix, condition)
 
 #%% Main function 1/2
 
-allCellsRaw = getListOfSourceFolders(DirExt)
+# def preprocess(DirExt, DirSave, microscope, reset = 0):
+    
 allCells = []
 allCellsToCrop = []
 ref_point = []
@@ -484,6 +449,13 @@ print(gs.BLUE + 'Constructing all Z-Projections...' + gs.NORMAL)
 scaleFactor = 4
 
 
+if microscope == 'labview':
+    allCellsRaw = getListOfSourceFolders(DirExt)
+elif microscope == 'labview_confocal':
+    allCellsRaw = allCellsRaw = getListOfSourceFolders(DirExt)
+    allCellsRaw = ['-'.join(cell.split('-')[:-1]) for cell in allCellsRaw if condToConcat in cell][:2]
+    allCellsRaw = list(set(allCellsRaw))
+    
 for i in range(len(allCellsRaw)):
     print(i)
     currentCell = allCellsRaw[i]
@@ -509,9 +481,9 @@ for i in range(len(allCellsRaw)):
         #     print(gs.BRIGHTRED + '/!\ Unexpected error during file handling' + gs.NORMAL)
 
 #### DO THIS !
-copyFieldFiles(allCells, DirSave)
+# copyFieldFiles(allCells, DirSave)
 
-copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
+# copyFieldFiles(allCells, DirSave, suffix = '_Status.txt')
 
 # allZimg_og = np.copy(np.asarray(allZimg)) # TBC
 

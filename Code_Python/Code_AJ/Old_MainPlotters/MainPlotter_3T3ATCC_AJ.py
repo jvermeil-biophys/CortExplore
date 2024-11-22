@@ -38,10 +38,15 @@ import random
 import warnings
 import itertools
 import matplotlib
+import distinctipy
+
 
 from copy import copy
 from cycler import cycler
 from datetime import date
+import PlottingFunctions_AJ as pf
+import distinctipy
+
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from scipy.stats import mannwhitneyu, wilcoxon
@@ -1845,3 +1850,108 @@ plt.title('Test : Wilcoxon paired "{:}" | p-val = {:.4f}'.format(test, res[1]), 
 plt.tight_layout()
 plt.show()
 plt.savefig(os.path.join(dirToSave, 'NLI_Ind_'+str(dates)+'_'+str(manips)+'_Avg.png'))
+
+#%% Calling data - New NLR method
+
+filename = 'VWC_3T3ATCC-OptoRhoA_24-06-12'
+
+GlobalTable = taka.getMergedTable(filename)
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/OptoRhoA_Old/'
+
+#%%%% Create dataframe for plotting
+
+data = pf.createDataTable(GlobalTable)
+
+Filters = [(data['validatedThickness'] == True),
+            (data['error_vwc_Full'] == False),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['R2_vwc_Full'] > 0.90),
+            (data['bestH0'] <= 1500),
+            # (data['E_eff'] <= 30000),
+            ((data['ramp field'] == '1_50') | (data['ramp field'] == '2.5_50')),
+            (data['compression duration'] == '1.5s')
+            ]
+
+df = pf.filterDf(Filters, data)
+
+condCol, condCat = 'cell subtype', ['Atcc-2023', 'optoRhoA']
+labels = ['3T3 ATCC', '3T3 optoRhoA']
+avgDf = pf.createAvgDf(df, condCol)
+
+plotChars = {'color' : '#ffffff', 'fontsize' : 20}
+pltTicks = {'color' : '#ffffff', 'fontsize' : 30}
+
+pairs = [['optoRhoA', 'Atcc-2023']]
+
+N = len(df['cellID'].unique())
+palette_cell = distinctipy.get_colors(N)
+palette_cond = ['#868686', '#0F51B7']
+
+swarmPointSize = 6
+
+
+#%%%% Plot NLImod
+
+fig, ax = plt.subplots(figsize = (13,9))
+plt.style.use('default')
+fig.patch.set_facecolor('black')
+ 
+plottingParams = {'data':df, 
+                  'hue' : condCol, 
+                  'x' : 'NLI_mod',
+                  'stat' : 'density',
+                  'common_norm' : False,
+                  'element':"step",
+                  'bins' : 15,
+                  'palette' :  ['#0F51B7', '#868686']
+                    }
+
+ax = sns.histplot(**plottingParams)
+plt.xlim(-3,2)
+plt.ylim(0,0.5)
+plt.yticks(**pltTicks)
+plt.xticks(**pltTicks)
+plt.tight_layout()
+plt.savefig((dirToSave + '(0)_{:}_NLRHisto.png').format(str(condCat)))
+plt.show()
+
+
+################### box plots #######################
+
+cm_in = 2.52
+fig, ax = plt.subplots(figsize = (14/cm_in,10/cm_in))
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, colorScheme = 'black',
+                                    hueType = None, palette = palette_cond, plotType = 'violin',
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
+
+ax.grid(axis='y')
+plt.xticks(**pltTicks)
+plt.yticks(**pltTicks)
+plt.ylim(-4,4)
+# fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
+plt.show()
+
+#%%%% Plot NLI Barplots
+
+plt.style.use('dark_background')
+
+fig, ax = plt.subplots(figsize = (13,9))
+fig, ax, pvals = pf.plotNLI(fig, ax, df, condCat, condCol,
+                            pairs = pairs, labels = labels, **plotChars)
+
+fig.suptitle(str(dates), **plotChars)
+plt.xticks(rotation = 45)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(1b)_{:}_{:}_NLIPLot.png').format(str(dates), str(condCat)))
+
+plt.style.use('default')

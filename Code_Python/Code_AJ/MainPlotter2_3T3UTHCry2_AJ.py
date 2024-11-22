@@ -41,7 +41,7 @@ import PlottingFunctions_AJ as pf
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from scipy.stats import mannwhitneyu, wilcoxon
-from statannotations.Annotator import Annotator
+# from statannotations.Annotator import Annotator
 # 
 #### Local Imports
 
@@ -127,7 +127,7 @@ DEFAULT_fitSettings = {# H0
                        'VWCFitMethods' : ['Full'],
                        'doDimitriadisFit' : False,
                        'DimitriadisFitMethods' : ['Full'],
-                       'doChadwickFit' : False,
+                       'doChadwickFit' : True,
                        'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
                        'DimitriadisFitMethods' : ['Full'],
@@ -209,15 +209,17 @@ plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
-                'methods_H0':['Chadwick', 'VWC'],
-                'zones_H0':['%f_100'],
-                'method_bestH0':'VWC', 
-                'zone_bestH0':'%f_100',
+                'methods_H0':['Chadwick'],
+                'zones_H0':['%f_15'],
+                'method_bestH0':'Chadwick', 
+                'zone_bestH0':'%f_15',
                 'doVWCFit' : True,
                 'VWCFitMethods' : ['Full'],
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full'],
                 'doStressRegionFits' : False,
                 'doStressRegionFits' : False,
-                'doStressGaussianFits' : True,
+                'doStressGaussianFits' : False,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
                 'doNPointsFits' : False,
@@ -244,6 +246,7 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'plotStressHW':plot_stressHalfWidth,
                         'S(e)_nPoints':False,
                         'K(S)_nPoints':False,
+                        'Plot_Ratio':False,
                         'S(e)_strainGaussian':False, # NEW - Jojo
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
@@ -252,13 +255,14 @@ plotSettings = {# ON/OFF switchs plot by plot
     
 # Task = '24-09-05 & 24-08-26 & 24-06-07 & 24-06-08 & 24-05-29 & 24-02-21 & 24-07-15 & 24-09-12 & 24-09-24'
 # Task = '24-05-29 & 24-09-05 & 24-02-21 & 24-09-24 & 24-09-12'
-Task = '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'
+# Task = '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'
+Task = '24-02-21'
 
 
-fitsSubDir = 'VWC_AllCrosslinking-OkExpts_24-09-31'
+fitsSubDir = 'VWC_24-02-21_24-11-07'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -4083,22 +4087,27 @@ plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates),
 filename = 'VWC_AllCrosslinking-GoodExpts_24-09-27'
 
 GlobalTable = taka.getMergedTable(filename)
-dirToSave = 'C:/Users/anumi/OneDrive/Desktop/CortexMeeting_24-10-01/Crosslinkers/Mechanics/24-09-31/PosExpts_Sept/'
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Crosslinkers/Plots/IPGGDays,2024/'
 
 #%%%% Create dataframe for plotting
 
 data = pf.createDataTable(GlobalTable)
 # '24-02-21', '24-05-29',
-dates = [ '24-09-05', '24-09-12', '24-09-24']
-drugs = [ 'none', 'doxy', 'doxy_act', 'Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
-labels = [ 'Control','Dox', 'Dox+Light', 'Y27_10', 'Y27+Dox', 'Y27+Dox+Light']
+dates = [ '24-05-29', '24-09-05' , '24-02-21' , '24-09-24' , '24-09-12']
+
+drugs = [  'doxy', 'doxy_act']
+labels = [ 'Control', '+Light']
+
+# drugs = [ 'none', 'doxy', 'doxy_act', 'Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
+# labels = [ 'Control','Dox', 'Dox+Light', 'Y27_10', 'Y27+Dox', 'Y27+Dox+Light']
 
 # drugs = ['Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']# ['doxy', 'doxy_act'] #,  ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']
-# labels = ['Y27', 'Y27+Dox', 'Y27+Dox+Light'] #['Dox', 'Dox+Light'] #,  ['Y27+Dox', 'Y27+Dox+Light']
+# labels = ['Y27','+Light', 'Y27+Dox+Light'] #['Dox', 'Dox+Light'] #,  ['Y27+Dox', 'Y27+Dox+Light']
 
 Filters = [(data['validatedThickness'] == True),
             (data['error_vwc_Full'] == False),
             (data['substrate'] == '20um fibronectin discs'), 
+            (data['ctFieldThickness'] < 900), 
             (data['R2_vwc_Full'] > 0.90),
             (data['bestH0'] <= 1500),
             (data['E_eff'] <= 30000),
@@ -4112,15 +4121,15 @@ condCol, condCat = 'drug', drugs
 avgDf = pf.createAvgDf(df, condCol)
 
 # df = df.drop(df[(df['drug'] == 'doxy_act') & (df['compNum'] == 1)].index)
+plotChars = {'color' : '#ffffff', 'fontsize' : 20}
+pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
 
-pairs = [['none', 'doxy'], ['doxy', 'doxy_act'], ['none', 'Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']] 
-# pairs = [['doxy', 'doxy_act']] 
+pairs = [['doxy', 'doxy_act']] #,['Y27_10', 'doxy_2_Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']]
 
-
-plotChars = {'color' : '#ffffff', 'fontsize' : 18}
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 palette_cond = ['#808080', '#faea93', '#dfc644', '#add2c3', '#5aa688', '#23644a']
+# palette_cond = [ '#faea93', '#dfc644', '#5aa688', '#23644a']
 
 # palette_cond = ['#add2c3', '#5aa688', '#23644a']
 
@@ -4128,7 +4137,9 @@ swarmPointSize = 6
 
 
 #%%%% Plot NLImod
-fig, ax = plt.subplots(figsize = (13,9))
+
+cm_in = 2.52
+fig, ax = plt.subplots(figsize = (25/cm_in,20/cm_in))
 
 plottingParams = {'data':df, 
                   'x' : condCol, 
@@ -4136,12 +4147,15 @@ plottingParams = {'data':df,
                   'order' : condCat,
                     }
 
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, 
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, colorScheme = 'white',
                                     hueType = None, palette = palette_cond, plotType = 'violin',
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
-# plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
+ax.grid(axis='y')
+plt.xticks(**pltTicks, rotation = 45)
+plt.yticks(**pltTicks)
+plt.ylim(-4,4)
+# fig.suptitle(str(dates), **plotChars)
 plt.tight_layout()
 plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
 plt.show()
@@ -4726,25 +4740,29 @@ ylim = 20000
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 fig, ax = plt.subplots(figsize = (13,9))
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, palette = palette_cell,
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, palette = palette_cell,
                                     hueType = 'cellID', plottingParams = plottingParams, plotChars = plotChars)
 
 # plt.ylim(0, ylim)
 plt.legend(fontsize = 6, ncol = 6)
 fig.suptitle(str(dates), **plotChars)
+plt.yticks(**pltTicks)
+plt.xticks(**pltTicks)
+
 plt.ylim(0,1500)
 plt.show()
 plt.savefig((dirToSave + '(4a)_{:}_{:}_ctFieldThickness_CellID.png').format(str(dates), str(condCat)))
 
 ####################### Hue type 'condCol'#######################
 fig, ax = plt.subplots(figsize = (13,9))
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, palette = palette_cond,
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, palette = palette_cond,
                              plottingParams = plottingParams, plotChars = plotChars)
 
-# plt.ylim(0, ylim)
+plt.ylim(0, 1500)
 fig.suptitle(str(dates), **plotChars)
 
 # plt.ylim(0,1500)
+plt.yticks(**pltTicks)
 plt.show()
 plt.savefig((dirToSave + '(4b)_{:}_{:}_ctFieldThickness_Conditions.png').format(str(dates), str(condCat)))
 
@@ -4784,7 +4802,7 @@ condCatPoint = dfPairs[condCol, 'first'].unique()
 N_point = len(dfPairs['dateCell', 'first'].unique())
 palette_cell_point = distinctipy.get_colors(N_point)
 
-testH0 = 'two-sided'
+testH0 = 'less'
 testE = 'less'
 testNli = 'greater'
 
@@ -4817,6 +4835,37 @@ fig, ax, pvals, dfP_H = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint,
 
 # fig.suptitle(str(dates), **plotChars)
 plt.savefig((dirToSave + '(7b)_{:}_{:}_{:}_H0Pointplot-Normalised.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+
+plottingParams = { 'x' : (condCol, 'first'), 
+                  'y' : ('ctFieldThickness', 'first'),
+                  'linewidth' : 1, 
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+ylim = 1500
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
+                                          pairs = pairs, normalize = False, marker = 'first',
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+# plt.xlim((-2,3))
+plt.tight_layout()
+plt.savefig((dirToSave + '(7a)_{:}_{:}_{:}_ctFieldThickness.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP_H = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,3), 
+                                          pairs = pairs, normalize = True, marker = 'first',
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+plt.savefig((dirToSave + '(7b)_{:}_{:}_{:}__ctFieldThickness-Normalised.png').format(str(dates), str(condCat), stats))
 plt.show()
 
 
@@ -5012,7 +5061,7 @@ plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates),
 filename = 'VWC_AllCrosslinking-OkExpts_24-09-31'
 
 GlobalTable = taka.getMergedTable(filename)
-dirToSave = 'C:/Users/anumi/OneDrive/Desktop/CortexMeeting_24-10-01/Crosslinkers/Mechanics/24-09-31/OkExptsPlots/'
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Crosslinkers/Plots/24-10-25_JMC/'
 
 
 #%%%% Create dataframe for plotting
@@ -5040,10 +5089,12 @@ avgDf = pf.createAvgDf(df, condCol)
 
 # df = df.drop(df[(df['drug'] == 'doxy_act') & (df['compNum'] == 1)].index)
 
-pairs = [['none', 'doxy'], ['doxy', 'doxy_act'], ['none', 'Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']] 
+pairs = [['none', 'doxy'], ['doxy', 'doxy_act'], ['none', 'Y27_10'], ['Y27_10', 'doxy_2_Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']] 
 
 
 plotChars = {'color' : '#ffffff', 'fontsize' : 18}
+pltTicks = {'color' : '#ffffff', 'fontsize' : 14}
+
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 palette_cond = ['#808080', '#faea93', '#dfc644', '#add2c3', '#5aa688', '#23644a']
@@ -5065,11 +5116,14 @@ plottingParams = {'data':df,
                   'size' :swarmPointSize, 
                     }
 
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, 
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, 
                                     hueType = None, palette = palette_cond, plotType = 'violin',
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
-plt.ylim(-5,5)
+ax.grid(axis='y')
+plt.xticks(**pltTicks)
+plt.yticks(**pltTicks)
+plt.ylim(-4,6)
 fig.suptitle(str(dates), **plotChars)
 plt.tight_layout()
 plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
