@@ -103,6 +103,7 @@ class PincherTimeLapse:
         self.Zstep = manipDict['multi image Z step']
         self.BeadsZDelta = manipDict['beads bright spot delta']
         
+        
         try:
             self.Z_symmetry = manipDict['Z symmetry']
             self.insideBeadType = str(manipDict['inside bead type'])
