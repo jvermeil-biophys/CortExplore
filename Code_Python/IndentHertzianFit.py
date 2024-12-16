@@ -110,7 +110,7 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
     F = df.loc[compression_indices, 'Load (uN)'].values*1e6 # µN to pN
     Time = df.loc[compression_indices, 'Time (s)']
 
-    early_points = len(F)//20
+    early_points = len(F)//10
     F_moy = np.median(F[:early_points])
     F_std = np.std(F[:early_points])
     F_max = np.max(F)
@@ -142,7 +142,6 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
     Rsq1 = ufun.get_R2(F1, HertzFit(Z1, K1, Z01))
 
 
-
     #### 3.1 Second Fit Zone
     i_start = ufun.findFirst(True, Z >= Z01 - 1) # 1 µm margin
     if mode == 'fractionF':
@@ -170,9 +169,17 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
         Z2, F2 = Z[i_start:i_stop], F[i_start:i_stop]
         [K2, Z02], covM2 = curve_fit(HertzFit, Z2, F2, p0=p0, bounds=(binf, bsup))
         
+        # [K2tmp, Z02tmp], covM2 = curve_fit(HertzFit, Z2, F2, p0=p0, bounds=(binf, bsup))
+        # if K2tmp <= 75:
+        #     if i == 0:
+        #         Z02, K2, Rsq2 = Z01, K1, Rsq1
+        #     break
+        # else:
+        #     Z02, K2 = Z02tmp, K2tmp
+        
         Rsq2 = ufun.get_R2(F2, HertzFit(Z2, K2, Z02))
         
-        Z_inf = Z02 - 3 # 2 µm margin for the next iteration
+        Z_inf = Z02 - 1 # 2 µm margin for the next iteration
         Z0_approx = Z02
     
     
@@ -190,6 +197,7 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
     residuals_fit = residuals[i_start:i_stop]
     residuals_after = residuals[i_stop:]
     
+    print(Z02)
     
     #### 4.1 Fourier transforms
     timestep = 0.001
@@ -199,40 +207,81 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
     distance1 = 15
 
     #### 4.2 Denoising
+    def fft_denoise(Deflect_fit, Deflect, Load,
+                    Nfreq_to_cut = 3, prominence = 0.05, distance = 15):
+        FT_D = np.abs(np.fft.fft(Deflect_fit - np.mean(Deflect_fit)))
+        n_D = FT_D.size
+        freq_D = np.fft.fftfreq(n_D, d=timestep)[:n_D//2]
+        FT_normed_D = FT_D[:n_D//2] / np.max(FT_D[:n_D//2])
+        peaks_D, peaks_prop_D = signal.find_peaks(FT_normed_D, prominence = prominence, distance=distance)
+
+        dfp = pd.DataFrame(peaks_prop_D)
+        dfp['freq'] = [freq_D[p] for p in peaks_D]
+        dfp = dfp[dfp['freq'] > 10]
+        dfp = dfp.sort_values(by='prominences', ascending=False)
+        # print(dfp)
+
+        Nfreq_to_cut = min(Nfreq_to_cut, len(dfp['freq'].values))
+        noise_freqs = dfp['freq'][:Nfreq_to_cut]
+        Deflect_denoised = np.copy(Deflect)
+        Load_denoised = np.copy(Load)
+        for nf in noise_freqs:
+            a, b = signal.iirnotch(w0=nf, Q=10, fs=fs)
+            Deflect_denoised = signal.lfilter(a, b, Deflect_denoised)
+            Load_denoised = signal.lfilter(a, b, Load_denoised)
+        return(Deflect_denoised, Load_denoised)
+        
     Nfreq_to_cut = 3
     Deflect_fit = df['Cantilever (nm)'].values[i_start:i_stop]*1e-3 # nm to µm
     Deflect = df['Cantilever (nm)'].values[:]*1e-3
     Load = df['Load (uN)'].values[:]*1e6 # µN to pN
     
-    prominence = 0.05
-    distance = 15
-    
-    FT_D = np.abs(np.fft.fft(Deflect_fit - np.mean(Deflect_fit)))
-    n_D = FT_D.size
-    freq_D = np.fft.fftfreq(n_D, d=timestep)[:n_D//2]
-    FT_normed_D = FT_D[:n_D//2] / np.max(FT_D[:n_D//2])
-    peaks_D, peaks_prop_D = signal.find_peaks(FT_normed_D, prominence = prominence, distance=distance)
-
-    dfp = pd.DataFrame(peaks_prop_D)
-    dfp['freq'] = [freq_D[p] for p in peaks_D]
-    dfp = dfp[dfp['freq'] > 10]
-    dfp = dfp.sort_values(by='prominences', ascending=False)
-    # print(dfp)
-
-    Nfreq_to_cut = min(Nfreq_to_cut, len(dfp['freq'].values))
-    noise_freqs = dfp['freq'][:Nfreq_to_cut]
-    Deflect_denoised = np.copy(Deflect)
-    Load_denoised = np.copy(Load)
-    for nf in noise_freqs:
-        a, b = signal.iirnotch(w0=nf, Q=10, fs=fs)
-        Deflect_denoised = signal.lfilter(a, b, Deflect_denoised)
-        Load_denoised = signal.lfilter(a, b, Load_denoised)
+    try:
+        Deflect_denoised, Load_denoised = fft_denoise(Deflect_fit, Deflect, Load,
+                                                      Nfreq_to_cut = 3)
+    except:
+        Deflect_denoised, Load_denoised = Deflect, Load
 
     df['Cantilever - denoised'] = Deflect_denoised*1e3 # µm to nm
     Z_denoised = df['Piezo (nm)'].values*1e-3 - Deflect_denoised # nm to µm
     df['Z Tip - denoised'] = Z_denoised*1e3 # µm to nm
     F_denoised = Load_denoised
     df['Load - denoised'] = F_denoised*1e-6 # pN to µN
+    
+    # Nfreq_to_cut = 3
+    # Deflect_fit = df['Cantilever (nm)'].values[i_start:i_stop]*1e-3 # nm to µm
+    # Deflect = df['Cantilever (nm)'].values[:]*1e-3
+    # Load = df['Load (uN)'].values[:]*1e6 # µN to pN
+    
+    # prominence = 0.05
+    # distance = 15
+    
+    # FT_D = np.abs(np.fft.fft(Deflect_fit - np.mean(Deflect_fit)))
+    # n_D = FT_D.size
+    # freq_D = np.fft.fftfreq(n_D, d=timestep)[:n_D//2]
+    # FT_normed_D = FT_D[:n_D//2] / np.max(FT_D[:n_D//2])
+    # peaks_D, peaks_prop_D = signal.find_peaks(FT_normed_D, prominence = prominence, distance=distance)
+
+    # dfp = pd.DataFrame(peaks_prop_D)
+    # dfp['freq'] = [freq_D[p] for p in peaks_D]
+    # dfp = dfp[dfp['freq'] > 10]
+    # dfp = dfp.sort_values(by='prominences', ascending=False)
+    # # print(dfp)
+
+    # Nfreq_to_cut = min(Nfreq_to_cut, len(dfp['freq'].values))
+    # noise_freqs = dfp['freq'][:Nfreq_to_cut]
+    # Deflect_denoised = np.copy(Deflect)
+    # Load_denoised = np.copy(Load)
+    # for nf in noise_freqs:
+    #     a, b = signal.iirnotch(w0=nf, Q=10, fs=fs)
+    #     Deflect_denoised = signal.lfilter(a, b, Deflect_denoised)
+    #     Load_denoised = signal.lfilter(a, b, Load_denoised)
+
+    # df['Cantilever - denoised'] = Deflect_denoised*1e3 # µm to nm
+    # Z_denoised = df['Piezo (nm)'].values*1e-3 - Deflect_denoised # nm to µm
+    # df['Z Tip - denoised'] = Z_denoised*1e3 # µm to nm
+    # F_denoised = Load_denoised
+    # df['Load - denoised'] = F_denoised*1e-6 # pN to µN
     
 
     #### 4.3 Denoised Fit    
@@ -283,7 +332,7 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
     #### 6.1 Plot == 1
     if plot == 1:
         plt.ioff()
-        fig, axes = plt.subplots(2,2, figsize = (10,6))
+        fig, axes = plt.subplots(2, 2, figsize = (10,6))
         colorList = gs.colorList10[:len(dI['ti'])]
         
         def Hertz(z, Z0, K, R, F0):
@@ -366,13 +415,6 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
         ax.legend()
         
 
-    
-        
-        
-        
-        
-        
-        
     #### 6.2 Plot == 2
     if plot == 2:
         plt.ioff()
@@ -513,9 +555,100 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
         ax.legend()
         
         
+    #### 6.3 Plot == 3
+    if plot == 3:
+        plt.ioff()
+        gs.set_manuscript_options_jv()
+        fig, axes = plt.subplots(3, 1, figsize = (10/gs.cm_in, 18/gs.cm_in))
+        colorList = gs.colorList10[:len(dI['ti'])]
+        
+        def Hertz(z, Z0, K, R, F0):
+            zeroInd = 1e-9 * np.ones_like(z)
+            d = z - Z0
+            d = np.where(d>0, d, zeroInd)
+            f = (4/3) * K * R**0.5 * (d)**1.5 + F0
+            return(f)
+        
+        #### axes[0]
+        ax = axes[0]
+        ax.plot(df['Time (s)'], df['Piezo (nm)']/1e3, 'b-', label='Displac.')
+        ax.plot(df['Time (s)'], df['Z Tip (nm)']/1e3, color='gold', ls='-', label='Z Tip Pos.')
+        ax.plot(df['Time (s)'], df['Cantilever (nm)']/1e3, 'g-', label='Deflect.')
+        ax.plot(df['Time (s)'], df['Indentation (nm)']/1e3, 'r-', label='Indent.')
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Distance (µm)')
+        ax.grid(axis='both')
+        ax.legend(loc='upper right', fontsize = 6)
+        
+        #### ----
+        # ax = axes[0,1] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        # for ti, tf, c in zip(dI['ti'][::-1], dI['tf'][::-1], colorList[::-1]):
+        #     step_indices = df[(df['Time (s)'] >= ti) & (df['Time (s)'] <= tf)].index
+        #     ax.plot(df.loc[step_indices, 'Z Tip (nm)']*1e-3, df.loc[step_indices, 'Load (uN)']*1e6*1e-3, color=c,
+        #             marker = '.', markersize = 2, ls = '')
+        
+        # ax.set_xlabel('Distance (um)')
+        # ax.set_ylabel('Load (nN)')
+        
+        # ax.axvline(Z[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        # ax.axvline(Z[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        # ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 4)
+        # ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        # labelFit1 = f'First fit\nZ0 = {Z01:.2f} +/- {covM1[1,1]**0.5:.2f} µm\n'
+        # labelFit1 += f'Yeff = {K1:.0f} +/- {covM1[0,0]**0.5:.0f} Pa\nR² = {Rsq1:.3f}'
+        # ax.plot(Z_plotfit1, F_plotfit1*1e-3, 
+        #         ls = '-', color = 'gold', zorder = 5, label = labelFit1)
+        
+        # labelFit2 = f'Second fit\nZ0 = {Z02:.2f} +/- {covM2[1,1]**0.5:.2f} µm\n'
+        # labelFit2 += f'Yeff = {K2:.0f} +/- {covM2[0,0]**0.5:.0f} Pa\nR² = {Rsq2:.3f}'
+        # ax.plot(Z_plotfit2, F_plotfit2*1e-3, 
+        #         ls = '-', color = 'red', zorder = 5, label = labelFit2)
+        
+
+        # ax.legend(loc='upper left')
+
+
+
+
+        #### axes[1]
+        ax = axes[1]
+
+        
+        ax.plot(df['Time (s)'], df['Load (uN)']*1e6*1e-3 - F_moy*1e-3, color='darkred', ls='-', label = 'Load')
+        # ax.axhline(F_moy*1e-3, ls = '-', color = 'k', lw=1, zorder = 3)
+        
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('Load (nN)')
+        ax.legend(loc='upper right')
+        ax.grid(axis='both')
+
+
+        #### axes[2]
+        ax = axes[2] # F in nN here : µN*1e6*1e-3 // pN*1e-3
+        ax.plot(Z_denoised[compression_indices], F_denoised[compression_indices]*1e-3 - F_moy*1e-3,
+                color=colorList[0], marker = '.', markersize = 2, ls = '')
+        
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Load (nN)')
+        
+        ax.axvline(Z_denoised[i_start], ls = ':', color = 'k', lw=1, zorder = 4)
+        ax.axvline(Z_denoised[i_stop], ls = '-.', color = 'k', lw=1, zorder = 4)
+        # ax.axhline(F_moy*1e-3, ls = '-', color = 'k', zorder = 3)
+        # ax.axhline((F_moy+F_std)*1e-3, ls = '--', color = 'k', zorder = 4)
+        labelFit_d = 'Denoised fit\n'
+        labelFit_d += f'$Z_0$ = {Z0_d:.2f} $\pm$ {covM_d[1,1]**0.5:.2f} µm\n'
+        labelFit_d += '$Y_{eff}$' + f' = {K_d:.0f} $\pm$ {covM_d[0,0]**0.5:.0f} Pa\nR² = {Rsq_d:.3f}'
+        ax.plot(Z_plotfit_d, F_plotfit_d*1e-3 - F_moy*1e-3, 
+                ls = '-', color = 'lime', zorder = 5, label = labelFit_d)
+        ax.grid(axis='both')
+
+        ax.legend(fontsize = 6)
         
         
-    dictPlotName = {1:'ChiaroPlot', 2:'DenoisingPlot'}
+        
+        
+    dictPlotName = {1:'ChiaroPlot', 2:'DenoisingPlot', 3:'ManuscriptPlot'}
     if plot >= 1:
         figtitle = f"{dI['date']}_{dI['manip']}_{dI['cell']}_{dI['indent']}_{dictPlotName[plot]}"
         fig.suptitle(figtitle)
@@ -526,7 +659,10 @@ def FitHertz(dI, mode = 'dZmax', fractionF = 0.4, dZmax = 3,
         else:
             plt.close('all')
         if save_plot:
-            ufun.simpleSaveFig(fig, figtitle, save_path, '.png', 150)
+            ufun.archiveFig(fig, name = figtitle, ext = '.png', dpi = 200,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
+            ufun.archiveFig(fig, name = figtitle, ext = '.pdf', dpi = 100,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
             
         plt.ion()
         
@@ -632,7 +768,11 @@ def findHardSurface(dI, plot = False, save_plot = False, save_path=''):
         
         if save_plot:
             name = f"{dI['date']}_{dI['manip']}_{dI['cell']}_{dI['indent']}_GlassIndent"
-            ufun.simpleSaveFig(fig, name, save_path, '.png', 150)
+            # ufun.simpleSaveFig(fig, name, save_path, '.png', 150)
+            ufun.archiveFig(fig, name = name, ext = '.png', dpi = 200,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
+            ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
         
     return(Zc)
 
