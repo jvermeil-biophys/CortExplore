@@ -3213,9 +3213,8 @@ ax.legend(loc = 'upper left')
 ax.set_xlim([0, 1100])
 ax.set_ylim([0, 42])
 
-
-
 #### Plot 2 - Log scale
+
 
 ax = axes[1]
 ax.set_xscale('log')
@@ -3275,7 +3274,7 @@ ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
 #                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
 # ax.legend(handles=[LegendMark])
 
-ax.set_xlim([100, 1100])
+ax.set_xlim([100, 1300])
 ax.legend(loc = 'upper left')
 
 
@@ -3294,6 +3293,51 @@ ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
+
+#### Plot 3 - log only
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+n = np.log10(200)
+m = np.log10(10)
+
+expo = +1
+A = (10**(m-n*expo))
+# A = 0.1
+Xplot = np.logspace(2, 3.1, 50)
+Yplot = A*(Xplot**expo)
+ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+        label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1100])
+ax.legend(loc = 'upper left')
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
 
 
 def makeCountDf_Fluo(df):
@@ -3314,16 +3358,27 @@ def makeCountDf_Fluo(df):
 CountByCond, CountByCell = makeCountDf_Fluo(df_f)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+plt.tight_layout()
+plt.show()
+
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Qactin_GF_vs_h5mT_DEFENSE'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Plot quantity - One cell !
 
-gs.set_manuscript_options_jv()
+# gs.set_manuscript_options_jv()
+gs.set_defense_options_jv()
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, ax = plt.subplots(1, 1, figsize = (6/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
+# fig, ax = plt.subplots(1, 1, figsize = (6/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
+fig, ax = plt.subplots(1, 1, figsize = (7.5/gs.cm_in, 7.5/gs.cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -3405,11 +3460,16 @@ ax.grid(which = 'both', alpha = 0.4)
     
 # ax.legend().set_visible(False)
 
+plt.tight_layout()
+plt.show()
+
 
 #### Save
 figSubDir = 'E-h-Fluo'
-name = 'ONE_CELL_Qactin_GF_vs_h5mT'
+name = 'ONE_CELL_Qactin_GF_vs_h5mT_V2'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Plot density - per comp
@@ -3631,7 +3691,121 @@ def makeCountDf_Fluo(df):
 CountByCond, CountByCell = makeCountDf_Fluo(df_f)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+
+
+#### Plot 3 - log only
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=6, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}', zorder=8)
+
+# n = np.log10(100)
+# m = np.log10(80)
+
+# expo = -0.5
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-0.5}}$')
+
+# expo = -1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-1}}$')
+
+
+
+# expo = -2
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '--', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax^{-2}}$')
+
+ax.set_xlim([100, 1300])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left', fontsize=8)
+
+# sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
+
+# xfit = df_f['h3'].values
+# yfit = df_f[metric].values
+# params, res = ufun.fitLineHuber(xfit, yfit)
+# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
+# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+
+# ax.set_xlim([190, 1200])
+# ax.set_ylim([5, 150])
+
+
+# ax.set_ylabel('Actin Quantity')
+# ax.set_xlabel('Cortex thickness (nm)')
+# ax.legend().set_visible(False)
     
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Dactin_GF_vs_h5mT_DEFENSE_V2'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+plt.tight_layout()
+plt.show()
 
 # %%% Plots crossing Stiff & Density
 
@@ -3923,6 +4097,109 @@ def makeCountDf_Fluo(df):
 
 CountByCond, CountByCell = makeCountDf_Fluo(df_f)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% 3. V2
+
+
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 7/gs.cm_in))
+# gs.set_manuscript_options_jv(palette = 'Set2')
+
+# Filter global_df
+
+df = merged_df.copy()
+df = df.rename(columns={'surroundingThickness':'H 5mT'})
+
+hue = 'D2_gf'
+x = 'H 5mT'
+y = 'E_f_<_400'
+style = None
+s = 40
+alpha = 1
+zo = 5
+ec = 'None'
+
+df[y] /= 1000
+
+
+# ax = axes[0]
+# # ax.plot([], [], label=r'$\bf{Density\ (a.u.)}$', ls='-', color='w')
+# sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+#                 ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+# # ax.plot([], [], label=r' ', ls='-', color='w')
+# ax.set_ylabel('$E_{400}$ (kPa)')
+# ax.set_xlabel('$H_{5mT}$ (nm)')
+# ax.set_ylim([0, ax.get_ylim()[-1]])
+# ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='upper right', 
+#           title = r'$\bf{Density\ (a.u.)}$', title_fontsize = 9, ncol = 2)
+# ax.grid()
+
+
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([90, 1100])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+Xfit, Yfit = np.log(df[x].values), np.log(df[y].values)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results=True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+# ax.legend(fontsize = 8, loc='upper right', )
+ax.legend(fontsize = 8, loc='upper left', 
+          title = r'$\bf{Density\ (a.u.)}$', title_fontsize = 9, ncol = 2)
+
+
+ax.grid(which = 'both', alpha = 0.4)
+
+
+# fig.suptitle('Stiffness v density 2 - with cell w. avg.')
+fig.tight_layout()
+plt.show()
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Comp_E_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = '', cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 200,
+                figDir = figDir, figSubDir = '', cloudSave = 'flexible')
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+df = df.rename(columns={'date_x':'date'})
+
+
+CountByCond, CountByCell = makeCountDf_Fluo(df)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t') 
 
 # %% Plots -- Test Manuscript
 
