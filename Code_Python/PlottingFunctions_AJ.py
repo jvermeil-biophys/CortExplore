@@ -15,9 +15,27 @@ import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
 
+# import ptitprince as pt
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
+from plotnine import (
+    ggplot,
+    aes,
+    stage,
+    geom_violin,
+    geom_point,
+    geom_line,
+    geom_boxplot,
+    guides,
+    scale_fill_manual,
+    theme,
+    theme_classic,
+    facet_wrap,
+    xlim, ylim,
+    ggtitle
+)
+from plotnine.themes.elements import element_rect, element_text
 
 import os
 import sys
@@ -33,8 +51,8 @@ from datetime import date
 import matplotlib.lines as lines
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
-from scipy.stats import mannwhitneyu, wilcoxon, ranksums
-# from statannotations.Annotator import Annotator
+from scipy.stats import mannwhitneyu, wilcoxon, ranksums, ttest_ind, ttest_rel
+from statannotations.Annotator import Annotator
 
 #### Local Imports
 
@@ -172,6 +190,7 @@ def createAvgDf(data, condCol):
                                'NLI_Ind':['var', 'std', 'mean', 'count'],
                                'E_eff':['var', 'std', 'mean', 'count', 'median'],
                                'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
+                               
                                'cellID' : 'first',
                                'cellName':'first', 
                                'NLI_Plot' : 'first', 
@@ -180,7 +199,7 @@ def createAvgDf(data, condCol):
                                'ctFieldThickness' : 'first', 
                                'normFluctu' : 'first',
                                'NLI_mod':['mean', 'count', 'std', 'var'], 
-                               'date' : 'first',
+                               'date' : 'first', 
                                condCol:'first', 'cellCode':'first', 'manip':'first'})
     
     avgDf_wE = group_by_cell.agg({'compNum' : ['count'], 'wE_eff':[ 'sum'], 
@@ -563,7 +582,6 @@ def plotNLI_V0(fig, ax, data, condCat, condCol, pairs, palette = ['#b96a9b', '#d
     return fig, ax, dfStats
 
 
-
 def plotNLImod(fig, ax, data, palette = sns.color_palette("tab10"), plot = 'line', colorScheme = 'black'):
     
     if colorScheme == 'black':
@@ -787,9 +805,164 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
     plt.show()
     return fig, ax
 
+def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-sided',
+               figsize = (7,6), 
+               palette = sns.color_palette("tab10"), plotChars = {}, plotTicks = {}):
+    
+
+    lsize = 0.65
+    fill_alpha = 0.7
+    
+    x, y = (condCol, 'first'), (measure, stat)
+    dfPairsPlot = dfPairs[[x, y, ('dateCell', 'first')]]
+    dfPairsPlot.columns = [x[0], y[0], 'dateCell']
+
+    dfPairsPlot[condCol] = pd.Categorical(dfPairsPlot[condCol], categories=condCat, ordered=True)
+    
+    pvals = []
+    for pair in pairs:
+        a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
+        b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
+        res = wilcoxon(a1, b1, alternative=test, zero_method = 'wilcox')
+        pvals.append(res[1])
+        
+    shift = 0.1
+
+    def alt_sign(x):
+        return (-1) ** x
+
+    m1 = aes(x=stage(condCol, after_scale="x+shift*alt_sign(x)"))  # shift outward
+    m2 = aes(x=stage(condCol, after_scale="x-shift*alt_sign(x)"), group="dateCell")  # shift inward
+
+    plot = (
+    ggplot(dfPairsPlot, aes(x[0], y[0], fill=condCol))
+    + geom_violin(m1, style="left-right", alpha=fill_alpha, size=lsize)
+    + geom_point(m2, color="none", alpha=fill_alpha, size=4)
+    + geom_line(m2, color="gray", size=lsize, alpha=0.6)
+    + geom_boxplot(width=shift, alpha=fill_alpha, size=lsize)
+    + scale_fill_manual(values=palette)
+    + guides(fill=False)  # Turn off the fill legend
+    + theme_classic()
+    + theme(figure_size=figsize)
+    # + ylim(0, 10000)
+    + theme(
+        plot_background=element_rect(fill='black'),  # Set plot background to black
+        axis_text=element_text(color='white'),
+    )
+    )
+    
+    plot.draw()
+    plt.style.use('seaborn-v0_8')
+    plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test , **plotChars)
+
+    plt.ylabel(measure, **plotChars)
+    plt.xlabel(condCol, **plotChars)
+
+    return plot, pvals
+
+
+def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [], pairs = None, 
+             colorScheme = 'black', test = 'non-param', pointSize = 2,
+             shiftBox = 0.1, shiftSwarm = 0.0,
+              plottingParams = {}, plotTicks = {}, plotChars = {}):
+    
+    
+    if colorScheme == 'black':
+        plt.style.use('seaborn-v0_8')
+        fig.patch.set_facecolor('black')
+        fontColor = plotChars['color']
+    else: 
+        plt.style.use('seaborn-v0_8')
+        fontColor = plotChars['color']
+        
+    pt.half_violinplot(inner = None, palette = palette, **plottingParams)
+    
+    condCol = plottingParams['x']
+    df =  plottingParams['data']
+    measure = plottingParams['y']
+
+    for i, condition in enumerate(condCat):
+        # Subset the data
+        plotDf = df[df[condCol] == condition]
+        
+        # Jitter the values on the vertical axis
+        x = i - shiftSwarm + np.random.uniform(high=0.2, size=len(plotDf))
+        
+        # Select the values of the horizontal axis
+        y = plotDf[measure]
+        
+        # Add the rain using the scatter method.
+        ax.scatter(x, y, color = palette[i], s=pointSize, alpha = 0.6)
+
+    boxplot_data = [df[df[condCol] == condition][measure].values 
+        for condition in condCat]
+
+    # Vertical positions for the boxplots
+    POSITIONS = [shiftBox + pos for pos in range(len(condCat))]
+    medianprops = {"linewidth": 2, "color": "#FF0000", "solid_capstyle": "butt"}
+    # The style of the box ... This is also used for the whiskers
+    boxprops = {"linewidth": 1.5, "color": "#4a4a4a"}
+    ax.boxplot(
+        boxplot_data, 
+        positions=POSITIONS, 
+        manage_ticks=False,
+        showfliers = False, # Do not show the outliers beyond the caps.
+        showcaps = False,   # Do not show the caps
+        medianprops = medianprops,
+        whiskerprops = boxprops,
+        boxprops = boxprops
+    )
+
+    pvals = []
+    if pairs != None:
+        for pair in pairs:
+            a1 = df[measure][df[condCol] == pair[0]].values
+            b1 = df[measure][df[condCol] == pair[1]].values
+            if test == 'non-param':
+                U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
+            elif test == 'param':
+                U1, p = ttest_ind(a1, b1, nan_policy = 'omit')
+                
+            pvals.append(p)
+    
+        annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=df, order = condCat)
+        annotator.configure(text_format="simple", color = '#000000', fontsize = plotChars['fontsize'])
+        annotator.set_pvalues(pvals).annotate(line_offset_to_group=0.15)
+        
+    if labels != []:
+        xticks = np.arange(len(condCat))
+        plt.xticks(xticks - 0.03, labels, **plotTicks)
+        
+    # plt.xticks(**plotTicks)
+    plt.yticks(**plotTicks)
+    plt.ylabel(measure, **plotChars)
+    plt.xlabel(condCol, **plotChars)
+    
+    return fig, ax
+    
+    
+def NLR_distplot(condCat, palette = sns.color_palette("tab10"), 
+                           pairs = None, colorScheme = 'black', test = 'non-param',
+                           plottingParams = {}, plotChars = {}):
+    
+    if colorScheme == 'black':
+        plt.style.use('dark_background')
+        fontColor = plotChars['color']
+    else: 
+        plt.style.use('default')
+        fontColor = plotChars['color']
+    
+    measure = plottingParams['x']
+    
+    sns.histplot(palette = palette, kde = True, **plottingParams)
+
+    plt.ylabel(measure, **plotChars)
+    # plt.xlabel(**plotChars)
+    
+    return 
 
 def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.color_palette("tab10"), labels = [],
-                           pairs = None, colorScheme = 'black', plotType = 'swarm',
+                           pairs = None, colorScheme = 'black', plotType = 'swarm', test = 'non-param',
                            plottingParams = {}, plotChars = {}):
     
     if colorScheme == 'black':
@@ -814,9 +987,7 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
             
                              
         elif plotType == 'violin':
-            ax = sns.violinplot(hue = hueType, palette = palette,
-                                inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
-                                **plottingParams) 
+            ax = sns.violinplot(hue = hueType, palette = palette, **plottingParams) 
             
         plt.legend(loc=2, prop={'size': 7}, ncol = int(np.round(N/2)))
     
@@ -829,9 +1000,7 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
                              boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.1})
             
         elif plotType == 'violin':
-            ax = sns.violinplot(hue = hueType, palette = palette,
-                                inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
-                                **plottingParams) 
+            ax = sns.violinplot(hue = hueType, palette = palette,  **plottingParams) 
             
         plt.legend(loc=2, prop={'size': 16}, ncol = 3)
         
@@ -848,8 +1017,7 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
                                 **plottingParams) 
             
         plt.legend(loc=2, prop={'size': 16}, ncol = len(condCat))
-        
-        
+    
     
     # if pairs != None:
     #     annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=df, order = condCat)
@@ -862,8 +1030,11 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
         for pair in pairs:
             a1 = df[measure][df[condCol] == pair[0]].values
             b1 = df[measure][df[condCol] == pair[1]].values
-            U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
-            # U1, p = ranksums(a1, b1, nan_policy = 'omit')
+            if test == 'non-param':
+                U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
+            elif test == 'param':
+                U1, p = ttest_ind(a1, b1, nan_policy = 'omit')
+                
             pvals.append(p)
     
         annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=df, order = condCat)
@@ -882,7 +1053,7 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
     return fig, ax
 
 def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color_palette("tab10"), labels = [],
-                           pairs = None, colorScheme = 'black', plotType = 'swarm',
+                           pairs = None, colorScheme = 'black', plotType = 'swarm', test = 'non-param',
                            plottingParams = {}, plotChars = {}):
     
     if colorScheme == 'black':
@@ -911,6 +1082,7 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
                                 inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
                                 **plottingParams) 
             
+            
         plt.legend(loc=2, prop={'size': 7}, ncol = int(np.round(N/2)))
     
     elif hueType == 'NLI_Plot':
@@ -925,7 +1097,7 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
             ax = sns.violinplot(hue = hueType, palette = palette,
                                 inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
                                 **plottingParams) 
-            
+                        
         plt.legend(loc=2, prop={'size': 16}, ncol = 3)
         
     elif hueType != 'NLI_Plot' and hueType != 'cellID':
@@ -939,24 +1111,20 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
             ax = sns.violinplot(hue = hueType, palette = palette,
                                 inner_kws=dict(box_width=15, whis_width=2, color=".8"), 
                                 **plottingParams) 
-            
-        plt.legend(loc=2, prop={'size': 16}, ncol = len(condCat))
         
+        # plt.legend(loc=2, prop={'size': 16}, ncol = len(condCat))
         
     
-    # if pairs != None:
-    #     annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=df, order = condCat)
-    #     annotator.configure(test='Mann-Whitney', text_format='simple', loc='inside', 
-    #                         show_test_name = False, color = '#000000')
-    #     annotator.apply_and_annotate()
     
     pvals = []
-    if pairs != None:
+    if pairs != None or plotType != 'distplot':
         for pair in pairs:
             a1 = df[measure][df[condCol] == pair[0]].values
             b1 = df[measure][df[condCol] == pair[1]].values
-            U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
-            # U1, p = ranksums(a1, b1, nan_policy = 'omit')
+            if test == 'non-param':
+                U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
+            elif test == 'param':
+                U1, p = ttest_ind(a1, b1, nan_policy = 'omit')
             pvals.append(p)
     
         annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=df, order = condCat)
@@ -975,11 +1143,11 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
     return fig, ax, pvals
 
 def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palette("tab10"), 
-                    labels = [], pairs = None,  colorScheme = 'black', plottingParams = {}, 
-                    plotChars = {}):
+                    labels = [], pairs = None,  colorScheme = 'black', test = 'non-param',
+                    plottingParams = {}, plotChars = {}):
     
     if colorScheme == 'black':
-        plt.style.use('default')
+        plt.style.use('seaborn-v0_8')
         fig.patch.set_facecolor('black')
         fontColor = plotChars['color']
     else: 
@@ -1007,15 +1175,31 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
         ax = sns.swarmplot(palette = palette, **plottingParams) 
         plt.legend(loc=2, prop={'size': 7}, ncol = len(condCat))
         
-    ax = sns.boxplot(data = avgDf, x = condCol, y = measure, color = 'grey',  order = condCat,
-                     medianprops={"color": 'darkred', "linewidth": 2},
-                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.1})
+    ax = sns.boxplot(data = avgDf, x = condCol, y = measure, palette = palette,
+                     color = 'grey',  order = condCat,
+                     medianprops={"color": '#FF0000', "linewidth": 2},
+                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.3})
     
     
-    annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=avgDf, order = condCat)
-    annotator.configure(test='Mann-Whitney', text_format='simple', fontsize = plotChars['fontsize'],
-                        loc='inside', show_test_name = False, color = '#000000')
-    annotator.apply_and_annotate()
+    pvals = []
+    if pairs != None:
+        for pair in pairs:
+            a1 = avgDf[measure][avgDf[condCol] == pair[0]].values
+            b1 = avgDf[measure][avgDf[condCol] == pair[1]].values
+            if test == 'non-param':
+                U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
+            elif test == 'param':
+                U1, p = ttest_ind(a1, b1, nan_policy = 'omit')
+            pvals.append(p)
+    
+        annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=avgDf, order = condCat)
+        annotator.configure(text_format="simple", color = '#000000', fontsize = plotChars['fontsize'])
+        annotator.set_pvalues(pvals).annotate()
+        
+    # annotator = Annotator(ax = ax, pairs = pairs, x=condCol,  y=measure, data=avgDf, order = condCat)
+    # annotator.configure(test='Mann-Whitney', text_format='simple', fontsize = plotChars['fontsize'],
+    #                     loc='inside', show_test_name = False, color = '#000000')
+    # annotator.apply_and_annotate()
     
     if labels != []:
         xticks = np.arange(len(condCat))

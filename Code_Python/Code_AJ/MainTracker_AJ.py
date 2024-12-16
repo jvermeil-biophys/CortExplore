@@ -36,12 +36,8 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-from BeadTracker import mainTracker
-from BeadTracker_V2 import mainTracker_V2
 from BeadTracker_V3 import mainTracker_V3
 from BeadTracker_V4 import mainTracker_V4
-
-
 
 from BeadTracker import XYZtracking
 
@@ -1738,6 +1734,28 @@ mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf,
 dates = '24.09.26'
 manips, wells, cells = 1, 1, 1
 depthoNames = '24.09.26_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-11-26 - Experiment 3T3 optoRhoAVB (++)
+
+# %%%% M1 : 
+
+dates = '24.11.26'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '24.11.16_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-11-28 - Experiment 3T3 optoRhoAVB (++)
+
+# %%%% M1 : 
+
+dates = '24.11.28'
+manips, wells, cells = 3, 2, 1
+depthoNames = '24.11.28_P'+str(wells)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False)

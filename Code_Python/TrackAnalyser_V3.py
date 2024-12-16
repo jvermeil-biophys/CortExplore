@@ -5240,6 +5240,9 @@ def computeGlobalTable_meca(mode = 'fromScratch', task = 'all', fileName = 'Meca
     #### 1. Initialization
     # 1.1 Get the experimental dataframe
     expDf = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = cp.suffix)
+    # expDf_JV = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = '_JV')
+    # expDf = pd.concat([expDf, expDf_JV])
+    
     
     # 1.2 Get the list of all meca files    
     suffixPython = '_PY'
@@ -5465,7 +5468,7 @@ def getAnalysisTable(fileName):
         
     try:
         path = os.path.join(cp.DirDataAnalysis, (fileName + ext))
-        df = pd.read_csv(path, sep=';')
+        df = pd.read_csv(path, sep=r'[;,,]', engine='python')
         print(gs.CYAN + 'Analysis table has ' + str(df.shape[0]) + ' lines and ' + \
               str(df.shape[1]) + ' columns.' + gs.NORMAL)
     except:
@@ -5481,16 +5484,19 @@ def getAnalysisTable(fileName):
     elif 'cellName' in df.columns and 'cellID' in df.columns:
         shortCellIdColumn = 'cellName'
     
+    
     if 'ExpDay' in df.columns:
         dateColumn = 'ExpDay'
     elif 'date' in df.columns:
+        
         dateColumn = 'date'
         
     # try:
     dateExemple = df.loc[df.index[0],dateColumn]
     df = ufun.correctExcelDatesInDf(df, dateColumn, dateExemple)
     # except:
-    #     print(gs.ORANGE + 'Problem in date correction' + gs.NORMAL)
+    #     pass
+        # print(gs.ORANGE + 'Problem in date correction' + gs.NORMAL)
         
     try:
         if not ('manipID' in df.columns):
@@ -5535,6 +5541,9 @@ def getMergedTable(fileName, DirDataExp = cp.DirRepoExp, suffix = cp.suffix,
     
     if mergeExpDf:
         expDf = ufun.getExperimentalConditions(DirDataExp, suffix = suffix)
+        # expDf_JV = ufun.getExperimentalConditions(cp.DirRepoExp, suffix = '_JV')
+        # expDf = pd.concat([expDf, expDf_JV])
+        
         df = pd.merge(expDf, df, how="inner", on='manipID', suffixes=("_x", "_y"),
         #     left_on=None,right_on=None,left_index=False,right_index=False,sort=True,
         #     copy=True,indicator=False,validate=None,

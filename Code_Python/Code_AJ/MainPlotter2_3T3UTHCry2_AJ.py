@@ -258,7 +258,6 @@ plotSettings = {# ON/OFF switchs plot by plot
 # Task = '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'
 Task = '24-02-21'
 
-
 fitsSubDir = 'VWC_24-02-21_24-11-07'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
@@ -4087,16 +4086,19 @@ plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates),
 filename = 'VWC_AllCrosslinking-GoodExpts_24-09-27'
 
 GlobalTable = taka.getMergedTable(filename)
-dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Crosslinkers/Plots/IPGGDays,2024/'
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/24-11-13_PielTeamMeeting/'
 
 #%%%% Create dataframe for plotting
 
 data = pf.createDataTable(GlobalTable)
 # '24-02-21', '24-05-29',
-dates = [ '24-05-29', '24-09-05' , '24-02-21' , '24-09-24' , '24-09-12']
+dates = [ '24-02-21', '24-05-29', '24-09-05' , '24-09-24' , '24-09-12']
 
-drugs = [  'doxy', 'doxy_act']
-labels = [ 'Control', '+Light']
+# drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
+# labels = [ 'Dox', 'Dox+Light', 'Y27+Dox', 'Y27+Dox+Light']
+
+drugs = ['doxy', 'doxy_act']
+labels = ['Dox', 'Dox+Light']
 
 # drugs = [ 'none', 'doxy', 'doxy_act', 'Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
 # labels = [ 'Control','Dox', 'Dox+Light', 'Y27_10', 'Y27+Dox', 'Y27+Dox+Light']
@@ -4107,7 +4109,7 @@ labels = [ 'Control', '+Light']
 Filters = [(data['validatedThickness'] == True),
             (data['error_vwc_Full'] == False),
             (data['substrate'] == '20um fibronectin discs'), 
-            (data['ctFieldThickness'] < 900), 
+            # (data['ctFieldThickness'] < 900), 
             (data['R2_vwc_Full'] > 0.90),
             (data['bestH0'] <= 1500),
             (data['E_eff'] <= 30000),
@@ -4121,25 +4123,53 @@ condCol, condCat = 'drug', drugs
 avgDf = pf.createAvgDf(df, condCol)
 
 # df = df.drop(df[(df['drug'] == 'doxy_act') & (df['compNum'] == 1)].index)
-plotChars = {'color' : '#ffffff', 'fontsize' : 20}
-pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
+plotChars = {'color' : '#ffffff', 'fontsize' : 30}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 18}
 
-pairs = [['doxy', 'doxy_act']] #,['Y27_10', 'doxy_2_Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']]
+pairs = [ ['doxy', 'doxy_act']]
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
-palette_cond = ['#808080', '#faea93', '#dfc644', '#add2c3', '#5aa688', '#23644a']
-# palette_cond = [ '#faea93', '#dfc644', '#5aa688', '#23644a']
+# palette_cond = ['#808080', '#faea93', '#dfc644', '#add2c3', '#5aa688', '#23644a']
+# palette_cond = [ '#99def0', '#006883']
 
-# palette_cond = ['#add2c3', '#5aa688', '#23644a']
-
+palette_cond = ['#6fdc6f', '#196619']
+#'#add2c3'
 swarmPointSize = 6
 
 
 #%%%% Plot NLImod
+########### NLR Rainplot ####################
+plt.style.use('seaborn-v0_8')
 
-cm_in = 2.52
-fig, ax = plt.subplots(figsize = (25/cm_in,20/cm_in))
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax = plt.subplots(figsize=(7, 6))
+
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, SHIFT = 0.15,
+                             colorScheme = 'black', test = 'non-param',
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+# ax.grid(axis='y')
+# plt.xticks(**pltTicks, rotation = 45)
+# plt.yticks(**pltTicks)
+plt.ylim(-4,4)
+# fig.suptitle(str(dates), **plotChars)
+# plt.tight_layout()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
+
+
+########### NLR Violin/Swarm plots ####################
+
+# cm_in = 2.52
+# fig, ax = plt.subplots(figsize = (25/cm_in,20/cm_in))
 
 plottingParams = {'data':df, 
                   'x' : condCol, 
@@ -4198,7 +4228,7 @@ plottingParams = {'data':avgDf,
                     }
 
 fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
-                             hueType = None, palette = palette_cond,
+                             hueType = None, palette = palette_cond, test = 'param',
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 plt.ylim(-3,3.5)
@@ -5054,6 +5084,32 @@ fig, ax, data_nli = pf.NLIcorrvFluctu(fig, ax, data = df, plottingParams = plott
 plt.xlim(0, 1.5)
 plt.show()
 plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates), str(condCat)))
+
+#%%% Plotnine paired plots
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+N_point = len(dfPairs['dateCell', 'first'].unique())
+palette_cell_point = distinctipy.get_colors(N_point)
+
+measure = 'ctFieldThickness'
+stat = 'first'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = 'greater', palette = palette_cond,
+                     figsize = (9,9), plotChars = plotChars, plotTicks = plotTicks)
+
+# plt.ylim(-2.5, 2)
+# plt.xticks([1, 2], labels, **plotTicks)
+# plt.yticks([-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2], **plotTicks)
+
+# plt.ylim(0, 2000)
+# plt.ylim(0, 21000)
+plt.xticks([1, 2], labels, **plotTicks)
+# plt.yticks(np.arange(0, 1400, 100), **plotTicks)
+
+plt.yticks( **plotTicks)
+plt.show()
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat), dpi = 100)
 
 #%% Calling data - All 'okaish' experiments, wherein results were not so strong
 # Dates available : '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'

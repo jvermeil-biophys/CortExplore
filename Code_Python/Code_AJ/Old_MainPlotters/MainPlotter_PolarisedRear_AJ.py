@@ -2172,9 +2172,9 @@ condCatPoint = dfPairs[condCol, 'first'].unique()
 N_point = len(dfPairs['dateCell', 'first'].unique())
 palette_cell_point = distinctipy.get_colors(N_point)
 
-testH0 = 'two-sided'
-testE = 'less'
-testNli = 'greater'
+testH0 = 'less'
+testE = 'greater'
+testNli = 'less'
 
 stats = 'mean'
 plottingParams = { 'x' : (condCol, 'first'), 

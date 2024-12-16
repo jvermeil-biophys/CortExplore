@@ -39,7 +39,7 @@ import warnings
 import itertools
 import matplotlib
 import distinctipy
-
+os.chdir('C:/Users/anumi/OneDrive/Desktop/CortExplore/Code_Python')
 
 from copy import copy
 from cycler import cycler
@@ -1953,7 +1953,7 @@ avgDf = pf.createAvgDf(df, condCol)
 
 # pairs = [['dmso_10', 'blebbi_10']] 
 pairs = [['none', 'Y27_10']] 
-
+dates = np.unique(df.date.values)
 
 plotChars = {'color' : '#ffffff', 'fontsize' : 18}
 pltTicks = {'color' : '#ffffff', 'fontsize' : 14}
@@ -2728,151 +2728,39 @@ plt.savefig((dirToSave + '(4b)_{:}_{:}_ctFieldThickness_Conditions.png').format(
 # plt.savefig((dirToSave + '(4d)_{:}_{:}_EBoxplot_cellAverage.png').format(str(dates), str(condCat)))
 # plt.show()
 
-#%%% Pointplots 
+#%%% NLI vs Fluctuation
 
-dfPairs, pairedCells = pf.dfCellPairs(avgDf)
-condCatPoint = dfPairs[condCol, 'first'].unique()
+fig, ax = plt.subplots(figsize = (13,9))
 
-N_point = len(dfPairs['dateCell', 'first'].unique())
-palette_cell_point = distinctipy.get_colors(N_point)
-
-testH0 = 'two-sided'
-testE = 'less'
-testNli = 'greater'
-
-stats = 'mean'
-plottingParams = { 'x' : (condCol, 'first'), 
-                  'y' : ('H0_vwc_Full', stats),
-                  'linewidth' : 1, 
-                  'markersize' : 10,
-                  'markeredgecolor':'black', 
+plottingParams = {'x' : ('normFluctu', 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'data' : avgDf,
+                  'hue' : (condCol, 'first'),
+                  'palette' : palette_cond,
+                  'hue_order' : condCat,
+                  's' : 100
                    }
 
-ylim = 1500
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
-                                          pairs = pairs, normalize = False, marker = stats,
-                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
+fig, ax = pf.NLIvFluctu(fig, ax, plottingParams = plottingParams, plotChars = plotChars)
 
-# fig.suptitle(str(dates), **plotChars)
-# plt.xlim((-2,3))
-plt.tight_layout()
-plt.savefig((dirToSave + '(7a)_{:}_{:}_{:}_H0Pointplot.png').format(str(dates), str(condCat), stats))
+plt.xlim(0, 1.5)
 plt.show()
+plt.savefig((dirToSave + '(11a)_{:}_{:}_NLIvFluctu.png').format(str(dates), str(condCat)))
 
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP_H = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,3), 
-                                          pairs = pairs, normalize = True, marker = stats,
-                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
+#%%%  NLI-corr vs Fluctuation
 
-# fig.suptitle(str(dates), **plotChars)
-plt.savefig((dirToSave + '(7b)_{:}_{:}_{:}_H0Pointplot-Normalised.png').format(str(dates), str(condCat), stats))
-plt.show()
+fig, ax = plt.subplots(figsize = (13,9))
 
-
-ylim = 10000
-plottingParams = {'x' : (condCol, 'first'), 
-                  'y' : ('E_eff', 'wAvg'),
-                  'linewidth' : 1,
-                  'markersize' : 10,
-                  'markeredgecolor':'black', 
+plottingParams = {'palette' : palette_cond,
+                  's' : 100,
+                  'hue' : condCol,
+                  'hue_order' : condCat,
                    }
 
+fig, ax, data_nli = pf.NLIcorrvFluctu(fig, ax, data = df, plottingParams = plottingParams, 
+                                      plotChars = plotChars)
 
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
-                                          pairs = pairs, normalize = False, marker = 'wAvg',
-                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
 
+plt.xlim(0, 1.5)
 plt.show()
-plt.savefig((dirToSave + '(8a)_{:}_{:}_{:}_EPointplot.png').format(str(dates), str(condCat), stats))
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP_E = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,4), 
-                                          pairs = pairs, normalize = True, marker = 'wAvg',
-                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-
-plt.show()
-plt.savefig((dirToSave + '(8b)_{:}_{:}_{:}_EPointplot-Normalised.png').format(str(dates), str(condCat), stats))
-
-nonOutliers_E = np.asarray(dfP_E['dateCell', 'first'][(dfP_E[condCol, 'first'] == condCat[1]) & (dfP_E['normMeasure', 'wAvg'] < 3.0)].values)
-
-plottingParams = {'x' : (condCol, 'first'), 
-                  'y' : ('NLI_mod', stats),
-                  'linewidth' : 1,
-                  'markersize' : 10,
-                  'markeredgecolor':'black', 
-                   }
-
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), 
-                                          pairs = pairs, normalize = False, marker = stats,
-                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-ax.get_legend().remove()
-plt.show()
-plt.savefig((dirToSave + '(9a)_{:}_{:}_{:}_NLImodPointplot.png').format(str(dates), str(condCat), stats))
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), styleType = ('dateCell', 'first'),
-                                          pairs = pairs, normalize = False, marker = stats, hueType = ('date', 'first'),
-                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-plt.show()
-plt.savefig((dirToSave + '(9b)_{:}_{:}_{:}_NLImodPointplot_dates.png').format(str(dates), str(condCat), stats))
-
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-1.5,1.5), 
-                                          pairs = pairs, normalize = False, marker = stats, hueType = ('date', 'first'),
-                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-plt.show()
-plt.savefig((dirToSave + '(9c)_{:}_{:}_{:}_NLImodPointplot_datesAvg.png').format(str(dates), str(condCat), stats))
-
-
-# fig, ax = plt.subplots(figsize = (10,10))
-# fig, ax, pvals, dfP_nli = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-6,6), 
-#                                           pairs = pairs, normalize = True, marker = stats,
-#                                           test = 'greater', plottingParams = plottingParams,  palette = palette_cell_point,
-#                                           plotChars = plotChars)
-
-
-plt.show()
-plt.savefig((dirToSave + '(9b)_{:}_{:}_{:}_NLImodPointplot-Normalised.png').format(str(dates), str(condCat), stats))
-
-#### E-normalised 
-
-plottingParams = {'x' : (condCol, 'first'), 
-                  'y' : ('E_norm', 'wAvg'),
-                  'linewidth' : 1,
-                  'markersize' : 10,
-                  'markeredgecolor':'black', 
-                   }
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim =(0,ylim), 
-                                          pairs = pairs, normalize = False, marker = 'wAvg', 
-                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-plt.show()
-plt.savefig((dirToSave + '(10a)_{:}_{:}_E-norm.png').format(str(dates), str(condCat)))
-
-fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,4), 
-                                          pairs = pairs, normalize = True, marker = 'wAvg', 
-                                          test = testE, plottingParams = plottingParams,  palette = palette_cell_point,
-                                          plotChars = plotChars)
-
-plt.show()
-plt.savefig((dirToSave + '(10b)_{:}_{:}_E-doubleNorm.png').format(str(dates), str(condCat)))
+plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates), str(condCat)))

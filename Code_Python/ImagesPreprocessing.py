@@ -29,6 +29,7 @@ import cv2
 import shutil
 import traceback
 
+os.chdir('C:/Users/anumi/OneDrive/Desktop/CortExplore/Code_Python')
 import numpy as np
 import pandas as pd
 import pyjokes as pj
@@ -48,17 +49,16 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-# date = '24.11.15'
-# DirExt = 'E:/20241115_Clones-E2_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/24.11.15'
-# DirSave = os.path.join(cp.DirDataRaw, date) 
+date = '24.11.28'
+DirExt = 'H:/Filipe_Data/20241128_3T3Fibcon_100xobj_4.5Fibro-StreptBeads_Mechanics/24.11.28/'
+DirSave = os.path.join(cp.DirDataRaw, date) 
 
-DirDeptho = '24.11.15_Deptho/Deptho_P3'
-DirExt  = 'E:/20241115_Clones-E2_3t3optorhoa-VB_100xobj_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
-DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+# DirDeptho = '24.11.28_Deptho/Deptho_P2'
+# DirExt  = 'H:/Filipe_Data/20241128_3T3Fibcon_100xobj_4.5Fibro-StreptBeads_Mechanics/'+ DirDeptho
+# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 microscope = 'labview'
 imagePrefix = 'im'
-confocal = True
 
 # %% Functions
 
@@ -405,8 +405,9 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         refPts = np.array(allRefPoints[i])
         cellPath = allCellPaths[i]
         allFiles = os.listdir(cellPath)
-        cellName = cellPath.split('\\')[-1]
+        cellName = cellPath.split('//')[-1]
         
+        print(cellName)
         
         # to detect supplementary selections
         try:
@@ -483,11 +484,10 @@ print(gs.BLUE + 'Constructing all Z-Projections...' + gs.NORMAL)
 
 scaleFactor = 4
 
-
 for i in range(len(allCellsRaw)):
     print(i)
     currentCell = allCellsRaw[i]
-    currentCellName = currentCell.split('\\')[-1]
+    currentCellName = currentCell.split('/')[-1]
     validCell = True
     print(currentCellName)
         
@@ -594,7 +594,6 @@ cv2.destroyAllWindows()
 print(gs.BLUE + 'Saving all tiff stacks...' + gs.NORMAL)
 
 cropAndCopy(DirExt, DirSave, allRefPoints[:], allCellsToCrop[:], microscope)
-
 
 #%% Creating .tif stacks of 561n recruitment images
 

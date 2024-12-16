@@ -250,9 +250,9 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_Log':False, # NEW - Numi
                         }
     
-Task = '24-11-13 & 24-11-15'
+Task = '24-11-28'
 
-fitsSubDir = 'VWC_optoRhoAVB-Med_update_24-11-18'
+fitsSubDir = 'VWC_Fibcon'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
                             fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
@@ -297,7 +297,7 @@ pairs = [['doxy', 'doxy_act']]
 
 
 plotChars = {'color' : '#ffffff', 'fontsize' : 20}
-pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 18}
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 palette_cond = ['#7f7fff', '#0000FF']
@@ -306,6 +306,34 @@ swarmPointSize = 6
 
 
 #%%%% Plot NLImod
+
+
+########################################
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax = plt.subplots(figsize=(7, 6))
+
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
+                             colorScheme = 'black', test = 'non-param' ,pointSize = 40,
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+plt.ylim(-4,4.5)
+plt.ylabel('NLR', **plotChars)
+plt.xlabel(' ', **plotChars)
+# plt.tight_layout()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
+
+
+########################################
+
 fig, ax = plt.subplots(figsize = (13,9))
 
 plottingParams = {'data':df, 
@@ -1218,7 +1246,7 @@ avgDf = pf.createAvgDf(df, condCol)
 pairs = [['doxy', 'doxy_act']]
 
 plotChars = {'color' : '#ffffff', 'fontsize' : 20}
-pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 18}
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
@@ -1229,21 +1257,29 @@ swarmPointSize = 6
 
 #%%%% Plot NLImod
 
-# fig, ax = plt.subplots(figsize = (13,9))
 
-# plottingParams = {'data':df, 
-#                   'hue' : condCol, 
-#                   'x' : 'NLI_mod',
-#                     }
+########################################
 
-# fig, ax = sns.histplot(**plottingParams)
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
 
-# # plt.ylim(-3,3)
-# fig.suptitle(str(dates), **plotChars)
-# plt.yticks(**pltTicks)
+fig, ax = plt.subplots(figsize=(7, 6))
+
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
+                             colorScheme = 'black', test = 'non-param' ,pointSize = 40,
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+plt.ylim(-4,4.5)
+plt.ylabel('NLR', **plotChars)
+plt.xlabel(' ', **plotChars)
 # plt.tight_layout()
-# plt.savefig((dirToSave + '(0)_{:}_{:}_NLRHisto.png').format(str(dates), str(condCat)))
-# plt.show()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
 
 
 ################### box plots #######################
@@ -2124,9 +2160,9 @@ dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/OptoRhoA-VB/24.11.1
 #%%%% Create dataframe for plotting
 
 data = pf.createDataTable(GlobalTable)
-dates = ['24-11-15'] #, '24-11-15']
+dates = ['24-11-13'] 
 # drugs = [ 'doxy', 'doxy_act']
-manips = [ 'M2', 'M4']
+manips = ['M2', 'M3']
 
 # wells = ['P2']
 
@@ -2147,36 +2183,43 @@ df = pf.filterDf(Filters, data)
 condCol, condCat = 'manip', manips
 avgDf = pf.createAvgDf(df, condCol)
 
-pairs = [['M2', 'M4']]
+pairs = [['M2', 'M3']]
 
 
 plotChars = {'color' : '#ffffff', 'fontsize' : 20}
-pltTicks = {'color' : '#ffffff', 'fontsize' : 18}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 18}
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
-palette_cond = ['#7f81fe', '#0004FD']
+palette_cond = ['#4a4a4a', '#7f81fe', '#0004FD']
 
 swarmPointSize = 6
 
 
 #%%%% Plot NLImod
 
-# fig, ax = plt.subplots(figsize = (13,9))
+########################################
 
-# plottingParams = {'data':df, 
-#                   'hue' : condCol, 
-#                   'x' : 'NLI_mod',
-#                     }
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
 
-# fig, ax = sns.histplot(**plottingParams)
+fig, ax = plt.subplots(figsize=(7, 6))
 
-# # plt.ylim(-3,3)
-# fig.suptitle(str(dates), **plotChars)
-# plt.yticks(**pltTicks)
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
+                             colorScheme = 'black', test = 'non-param' ,pointSize = 40,
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+plt.ylim(-4,4.5)
+plt.ylabel('NLR', **plotChars)
+plt.xlabel(' ', **plotChars)
 # plt.tight_layout()
-# plt.savefig((dirToSave + '(0)_{:}_{:}_NLRHisto.png').format(str(dates), str(condCat)))
-# plt.show()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
 
 
 ################### box plots #######################
@@ -3039,3 +3082,24 @@ plt.xlim(0, 1.5)
 plt.show()
 plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates), str(condCat)))
 
+#%%% Plotnine paired plots
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+N_point = len(dfPairs['dateCell', 'first'].unique())
+palette_cell_point = distinctipy.get_colors(N_point)
+
+measure = 'E_eff'
+stat = 'wAvg'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = 'two-sided', palette = palette_cond,
+                     plotChars = plotChars, plotTicks = plotTicks)
+
+
+# plt.ylim(-2, 1)
+# plt.yticks([-2, -1, 0, 1], [-2, -1, 0, 1], **plotTicks)
+
+plt.xticks([1, 2], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.show()
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
