@@ -2510,6 +2510,8 @@ class CellCompression:
         fig.tight_layout()
         return(fig, ax)
     
+    
+    
 class BadIndentCompression:
     def __init__(self, CC, indentDf, thisExpDf, i_indent):
         self.rawDf = indentDf
@@ -2601,6 +2603,8 @@ class BadIndentCompression:
         self.dictFitsSS_3parts = {} 
         self.df_3parts = pd.DataFrame({})
         self.computed_SSK_filteredDer = False
+
+
 
 
 class IndentCompression:
@@ -3671,42 +3675,42 @@ class IndentCompression:
                     hPredict = dictFit['yPredict']
                     
                     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    # ax.plot(hPredict, fFit,'k--', linewidth =3, 
-                    #         label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                    ax.plot(hPredict, fFit,'k--', linewidth =3, 
+                            label = legendText, zorder = 2)
+                else:
+                    titleText += '\nFIT ERROR'
                     
-                # method = 'f_<_400'
-                # # dictFit = self.dictFitFH_Chadwick[method]
+                method = 'f_<_400'
                 # dictFit = self.dictFitFH_Chadwick[method]
-                # fitError = dictFit['error']
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
                     
-                # if not fitError:
-                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                #     fFit = dictFit['x']
-                #     hPredict = dictFit['yPredict']
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
                     
-                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                #     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
-                #             label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                else:
+                    titleText += '\nFIT ERROR'
                 
-                # method = 'f_in_400_800'
-                # # dictFit = self.dictFitFH_Chadwick[method]
+                method = 'f_in_400_800'
                 # dictFit = self.dictFitFH_Chadwick[method]
-                # fitError = dictFit['error']
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
                     
-                # if not fitError:
-                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                #     fFit = dictFit['x']
-                #     hPredict = dictFit['yPredict']
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
                     
-                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                #     ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
-                #             label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                else:
+                    titleText += '\nFIT ERROR'
                     
             if plotH0:
                 bestH0 = self.bestH0
@@ -3730,9 +3734,9 @@ class IndentCompression:
                     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                    # ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
-                    #         label = legendText)
-                    # ax.plot(plot_startH, plot_startF, marker = 'o', color = 'cyan', zorder = 4)
+                    ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
+                            label = legendText)
+                    ax.plot(plot_startH, plot_startF, marker = 'o', color = 'cyan', zorder = 4)
 
                     
                 # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
