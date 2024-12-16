@@ -505,7 +505,7 @@ for i in range(len(allCellsRaw)):
         
     if validCell:
         # try:
-        Zimg = Zprojection(currentCell, microscope)
+        Zimg = Zprojection(currentCell, microscope, kind='min')
         allCells.append(currentCell)
         allZimg.append(Zimg)
         print(gs.CYAN + '--> Will be copied' + gs.NORMAL)
@@ -543,6 +543,7 @@ count = 0
 # for i in range(len(allZimg)):
 for i in range(min(len(allZimg), limiter)):
     if count%24 == 0:
+        
         
         count = 0
         
@@ -609,3 +610,7 @@ cropAndCopy(DirExt, DirSave, allRefPoints[:], allCellsToCrop[:], microscope)
 
 # AllMMTriplets2Stack(DirExt, DirSave, prefix, channel)
 
+#%%
+DirSrc='E:\Pelin\Imaging_Data\24.01.10\10.01.24_Fluoro\fluo_time'
+DirDst='D:\Pelin\Data\24-01-10-fluo'
+#cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel = 'nan', prefix = 'nan')

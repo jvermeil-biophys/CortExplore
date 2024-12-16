@@ -1717,7 +1717,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             validFileGroup = True
                     
                     
-                elif metaDataFormatting == 'loopStruct':
+                elif (metaDataFormatting == 'loopStruct') or (metaDataFormatting == 'constantField'):
                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
                     
@@ -1747,6 +1747,39 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             txtStatusNames.append('')
                             txtResultsNames.append(f_Res)
                             validFileGroup = True
+                            
+                            
+                # elif metaDataFormatting == 'constantField':
+                #     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+                #     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+                    
+                #     if test_image and test_field:
+                #         f_Tif = f_root_simple + '.tif'
+                #         f_Field = f_root_simple + '_Field.txt'
+                #         sourceDirsPaths.append(rd)
+                #         fileRoots.append(f_root)
+                #         tifImagesNames.append(f_Tif)
+                #         txtFieldNames.append(f_Field)
+                #         txtStatusNames.append('')
+                #         txtResultsNames.append(f_Res)
+                #         validFileGroup = True
+                    
+                #     else: # Retry in case there was a duplicated image
+                #     # No call to the function that simplifies the names
+                #         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+                #         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+                        
+                #         if test_image and test_field:
+                #             f_Tif = f_root + '.tif'
+                #             f_Field = f_root + '_Field.txt'
+                #             sourceDirsPaths.append(rd)
+                #             fileRoots.append(f_root)
+                #             tifImagesNames.append(f_Tif)
+                #             txtFieldNames.append(f_Field)
+                #             txtStatusNames.append('')
+                #             txtResultsNames.append(f_Res)
+                #             validFileGroup = True
+                            
                 
                 if not validFileGroup:
                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
@@ -1823,6 +1856,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
         #### 4.2 - Mode using loopStruct for legacy data
         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
             print('Loop Structure Mode !')
+            
             loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
             Nstruct = len(loopStructList)
             loop_total_length_woF = loopStructList[0]
@@ -1874,6 +1908,22 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['Status'] = list_Status
             
             # TBC
+            
+        elif metaDataFormatting == 'constantField': # ['T_raw', 'B_set', 'iL', 'Status']
+            # Columns from the field file
+            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+            metaDf = fieldDf[['T_raw', 'B_set']]
+            
+            N_Loops = 1
+            NFrames = metaDf.shape[0]
+            Status = 'Passive'
+            StatusCol = [Status] * NFrames
+            StatusCol = np.array(StatusCol)
+            
+            iLCol = np.ones(NFrames)
+            
+            metaDf['iL'] = iLCol.astype(int)
+            metaDf['Status'] = StatusCol
         
         #### 5 - Call the smallTracker
         print('Calling the smallTracker...' + gs.NORMAL)

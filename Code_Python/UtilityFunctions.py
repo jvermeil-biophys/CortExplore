@@ -53,7 +53,6 @@ from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
 from collections.abc import Collection
 from copy import deepcopy
-from sklearn.linear_model import HuberRegressor
 
 #### Local Imports
 

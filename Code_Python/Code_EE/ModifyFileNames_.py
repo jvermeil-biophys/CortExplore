@@ -111,7 +111,7 @@ def findAndRename(path, target_string, new_string, target='file', test = True, r
             if not doExcept:
                 foundString = f[searchString.start():searchString.end()]
                 newFileName = f[:searchString.start()] + new_string + f[searchString.end():]
-                # newFileName = f[:searchString.start()] + foundString[:2] + f[searchString.end():]
+                #newFileName = f[:searchString.start()] + foundString[:2] + f[searchString.end():]
                 renamedListTarget.append(newFileName)
                 if not test:
                     new_path = os.path.join(path, newFileName)
@@ -139,134 +139,12 @@ def findAndRename(path, target_string, new_string, target='file', test = True, r
     print(len(renamedListTarget))
     return(renamedListTarget)
 
-
-
-def findAndRemove(path, target_string, target='file', test = True, recursiveAction = False, exceptStrings = []):
-    listAll = os.listdir(path)
-    listFiles = []
-    listDir = []
-    listTarget = []
-    for f in listAll:
-        if os.path.isfile(os.path.join(path,f)):
-            listFiles.append(f)
-        elif os.path.isdir(os.path.join(path,f)):
-            listDir.append(f)
-    if target == 'file':
-        listTarget = listFiles
-    elif target == 'dir':
-        listTarget = listDir
-    elif target == 'all':
-        listTarget = listAll
-    renamedListTarget = []
-    for f in listTarget:
-        searchString = re.search(target_string, f)
-        if searchString:
-            doExcept = False
-            for s in exceptStrings:
-                if s in f:
-                    doExcept = True
-                    print('Exception for ' + os.path.join(path,f))
-            if not doExcept:
-                foundString = f[searchString.start():searchString.end()]
-                newFileName = f[:searchString.start()] + f[searchString.end():]
-                # newFileName = f[:searchString.start()] + foundString[:2] + f[searchString.end():]
-                renamedListTarget.append(newFileName)
-                if not test:
-                    new_path = os.path.join(path, newFileName)
-                    if not os.path.isfile(new_path):
-                        os.rename(r''+os.path.join(path, f),r''+os.path.join(path, newFileName))
-                        
-                # else:
-                #     print(f)
-                    
-    if recursiveAction:
-        # Update ListDir after potential renaming
-        listAll = os.listdir(path)
-        listDir = []
-        for f in listAll:
-            if os.path.isdir(os.path.join(path,f)):
-                listDir.append(f)
-        # Start going recursive
-        for d in listDir:
-            print("Let's go into " + os.path.join(path,d))
-            rlT = findAndRemove(os.path.join(path,d), target_string, 
-                          target=target, test = test, recursiveAction = True, exceptStrings = exceptStrings)
-            renamedListTarget += rlT
-            
-    print(renamedListTarget)
-    print(len(renamedListTarget))
-    return(renamedListTarget)
-
-# %% Remove spaces
-        
-path0 = 'E:/24-06-14_Chameleon_Compressions/All_tifs/'
-sub = ''
-path = path0 + sub
-
-findAndRemove(path, r" +", 
-              target = 'all', test = True, recursiveAction = True, exceptStrings = [])
-
 # %% Script Dates
         
 inverseDate('D://MagneticPincherData//Raw_DC//Raw_DC_JV//', target = 'all', 
             test = True, recursiveAction = True, exceptStrings = ['Deptho'])
 
 path0 = 'D://MagneticPincherData//Raw//'
-
-# %% Script Other renaming
-
-s1 = 'M6'
-s2 = 'M7'
-
-path0 = 'E:/24-07-24_3T3Atcc-LaGFP_Drugs/M7_Y27_50uM'
-sub = ''
-path = path0 + sub
-
-findAndRename(path, s1, s2, 
-              target = 'all', test = False, recursiveAction = True, exceptStrings = [])
-
-
-# %% Script Other renaming
-
-s1 = '_20umdisc'
-s2 = '_disc20um'
-
-path0 = 'D:/MagneticPincherData/Data_Timeseries'
-sub = ''
-path = path0 + sub
-
-findAndRename(path, s1, s2, 
-              target = 'file', test = True, recursiveAction = True, exceptStrings = [])
-
-
-
-# %% Script Other renaming
-
-s1 = '06-10-20_M3'
-s2 = '20-10-06_M3'
-
-path0 = 'D:/MagneticPincherData/Data_Timeseries'
-sub = ''
-path = path0 + sub
-
-findAndRename(path, s1, s2, 
-              target = 'file', test = True, recursiveAction = True, exceptStrings = [])
-
-path0 = 'D:/MagneticPincherData/Raw_Dictys'
-sub = ''
-path = path0 + sub
-
-findAndRename(path, s1, s2,
-              target = 'file', test = True, recursiveAction = True, exceptStrings = [])
-
-# %% Script Other renaming
-
-path0 = 'E:/24-06-14_Chameleon_Compressions/'
-sub = 'M3'
-path = path0 + sub
-
-findAndRename(path, '_M2_', '_M3_', 
-              target = 'all', test = True, recursiveAction = False, exceptStrings = [])
 
 # %% Script Other renaming
 
@@ -358,9 +236,9 @@ findAndRename(path0, s1, s2,
               target='all', test = True, recursiveAction = True, exceptStrings = [])
 
 #%%
-path0 = 'D:/Eloise/MagneticPincherData/Raw/24.07.18_P2'
-s1 = 'L50b0'
-s2 = 'L50'
+path0 = 'D:/Eloise/MagneticPincherData/Raw/24.05.23'
+s1 = 'C4_d'
+s2 = 'C4_blurred_d'
 findAndRename(path0, s1, s2,
               target='all', test = False, recursiveAction = False, exceptStrings = [])
 

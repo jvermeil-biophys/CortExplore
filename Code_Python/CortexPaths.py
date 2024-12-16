@@ -63,11 +63,11 @@ elif COMPUTERNAME == 'DESKTOP-K9KOJR2':
     
     
 elif COMPUTERNAME =='DATA2JHODR':
-    suffix = '_DB'
+    suffix = '_EE'
     DirRepo = "C://Users//BioMecaCell//Desktop//CortExplore"
-    DirData = "D:/Anumita/MagneticPincherData"
+    DirData = "D:/Eloise/MagneticPincherData"
     DirCloud = ""# + suffix
-    DirTempPlots = 'C://Users//BioMecaCell//Desktop//TempPlots'
+    DirTempPlots = DirData + '//TempPlots'
     CloudSaving = ''
     
     
