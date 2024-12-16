@@ -15,8 +15,6 @@ import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
 
-
-
 import os
 import sys
 import time
@@ -531,7 +529,7 @@ res = taka2.computeGlobalTable_meca(mode = 'updateExisting', task = AtccTask, fi
 # %%%% NanoIndenter
 
 
-plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+plot_stressCenters = [ii for ii in range(100, 2000, 50)]
 stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
@@ -554,7 +552,7 @@ fitSettings = {# H0
                 'doStrainGaussianFits' : False,
                 }
 
-plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressCenters = [ii for ii in range(100, 2000, 100)]
 plot_stressHalfWidth = 100
 
 plotSettings = {# ON/OFF switchs plot by plot
@@ -578,8 +576,9 @@ plotSettings = {# ON/OFF switchs plot by plot
 # NanoIndentTask = '23-11-13 & 23-11-15 & 23-12-07 & 23-12-10'
 # NanoIndentTask = '24-02-26 & 24-02-28'
 # NanoIndentTask = '24-02-26'
-NanoIndentTask = '24-04-11_M2_P1_C3'
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = NanoIndentTask, fileName = 'MecaData_testV3',# 'MecaData_NanoIndent_2023-2024', 
+# NanoIndentTask = '24-04-11_M2_P1_C3'
+NanoIndentTask = '23-11-13 & 23-11-15 & 23-12-07 & 23-12-10 & 24-02-26 & 24-02-28 & 24-04-11 & 24-04-18'
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = NanoIndentTask, fileName = 'MecaData_2023-2024_V2',# 'MecaData_NanoIndent_2023-2024', 
                                     save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'fromScratch' // 'updateExisting'
@@ -674,17 +673,17 @@ plotSettings = {# ON/OFF switchs plot by plot
 
 # drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
 # drugTask += ' & 22-11-23' # LatA
-drugTask += '23-11-26 & 23-12-03' # LatA
+drugTask = '23-11-26 & 23-12-03' # LatA
 drugTask += ' & 23-03-08 & 23-03-09' # Y27
 drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
 drugTask += ' & 23-04-26 & 23-04-28' # Ck666
 drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
 drugTask += ' & 23-09-19' # JLY
-drugTask +=  '24-03-13' # Limki + Y27
-drugTask +=  '24-07-04' # Limki + Y27 + Blebbi
+drugTask +=  ' & 24-03-13' # Limki + Y27
+drugTask +=  ' & 24-07-04' # Limki + Y27 + Blebbi
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs_V4', 
+res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs_V4', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'

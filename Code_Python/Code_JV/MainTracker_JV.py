@@ -76,8 +76,69 @@ plt.close('all')
 # %%%% Next manipe
 # %%%% Next manipe
 
+# %% Long series of compressions
+
+# %%% 24-12-11
+# %%%% 24-12-11 - One cell 
+
+dates = '24.12.11'
+manips, wells, cells = 1, 1, 1
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%%% 24-12-11
+
+dates = '24.12.11'
+manips, wells, cells = 1, 1, 'all'
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = f'{dates}_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
 
 # %% NANO-INDENTER
+
+# %%% 24-04-18 - One cell 
+
+dates = '24.04.18'
+manips, wells, cells = 1, 1, 5
+depthoName = '24.04.18_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%% 24-04-18
+
+dates = '24.04.18'
+manips, wells, cells = 1, 1, 'all'
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = f'{dates}_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 3, 1, 'all'
+depthoName = f'{dates}_M3_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+
 
 # %%% 24-04-11 - One cell 
 
