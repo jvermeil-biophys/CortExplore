@@ -2387,20 +2387,35 @@ class CellCompression:
                         except:
                             print(IC.dictFitFH_VWC)
                             
-                    if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
+                if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
+                    for m in fitSettings['ChadwickFitMethods']:
                         try:
-                            method = 'Dimitriadis'
-                            results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
-                            results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
-                            results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
-                            results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
-                            results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
-                            results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
-                            results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
-                            results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
-                            results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                            results['error_'+ m][i] = IC.dictFitFH_Chadwick[m]['error']
+                            results['nbPts_'+ m][i] = IC.dictFitFH_Chadwick[m]['nbPts']
+                            results['E_'+ m][i] = IC.dictFitFH_Chadwick[m]['E']
+                            results['ciwE_'+ m][i] = IC.dictFitFH_Chadwick[m]['ciwE']
+                            results['H0_'+ m][i] = IC.dictFitFH_Chadwick[m]['H0']
+                            results['R2_'+ m][i] = IC.dictFitFH_Chadwick[m]['R2']
+                            results['Chi2_'+ m][i] = IC.dictFitFH_Chadwick[m]['Chi2']
+                            results['valid_'+ m][i] = IC.dictFitFH_Chadwick[m]['valid']
+                            results['issue_'+ m][i] = IC.dictFitFH_Chadwick[m]['issue']
                         except:
-                            print(IC.dictFitFH_Dimitriadis)
+                            print(IC.dictFitFH_Chadwick)
+                            
+                if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
+                    try:
+                        method = 'Dimitriadis'
+                        results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
+                        results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
+                        results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
+                        results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
+                        results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
+                        results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
+                        results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
+                        results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+                        results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                    except:
+                        print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults
