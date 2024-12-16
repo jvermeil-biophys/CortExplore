@@ -1198,8 +1198,8 @@ plotSettings = {# ON/OFF switchs plot by plot
 task = '24-12-11_M1_P1_C3' # JLY
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'aaa', 
-                                    save = False, PLOT = True, source = 'Python', 
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'test_aaa', 
+                                    save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 

@@ -2387,20 +2387,35 @@ class CellCompression:
                         except:
                             print(IC.dictFitFH_VWC)
                             
-                    if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
+                if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
+                    for m in fitSettings['ChadwickFitMethods']:
                         try:
-                            method = 'Dimitriadis'
-                            results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
-                            results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
-                            results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
-                            results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
-                            results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
-                            results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
-                            results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
-                            results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
-                            results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                            results['error_'+ m][i] = IC.dictFitFH_Chadwick[m]['error']
+                            results['nbPts_'+ m][i] = IC.dictFitFH_Chadwick[m]['nbPts']
+                            results['E_'+ m][i] = IC.dictFitFH_Chadwick[m]['E']
+                            results['ciwE_'+ m][i] = IC.dictFitFH_Chadwick[m]['ciwE']
+                            results['H0_'+ m][i] = IC.dictFitFH_Chadwick[m]['H0']
+                            results['R2_'+ m][i] = IC.dictFitFH_Chadwick[m]['R2']
+                            results['Chi2_'+ m][i] = IC.dictFitFH_Chadwick[m]['Chi2']
+                            results['valid_'+ m][i] = IC.dictFitFH_Chadwick[m]['valid']
+                            results['issue_'+ m][i] = IC.dictFitFH_Chadwick[m]['issue']
                         except:
-                            print(IC.dictFitFH_Dimitriadis)
+                            print(IC.dictFitFH_Chadwick)
+                            
+                if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
+                    try:
+                        method = 'Dimitriadis'
+                        results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
+                        results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
+                        results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
+                        results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
+                        results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
+                        results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
+                        results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
+                        results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+                        results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                    except:
+                        print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults
@@ -2510,6 +2525,8 @@ class CellCompression:
         fig.tight_layout()
         return(fig, ax)
     
+    
+    
 class BadIndentCompression:
     def __init__(self, CC, indentDf, thisExpDf, i_indent):
         self.rawDf = indentDf
@@ -2601,6 +2618,8 @@ class BadIndentCompression:
         self.dictFitsSS_3parts = {} 
         self.df_3parts = pd.DataFrame({})
         self.computed_SSK_filteredDer = False
+
+
 
 
 class IndentCompression:
@@ -3651,8 +3670,8 @@ class IndentCompression:
 
         """
         if self.isValidForAnalysis:
-            ax.scatter(self.hCompr, self.fCompr, marker = 'o', color = '#ADD7E5')
-            ax.scatter(self.hRelax, self.fRelax, marker = 'o', color = '#A3CE88')
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             legendText = ''
             ax.set_xlabel('h (nm)')
@@ -3661,6 +3680,7 @@ class IndentCompression:
             if plotFit:
                 
                 method = 'Full'
+                # dictFit = self.dictFitFH_Chadwick[method]
                 dictFit = self.dictFitFH_Chadwick[method]
                 fitError = dictFit['error']
                     
@@ -3670,40 +3690,40 @@ class IndentCompression:
                     hPredict = dictFit['yPredict']
                     
                     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    # ax.plot(hPredict, fFit,'k--', linewidth =3, 
-                    #         label = legendText, zorder = 2)
+                    ax.plot(hPredict, fFit,'k--', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
                 # else:
                 #     titleText += '\nFIT ERROR'
                     
-                # method = 'f_<_400'
-                # # dictFit = self.dictFitFH_Chadwick[method]
+                method = 'f_<_400'
                 # dictFit = self.dictFitFH_Chadwick[method]
-                # fitError = dictFit['error']
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
                     
-                # if not fitError:
-                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                #     fFit = dictFit['x']
-                #     hPredict = dictFit['yPredict']
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
                     
-                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                #     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
-                #             label = legendText, zorder = 2)
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
                 # else:
                 #     titleText += '\nFIT ERROR'
                 
-                # method = 'f_in_400_800'
-                # # dictFit = self.dictFitFH_Chadwick[method]
+                method = 'f_in_400_800'
                 # dictFit = self.dictFitFH_Chadwick[method]
-                # fitError = dictFit['error']
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
                     
-                # if not fitError:
-                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                #     fFit = dictFit['x']
-                #     hPredict = dictFit['yPredict']
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
                     
-                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                #     ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
-                #             label = legendText, zorder = 2)
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
                 # else:
                 #     titleText += '\nFIT ERROR'
                     
@@ -3729,9 +3749,9 @@ class IndentCompression:
                     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                    # ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
-                    #         label = legendText)
-                    # ax.plot(plot_startH, plot_startF, marker = 'o', color = 'cyan', zorder = 4)
+                    ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
+                            label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
 
                     
                 # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
