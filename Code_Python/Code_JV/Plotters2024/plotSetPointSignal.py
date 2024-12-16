@@ -100,7 +100,7 @@ ax.grid()
 fig.tight_layout()
 
 path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
-ufun.simpleSaveFig(fig, 'LoopStruct_BZT', path, '.png', 300)
+ufun.simpleSaveFig(fig, 'LoopStruct_BZT', path, '.pdf', 300)
 
 plt.show()
 
@@ -173,6 +173,6 @@ ax.grid()
 fig.tight_layout()
 
 path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
-ufun.simpleSaveFig(fig, 'CstFieldStruct_BZTS_02', path, '.png', 300)
+ufun.simpleSaveFig(fig, 'CstFieldStruct_BZTS_02', path, '.pdf', 300)
 
 plt.show()

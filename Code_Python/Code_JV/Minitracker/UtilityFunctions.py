@@ -4,7 +4,7 @@ Created on Tue Mar  1 11:21:02 2022
 @authors: Joseph Vermeil, Anumita Jawahar
 
 UtilityFunctions.py - contains all kind of small functions used by CortExplore programs, 
-to be imported with "import UtilityFunctions as ufun" and call with "cp.my_function".
+to be imported with "import UtilityFunctions as ufun" and call with "ufun.my_function".
 Joseph Vermeil, Anumita Jawahar, 2022
 
 This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,7 @@ from scipy import signal
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
 from scipy.signal import find_peaks, savgol_filter
-from scipy.optimize import linear_sum_assignment
+from scipy.optimize import linear_sum_assignment, least_squares
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
@@ -58,8 +58,6 @@ from sklearn.linear_model import HuberRegressor
 #### Local Imports
 
 import sys
-import CortexPaths as cp
-sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
 import GlobalConstants as gc
@@ -77,7 +75,6 @@ dateFormatExcel = re.compile(r'[1-2]\d{1}/\d{2}/(?:19|20)\d{2}') # matches X#/##
 dateFormatExcel2 = re.compile(r'[1-2]\d-\d{2}-(?:19|20)\d{2}') # matches X#-##-YY## where X in {1, 2} and YY in {19, 20}
 dateFormatOk = re.compile(r'\d{2}-\d{2}-\d{2}') # Correct format yy-mm-dd we use
 
-cm_in = 2.54
 
 # %% (1) Utility functions
 
@@ -191,191 +188,6 @@ def renamePrefix(DirExt, currentCell, newPrefix):
             
 # %%% Data management
 
-def getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix):
-    """
-    Import the table with all the conditions in a clean way.
-    It is a tedious function to read because it's doing a boring job:
-    Converting strings into numbers when possible; 
-    Converting commas into dots to correct for the French decimal notation; 
-    Converting semicolon separated values into lists when needed; 
-    \n
-    NEW FEATURE: Thanks to "engine='python'" in pd.read_csv() the separator can now be detected automatically !
-    """
-    
-    top = time.time()
-    
-    #### 0. Import the table
-    if suffix == '':
-        experimentalDataFile = 'ExperimentalConditions.csv'
-    else:
-        experimentalDataFile = 'ExperimentalConditions' + suffix + '.csv'
-        
-    experimentalDataFilePath = os.path.join(DirExp, experimentalDataFile)
-    expDf = pd.read_csv(experimentalDataFilePath, sep=None, header=0, engine='python')
-    # print(gs.BLUE + 'Importing Experimental Conditions' + gs.NORMAL)
-    print(gs.BLUE + 'Experimental Conditions Table has ' + str(expDf.shape[0]) + ' lines and ' + str(expDf.shape[1]) + ' columns' + gs.NORMAL)
-    #### 1. Clean the table
-    
-    #### 1.1 Remove useless columns
-    for c in expDf.columns:
-        if 'Unnamed' in c:
-            expDf = expDf.drop([c], axis=1)
-        if '.1' in c:
-            expDf = expDf.drop([c], axis=1)
-        
-    expDf = expDf.convert_dtypes()
-
-    #### 1.2 Convert commas into dots
-    listTextColumns = []
-    for col in expDf.columns:
-        try:
-            if expDf[col].dtype == 'string':
-                listTextColumns.append(col)
-        except:
-            pass
-    expDf[listTextColumns] = expDf[listTextColumns].apply(lambda x: x.str.replace(',','.'))
-
-    #### 1.3 Format 'scale'
-    expDf['scale pixel per um'] = expDf['scale pixel per um'].astype(float)
-    
-    #### 1.4 Format 'optical index correction'
-    try: # In case the format is 'n1/n2'
-        expDf['optical index correction'] = \
-                  expDf['optical index correction'].apply(lambda x: x.split('/')[0]).astype(float) \
-                / expDf['optical index correction'].apply(lambda x: x.split('/')[1]).astype(float)
-        print(gs.ORANGE + 'optical index correction : format changed' + gs.NORMAL)
-    except:
-        pass
-    
-    #### 1.5 Format 'magnetic field correction'
-    expDf['magnetic field correction'] = expDf['magnetic field correction'].astype(float)
-    
-    #### 1.6 Format 'with fluo images'
-    expDf['with fluo images'] = expDf['with fluo images'].astype(bool)
-
-    # #### 1.7 Format 'ramp field'
-    # try:
-    #     print(ORANGE + 'ramp field : converted to list successfully' + gs.NORMAL)
-    #     expDf['ramp field'] = \
-    #     expDf['ramp field'].apply(lambda x: [x.split(';')[0], x.split(';')[1]] if not pd.isnull(x) else [])
-    # except:
-    #     pass
-
-    #### 1.8 Format 'date'
-    dateExemple = expDf.loc[expDf.index[1],'date']
-    if re.match(dateFormatExcel, dateExemple):
-        print(gs.ORANGE + 'dates : format corrected' + gs.NORMAL)
-        expDf.loc[:,'date'] = expDf.loc[:,'date'].apply(lambda x: x.split('/')[0] + '-' + x.split('/')[1] + '-' + x.split('/')[2][2:])        
-    elif re.match(dateFormatExcel2, dateExemple):
-        print(gs.ORANGE + 'dates : format corrected' + gs.NORMAL)
-        expDf.loc[:,'date'] = expDf.loc[:,'date'].apply(lambda x: x.split('-')[0] + '-' + x.split('-')[1] + '-' + x.split('-')[2][2:])  
-        
-    #### 1.9 Format activation fields
-    try:
-        expDf['first activation'] = expDf['first activation'].astype(np.float)
-        expDf['activation frequency'] = expDf['activation frequency'].astype(np.float)
-    except:
-        pass
-
-    #### 2. Save the table, if required
-    if save:
-        saveName = 'ExperimentalConditions' + suffix + '.csv'
-        savePath = os.path.join(DirExp, saveName)
-        expDf.to_csv(savePath, sep=';', index = False)
-        
-        if not cp.CloudSaving == '':
-            savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
-            expDf.to_csv(savePath_cloud, sep=';', index = False)
-
-    #### 3. Generate additionnal field that won't be saved
-    
-    #### 3.1 Make 'manipID'
-    expDf['manipID'] = expDf['date'] + '_' + expDf['manip']
-    
-    
-    
-    #### 3.2 Make 'first time point'
-    dict_firstTimePoint = {}
-    unique_dates = expDf.date.unique()
-    unique_T0 = np.zeros_like(unique_dates, dtype = np.float64)
-    for kk in range(len(unique_dates)):
-        d = unique_dates[kk]
-        d_T0 = findFirstAbsTimeOfDate(cp.DirDataTimeseries, d, suffix = '.csv')
-        unique_T0[kk] = d_T0
-        
-    dictT0 = {unique_dates[ii]:unique_T0[ii] for ii in range(len(unique_dates))}
-    all_T0 = np.array([dictT0[d] for d in expDf.date.values])
-    expDf['date_T0'] = all_T0
-    
-    #### 3.3 Drop the 'comments' column
-    try:
-        expDf = expDf.drop(['comments'], axis=1)
-    except:
-        pass
-    
-    # def str2int(s):
-    #     try:
-    #         x = int(s)
-    #     except:
-    #         x = np.nan
-    #     return(x)
-    
-    # def str2float(s):
-    #     try:
-    #         x = float(s)
-    #     except:
-    #         x = np.nan
-    #     return(x)
-    
-    
-    # #### 3.2 Format 'bead diameter'
-    # diameters = expDf.loc[:,'bead diameter'].apply(lambda x: str(x).split('_'))
-    # diameters = diameters.apply(lambda x: [int(xx) for xx in x])
-    # expDf.loc[:,'bead diameter'] = diameters
-    # # print(ORANGE + 'ramp field : converted to list successfully' + NORMAL)
-    
-    # #### 3.3 Format 'bead type'
-    # bt = expDf.loc[:,'bead type'].apply(lambda x: str(x).split('_'))
-    # bt = bt.apply(lambda x: [str(xx) for xx in x])
-    # expDf.loc[:,'bead type'] = bt
-    
-    # #### 3.4 Format 'ramp field'
-    # rf = expDf.loc[:,'ramp field'].apply(lambda x: str(x).split('_'))
-    # rf = rf.apply(lambda x: [str2float(xx) for xx in x])
-    # expDf.loc[:,'ramp field'] = rf
-    
-    # #### 3.5 Format 'loop structure'
-    # ls = expDf.loc[:,'loop structure'].apply(lambda x: str(x).split('_'))
-    # ls = ls.apply(lambda x: [str2int(xx) for xx in x])
-    # expDf.loc[:,'loop structure'] = ls
-
-    #### 4. END
-    print(gs.GREEN + 'T = {:.3f}'.format(time.time() - top) + gs.NORMAL)
-    
-    return(expDf)
-
-
-def mergeExpDf(suffixes = [], save = False):
-    # getExperimentalConditions(DirExp = cp.DirRepoExp, save = False, suffix = cp.suffix)
-    all_expDf = []
-    DirExp_root = '_'.join(cp.DirRepoExp.split('_')[:-1])
-    for suf in suffixes:
-        DirExp = DirExp_root + suf
-        expDf = getExperimentalConditions(DirExp = DirExp, save = False, suffix = suf)
-        expDf['author'] = suf
-        expDf.insert(0, 'author', expDf.pop('author'))
-        all_expDf.append(expDf)
-        
-    new_expDf = pd.concat(all_expDf, axis=0, join='outer').reset_index(drop = True)
-    new_expDf = new_expDf.sort_values(by = ['date', 'manip'])
-    
-    if save:
-        saveName = 'ExperimentalConditions' + ''.join(suffixes) + '.csv'     
-        if not cp.CloudSaving == '':
-            savePath_cloud = os.path.join(cp.DirCloudExp, saveName)
-            new_expDf.to_csv(savePath_cloud, sep=';', index = False)
-        
-    return(all_expDf)
     
 
 def correctExcelDatesInDf(df, dateColumn, dateExample = ''):
@@ -724,45 +536,7 @@ def getDictAggMean(df):
 #     return(dictAggMean)
 
 
-def archiveData(df, name = '', sep = ';', descText = '',
-                saveDir = '', subDir = '', cloudSave = 'none'):
-    # Generate unique name if needed
-    if name == '':
-        dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-        name = 'df_' + dt
-        
-    saveDesc = (descText != '')
-        
-    # Generate default save path if needed
-    if saveDir == '':
-        saveDir = cp.DirDataFigToday
-        saveCloudDir = cp.DirCloudFigToday
-    else:
-        saveDir = os.path.join(cp.DirDataFig, saveDir)
-        saveCloudDir = os.path.join(cp.DirCloudFig, saveDir)
-        
-    # Normal save
-    savePath = os.path.join(saveDir, subDir, name+'.csv')
-    df.to_csv(savePath, sep = sep, index = False)
-    if saveDesc:
-        descPath = os.path.join(saveDir, subDir, name+'_infos.txt')
-        f = open(descPath, 'w')
-        f.write(descText)
-        f.close()
-    
-    # Cloud save if specified
-    doCloudSave = (not (cloudSave == 'none')) \
-                  or (cloudSave == 'strict') \
-                  or (cloudSave == 'flexible' and cp.CloudSaving != '')
-                  
-    if doCloudSave:
-        cloudSavePath = os.path.join(saveCloudDir, subDir, name+'.csv')
-        df.to_csv(cloudSavePath, sep = sep, index = False)
-        if saveDesc:
-            descPathCloud = os.path.join(saveCloudDir, subDir, name+'_infos.txt')
-            f = open(descPathCloud, 'w')
-            f.write(descText)
-            f.close()
+
         
     
 def updateDefaultSettingsDict(settingsDict, defaultSettingsDict):
@@ -1192,16 +966,59 @@ def resize_2Dinterp(I, new_nx=None, new_ny=None, fx=None, fy=None):
     new_I = fd(newYY, newXX, grid=False)
     return(new_I)
 
+
+def fitCircle(contour, loss = 'huber'):
+    """
+    Find the best fitting circle to a an array of points in 2D.
+    The contour doesn't have to be the whole circle, it can be simply an arc.
+
+    Parameters
+    ----------
+    contour : Array-like
+        Shape (N, 2). Format RC (Row-Column), which means YX.
+        contour = [[Y1, X1], [Y2, X2], [Y3, X3], ...] = [[R1, C1], [R2, C2], [R3, C3], ...]
+    loss : string, optional
+        Type of loss function applied by least_squares. The default is 'huber', for a robust fit. For a normal least square fit, use 'linear'.
+        See documentation on https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
+
+    Returns
+    -------
+    center : tuple (Y, X), center of the circle
+    R : float, radius of the circle
+
+    """
+    # Contour = [[Y, X], [Y, X], [Y, X], ...] 
+    x, y = contour[:,1], contour[:,0]
+    x_m = np.mean(x)
+    y_m = np.mean(y)
+    
+    def calc_R(xc, yc):
+        """ calculate the distance of each 2D points from the center (xc, yc) """
+        return(((x-xc)**2 + (y-yc)**2)**0.5)
+
+
+    def f_2(c):
+        """ calculate the algebraic distance between the 2D points and the mean circle centered at c=(xc, yc) """
+        Ri = calc_R(*c)
+        return(Ri - np.mean(Ri))
+
+    center_estimate = x_m, y_m
+    result = least_squares(f_2, center_estimate, loss=loss) # Functions from the scipy.optimize library
+    center = result.x
+    R = np.mean(calc_R(*center))
+    
+    return(center, R)
+
 # %%% Physics
 
 
 
 def computeMag_M270(B, k_batch = 1):
-    M = k_batch * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+    M = 1.05 * 0.74257*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
 def computeMag_M450(B, k_batch = 1):
-    M = k_batch * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
+    M = 1.05 * 1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
 def computeForce_M450(B, D, d):
@@ -1214,7 +1031,7 @@ def computeForce_M450(B, D, d):
     # plt.plot(B, M)
     return(F)
 
-def plotForce(d = 0):
+def plotForce(d = 200e-9):
     fig, axes = plt.subplots(1, 2, figsize = (10,5)) 
     ax = axes[0]
     B = np.linspace(1, 1000, 1000)
@@ -1237,160 +1054,7 @@ def plotForce(d = 0):
     fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
     plt.tight_layout()
     plt.show()
-    
-def plotMagAndForce(d = 0):
-    gs.set_smallText_options_jv()
-    D = 4500e-9
-    # for log plots
-    B1 = np.linspace(0.1, 1001, 1000)
-    M1 = computeMag_M450(B1)
-    F1 = computeForce_M450(B1, D, d)
-    
-    # for lin plots
-    B2 = np.linspace(0, 501, 2001)
-    M2 = computeMag_M450(B2)
-    F2 = computeForce_M450(B2, D, d)
-    B2 = np.concatenate((-B2[::-1], [0], B2))
-    M2 = np.concatenate((-M2[::-1], [0], M2))
-    F2 = np.concatenate((-F2[::-1], [0], F2))
-    
-    fig, axes = plt.subplots(2, 2, figsize = (19/cm_in, 12/cm_in))
-    
-    ax = axes[0,0]
-    ax.plot(B1, M1)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('M (A/m)')
-    ax.grid()
-    
-    ax = axes[0,1]
-    ax.plot(B2, M2)
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('M (A/m)')
-    ax.grid()
-    
-    
-    ax = axes[1,0]
-    ax.plot(B1, F1)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('F (pN)')
-    ax.grid()
-    
-    ax = axes[1,1]
-    ax.plot(B2, F2)
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('F (pN)')
-    ax.grid()
-    
-    fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
-    plt.tight_layout()
-    plt.show()
-    
-def plotMagAndForce2(d = 0):
-    gs.set_mediumText_options_jv()
-    D = 4500e-9
-    
-    # for small range plots
-    B1 = np.linspace(0, 100, 1000)
-    M1 = computeMag_M450(B1)
-    F1 = computeForce_M450(B1, D, d)
-    
-    # for large range plots
-    B2 = np.linspace(0, 500, 2000)
-    M2 = computeMag_M450(B2)
-    F2 = computeForce_M450(B2, D, d)
-    # B2 = np.concatenate((-B2[::-1], [0], B2))
-    # M2 = np.concatenate((-M2[::-1], [0], M2))
-    # F2 = np.concatenate((-F2[::-1], [0], F2))
-    
-    fig1, axes1 = plt.subplots(1, 2, figsize = (19/cm_in, 8/cm_in), sharey='row')
-    
-    ax = axes1[0]
-    ax.plot(B1, M1/1e3, c='indigo')
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('M (kA/m)')
-    ax.grid()
-    
-    ax = axes1[1]
-    ax.plot(B2, M2/1e3, c='indigo')
-    ax.set_xlabel('B (mT)')
-    # ax.set_ylabel('M (kA/m)')
-    ax.grid()
-    
-    fig1.suptitle(f'M(B) for a M-450 bead (D = {D*1e6:.2f} µm)')
-    fig1.tight_layout()
-    
-    fig2, axes2 = plt.subplots(1, 2, figsize = (19/cm_in, 8/cm_in), sharey='row')
-    
-    ax = axes2[0]
-    ax.plot(B1, F1/1e3, c='darkred')
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('F (nN)')
-    ax.grid()
-    
-    ax = axes2[1]
-    ax.plot(B2, F2/1e3, c='darkred')
-    ax.set_xlabel('B (mT)')
-    # ax.set_ylabel('F (pN)')
-    ax.grid()
-    
-    fig2.suptitle(f'F(B) for two M-450 beads in contact (D = {D*1e6:.2f} µm)')
-    fig2.tight_layout()
-    
-    path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
-    simpleSaveFig(fig1, 'Example_M-B', path, '.pdf', 150)
-    simpleSaveFig(fig2, 'Example_F-B', path, '.pdf', 150)
-    
-    plt.show()
 
-# plotMagAndForce2(d = 0)
-
-def plotMagAndForce3(d = 0):
-    SMALLER_SIZE = 8
-    SMALL_SIZE = 10
-    MEDIUM_SIZE = 11
-    BIGGER_SIZE = 12
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    D = 4500e-9
-    
-    # for small range plots
-    B1 = np.linspace(0, 80, 1000)
-    M1 = computeMag_M450(B1)
-    F1 = computeForce_M450(B1, D, d)
-    
-    fig1, axes1 = plt.subplots(2, 1, figsize = (11/cm_in, 8.5/cm_in), sharex=True)
-    
-    ax = axes1[0]
-    ax.plot(B1, M1/1e3, c='indigo')
-    # ax.set_xlabel('B (mT)')
-    ax.set_ylabel('M (kA/m)')
-    ax.grid()
-    
-    ax = axes1[1]
-    ax.plot(B1, F1/1e3, c='darkred')
-    ax.set_xlabel('B (mT)')
-    ax.set_ylabel('F (nN)')
-    ax.grid()
-    
-    # fig1.suptitle(f'M(B) for a M-450 bead (D = {D*1e6:.2f} µm)')
-    fig1.tight_layout()
-
-    
-    path = "C:/Users/JosephVermeil/Desktop/Manuscrit/Mat&Meth/NouvellesFigures"
-    simpleSaveFig(fig1, 'Example_MF-B', path, '.pdf', 150)
-    
-    plt.show()
-    
-# plotMagAndForce3(d = 0)
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2
@@ -1479,8 +1143,8 @@ def findFirst(x, A):
 
 def findLast(x, A):
     """
-    Find first occurence of x in array A, in a VERY FAST way.
-    If you like weird one liners, you will like this function.
+    Find last occurence of x in array A, in a VERY FAST way.
+    Adapted from findFirst just above.
     """
     idx = (A[::-1]==x).view(bool).argmax()
     return(len(A)-idx-1)
@@ -1494,6 +1158,15 @@ def findFirst_V2(v, arr):
         if val == v:
             return(idx[0])
     return(-1)
+
+
+def argmedian(x):
+    """
+    Find the argument of the median value in array x.
+    """
+    if len(x)%2 == 0:
+        x = x[:-1]
+    return(np.argpartition(x, len(x) // 2)[len(x) // 2])
 
 
 def fitLine(X, Y):
@@ -1524,6 +1197,7 @@ def fitLine(X, Y):
 #     print(dir(results))
     return(results.params, results)
 
+
 def fitLineHuber(X, Y):
     """
     returns: results.params, results \n
@@ -1551,6 +1225,7 @@ def fitLineHuber(X, Y):
     params = results.params 
 #     print(dir(results))
     return(results.params, results)
+
 
 def fitLineWeighted(X, Y, weights):
     """
@@ -1600,6 +1275,7 @@ def toList(x):
         else: # x is not a Collection : probably a number or a boolean
             return([x]) # return : [x]
         
+        
 def toListOfStrings(x):
     """
     if x is a list, return x with all elements converted to string
@@ -1620,16 +1296,6 @@ def toListOfStrings(x):
         else: # x is not a Collection : probably a number or a boolean
             return([str(x)]) # return : [x]
         
-# def toList_V0(x):
-#     """
-#     if x is a list, return x
-#     if x is not a list, return [x]
-#     """
-#     try:
-#         x = list(x)
-#         return(x)
-#     except:
-#         return([x])
 
     
 def drop_duplicates_in_array(A):
@@ -1672,41 +1338,7 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
     fig.savefig(figPath, dpi=dpi)
     
 
-def archiveFig(fig, name = '', ext = '.png', dpi = 100,
-               figDir = '', figSubDir = '', cloudSave = 'flexible'):
-    """
-    This is supposed to be a "smart" figure saver.
-    
-    1. Main save
-        - It saves the fig with resolution 'dpi' and extension 'ext' (default ext = '.png' and dpi = 100).
-        - If you give a name, it will be used to save your file; if not, a name will be generated based on the date.
-        - If you give a value for figDir, your file will be saved in cp.DirDataFig//figDir. Else, it will be in cp.DirDataFigToday.
-        - You can also give a value for figSubDir to save your fig in a subfolder of the chosen figDir.
-    
-    2. Backup save (optional). cloudSave can have 3 values : 'strict', 'flexible', or 'none'.
-        - If 'strict', this function will attempt to do a cloud save not matter what.
-        - If 'check', this function will check that you enable properly the cloud save in CortexPath before attempting to do a cloud save.
-        - If 'none', this function will not do a cloud save.
-    """
-    # Generate unique name if needed
-    if name == '':
-        dt = datetime.now().strftime("%Y-%m-%d_%Hh%Mm%Ss")
-        name = 'fig_' + dt
-    # Generate default save path if needed
-    if figDir == '':
-        figDir = cp.DirDataFigToday
-        figCloudDir = cp.DirCloudFigToday
-    else:
-        figDir = os.path.join(cp.DirDataFig, figDir)
-        figCloudDir = os.path.join(cp.DirCloudFig, figDir)
-    # Normal save
-    savePath = os.path.join(figDir, figSubDir)
-    simpleSaveFig(fig, name, savePath, ext, dpi)
-    # Cloud save if specified
-    doCloudSave = ((cloudSave == 'strict') or (cloudSave == 'flexible' and cp.CloudSaving != ''))
-    if doCloudSave:
-        cloudSavePath = os.path.join(figCloudDir, figSubDir)
-        simpleSaveFig(fig, name, cloudSavePath, ext, dpi)
+
         
    
 def setCommonBounds(axes, xb = [0, 'auto'], yb = [0, 'auto'],

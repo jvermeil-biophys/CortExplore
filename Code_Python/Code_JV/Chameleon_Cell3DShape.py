@@ -321,7 +321,7 @@ def get_CZT_fromTiff(filePath):
 # %% Cell 3D contour
 
 srcDir = "D:/MicroscopyData/2024-02-27_SpinningDisc_3T3-LifeAct_wPincher_JV/ZS_Fluo-crop"
-fileName = "3T3-LifeActGFP_ZS_C13"
+fileName = "3T3-LifeActGFP_ZS_C10"
 
 dstDir = os.path.join(srcDir, fileName + '_results')
 warpSavePath = os.path.join(srcDir, fileName + '_results', 'Warps')
@@ -592,7 +592,7 @@ plt.show()
 # %% Fit ellipsoid
 
 srcDir = "D:/MicroscopyData/2024-02-27_SpinningDisc_3T3-LifeAct_wPincher_JV/ZS_Fluo-crop"
-fileName = "3T3-LifeActGFP_ZS_C13"
+fileName = "3T3-LifeActGFP_ZS_C10"
 
 dstDir = os.path.join(srcDir, fileName + '_results')
 filePath = os.path.join(srcDir, fileName + '.tif')
@@ -676,6 +676,81 @@ plt.show()
 
 
 # ax.plot_surface(x, y, z,  rstride=4, cstride=4, color='b')
+
+
+# %% Fit ellipsoid manuscript
+gs.set_manuscript_options_jv()
+srcDir = "D:/MicroscopyData/2024-02-27_SpinningDisc_3T3-LifeAct_wPincher_JV/ZS_Fluo-crop"
+
+fileName = "3T3-LifeActGFP_ZS_C10"
+
+dstDir = os.path.join(srcDir, fileName + '_results')
+filePath = os.path.join(srcDir, fileName + '.tif')
+cellId = fileName.split('_')[-1]
+
+Zcontour = np.loadtxt(os.path.join(dstDir, f'{cellId}_Zcontour.txt'))
+Xcontour = np.loadtxt(os.path.join(dstDir, f'{cellId}_Xcontour.txt'))
+Ycontour = np.loadtxt(os.path.join(dstDir, f'{cellId}_Ycontour.txt'))
+XYZcenter = np.loadtxt(os.path.join(dstDir, f'{cellId}_XYZcenter.txt'))
+XYcenter_avg = np.mean(XYZcenter[10:-10, :2], axis=0)
+
+XX = (Xcontour-XYcenter_avg[0])/XY_scale
+YY = (Ycontour-XYcenter_avg[1])/XY_scale
+Z = Zcontour/Z_scale
+ZZ = np.repeat(Z, XX.shape[1], axis=0).reshape(XX.shape)
+
+D2 = np.square(XX) + np.square(YY)
+
+d2 = D2.flatten()
+zz = ZZ.flatten()
+
+def ellipsoid1(d2, R, C, g):
+    return(np.sqrt(C**2 - (C**2/R**2)*d2) + g)
+
+def ellipsoid2(zz, R, C, g):
+    return(R**2 * (1 - (np.square(zz-g))/C**2))
+
+def residuals_ellipsoid(p, zz, d2):
+    return(d2 - ellipsoid2(zz, *p))
+
+
+p0 = [10, 12, 0]
+popt, pcov = optimize.leastsq(residuals_ellipsoid, p0, args=(zz, d2))
+
+[R, C, g] = popt
+print(f'R = {R:.2f}, C = {C:.2f}, g = {g:.2f} [µm]')
+d2_fit = ellipsoid2(zz, R, C, g)
+D2_fit = d2_fit.reshape(D2.shape)
+
+AA = np.repeat(np.linspace(0, 2*np.pi, 360), XX.shape[0], axis=0).reshape(XX.T.shape).T
+XX_fit = np.sqrt(D2_fit) * np.cos(AA)
+YY_fit = np.sqrt(D2_fit) * np.sin(AA)
+
+cList_viridis = plt.cm.viridis(np.linspace(0.1, 0.9, len(Zcontour)))
+fig3D, axes3D = plt.subplots(1, 1, subplot_kw={'projection': '3d'}, figsize=(6/gs.cm_in,5/gs.cm_in))
+
+# Real points
+ax = axes3D
+ax.set_prop_cycle(plt.cycler("color", cList_viridis))
+for i in range(len(Zcontour)):
+    xx, yy = (Xcontour[i])/XY_scale, (Ycontour[i])/XY_scale
+    z = Zcontour[i]/Z_scale
+    zz = z * np.ones_like(xx)
+    ax.plot(xx, yy, zz, label=f'z = {z/Z_scale:.1f}µm', lw=0.75)
+# ax.plot(XYZcenter[:,0]/XY_scale, XYZcenter[:,1]/XY_scale, XYZcenter[:,2]/Z_scale, 'r-')
+ax.set_aspect('equal', adjustable='box')    
+
+
+figName = f'{cellId}_3D'
+fig3D.tight_layout()
+
+
+ufun.simpleSaveFig(fig3D, figName, dstDir, '.pdf', 150)
+plt.show()
+
+
+# ax.plot_surface(x, y, z,  rstride=4, cstride=4, color='b')
+
 
 
 # %% Flatten the ellipse

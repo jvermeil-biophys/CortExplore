@@ -863,10 +863,10 @@ def plot_contours(res_dict, res_df,
         Nplots = 10
         Ncols = 5
         Nrows = ((Nplots-1)//Ncols) + 1
-        fig_d, axes_dM = plt.subplots(Nrows, Ncols, figsize = (3.5*Ncols, 3.5*Nrows))
-        suptitle = 'Cell contours for growing values of $\\delta$' + '\n'
+        fig_d, axes_dM = plt.subplots(Nrows, Ncols, figsize = (16/gs.cm_in, 8/gs.cm_in), sharex=True, sharey=True) # (3.5*Ncols, 3.5*Nrows))
+        suptitle = 'Cell contours for growing values of $\\delta$ ; ' #+ '\n'
         suptitle += f'$R_1$ = {R1:.1f}, $H_0$ = {H0:.1f}, $R_p$ = {Rp:.1f} (µm)'
-        fig_d.suptitle(suptitle, size = 14)
+        fig_d.suptitle(suptitle, size = 10)
         axes_d = axes_dM.flatten()
         cList = plt.cm.viridis(np.linspace(0, 0.9, Nplots))
         index_df = np.linspace(0, N-1, Nplots, dtype=int)
@@ -967,7 +967,7 @@ def plot_contours(res_dict, res_df,
                 zz = np.array([z_lim_fun(r, r1_lim) for r in rr])
             
             ax.axhline(0, c='k', lw=5)
-            ax.plot(rr, zz, c = c, zorder = 6, label = f'$\\delta$ = {delta:.2f} µm')
+            ax.plot(rr, zz, c = c, zorder = 6, label = f'$\delta$={delta:.2f}µm')
             ax.plot(-rr, zz, c = c, zorder = 6)
             
             CenterCell = H0 - R00
@@ -983,9 +983,9 @@ def plot_contours(res_dict, res_df,
             ax.plot(RRIndenter, ZZIndenter, 'r-')
             
         for ax in axes_d:
-            ax.legend(loc = 'upper right', fontsize = 9)
+            ax.legend(loc = 'upper right', fontsize = 6)
             locator = ticker.MultipleLocator(5)
-            ax.tick_params(axis='both', labelsize=8)
+            ax.tick_params(axis='both', labelsize=6)
             ax.grid()
             ax.set_aspect('equal', adjustable='box')
             w = max(R1, H0)
@@ -999,7 +999,11 @@ def plot_contours(res_dict, res_df,
     
     if save:
         for fig, name in zip(figs, fig_names):
-            ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, figDir = save_path)
+            # ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, figDir = save_path)
+            ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, ext = '.png', dpi = 200,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
+            ufun.archiveFig(fig, name = fig_name_prefix + '_' + name, ext = '.pdf', dpi = 100,
+                            figDir = save_path, figSubDir = '', cloudSave = 'flexible')
 
     plt.show()
     

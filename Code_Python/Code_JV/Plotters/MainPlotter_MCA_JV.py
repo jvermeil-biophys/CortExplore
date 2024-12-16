@@ -7499,7 +7499,8 @@ filterFluo = True
 
 # %%%%% A11 - avgH0
 
-data = GlobalTable_meca_MCA123
+# data = GlobalTable_meca_MCA123
+data = MecaData_MCA
 dates_r1 = ['21-01-18', '21-01-21']
 dates_r2 = ['21-04-27', '21-04-28', '21-09-08']
 dates_r3 = ['22-07-15', '22-07-20', '22-07-27']
@@ -7514,7 +7515,7 @@ Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
            (data['cell type'] == '3T3'), 
            (data['cell subtype'].apply(lambda x : x in ['aSFL-A11'])), 
-           (data['bead type'] == 'M450'),
+           (data['inside bead type'].apply(lambda x : x.startswith('M450'))),
            (data['date'].apply(lambda x : x in all_dates))]
 
 

@@ -10,16 +10,18 @@ Created on Fri Jul  7 14:31:39 2023
 # 1. Imports
 import numpy as np
 import pandas as pd
+import skimage as skm
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 
 import os
 import time
 import pyautogui
+import matplotlib
 
 from scipy import interpolate
 
-from skimage import io, transform
+# from skimage import io, transform
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment
 
@@ -42,12 +44,15 @@ class Depthograph:
         self.HWScan_triplets = 1200 # Half width of the scans
         self.HWScan_singlets = 600
 
-        deptho_raw = io.imread(depthoPath)
+        deptho_raw = skm.io.imread(depthoPath)
         deptho_root = '.'.join(depthoPath.split('.')[:-1])
         deptho_fileName = (depthoPath.split('//')[-1])
         depthoMetadata = pd.read_csv('_'.join(depthoPath.split('_')[:-1]) + '_Metadata.csv', sep=';')
         depthoStep = depthoMetadata.loc[0, 'step']
-        depthoZFocus = depthoMetadata.loc[0, 'bestFocus']
+        try:
+            depthoZFocus = depthoMetadata.loc[0, 'bestFocus']
+        except:
+            depthoZFocus = depthoMetadata.loc[0, 'focus']
         
         self.path = depthoPath
         self.fileName = deptho_fileName
@@ -58,17 +63,20 @@ class Depthograph:
         
         nX, nZ = self.deptho_raw.shape[1], self.deptho_raw.shape[0]
         XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-        fd = interpolate.interp2d(XX, ZZ, self.deptho_raw, kind='cubic')
         ZZ_HD = np.arange(0, nZ, 1/self.HDZfactor)
-        
-        self.deptho_hd = fd(XX, ZZ_HD)
+        # fd = interpolate.interp2d(XX, ZZ, self.deptho_raw, kind='cubic')
+        # self.deptho_hd = fd(XX, ZZ_HD)
+        deptho_hd = ufun.resize_2Dinterp(self.deptho_raw, fx=1, fy=self.HDZfactor)
+        self.deptho_hd = deptho_hd
         self.step_hd = self.step_raw/self.HDZfactor
+        
+        self.deptho_hd_gb = skm.filters.gaussian(deptho_hd, sigma=(4,0))
         
         self.cutBlackParts(kind = "hd")
 
         self.ZFocus_raw = 0
         self.ZFocus_hd = 0
-
+        self.ZFocus_hd_gb = 0
         self.computeFocus()
         
         self.XX = XX - len(XX)//2
@@ -108,8 +116,8 @@ class Depthograph:
         # ax.plot(Z, STD)
         # ax.plot(Z, STD_smooth)
         # ax.axvline(ZFocus_raw)
-        # hd
         
+        # hd
         nz, nx = self.deptho_hd.shape
         STD = np.std(self.deptho_hd, axis = 1)
         STD_smooth = savgol_filter(STD, 505, 5)
@@ -119,10 +127,24 @@ class Depthograph:
         # fig, ax = plt.subplots(1, 1)
         # ax.plot(Z, STD)
         # ax.plot(Z, STD_smooth)
-        # ax.axvline(ZFocus_hd)
+        # ax.axvline(self.ZFocus_hd)
+        # plt.show()
+        
+        # hd_gb
+        nz, nx = self.deptho_hd_gb.shape
+        STD = np.std(self.deptho_hd_gb, axis = 1)
+        # STD_smooth = savgol_filter(STD, 505, 5)
+        self.ZFocus_hd_gb = np.argmax(STD)
+        
+        # Z = np.arange(nz)
+        # fig, ax = plt.subplots(1, 1)
+        # ax.plot(Z, STD)
+        # # ax.plot(Z, STD_smooth)
+        # ax.axvline(self.ZFocus_hd_gb)
+        # plt.show()
         
         
-    def getNlines(self, Z, N, dZ):
+    def getNlines(self, Z, N, dZ, blur = True):
         listZ = [Z + (k-N//2)*dZ for k in range(N)]
         listProfiles = []
         
@@ -131,7 +153,10 @@ class Depthograph:
         for z in listZ:
             A = (self.ZZ_HD >= z)
             z_idx = ufun.findFirst(1, A)
-            profile = self.deptho_hd[z_idx, :]
+            if blur == True:
+                profile = self.deptho_hd_gb[z_idx, :]
+            else:
+                profile = self.deptho_hd[z_idx, :]
             # ax.plot(self.XX, profile)
             listProfiles.append(profile)
             
@@ -139,9 +164,8 @@ class Depthograph:
         
     
         
-    def locate(self, Deptho2, Z1, N, dZ):
-        listProfiles = self.getNlines(Z1, N, dZ)
-        # print(listProfiles[0])
+    def locate(self, Deptho2, Z1, N, dZ, PLOT = False):
+        listProfiles = self.getNlines(Z1, N, dZ, blur = True)
         
         # now use listStatus_1, listProfiles, self.deptho + data about the jump between Nuplets ! (TBA)
         # to compute the correlation function
@@ -160,26 +184,76 @@ class Depthograph:
         listDistances = np.zeros((N, scannedDepth))
         listZ = np.zeros(N, dtype = int)
         
-        subDeptho2 = Deptho2.deptho_hd[Ztop:Zbot,:]
+        subDeptho2 = Deptho2.deptho_hd_gb[Ztop:Zbot,:]
+        # subDeptho2 = skm.filters.gaussian(subDeptho2, sigma=(4,0))
         # ax1.imshow(subDeptho2)
         
         for i in range(N):
-            
             listDistances[i] = ufun.squareDistance(subDeptho2, listProfiles[i], normalize = True) # Utility functions
             listZ[i] = Ztop + np.argmin(listDistances[i])
             # ax.plot(Deptho2.ZZ_HD, listDistances[i])
             
         listStatus_1 =  [i+1 for i in range(N)]
-        finalDists = ufun.matchDists(listDistances, listStatus_1, 3, 
+        finalDists = ufun.matchDists(listDistances, listStatus_1, N, 
                                     nVoxels, direction = 'downward')
 
         sumFinalD = np.sum(finalDists, axis = 0)
+        sumFinalD = savgol_filter(sumFinalD, 31, 3, mode='mirror')
         
         # ax.plot(Deptho2.ZZ_HD, sumFinalD)
 
         iZ2 = np.argmin(sumFinalD)
-        # print(min(Deptho2.ZZ_HD), max(Deptho2.ZZ_HD))
         Z2 = Deptho2.ZZ_HD[iZ2]
+        # print(min(Deptho2.ZZ_HD), max(Deptho2.ZZ_HD))
+        
+        if PLOT:
+            listZ = [Z1 + (k-N//2)*dZ for k in range(N)]
+            listZidx = []
+            for z in listZ:
+                A = (self.ZZ_HD >= z)
+                z_idx = ufun.findFirst(1, A)
+                listZidx.append(z_idx)
+            iZ1 = listZidx[N//2]
+            
+            gs.set_smallText_options_jv()
+            fig = plt.figure(figsize=(16, 8))
+            spec = fig.add_gridspec(N, 5)
+            
+            ax = fig.add_subplot(spec[:, 0])
+            ax.imshow(self.deptho_hd, aspect = 'auto',
+                      extent=[min(self.XX), max(self.XX), max(self.ZZ_HD), min(self.ZZ_HD)])               
+            ax.axhline(self.ZZ_HD[self.ZFocus_hd_gb], c='r', ls='--')
+            ax.axhline(Z1, c='g', ls='--', zorder=6)
+            for z in listZ:
+                ax.axhline(z, ls='--')
+            
+            for k in range(N):
+                ax = fig.add_subplot(spec[k, 1])
+                ax.plot(self.XX, listProfiles[k])
+                
+            ax = fig.add_subplot(spec[:, 2])
+            ax.invert_yaxis()
+            for k in range(N):
+                ax.plot(listDistances[k], Deptho2.ZZ_HD)
+            
+            
+            ax = fig.add_subplot(spec[:, 3])
+            ax.invert_yaxis()
+            for k in range(N):
+                ax.plot(finalDists[k], Deptho2.ZZ_HD, lw=1)
+            ax.plot(sumFinalD/N, Deptho2.ZZ_HD, c='gold', lw=2)
+            ax.axhline(Z2, c='gold')
+            
+            ax = fig.add_subplot(spec[:, 4])
+            ax.imshow(Deptho2.deptho_hd, aspect = 'auto',
+                      extent=[min(self.XX), max(self.XX), max(self.ZZ_HD), min(self.ZZ_HD)])           
+            ax.axhline(Z2, c='gold', ls='--')
+            ax.axhline(Z1, c='g', ls='--')
+            ax.axhline(Deptho2.ZZ_HD[Deptho2.ZFocus_hd_gb], c='r', ls='--')
+            
+            
+            fig.tight_layout()
+            fig.show()
         
         return(Z2)
     
@@ -188,8 +262,12 @@ class Depthograph:
     def absoluteErrorCurve(self, Deptho2, Zmin, Zmax, N, dZ):
         Z = np.arange(Zmin, Zmax, 10)
         listErr = []
+        
         for z in Z:
-            errZ = z - self.locate(Deptho2, z, N, dZ)
+            PLOT = False
+            if z == +1000:
+                PLOT = True
+            errZ = z - self.locate(Deptho2, z, N, dZ, PLOT)
             listErr.append(errZ)
         arrayErr = np.array(listErr)    
         print(np.std(arrayErr))
@@ -197,9 +275,56 @@ class Depthograph:
         fig, ax = plt.subplots(1, 1)
         ax.plot(Z, arrayErr)
         
+        
+    def averageErrorCurve(self, listDepthos, Zmin, Zmax, N, dZ):
+        gs.set_mediumText_options_jv()
+        Z = np.arange(Zmin, Zmax, 50)
+        nZ = len(Z)
+        nD = len(listDepthos)
+        matErr = np.zeros((nD, nZ))
+        for iD in range(nD):
+            Deptho2 = listDepthos[iD]
+            for iZ in range(nZ):
+                z = Z[iZ]
+                PLOT = False
+                # if z==-500:
+                #     PLOT = True
+                errZ = z - self.locate(Deptho2, z, N, dZ, PLOT)
+                matErr[iD, iZ] = errZ
+        
+        avgErr = np.mean(np.abs(matErr), axis=0)
+        Q3 = np.percentile(matErr, 75)
+        Q1 = np.percentile(matErr, 25)
+        print(Q1, Q3, Q3-Q1)
+        
+        # fig0, axes0 = plt.subplots(1, nD, figsize=(20, 4), sharey=True)
+        # for iD in range(nD):
+        #     ax=axes0[iD]
+        #     ax.plot(Z, matErr[iD, :])
+        #     plt.show()
+        
+        fig, ax = plt.subplots(1, 1, figsize=(8/gs.cm_in, 6/gs.cm_in))
+        ax.plot(Z, avgErr, ls='-', c='cyan')
+        # ax.axhline(Q1, ls='--')
+        # ax.axhline(Q3, ls='--', label = f'interquatile - {Q3-Q1:.1f}')
+        # ax.legend()
+        ax.set_ylim([0, 60])
+        ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+        tickloc = matplotlib.ticker.MultipleLocator(500)
+        ax.xaxis.set_major_locator(tickloc)
+        ax.set_ylabel('Absolute error on $Z$ (nm)')
+        ax.grid(visible=True, which='major', axis='y')
+        fig.tight_layout()
+        # ufun.archiveFig(fig, name = 'Z_AbsErr', ext = '.pdf', dpi = 150,
+        #                figDir = 'D:/MagneticPincherData/Figures/PhysicsDataset/', 
+        #                figSubDir = 'Zprecision', cloudSave = 'flexible')
+        plt.show()
+        
+        
     
     def relativeErrorMap(self, Deptho2, Zmin, Zmax, N, dZ):
-        Z = np.arange(Zmin, Zmax, 10)
+        gs.set_mediumText_options_jv()
+        Z = np.arange(Zmin, Zmax, 50)
         nZ = len(Z)
         matrixErr = np.zeros((nZ, nZ))
         for i1 in range(nZ):
@@ -210,10 +335,15 @@ class Depthograph:
             
         print(np.std(matrixErr))
         
-        fig, ax = plt.subplots(1, 1)
-        im = ax.pcolor(Z, Z, matrixErr, cmap = 'rainbow')
-        # plt.colorbar(im, cax=ax)
-        fig.colorbar(im, ax=ax, label='')
+        fig, ax = plt.subplots(1, 1, figsize=(7.5/gs.cm_in, 6/gs.cm_in))
+        im = ax.pcolor(Z, Z, matrixErr, cmap = 'RdBu_r')
+        cbar = fig.colorbar(im, ax=ax, label=r'Error on $\Delta Z$')
+        ax.set_xlabel('$Z_1$ (nm)')
+        ax.set_ylabel('$Z_2$ (nm)')
+        # fig.tight_layout()
+        # ufun.archiveFig(fig, name = 'Z_RelErr', ext = '.pdf', dpi = 150,
+        #                figDir = 'D:/MagneticPincherData/Figures/PhysicsDataset/', 
+        #                figSubDir = 'Zprecision', cloudSave = 'flexible')
         plt.show()
         
 
@@ -225,7 +355,7 @@ class ZScan:
         
         self.scale = scale
 
-        ZScan_raw = io.imread(zscanPath)
+        ZScan_raw = skm.io.imread(zscanPath)
         ZScan_root = '.'.join(zscanPath.split('.')[:-1])
         ZScan_fileName = (zscanPath.split('//')[-1])
         resDf = pd.read_csv(ZScan_root + '_Results.txt', sep='\t', header=0)
@@ -326,10 +456,10 @@ class ZScan:
 
                 translation = (xm1-roughCenter, ym1-roughCenter)
 
-                tform = transform.EuclideanTransform(rotation=0, \
+                tform = skm.transform.EuclideanTransform(rotation=0, \
                                                       translation = (xm1-roughCenter, ym1-roughCenter))
 
-                I_tmp = transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
+                I_tmp = skm.transform.warp(I_roughRoi, tform, order = 1, preserve_range = True)
 
                 ZScan_cleanROI[i] = np.copy(I_tmp[roughCenter-cleanSize//2:roughCenter+cleanSize//2+1,\
                                               roughCenter-cleanSize//2:roughCenter+cleanSize//2+1])
@@ -369,6 +499,112 @@ class ZScan:
         
 # %% TESTS
 
+# %%% Deptho - 23.09.06
+scale = 15.8
+depthoLibrary = 'D:/MagneticPincherData/Raw/DepthoLibrary'
+mainDeptho = '23.09.06_M4_M450_step20_100X'
+mainDepthoPath = os.path.join(depthoLibrary, mainDeptho + '_Deptho.tif')
+D_main = Depthograph(mainDepthoPath, scale)
+
+intermediateDepthoDir = os.path.join(depthoLibrary, 'Intermediate_Py', mainDeptho + '_step20')
+files = os.listdir(intermediateDepthoDir)
+deptho2_files = []
+deptho2_paths = []
+deptho2_list = []
+for f in files:
+    if f.endswith('_deptho.tif'):
+        path = os.path.join(intermediateDepthoDir, f)
+        deptho2_files.append(f)
+        deptho2_paths.append(path)
+        deptho2_list.append(Depthograph(path, scale))
+
+D_main.averageErrorCurve(deptho2_list, -1500, +1500, 3, 500)
+
+# %%% Deptho - 23.04.20
+scale = 15.8
+depthoLibrary = 'D:/MagneticPincherData/Raw/DepthoLibrary'
+mainDeptho = '23.04.20_M3_M450_step20_100X'
+mainDepthoPath = os.path.join(depthoLibrary, mainDeptho + '_Deptho.tif')
+D_main = Depthograph(mainDepthoPath, scale)
+
+intermediateDepthoDir = os.path.join(depthoLibrary, 'Intermediate_Py', mainDeptho + '_step20')
+files = os.listdir(intermediateDepthoDir)
+deptho2_files = []
+deptho2_paths = []
+deptho2_list = []
+for f in files:
+    if f.endswith('_deptho.tif'):
+        path = os.path.join(intermediateDepthoDir, f)
+        deptho2_files.append(f)
+        deptho2_paths.append(path)
+        deptho2_list.append(Depthograph(path, scale))
+
+D_main.averageErrorCurve(deptho2_list, -1500, +1500, 3, 500)
+
+# %%% Deptho - 24.04.11 - M5
+scale = 15.8
+depthoLibrary = 'D:/MagneticPincherData/Raw/DepthoLibrary'
+mainDeptho = '24.04.11_M5_M450_step20_100X'
+mainDepthoPath = os.path.join(depthoLibrary, mainDeptho + '_Deptho.tif')
+D_main = Depthograph(mainDepthoPath, scale)
+
+intermediateDepthoDir = os.path.join(depthoLibrary, 'Intermediate_Py', mainDeptho + '_step20')
+files = os.listdir(intermediateDepthoDir)
+deptho2_files = []
+deptho2_paths = []
+deptho2_list = []
+for f in files:
+    if f.endswith('_deptho.tif'):
+        path = os.path.join(intermediateDepthoDir, f)
+        deptho2_files.append(f)
+        deptho2_paths.append(path)
+        deptho2_list.append(Depthograph(path, scale))
+
+D_main.averageErrorCurve(deptho2_list, -1500, +1500, 3, 500)
+        
+# %%% Deptho - 24.02.28 - M1
+scale = 15.8
+depthoLibrary = 'D:/MagneticPincherData/Raw/DepthoLibrary'
+mainDeptho = '24.02.28_M2_M450_step20_100X'
+mainDepthoPath = os.path.join(depthoLibrary, mainDeptho + '_Deptho.tif')
+D_main = Depthograph(mainDepthoPath, scale)
+
+intermediateDepthoDir = os.path.join(depthoLibrary, 'Intermediate_Py', mainDeptho + '_step20')
+files = os.listdir(intermediateDepthoDir)
+deptho2_files = []
+deptho2_paths = []
+deptho2_list = []
+for f in files:
+    if f.endswith('_deptho.tif'):
+        path = os.path.join(intermediateDepthoDir, f)
+        deptho2_files.append(f)
+        deptho2_paths.append(path)
+        deptho2_list.append(Depthograph(path, scale))
+
+D_main.averageErrorCurve(deptho2_list, -1500, +1500, 3, 500)
+
+# %%% Deptho - 24.04.11 - M1 -> VERY GOOD ONE !!!
+scale = 15.8
+depthoLibrary = 'D:/MagneticPincherData/Raw/DepthoLibrary'
+mainDeptho = '24.04.11_M1_M450_step20_100X'
+mainDepthoPath = os.path.join(depthoLibrary, mainDeptho + '_Deptho.tif')
+D_main = Depthograph(mainDepthoPath, scale)
+
+intermediateDepthoDir = os.path.join(depthoLibrary, 'Intermediate_Py', mainDeptho + '_step20')
+files = os.listdir(intermediateDepthoDir)
+deptho2_files = []
+deptho2_paths = []
+deptho2_list = []
+for f in files:
+    if f.endswith('_deptho.tif'):
+        path = os.path.join(intermediateDepthoDir, f)
+        deptho2_files.append(f)
+        deptho2_paths.append(path)
+        deptho2_list.append(Depthograph(path, scale))
+
+D_main.averageErrorCurve(deptho2_list, -1500, +1500, 3, 500)
+D_main.relativeErrorMap(deptho2_list[0], -1000, +1050, 3, 500)
+
 # %%% Deptho
 
 depthoPath0 = 'D://MagneticPincherData//Raw//DepthoLibrary//Intermediate_Py//23.04.26_M1_M450_step20_100X_step20//db0_deptho.tif'
@@ -380,7 +616,10 @@ D0 = Depthograph(depthoPath0, 15.8)
 D1 = Depthograph(depthoPath1, 15.8)
 D2 = Depthograph(depthoPath2, 15.8)
 
-D0.absoluteErrorCurve(D2, -1500, +1500, 3, 500)
+# D0.absoluteErrorCurve(D2, -1500, +1500, 3, 500)
+D0.absoluteErrorCurve(D1, -1500, +1500, 3, 500)
+
+# D0.absoluteErrorCurve(D2, -1500, +1500, 1, 500)
 
 # %%% Deptho
 

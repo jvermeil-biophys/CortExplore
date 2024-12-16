@@ -43,6 +43,7 @@ import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
 import TrackAnalyser_V2 as taka2
+import TrackAnalyser_V3 as taka3
 # import TrackAnalyser_dev_AJ as taka
 
 #### Potentially useful lines of code
@@ -397,6 +398,10 @@ GlobalTable_meca_MCAHoxB8 = taka.getMergedTable('Global_MecaData_MCA-HoxB8_2', m
 
 MecaData_HoxB8 = taka2.getMergedTable('MecaData_HoxB8', mergeUMS = True)
 
+
+# %%%
+
+MecaData_HoxB8 = taka3.getMergedTable('MecaData_HoxB8')
 
 # %%%
 
@@ -4211,7 +4216,7 @@ Filters = [(data['validatedThickness'] == True),
            (data['cell type'] == 'HoxB8-Macro'), 
            (data['substrate'] == 'bare glass'),
            (data['cell subtype'].apply(lambda x : x in ['ctrl','tko'])), 
-           (data['bead type'] == 'M450'),
+           # (data['bead type'] == 'M450'),
            (data['date'].apply(lambda x : x in dates))]
 
 

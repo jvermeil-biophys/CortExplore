@@ -56,6 +56,10 @@ DirSave = os.path.join(cp.DirDataRaw, date)
 # DirDeptho = '24.11.28_Deptho/Deptho_P2'
 # DirExt  = 'H:/Filipe_Data/20241128_3T3Fibcon_100xobj_4.5Fibro-StreptBeads_Mechanics/'+ DirDeptho
 # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+#%% Define parameters # Jojo
+date = '24.12.11'
+DirExt = 'E:/24-12-11_3T3-LaGFP_20umdiscs_LongSeries/M2_deptho' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date + '_depthos/M2') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 microscope = 'labview'
 imagePrefix = 'im'
@@ -525,7 +529,7 @@ instructionText += "\n\nC'est parti !\n"
 
 #Change below the number of stacks you want to crop at once. Run the code again to crop the remaining files. 
 # !!!!!! WARNING: Sometimes choosing too many can make your computer bug!!!!!
-limiter = 23
+limiter = 120
 
 print(gs.YELLOW + instructionText + gs.NORMAL)
 

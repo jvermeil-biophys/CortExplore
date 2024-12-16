@@ -1058,7 +1058,7 @@ class Trajectory:
                 
             #### Enable plots of Z detection  here
                 
-                plot = 1
+                plot = 0
                 # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
                 # if (iF <= 21):
                 # # if (iF >= 225 and iF <= 265):
@@ -1150,81 +1150,7 @@ class Trajectory:
                 
                 profileROI = F_cleanRoi[:, cleanCenter-2:cleanCenter+3] # line that is 5 pixels wide     
                 profileROI_hd = ufun.resize_2Dinterp(profileROI, new_nx = 5, new_ny = hdSize)
-                
-                # if plot:
-                #     plt.ioff()
-                #     figtest, axestest = plt.subplots(2, 4, figsize=(16,4))
-                    
-                #     figtest.suptitle(f"X, Y = {X:.1f}, {Y:.1f}")
-                    
-                #     ax = axestest[0, 0]
-                #     ax.imshow(framesNuplet[i].F)
-                #     ax.plot(X, Y, 'r+')
-                #     Xro, Yro = np.round(X), np.round(Y)
-                #     ax.plot(Xro, Yro, 'g+')
-                #     ax.axvline(xb1, c='r', ls='--')
-                #     ax.axvline(xb2-1, c='r', ls='--')
-                #     ax.axhline(yb1, c='r', ls='--')
-                #     ax.axhline(yb2-1, c='r', ls='--')
-                #     ax.set_xlim(xb1-11, xb2+10)
-                #     ax.set_ylim(yb2+10, yb1-11)
-                    
-                #     ax = axestest[1, 0]
-                #     ax.imshow(framesNuplet[i].F)
-                #     ax.plot(X, Y, 'r+')
-                #     ax.plot(np.round(X), np.round(Y), 'g+')
-                #     ax.set_xlim(Xro-3, Xro+3)
-                #     ax.set_ylim(Yro+3, Yro-3)
-
-                #     ax = axestest[0, 1]
-                #     ax.imshow(F_roughRoi)
-                #     ax.plot(roughSize//2, roughSize//2, 'b+')
-                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+')
-                    
-                #     ax = axestest[1, 1]
-                #     ax.imshow(F_roughRoi)
-                #     ax.axvline(roughCenter, c='b', ls='--')
-                #     ax.axhline(roughCenter, c='b', ls='--')
-                #     ax.plot(X-xb1-0.5, Y-yb1-0.5, 'r+', zorder = 6)
-                #     ax.set_xlim(roughCenter-3, roughCenter+3)
-                #     ax.set_ylim(roughCenter+3, roughCenter-3)
-
-                #     ax = axestest[0, 2]
-                #     ax.imshow(F_tmp)
-                #     ax.axvline(roughCenter, c='r', ls='--')
-                    
-                #     ax = axestest[1, 2]
-                #     ax.imshow(F_tmp)
-                #     ax.axvline(roughCenter, c='b', ls='--')
-                #     ax.axhline(roughCenter, c='b', ls='--')
-                #     ax.set_xlim(roughCenter-3, roughCenter+3)
-                #     ax.set_ylim(roughCenter+3, roughCenter-3)
-                    
-                #     Y2, X2 = ndi.center_of_mass(F_cleanRoi[cleanCenter-10:cleanCenter+11, cleanCenter-10:cleanCenter+11])
-                #     Y2, X2 = Y2 + (cleanCenter-10), X2 + (cleanCenter-10)
-                #     ax = axestest[0, 3]
-                #     ax.imshow(F_cleanRoi)
-                #     ax.plot(X2, Y2, 'r+')
-                #     ax.axvline(cleanCenter, c='b', ls='--')
-                    
-                #     ax = axestest[1, 3]
-                #     ax.imshow(F_cleanRoi)
-                #     ax.plot(X2, Y2, 'r+')
-                #     ax.axvline(cleanCenter, c='b', ls='--')
-                #     ax.axhline(cleanCenter, c='b', ls='--')
-                #     ax.set_xlim(cleanCenter-3, cleanCenter+3)
-                #     ax.set_ylim(cleanCenter+3, cleanCenter-3)
-
-                #     thisCellTempPlots = os.path.join(cp.DirTempPlots, self.cellID)
-                #     if not os.path.isdir(thisCellTempPlots):
-                #         os.mkdir(thisCellTempPlots)
-                        
-                #     saveName = '00_S{:.0f}_B{:.0f}.png'.format(framesNuplet[i].iS, self.iB+1)
-                #     savePath = os.path.join(thisCellTempPlots, saveName)
-                #     figtest.savefig(savePath)
-                #     plt.close(figtest)
-                #     plt.ion()
-                
+               
 
             except: # If the vertical slice doesn't work, try the horizontal one
                 print(gs.ORANGE + 'error with the vertical slice -> trying with horizontal one')
@@ -1290,7 +1216,6 @@ class Trajectory:
         subDeptho = self.deptho[Ztop:Zbot, :]
         
         for i in range(Nframes):
-            
             listDistances[i] = ufun.squareDistance(subDeptho, listProfiles[i], normalize = True) # Utility functions
             #### HERE - NEW: Filtering the cost function
             listDistances[i] = savgol_filter(listDistances[i], 31, 3, mode='mirror')
@@ -2109,6 +2034,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             traj = PTL.listTrajectories[iB]
             traj_df = pd.DataFrame(traj.dict)
             trajRawDir = os.path.join(dictPaths['resultDirPath'], 'Trajectories_raw')
+            if not os.path.isdir(trajRawDir):
+                os.mkdir(trajRawDir)
             trajRawPath = os.path.join(trajRawDir, f + '_rawTraj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
             traj_df.to_csv(trajRawPath, sep = '\t', index = False)
 
@@ -2123,6 +2050,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             traj = PTL.listTrajectories[iB]
             traj_df = pd.DataFrame(traj.dict)
             trajDir = os.path.join(dictPaths['resultDirPath'], 'Trajectories')
+            if not os.path.isdir(trajDir):
+                os.mkdir(trajDir)
             trajPath = os.path.join(trajDir, f + '_traj' + str(iB) + '_' + traj.beadInOut + '_PY.csv')
             traj_df.to_csv(trajPath, sep = '\t', index = False)
             
