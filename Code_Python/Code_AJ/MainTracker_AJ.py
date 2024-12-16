@@ -36,11 +36,8 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
-from BeadTracker import mainTracker
-from BeadTracker_V2 import mainTracker_V2
 from BeadTracker_V3 import mainTracker_V3
-
-
+from BeadTracker_V4 import mainTracker_V4
 
 from BeadTracker import XYZtracking
 
@@ -1554,37 +1551,211 @@ mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '24.05.29'
-manips, wells, cells = 3, 2, 7
-depthoNames = '24.05.29_P2_M450_step20_100X'
+manips, wells, cells = 'all', 4, 8
+depthoNames = '24.05.29_P3_M450_step20_100X'
 
-mainTracker_V2(dates, manips, wells, cells, depthoNames, expDf, 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-05-22 - Experiment with MDCK
+
+# %%%% M1 : 
+
+dates = '24.05.22'
+manips, wells, cells = 5, 'all', 'all'
+depthoNames = '24.05.22_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+
+#%% Deptho from experiment 24-05-30 - Experiment with MDCK
+
+# %%%% M1 : 
+
+dates = '24.05.30'
+manips, wells, cells = 5, 1, 'all'
+depthoNames = '24.05.30_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+
+#%% Deptho from experiment 24-06-07 - Experiment 3T3 UTH-CRY2 
+
+# %%%% M1 : 
+
+dates = '24.06.07'
+manips, wells, cells = 4, 2, 'all'
+depthoNames = '24.06.07_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False)
 
 
+#%% Deptho from experiment 24-06-08 - Experiment 3T3 UTH-CRY2 ; 
+#non-Doxy controls for experient on 24.06.07
+
+# %%%% M1 : 
+
+dates = '24.06.08'
+manips, wells, cells = 5, 4, 10
+depthoNames = '24.06.08_P'+str(1)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
 
 
+#%% Deptho from experiment 24-07-15 - Experiment 3T3 UTH-CRY2 ; 
+
+# %%%% M1 : 
+
+dates = '24.07.15'
+manips, wells, cells = 'all', 1, 'all'
+depthoNames = '24.07.15_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
 
 
+#%% Deptho from experiment 24-08-19 - Experiment 3T3 UTH-CRY2 - Testing reproducibility ; 
 
+# %%%% M1 : 
 
+dates = '24.08.19'
+manips, wells, cells = 1, 1, 4
+depthoNames = '24.08.19_P1_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
 
+#%% Deptho from experiment 24-08-26 - Experiment 3T3 UTH-CRY2 - Testing white light effects on crosslinking activation ; 
 
+# %%%% (P1-1): No Filter
 
+dates = '24.08.26'
+manips, wells, cells = 1, 1, 'all'
+depthoNames = '24.08.26_P1-1_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P1-2): Filter 44
 
+dates = '24.08.26'
+manips, wells, cells = 3, 1, 'all'
+depthoNames = '24.08.26_P1-2_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P2-1): 
 
+dates = '24.08.26'
+manips, wells, cells = 1, 2, 'all'
+depthoNames = '24.08.26_P2-1_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P2-2): 
 
+dates = '24.08.26'
+manips, wells, cells = 3, 2, 'all'
+depthoNames = '24.08.26_P2-2_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P3-1): 
 
+dates = '24.08.26'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '24.08.26_P3-1_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P3-2): 
 
+dates = '24.08.26'
+manips, wells, cells = 2, 3, 'all'
+depthoNames = '24.08.26_P3-2_M450_step20_100X'
 
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
 
+# %%%% (P4): 
+
+dates = '24.08.26'
+manips, wells, cells = 4, 4, 'all'
+depthoNames = '24.08.26_P4_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-09-05 - Experiment 3T3 UTH-CRY2
+
+# %%%% M1 : 
+
+dates = '24.09.05'
+manips, wells, cells = 1, 1, 2
+depthoNames = '24.09.05_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-09-12 - Experiment 3T3 UTH-CRY2 - Testing reproducibility ; 
+
+# %%%% M1 : 
+
+dates = '24.09.12'
+manips, wells, cells = 6, 6, 'all'
+depthoNames = '24.09.12_P6_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-09-24 - Experiment 3T3 UTH-CRY2 - HOPEFULLY LAST REPLICATE!!!!!!!!!
+
+# %%%% M1 : 
+
+dates = '24.09.24'
+manips, wells, cells = 4, 2, 'all'
+depthoNames = '24.09.24_P'+str(3)+'_M450_step20_100X'
+
+mainTracker_V3(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-09-26 - Experiment 3T3 optoRhoAVB (++)
+
+# %%%% M1 : 
+
+dates = '24.09.26'
+manips, wells, cells = 1, 1, 1
+depthoNames = '24.09.26_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-11-26 - Experiment 3T3 optoRhoAVB (++)
+
+# %%%% M1 : 
+
+dates = '24.11.26'
+manips, wells, cells = 1, 3, 'all'
+depthoNames = '24.11.16_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-11-28 - Experiment 3T3 optoRhoAVB (++)
+
+# %%%% M1 : 
+
+dates = '24.11.28'
+manips, wells, cells = 3, 2, 1
+depthoNames = '24.11.28_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)

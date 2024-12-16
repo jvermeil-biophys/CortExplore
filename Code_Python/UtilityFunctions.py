@@ -998,6 +998,58 @@ def squareDistance(M, V, normalize = False): # MUCH FASTER ! **Michael Scott Voi
 #     print(time.time()-top)
     return(R)
 
+
+def matchDists_Zdiff(listD, listVox_diff, direction):
+    """
+    This function transform the different distances curves computed for 
+    a Nuplet of images to match their minima. By definition it is not used for singlets of images.
+    In practice, it's a tedious and boring function.
+    For a triplet of image, it will move the distance curve by NVox voxels to the left 
+    for the first curve of a triplet, not move the second one, and move the third by NVox voxels to the right.
+    The goal : align the 3 matching minima so that the sum of the three will have a clear global minimum.
+    direction = 'upward' or 'downward' depending on how your triplet images are taken 
+    (i.e. upward = consecutively towards the bright spot and downwards otherwise)
+    """
+    N = len(listVox_diff)
+    listD2 = []
+    if direction == 'upward':
+        for i in range(N):
+            if listVox_diff[i] < 0:
+                shift = listVox_diff[i]
+                D = listD[i]
+                fillVal = max(D)
+                D2 = np.concatenate((D[-shift:],fillVal*np.ones(-shift))).astype(np.float64)
+                listD2.append(D2)
+            if listVox_diff[i] == 0:
+                D = listD[i].astype(np.float64)
+                listD2.append(D)
+            if listVox_diff[i] > 0:
+                shift = listVox_diff[i]
+                D = listD[i]
+                fillVal = max(D)
+                D2 = np.concatenate((fillVal*np.ones(shift),D[:-shift])).astype(np.float64)
+                listD2.append(D2)
+                
+    elif direction == 'downward':
+        for i in range(N):
+            if listVox_diff[i] > 0:
+                shift = listVox_diff[i]
+                D = listD[i]
+                fillVal = max(D)
+                D2 = np.concatenate((D[shift:],fillVal*np.ones(shift))).astype(np.float64)
+                listD2.append(D2)
+            if listVox_diff[i] == 0:
+                D = listD[i].astype(np.float64)
+                listD2.append(D)
+            if listVox_diff[i] < 0:
+                shift = listVox_diff[i]
+                D = listD[i]
+                fillVal = max(D)
+                D2 = np.concatenate((fillVal*np.ones(-shift),D[:shift])).astype(np.float64)
+                listD2.append(D2)
+    return(np.array(listD2))
+
+
 def matchDists(listD, listStatus, Nup, NVox, direction):
     """
     This function transform the different distances curves computed for 

@@ -94,7 +94,7 @@ plotLabels = 25
 plotTicks = 18 
 plotTitle = 25
 plotLegend = 25
-fontColour = '#000000'
+fontColour = '#ffffff'
 
 
 # %%%% Default settings for mechanics analysis
@@ -357,15 +357,6 @@ def makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, sav
     plt.style.use('default')
 
     df = dfAllCells
-
-    if FIT_MODE == 'linlin':
-        params = ['A', 'B']
-        ax_titles = ['Slope (A)', 'Linear Intercept (B)']
-    elif FIT_MODE == 'loglog':
-        params = ['a', 'q']
-        ax_titles = ['Exponent (a)', 'Coefficient (q)']
-        
-
     condPairs = condSelection
 
     
@@ -1123,24 +1114,28 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '23-05-10 & 23-04-19 & 23-04-25'
-fitsSubDir = 'Chad_f15_GlobalActivation_24-01-16'
+fitsSubDir = 'Chad_f15_AllControl3T3optoRhoA_24-01-19'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir,save = True, PLOT = True, source = 'Python',
+                            fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
-#%%% Calling data
+#%% Calling data
 
-GlobalTable = taka.getMergedTable('Chad_f15_GlobalActivation_24-01-16')
-fitsSubDir = 'Chad_f15_GlobalActivation_24-01-16'
+GlobalTable = taka.getMergedTable('Chad_f15_AllControl3T3optoRhoA_24-01-19')
+fitsSubDir = 'Chad_f15_AllControl3T3optoRhoA_24-01-19'
 
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
 data_main['cellId'] = GlobalTable['cellID']
+
+nBins = 21
+bins = np.linspace(0, 2000, nBins)
+data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
+data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
 
 fitType = 'stressGaussian'
 # fitType = 'nPoints'
@@ -1150,18 +1145,17 @@ fitWidth = 75
 dirToSave = 'G:/CortexMeetings/CortexMeeting_23-12-19/Plots'
 
 #%%%% Non - linearity
-
 plt.style.use('seaborn')
 
 data = data_main
 
 ########## Declare variables ##########
-dates = ['23-05-10']#, '23-04-25']
+# dates = ['23-07-12']
 stressRange = '200_500'
 interceptStress = 250
 plot = False
 FIT_MODE = 'loglog'
-condCol = 'drug'
+# condCol = 'ramp field'
 order = None
 
 method = 'f_<_400'
@@ -1172,37 +1166,62 @@ pathSubDir,pathFits,pathBoxPlots,pathNonlinDir,pathSSPlots,pathKSPlots = makeDir
 
 ###########################################
 
-
-# manips = ['M3', 'M4']
-# condSelection = manips
-
-# styleDict1 =  {'M4':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
-#                 'M3':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
+#All cells with standard compression conditions
+# condCol = 'drug'
+# condSelection = ['none']
+# styleDict1 =  {'none':{'color':   "#000000",'marker':'o', 'label':'none'},
 #                 }
 
-manipIDs = ['23-05-10_M3', '23-05-10_M4',  '23-04-19_M2', '23-04-19_M1']
+#Effect of ramp field
+# condCol = 'ramp field'
+# condSelection = ['2.5_50', '1_50', '2_50']
+# styleDict1 =  {'2.5_50':{'color':   gs.colorList40[31],'marker':'o', 'label':'2.5_50'},
+#                 '1_50':{'color':   gs.colorList40[32],'marker':'o', 'label':'1_50'},
+#                 '2_50':{'color':   gs.colorList40[33],'marker':'o', 'label':'2_50'},
+#                 }
 
-condSelection = ['none','activation']
+# #Effect of normal field
+# condCol = 'normal field'
+# condSelection = [5.0, 15.0, 14.0]
+# styleDict1 =  {15.0:{'color':   gs.colorList40[31],'marker':'o', 'label':'15mT'},
+#                 5.0:{'color':   gs.colorList40[32],'marker':'o', 'label':'5mT'},
+#                 14.0:{'color':   gs.colorList40[33],'marker':'o', 'label':'14mT'},
+#                 }
 
-styleDict1 =  {'activation':{'color':  "#000000",'marker':'o', 'label':'Global activation'},
-                'none':{'color': "#32bee2",'marker':'o', 'label':'No activation'},
-                }
 
+#Effect of thickness / H0 on mechanics
+condCol = 'Thickness_Bin'
+condSelection = bins
+styleDict1 = {}
+keys = np.rint(np.linspace(1,nBins,nBins)).astype(int)
+values = gs.colorList40[0:nBins]
+
+for key, value in zip(keys, values):
+    print(key)
+    key = int(key)
+    if key < nBins - 1:
+        styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : str(bins[key-1]) + "-" + str(bins[key])}
+        # styleDict1[key] = {'color' : value, 'marker' : 'o', 'label' : key}
+print(styleDict1)
 
 Filters = [(data['validatedThickness'] == True),
-            # (data['substrate'] == '20um fibronectin discs'), 
-            # (data['valid_' + method] == True),
-            # (data[stiffnessType + '_kPa'] <= 20),
-            # (data['drug'] == 'none'), 
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['valid_' + method] == True),
+            (data[stiffnessType + '_kPa'] <= 80),
+            (data['cell subtype'] == 'optoRhoA'),
             (data['bead type'] == 'M450'),
+            ((data['Thickness_Bin'] == 2)) | (data['Thickness_Bin'] == 3),
             # (data['UI_Valid'] == True),
-            (data['bestH0'] <= 2000),
-            (data['compNum'] <= 6),
-            # (data['surroundingThickness'] <= 1500),
+            (data['bestH0'] <= 1500),
+            (data['ramp field'] == '1_50'),
+            (data['compression duration'] == '1.5s'),
+            (data['normal field'] == 15.0),
+            (data['first activation'] != 1),
             # (data['date'].apply(lambda x : x in dates)),
             # (data['manip'].apply(lambda x : x in manips)),
-            (data['manipId'].apply(lambda x : x in manipIDs)),
+            # (data['manipId'].apply(lambda x : x in manipIDs)),
             ]
+
 
 mainFig1, mainAx1 = plt.subplots(1,1)
 mainFig1.patch.set_facecolor('black')
@@ -1214,13 +1233,14 @@ out1, cellDf1 = plotPopKS(data, mainFig1, mainAx1, fitsSubDir = fitsSubDir, fitT
 
 mainFig1, mainAx1, exportDf1, countDf1 = out1
 
-# plt.legend(fontsize = 20, loc = 'upper left')
-# plt.legend(fontsize = 12, loc = 'upper left')
-# plt.ylim(0,20)
-# plt.tight_layout()
+# # plt.legend(fontsize = 20, loc = 'upper left')
+# # plt.legend(fontsize = 12, loc = 'upper left')
+plt.ylim(0,20)
+plt.tight_layout()
+mainFig1.suptitle(condCol, color = fontColour)
+
 # plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_wholeCurve.png')  
-# plt.show()
-# plt.close()
+plt.show()
 
 mainFig2, mainAx2 = plt.subplots(1,1)
 mainFig2.patch.set_facecolor('black')
@@ -1234,6 +1254,7 @@ mainFig2, mainAx2, exportDf2, countDf2 = out2
 
 plt.legend(fontsize = 12, loc = 'upper left')
 plt.ylim(0,8)
+# mainFig2.suptitle(condCol, color = fontColour)
 plt.tight_layout()
 # plt.savefig(dirToSave + '/Nonlinearity/' + str(dates) + '_'+str(manips) + '_' + stressRange +'.png')  
 plt.show()
@@ -1272,8 +1293,7 @@ ax = sns.lineplot(x = x, y = measure, data = data_f, hue = condCol)
 #     activationTime.append(times.values)
 #     # except:
 #     #     print('No activation data')
-
-fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
+# fig1.suptitle('[15mT = 500pN] '+measure+' (nm) vs. Time (secs)', color = fontColour)
 plt.xticks(fontsize=40, color = fontColour)
 plt.yticks(fontsize=40, color = fontColour)
 plt.xlabel('Time (secs)', fontsize = 25, color = fontColour)
@@ -1282,7 +1302,7 @@ plt.legend(fontsize = 30, loc = 'upper left')
 
 plt.ylim(0,1200)
 
-plt.savefig(dirToSave + '/Thickness/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
+# plt.savefig(dirToSave + '/Thickness/'+str(dates)+'_'+measure+'vsCompr'+str(manips)+'.png')
 
 plt.show()
 
@@ -1291,32 +1311,66 @@ plt.show()
 measure = 'surroundingThickness'
 labels = []
 order= None
+for i in range(len(bins)-3):
+    labels.append(str(bins[i]) + "-" + str(bins[i+1]))
+    
+savePath = dirToSave + '/Thickness/'+str(1)+'_'+measure+'_boxplot_'+str(1)+'.png'
 
-savePath = dirToSave + '/Thickness/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath= savePath,
+                   stats = False, average = False)
 
-makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = True)
+
 
 #%%%% Fluctuations boxplots
 
 measure = 'ctFieldFluctuAmpli'
 labels = []
 order= None
+for i in range(len(bins)-5):
+    labels.append(str(bins[i]) + "-" + str(bins[i+1]))
 
-savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
+# savePath = dirToSave + '/Fluctuations/'+str(dates)+'_'+measure+'_boxplot_'+str(manips)+'.png'
 
 makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = True)
+                   stats = False, average = False)
 
 #%%%% E_F_<_400pN
 
 measure = stiffnessType
 labels = []
 order= None
+# for i in range(len(bins)-3):
+#     labels.append(str(bins[i]) + "-" + str(bins[i+1]))
 
 measureName = 'E_400pN'
 
-savePath = dirToSave + '/E_400pN/'+str(dates)+'_'+measureName+'_'+str(manips)+'.png'
+savePath = dirToSave + '/E_400pN/'+str(1)+'_'+measureName+'_'+str(1)+'.png'
 
 makeBoxPlots(dfAllCells, measure, condCol, labels, order, condSelection, savePath = savePath,
-                   stats = False, average = True)
+                   stats = False, average = False)
+
+#%%%% Slopes of K vs S
+
+measure = 'ctFieldFluctuAmpli'
+labels = []
+order= None
+makeBoxPlotParametric
+
+#%%%% Fluctuations vs Thickness
+y = 'ctFieldFluctuAmpli'
+x = 'ctFieldThickness'
+sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
+plt.legend(fontsize = 15, loc = 'upper left')
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.show()
+
+#%%%% Fluctuations vs Thickness
+x = 'surroundingThickness'
+y = 'bestH0'
+sns.lmplot(data = dfAllCells, x = x, y = y, hue = condCol)
+plt.legend(fontsize = 15, loc = 'upper left')
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.show()
+

@@ -2879,6 +2879,7 @@ def mainTracker_V3(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             
             indexAction = statusDf[statusDf['Status'] == 'Action'].index
             Bstart = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[1]))
+            
             Bstop = statusDf.loc[indexAction, 'Status details'].apply(lambda x : float(x.split('-')[2]))
             
             statusDf.loc[indexAction, 'deltaB'] =  Bstop - Bstart
