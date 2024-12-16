@@ -64,7 +64,7 @@ matplotlib.rcParams['axes.prop_cycle'] = matplotlib.cycler(color=gs.colorList40)
 #### Graphic options
 gs.set_default_options_jv()
 
-figDir = "D:/MagneticPincherData/Figures/DrugsDataset"
+figDir = "D:/MagneticPincherData/Figures/DrugsDataset_V2"
 
 
 
@@ -195,11 +195,11 @@ styleDict =  {# Drugs
                'latrunculinA & 0.5':{'color': plt.cm.RdYlBu_r(0.75),'marker':'o'},
                'latrunculinA & 2.5':{'color': plt.cm.RdYlBu_r(0.95),'marker':'o'},
                #
-               'calyculinA':{'color': gs.colorList40[23],'marker':'o'},
-               'calyculinA & 0.25':{'color': gs.colorList40[15],'marker':'o'},
-               'calyculinA & 0.5':{'color': gs.colorList40[22],'marker':'o'},
-               'calyculinA & 1.0':{'color': gs.colorList40[30],'marker':'o'},
-               'calyculinA & 2.0':{'color': gs.colorList40[33],'marker':'o'},
+               'calyculinA':{'color': plt.cm.viridis_r(0.55),'marker':'o'},
+               'calyculinA & 0.25':{'color': plt.cm.viridis_r(0.05),'marker':'o'},
+               'calyculinA & 0.5':{'color': plt.cm.viridis_r(0.15),'marker':'o'},
+               'calyculinA & 1.0':{'color': plt.cm.viridis_r(0.4),'marker':'o'},
+               'calyculinA & 2.0':{'color': plt.cm.viridis_r(0.75),'marker':'o'},
                #
                'Y27':{'color': plt.cm.GnBu(0.3),'marker':'o'},
                'Y27 & 10.0':{'color': plt.cm.GnBu(0.4),'marker':'o'},
@@ -326,6 +326,7 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
     groupColVals = df[groupCol].unique()
     
     d_agg = {k:'first' for k in idCols}
+    d_agg.update({'compNum':'count'})
 
     # In the following lines, the weighted average and weighted variance are computed
     # using new columns as intermediates in the computation.
@@ -345,6 +346,7 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
     data_agg.columns = ufun.flattenPandasIndex(data_agg.columns)
     data_agg[wAvgCol] = data_agg['A_sum']/data_agg[weightCol + '_sum']
     data_agg = data_agg.rename(columns = {'A_count' : 'count_wAvg'})
+    data_agg = data_agg.rename(columns = {'compNum_count' : 'compNum'})
     
     # Compute the weighted std
     df['B'] = df[valCol]
@@ -423,7 +425,7 @@ def getStyleLists(conditions, styleDict):
         
     return(colors, markers)
 
-def renameAxes(axes, rD, format_xticks = True):
+def renameAxes(axes, rD, format_xticks = True, rotation = 0):
     try:
         N = len(axes)
     except:
@@ -450,15 +452,15 @@ def renameAxes(axes, rD, format_xticks = True):
             test_hasXLabels = (len(''.join(xticksList)) > 0)
             if test_hasXLabels:
                 newXticksList = [rD.get(k, k) for k in xticksList]
-                axes[i].set_xticklabels(newXticksList)
+                axes[i].set_xticklabels(newXticksList, rotation = rotation)
                 
                 
-def renameLegend(axes, rD, loc='best', ncols=1, fontsize=8):
+def renameLegend(axes, rD, loc='best', ncols=1, fontsize=6, hlen=2):
     axes = ufun.toList(axes)
     N = len(axes)
     for i in range(N):
         ax = axes[i]
-        L = ax.legend(loc = loc, ncols=ncols)
+        L = ax.legend(loc = loc, ncols=ncols, fontsize=fontsize, handlelength=hlen)
         Ltext = L.get_texts()
         M = len(Ltext)
         for j in range(M):
@@ -467,7 +469,9 @@ def renameLegend(axes, rD, loc='best', ncols=1, fontsize=8):
                 if re.search(s, T):
                     Ltext[j].set_text(re.sub(s, rD[s], T))
                     Ltext[j].set_fontsize(fontsize)
+               
                 
+               
 def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plotting_parameters):
     #### STATS
     listTests = ['t-test_ind', 't-test_welch', 't-test_paired', 
@@ -475,7 +479,7 @@ def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plottin
                  'Levene', 'Wilcoxon', 'Kruskal', 'Brunner-Munzel']
     if test in listTests:
         annotator = Annotator(ax, box_pairs, **plotting_parameters)
-        annotator.configure(test=test, verbose=verbose, fontsize = 9,
+        annotator.configure(test=test, verbose=verbose, fontsize = 10,
                             line_height = 0.01, line_offset = -1, line_offset_to_group = -1).apply_and_annotate() # , loc = 'outside'
     else:
         print(gs.BRIGHTORANGE + 'Dear Madam, dear Sir, i am the eternal god and i command that you define this stat test cause it is not in the list !' + gs.NORMAL)
@@ -487,7 +491,7 @@ def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plottin
 def D1Plot(data, fig = None, ax = None, condition='', parameter='',
            co_order=[], boxplot=1, figSizeFactor = 1, markersizeFactor = 1,
            stats=True, statMethod='Mann-Whitney', box_pairs=[], statVerbose = False,
-           showMean = False):
+           showMean = False, edgecolor='k'):
     
     #### Init
     co_values = data[condition].unique()
@@ -500,6 +504,9 @@ def D1Plot(data, fig = None, ax = None, condition='', parameter='',
         figWidth = 5*Nco*figSizeFactor
         fig, ax = plt.subplots(1,1, figsize=(figWidth, figHeight))
     markersize = 5 * markersizeFactor
+    linewidth = 0.75*markersizeFactor
+    
+        
         
     palette = getSnsPalette(co_order, styleDict)
     
@@ -510,10 +517,11 @@ def D1Plot(data, fig = None, ax = None, condition='', parameter='',
                             'order':   co_order,
                             'palette': palette,
                             'size'    : markersize, 
-                            'edgecolor'    : 'k', 
-                            'linewidth'    : 0.75*markersizeFactor
+                            'edgecolor'    : edgecolor, 
+                            'linewidth'    : linewidth
                             }
-    
+    if edgecolor != 'None':
+        swarmplot_parameters['linewidth']=linewidth
     
     sns.swarmplot(ax=ax, **swarmplot_parameters)
 
@@ -562,6 +570,44 @@ def D1Plot(data, fig = None, ax = None, condition='', parameter='',
             
         sns.boxplot(ax=ax, **boxplot_parameters)
         
+    return(fig, ax)
+
+
+
+def D1Plot_violin(data, fig = None, ax = None, condition='', parameter='',
+           co_order=[], figSizeFactor = 1, 
+           stats=True, statMethod='Mann-Whitney', box_pairs=[], statVerbose = False):
+    
+    #### Init
+    co_values = data[condition].unique()
+    Nco = len(co_values)
+    if len(co_order) == 0:
+        co_order = np.sort(co_values)
+        
+    if ax == None:
+        figHeight = 5
+        figWidth = 5*Nco*figSizeFactor
+        fig, ax = plt.subplots(1,1, figsize=(figWidth, figHeight))    
+        
+        
+    palette = getSnsPalette(co_order, styleDict)
+    
+    #### Swarmplot
+    violinplot_parameters = {'data':    data,
+                            'x':       condition,
+                            'y':       parameter,
+                            'order':   co_order,
+                            'palette': palette,
+                            }
+    
+    sns.violinplot(ax=ax, **violinplot_parameters)
+
+    #### Stats    
+    if stats:
+        if len(box_pairs) == 0:
+            box_pairs = makeBoxPairs(co_order)
+        addStat_lib(ax, box_pairs, test = statMethod, verbose = statVerbose, **violinplot_parameters)
+
     return(fig, ax)
 
 
@@ -690,11 +736,12 @@ def D2Plot_wFit(data, fig = None, ax = None,
 def plotPopKS_V2(data, fig = None, ax = None, 
                  condition = '', co_order = [], colorDict = {}, labelDict = {},
                  fitType = 'stressRegion', fitWidth=75, markersizefactor = 1,
-                 mode = 'wholeCurve', scale = 'lin', Sinf = 0, Ssup = np.Inf):
+                 mode = 'wholeCurve', scale = 'lin', Sinf = 0, Ssup = np.Inf,
+                 shortLegend = False):
     
     #### Init
     co_values = data[condition].unique()     
-    if co_order == []:
+    if len(co_order) == 0:
         co_order = np.sort(co_values)
     if ax == None:
         figHeight = 5
@@ -811,13 +858,22 @@ def plotPopKS_V2(data, fig = None, ax = None,
         q = st.t.ppf(alpha, dof) # Student coefficient
             
         # weighted means -- weighted ste 95% as error
+        if not shortLegend:
+            label = labelDict[co] + ' | ' + str(total_N) + ' cells' + ' | ' + str(total_n) + ' comp'
+            lsize = 8
+            hlen = 2
+        else:
+            label = labelDict[co] + ' | ' + str(total_N) + ' cells'
+            lsize = 6
+            hlen = 1
+        
         
         ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
                     color = color, lw = 2, marker = 'o', markersize = 6*markersizefactor, mec = 'k', mew = 1*markersizefactor,
                     ecolor = color, elinewidth = 1.5, capsize = 6, capthick = 1.5, 
-                    label = labelDict[co] + ' | ' + str(total_N) + ' cells' + ' | ' + str(total_n) + ' comp')
+                    label = label, zorder=8)
         
-        ax.legend(loc = 'upper left', fontsize = 8)
+        ax.legend(loc = 'upper left', fontsize = lsize, handlelength = hlen)
         ax.set_xlabel('Stress (Pa)')
         ax.set_ylabel('K (kPa)')
         ax.grid(visible=True, which='major', axis='y')
@@ -827,6 +883,7 @@ def plotPopKS_V2(data, fig = None, ax = None,
 
 
     return(fig, ax)
+
 
 
 
@@ -1070,7 +1127,7 @@ def plotNLI(fig, ax, data, condCat, condCol, pairs, labels = [],  palette = ['#b
     plt.xticks(xticks, **plotChars)
     plt.yticks(**plotChars)
     plt.tight_layout()
-    plt.legend(handles = patches, bbox_to_anchor=(1.01, 0.5), fontsize = 10, labelcolor='linecolor')
+    plt.legend(handles = patches, bbox_to_anchor=(1.01, 0.5), fontsize = 8, labelcolor='linecolor')
     plt.show()
 
     return(fig, ax, pvals)
@@ -1121,13 +1178,672 @@ def computeNLMetrics(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
     
     return(data_main)
 
+def computeNLMetrics_V2(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
+    data_main = GlobalTable
+    data_main['dateID'] = GlobalTable['date']
+    data_main['manipId'] = GlobalTable['manipID']
+    data_main['cellId'] = GlobalTable['cellID']
+    data_main['dateCell'] = GlobalTable['date'] + '_' + GlobalTable['cellCode']
+    data_main['wellID'] = GlobalTable['cellCode'].str.split('_').str[0]
+
+    nBins = 11
+    bins = np.linspace(1, 2000, nBins)
+    data_main['H0_Bin'] = np.digitize(GlobalTable['bestH0'], bins, right = True)
+    data_main['Thickness_Bin'] = np.digitize(GlobalTable['surroundingThickness'], bins, right = True)
+
+    data_main['NLI_Plot'] = [np.nan]*len(data_main)
+    data_main['NLI_Ind'] = [np.nan]*len(data_main)
+    data_main['E_eff'] = [np.nan]*len(data_main)
+
+    K, Y = data_main['K_vwc_Full'], data_main['Y_vwc_Full']
+    E = Y + K*(1 - ref_strain)**-4
+
+    data_main['E_eff'] = E
+    data_main['NLI'] = np.log10((1 - ref_strain)**-4 * K/Y)
+    
+    ciwK, ciwY = data_main['ciwK_vwc_Full'], data_main['ciwY_vwc_Full']
+    ciwE = ciwY + (ciwK*(1 - ref_strain)**-4)
+    data_main['ciwE_eff'] = ciwE
+    
+
+    data_main['Y_err_div10'], data_main['K_err_div10'] = data_main['ciwY_vwc_Full']/10, data_main['ciwK_vwc_Full']/10
+    data_main['Y_NLImod'] = data_main[["Y_vwc_Full", "Y_err_div10"]].max(axis=1)
+    data_main['K_NLImod'] = data_main[["K_vwc_Full", "K_err_div10"]].max(axis=1)
+    Y_nli, K_nli = data_main['Y_NLImod'].values, data_main['K_NLImod'].values
+
+    data_main['NLI_mod'] = np.log10((1 - ref_strain)**-4 * K_nli/Y_nli)
+    
+    NLItypes = ['linear', 'intermediate', 'non-linear']
+    for i in NLItypes:
+        if i == 'linear':
+            index = data_main[data_main['NLI_mod'] < -th_NLI].index
+            ID = 1
+        elif i =='non-linear':
+            index =  data_main[data_main['NLI_mod'] > th_NLI].index
+            ID = 0
+        elif i =='intermediate':
+            index = data_main[(data_main['NLI_mod'] > -th_NLI) & (data_main['NLI_mod'] < th_NLI)].index
+            ID = 0.5
+        for j in index:
+            data_main['NLI_Plot'][j] = i
+            data_main['NLI_Ind'][j] = ID
+
+
+    return(data_main)
 
 
 # %% > Data import & export
 
 MecaData_DrugV3 = taka2.getMergedTable('MecaData_Drugs_V3')
 
+MecaData_DrugV4 = taka2.getMergedTable('MecaData_Drugs_V4')
+
+# %%% Check content
+
+print('Dates')
+print([x for x in MecaData_DrugV4['date'].unique()])
+print('')
+
+print('Cell types')
+print([x for x in MecaData_DrugV4['cell type'].unique()])
+print('')
+
+print('Cell subtypes')
+print([x for x in MecaData_DrugV4['cell subtype'].unique()])
+print('')
+
+print('Drugs')
+print([x for x in MecaData_DrugV4['drug'].unique()])
+print('')
+
+print('Substrates')
+print([x for x in MecaData_DrugV4['substrate'].unique()])
+print('')
+
+print('Resting Fields')
+print([x for x in MecaData_DrugV4['normal field'].unique()])
+print('')
+
+# CountByCond, CountByCell = makeCountDf(MecaData_DrugV4, 'date')
+
 # %% -------
+
+
+
+# %% New plots 2024
+
+# %%% Thickness & Stiffness
+
+# %%%% 1. Standard plots E400
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+#### Dataset
+
+df = MecaData_DrugV4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug'])
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in ['blebbistatin'])),
+           (df['concentration'].apply(lambda x : x in ['50.0'])),
+           (df['date'].apply(lambda x : x in ['23-03-16', '23-04-20'])),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_400'] <= 2e4),
+           (df['valid_f_<_400'] == True), 
+           ]
+
+df_f = filterDf(df, Filters)
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+# Plot
+fig, axes = plt.subplots(2,1, figsize=(17/gs.cm_in,20/gs.cm_in), sharex=True)
+
+# LinLog
+ax = axes[0]
+ax.set_xscale('log')
+ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = co_order,
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 0.5)
+
+
+sns.scatterplot(ax = ax, x=df_f['bestH0'].values, y=df_f['E_f_<_400'].values/1000, 
+                marker = 'o', s = 15, color = 'gray', alpha = 0.5)
+Xfit, Yfit = np.log(df_f['bestH0'].values), np.log(df_f['E_f_<_400'].values/1000)
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# A, k = np.exp(b), a
+# R2 = w_results.rsquared
+# Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+# Yplot = A * Xplot**k
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+#         label = 'Fit $y = A.x^k$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + f'\n$R^2$  = {R2:.2f}')
+
+[b, a], results = ufun.fitLine(Xfit, Yfit)
+A, k = np.exp(b), a
+R2 = results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+
+ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title(f'All compressions - N = {len(Xfit)}')
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('')
+
+color = gs.cL_Set2[0]
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = co_order,
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 0.5)
+
+sns.scatterplot(ax = ax, x=df_plot['bestH0'].values, y=df_plot['E_f_<_400_wAvg'].values/1000, 
+                marker = 'o', s = 45, color = color, alpha = 0.5)
+Xfit, Yfit = np.log(df_plot['bestH0'].values), np.log(df_plot['E_f_<_400_wAvg'].values/1000)
+# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+# A, k = np.exp(b), a
+# Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+# Yplot = A * Xplot**k
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+#         label = 'Fit $y = A.x^k$' + '\n' + f'A = {A:.1e}\nk  = {k:.2f}')
+
+[b, a], results = ufun.fitLine(Xfit, Yfit)
+A, k = np.exp(b), a
+R2 = results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.5,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+
+ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title(f'Average per cell - N = {len(Xfit)}')
+ax.set_ylabel('$E_{400}$ (kPa)')
+ax.set_xlabel('$H_0$ (nm)')
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both')
+    ax.set_xlim([50, 1100])
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+figSubDir = 'E-h'
+name = 'E400_vs_h0_V2'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% 2. Split per cell -- blebbi
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+#### Dataset
+
+df = MecaData_DrugV4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug'])
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in ['blebbistatin'])),
+           (df['concentration'].apply(lambda x : x in ['50.0'])),
+           (df['date'].apply(lambda x : x in ['23-03-16', '23-04-20'])),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_400'] <= 2e4),
+           (df['valid_f_<_400'] == True), 
+           ]
+
+df_f = filterDf(df, Filters)
+df_f['cellCode'] = df_f['cellName'].apply(lambda x : x.split('_')[-1].split('-')[0])
+df_f['cellNum'] = df_f['cellCode'].apply(lambda x : int(x[1:]))
+CID_list = df_f['cellID'].unique()
+
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+dictFit = {'cellID':[], 'A':[], 'k':[], 'pv':[], 'R2':[], 'H_logmean':[], 'E_logmean':[], 'NLR_mean':[]}
+
+k_list = []
+
+fig, axes = plt.subplots(1,1, figsize=(17/gs.cm_in, 15/gs.cm_in), sharex=True)
+
+
+# Plot
+for cid in CID_list:
+    df_cell = df_f[df_f['cellID'] == cid]
+    if len(df_cell) >= 6:
+    
+        
+        
+        # LinLog
+        ax = axes
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        # fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+        #                 XCol = XCol, YCol = YCol, condition=condCol, co_order = co_order,
+        #                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+        #                 figSizeFactor = 1, markersizeFactor = 0.5)
+        
+        
+        
+        Xfit, Yfit = np.log(df_cell['bestH0'].values), np.log(df_cell['E_f_<_400'].values/1000)
+        # [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+        # A, k = np.exp(b), a
+        # R2 = w_results.rsquared
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+        #         label = 'Fit $y = A.x^k$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + f'\n$R^2$  = {R2:.2f}')
+        
+        [b, a], results = ufun.fitLine(Xfit, Yfit)
+        A, k = np.exp(b), a
+        R2 = results.rsquared
+        pval = results.pvalues[1]
+        Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        Yplot = A * Xplot**k
+        
+        if pval < 0.05:
+            sns.scatterplot(ax = ax, x=df_cell['bestH0'].values, y=df_cell['E_f_<_400'].values/1000, 
+                            marker = 'o', s = 15, alpha = 0.9)
+            ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+                    label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                            f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+            k_list.append(k)
+        
+        ax.legend(fontsize = 9, loc = 'lower left').set_visible(False)
+        ax.set_title('Blebbi')
+        ax.set_ylabel('$E_{400}$ (kPa)')
+        ax.set_xlabel('')
+        
+        
+        ax.grid(visible=True, which='major', axis='both')
+        ax.set_xlim([50, 1100])
+        
+mean_k = np.mean(k_list)
+ax.set_title(f'Blebbi - Mean k = {mean_k:.2f}')
+
+# Show
+plt.tight_layout()
+plt.show()
+        
+
+# %%%% 3. Split per cell -- limki
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+#### Dataset
+
+df = MecaData_DrugV4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug'])
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in ['LIMKi'])),
+           (df['concentration'].apply(lambda x : x in ['20.0'])),
+           (df['date'].apply(lambda x : x in ['24-03-13', '24-07-04'])),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_400'] <= 2e4),
+           (df['valid_f_<_400'] == True), 
+           ]
+
+df_f = filterDf(df, Filters)
+df_f['cellCode'] = df_f['cellName'].apply(lambda x : x.split('_')[-1].split('-')[0])
+df_f['cellNum'] = df_f['cellCode'].apply(lambda x : int(x[1:]))
+CID_list = df_f['cellID'].unique()
+
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+dictFit = {'cellID':[], 'A':[], 'k':[], 'pv':[], 'R2':[], 'H_logmean':[], 'E_logmean':[], 'NLR_mean':[]}
+
+k_list = []
+
+fig, axes = plt.subplots(1,1, figsize=(17/gs.cm_in, 15/gs.cm_in), sharex=True)
+
+
+# Plot
+for cid in CID_list:
+    df_cell = df_f[df_f['cellID'] == cid]
+    if len(df_cell) >= 5:
+        
+        # LinLog
+        ax = axes
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        # fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+        #                 XCol = XCol, YCol = YCol, condition=condCol, co_order = co_order,
+        #                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+        #                 figSizeFactor = 1, markersizeFactor = 0.5)
+        
+        
+        
+        Xfit, Yfit = np.log(df_cell['bestH0'].values), np.log(df_cell['E_f_<_400'].values/1000)
+        # [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+        # A, k = np.exp(b), a
+        # R2 = w_results.rsquared
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+        #         label = 'Fit $y = A.x^k$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + f'\n$R^2$  = {R2:.2f}')
+        
+        [b, a], results = ufun.fitLine(Xfit, Yfit)
+        A, k = np.exp(b), a
+        R2 = results.rsquared
+        pval = results.pvalues[1]
+        Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        Yplot = A * Xplot**k
+        
+        if pval < 0.05:
+            sns.scatterplot(ax = ax, x=df_cell['bestH0'].values, y=df_cell['E_f_<_400'].values/1000, 
+                            marker = 'o', s = 15, alpha = 0.9)
+            ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+                    label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                            f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+            k_list.append(k)
+        
+        ax.legend(fontsize = 9, loc = 'lower left').set_visible(False)
+        ax.set_title('LIMKi')
+        ax.set_ylabel('$E_{400}$ (kPa)')
+        ax.set_xlabel('')
+        
+        
+        ax.grid(visible=True, which='major', axis='both')
+        ax.set_xlim([50, 1100])
+        
+mean_k = np.mean(k_list)
+ax.set_title(f'LIMKi - Mean k = {mean_k:.2f}')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# %%%% 3. Split per cell -- Y27
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+#### Dataset
+
+df = MecaData_DrugV4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug'])
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in ['Y27'])),
+           (df['concentration'].apply(lambda x : x in ['50.0'])),
+           (df['date'].apply(lambda x : x in['23-03-08', '23-03-09', '24-03-13', '24-07-04'])),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_400'] <= 2e4),
+           (df['valid_f_<_400'] == True), 
+           ]
+
+df_f = filterDf(df, Filters)
+df_f['cellCode'] = df_f['cellName'].apply(lambda x : x.split('_')[-1].split('-')[0])
+df_f['cellNum'] = df_f['cellCode'].apply(lambda x : int(x[1:]))
+CID_list = df_f['cellID'].unique()
+
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+dictFit = {'cellID':[], 'A':[], 'k':[], 'pv':[], 'R2':[], 'H_logmean':[], 'E_logmean':[], 'NLR_mean':[]}
+
+k_list = []
+
+fig, axes = plt.subplots(1,1, figsize=(17/gs.cm_in, 15/gs.cm_in), sharex=True)
+
+
+# Plot
+for cid in CID_list:
+    df_cell = df_f[df_f['cellID'] == cid]
+    if len(df_cell) >= 5:
+        
+        # LinLog
+        ax = axes
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        # fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+        #                 XCol = XCol, YCol = YCol, condition=condCol, co_order = co_order,
+        #                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+        #                 figSizeFactor = 1, markersizeFactor = 0.5)
+        
+        
+        
+        Xfit, Yfit = np.log(df_cell['bestH0'].values), np.log(df_cell['E_f_<_400'].values/1000)
+        # [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+        # A, k = np.exp(b), a
+        # R2 = w_results.rsquared
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+        #         label = 'Fit $y = A.x^k$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + f'\n$R^2$  = {R2:.2f}')
+        
+        [b, a], results = ufun.fitLine(Xfit, Yfit)
+        A, k = np.exp(b), a
+        R2 = results.rsquared
+        pval = results.pvalues[1]
+        Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        Yplot = A * Xplot**k
+        
+        if pval < 0.05:
+            sns.scatterplot(ax = ax, x=df_cell['bestH0'].values, y=df_cell['E_f_<_400'].values/1000, 
+                            marker = 'o', s = 15, alpha = 0.9)
+            ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+                    label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                            f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+            k_list.append(k)
+        
+        ax.legend(fontsize = 9, loc = 'lower left').set_visible(False)
+        ax.set_title('LIMKi')
+        ax.set_ylabel('$E_{400}$ (kPa)')
+        ax.set_xlabel('')
+        
+        
+        ax.grid(visible=True, which='major', axis='both')
+        ax.set_xlim([50, 1100])
+        
+mean_k = np.mean(k_list)
+ax.set_title(f'Y27 - Mean k = {mean_k:.2f}')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# %%%% 3. Split per cell -- LatA
+
+gs.set_defense_options_jv(palette = 'Set2')
+
+#### Dataset
+
+df = MecaData_DrugV4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug'])
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in ['dmso'])),
+           (df['concentration'].apply(lambda x : x in ['0.0'])),
+           (df['date'].apply(lambda x : x in ['23-11-26', '23-12-03'])),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_400'] <= 2e4),
+           (df['valid_f_<_400'] == True), 
+           ]
+
+df_f = filterDf(df, Filters)
+df_f['cellCode'] = df_f['cellName'].apply(lambda x : x.split('_')[-1].split('-')[0])
+df_f['cellNum'] = df_f['cellCode'].apply(lambda x : int(x[1:]))
+CID_list = df_f['cellID'].unique()
+
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+dictFit = {'cellID':[], 'A':[], 'k':[], 'pv':[], 'R2':[], 'H_logmean':[], 'E_logmean':[], 'NLR_mean':[]}
+
+k_list = []
+
+fig, axes = plt.subplots(1,1, figsize=(17/gs.cm_in, 15/gs.cm_in), sharex=True)
+
+
+# Plot
+for cid in CID_list:
+    df_cell = df_f[df_f['cellID'] == cid]
+    if len(df_cell) >= 4:
+        
+        # LinLog
+        ax = axes
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        # fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+        #                 XCol = XCol, YCol = YCol, condition=condCol, co_order = co_order,
+        #                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+        #                 figSizeFactor = 1, markersizeFactor = 0.5)
+        
+        
+        
+        Xfit, Yfit = np.log(df_cell['bestH0'].values), np.log(df_cell['E_f_<_400'].values/1000)
+        # [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+        # A, k = np.exp(b), a
+        # R2 = w_results.rsquared
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'k',
+        #         label = 'Fit $y = A.x^k$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + f'\n$R^2$  = {R2:.2f}')
+        
+        [b, a], results = ufun.fitLine(Xfit, Yfit)
+        A, k = np.exp(b), a
+        R2 = results.rsquared
+        pval = results.pvalues[1]
+        Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        Yplot = A * Xplot**k
+        
+        if pval < 0.1:
+            sns.scatterplot(ax = ax, x=df_cell['bestH0'].values, y=df_cell['E_f_<_400'].values/1000, 
+                            marker = 'o', s = 15, alpha = 0.9)
+            ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+                    label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+                            f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+            k_list.append(k)
+        
+        ax.legend(fontsize = 9, loc = 'lower left').set_visible(False)
+        ax.set_title('LIMKi')
+        ax.set_ylabel('$E_{400}$ (kPa)')
+        ax.set_xlabel('')
+        
+        
+        ax.grid(visible=True, which='major', axis='both')
+        ax.set_xlim([50, 1100])
+        
+mean_k = np.mean(k_list)
+ax.set_title(f'DMSO (ctrl for LatA) - Mean k = {mean_k:.2f}')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
 
 # %% Multi-drugs
 
@@ -1135,10 +1851,12 @@ MecaData_DrugV3 = taka2.getMergedTable('MecaData_Drugs_V3')
 
 gs.set_manuscript_options_jv()
 
+global_rD = {}
+
 # %%%% Dataset 1 --- Y27
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
@@ -1177,7 +1895,7 @@ df_fg1 = filterDf(df_fg1, Filters)
 # %%%% Dataset 2 --- Blebbi
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
 drugs = ['dmso', 'blebbistatin']
@@ -1223,7 +1941,7 @@ df_fg2 = filterDf(df_fg2, Filters)
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -1378,14 +2096,745 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%%% Plot 2
+
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+condCol = 'drug & concentration'
+fig, axesM = plt.subplots(3, 3, figsize=(17/gs.cm_in, 20/gs.cm_in), sharey='row', sharex=False)
+
+df_list = [df_fg1, df_fg2, df_fg3]
+co_list = [co_order1, co_order2, co_order3]
+D_list = ['Y27', 'blebbistatin', 'LIMKi3']
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n10 µM', 
+      'Y27 & 50.0' : 'Y27\n50 µM', 
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'Blebbi\n10 µM', 
+      'blebbistatin & 50.0' : 'Blebbi\n50 µM', 
+      'blebbistatin & 100.0' : 'Blebbi\n100 µM',
+      'blebbistatin & 250.0' : 'Blebbi\n250 µM',
+      'LIMKi & 10.0' : 'LIMKi3\n10 µM', 
+      'LIMKi & 20.0' : 'LIMKi3\n20 µM',
+      }
+
+#### Plot 1
+axes = axesM[0,:]
+for k, df_fg in enumerate(df_list):
+    ax = axes[k]
+    co_order = co_list[k]
+    ax.set_yscale('log')
+    bp = makeBoxPairs(co_order)
+    bp = [bp[1]]
+    fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter=YCol,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+
+    ax.set_ylabel('Fluctuations ampli. (nm)') #  [$D_9$-$D_1$]
+    # ax.set_title(D_list[k])
+    ax.set_xlabel('')
+    if k != 0:
+        ax.set_ylabel('')            
+            
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='y', zorder=0)
+    renameAxes(ax, rD, format_xticks = True)
+
+#### Plot 2
+axes = axesM[1,:]
+for k, df_fg in enumerate(df_list):
+    ax = axes[k]
+    co_order = co_list[k]
+    df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    
+    Filters = [(df_fg['Fluctu_ratio'] <= 1.25), 
+               ]
+    df_fg = filterDf(df_fg, Filters)
+    
+    # ax.set_yscale('log')
+    bp = makeBoxPairs(co_order)
+    bp = [bp[1]]
+    fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+
+    ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # ax.set_title(D_list[k])
+    ax.set_xlabel('')
+    if k != 0:
+        ax.set_ylabel('')            
+            
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='y', zorder=0)
+    renameAxes(ax, rD, format_xticks = True)
+        
+#### Plot 3
+axes = axesM[2,:]
+
+for k, df_fg in enumerate(df_list):
+    ax = axes[k]
+    co_order = co_list[k]
+    for i, co in enumerate(co_order):
+    # for i in range(len(axes)):
+        df_fc = df_fg[df_fg[condCol] == co]
+        color = styleDict[co]['color']
+        print(co, len(df_fc))
+            
+        sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                        marker = 'o', s = 15, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                        zorder = 3)
+        Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+        
+        [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+        a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+        R2 = w_results.rsquared
+        pval = results.pvalues[1]
+        Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+        Yplot = a * Xplot + b
+        
+        # [b, a], results = ufun.fitLine(Xfit, Yfit)
+        # R2 = results.rsquared
+        # pval = results.pvalues[1]
+        # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = a * Xplot + b
+        label = ''
+        # if i==0:
+        #     label +=  r'$\bf{Fit\ y=ax+b}$'
+        label +=  f'a = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + f' | p-val = {pval:.2f}'
+        
+        ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+                label =  label)
+        
+        # label =  r'$\bf{Fit\ y=ax+b}$' + \
+        #         f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+        #         f'\nb = {b:.2f}' + \
+        #         f'\n$R^2$ = {R2:.2f}' + \
+        #         f'\np-val = {pval:.2f}'
+    
+        ax.legend(fontsize = 6, loc = 'best', handlelength=1, title=r'$\bf{Fit\ y=ax+b}$', title_fontsize=7)
+        ax.set_xlabel('$H_{5mT}$ (nm)')
+        ax.set_ylabel('Fluctuation ampli. (nm)') #  [$D_9$-$D_1$]
+        ax.set_xlim([0, 650])
+        if k != 0:
+            ax.set_ylabel('')
+            
+    for ax in axes:
+        ax.grid(visible=True, which='major', axis='both', zorder=0)
+        renameAxes(ax, rD, format_xticks = False)
 
 
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond1, CountByCell1 = makeCountDf(df_f1, condCol)
+CountByCond2, CountByCell2 = makeCountDf(df_f2, condCol)
+CountByCond3, CountByCell3 = makeCountDf(df_f3, condCol)
+CountByCond = pd.concat([CountByCond1, CountByCond2, CountByCond3])
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+drugPrefix = 'Y27-BBS-LIMKi_'
+name = drugPrefix + 'Fluctuations_V2'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%% 3 drugs NLI
+
+gs.set_manuscript_options_jv()
+
+# %%%% Dataset 1 --- Y27
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+# XCol = 'ctFieldThickness'
+# YCol = 'ctFieldFluctuAmpli'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           # (df[YCol] < 600),
+           ]
+df_f1 = filterDf(df, Filters)
+th_NLI = np.log10(2)
+df_f1 = computeNLMetrics_V2(df_f1, th_NLI = th_NLI, ref_strain = 0.2)
+
+# index_f = df_f1[(df_f1[condCol] == 'Y27 & 10.0') & (df_f1[XCol] >= 400)].index
+# df_f1 = df_f1.drop(index_f, axis=0)
+
+# Order
+df_f1['co'] = df_f1['concentration'].astype(float)
+co_order1 = df_f1[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+df_fg1 = dataGroup(df_f1, groupCol = 'cellID', idCols = [condCol], 
+                  numCols = [XCol, YCol], aggFun = 'mean')
+
+Filters = [(df_fg1['compNum'] >= 5), 
+           ]
+df_fg1 = filterDf(df_fg1, Filters)
+
+# %%%% Dataset 2 --- Blebbi
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
+drugs = ['dmso', 'blebbistatin']
+cons = ['0.0', '10.0', '50.0'] #, '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+# XCol = 'ctFieldThickness'
+# YCol = 'ctFieldFluctuAmpli'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           ]
+df_f2 = filterDf(df, Filters)
+th_NLI = np.log10(2)
+df_f2 = computeNLMetrics_V2(df_f2, th_NLI = th_NLI, ref_strain = 0.2)
+
+# index_f = df_f2[(df_f2['drug'] == 'blebbistatin') & (df_f2[YCol] >= 190)].index
+# df_f2 = df_f2.drop(index_f, axis=0)
+
+# Order
+df_f2['co'] = df_f2['concentration'].astype(float)
+co_order2 = df_f2[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+df_fg2 = dataGroup(df_f2, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Refilter
+
+Filters = [(df_fg2['compNum'] >= 5), 
+           ]
+df_fg2 = filterDf(df_fg2, Filters)
+
+
+
+# %%%% Dataset 3 --- LIMKi3
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+# dates = ['24-07-04']
+# dates = ['24-03-13']
+dates = ['24-03-13', '24-07-04']
+drugs = ['dmso', 'LIMKi']
+cons = ['0.0', '10.0', '20.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+# XCol = 'ctFieldThickness'
+# YCol = 'ctFieldFluctuAmpli'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           ]
+df_f3 = filterDf(df, Filters)
+th_NLI = np.log10(2)
+df_f3 = computeNLMetrics_V2(df_f3, th_NLI = th_NLI, ref_strain = 0.2)
+
+# index_f = df_f3[(df_f3[YCol] >= 400)].index
+# df_f3 = df_f3.drop(index_f, axis=0)
+# index_f = df_f3[(df_f3[XCol] >= 650)].index
+# df_f3 = df_f3.drop(index_f, axis=0)
+
+# Order
+df_f3['co'] = df_f3['concentration'].astype(float)
+co_order3 = df_f3[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+# co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 100.0'] # , 'blebbistatin & 250.0'
+
+
+# Group By
+df_fg3 = dataGroup(df_f3, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Refilter
+
+Filters = [(df_fg3['compNum'] >= 5), 
+           ]
+df_fg3 = filterDf(df_fg3, Filters)
+
+
+
+# %%%% Plot
+
+condCol = 'drug & concentration'
+fig, axes = plt.subplots(3,1, figsize=(10/gs.cm_in, 15/gs.cm_in), sharey=True, sharex=True)
+
+df_list = [df_f1, df_f2, df_f3]
+co_list = [co_order1, co_order2, co_order3]
+D_list = ['Y27', 'blebbistatin', 'LIMKi3']
+
+for i in range(len(df_list)):
+    df_list[i] = df_list[i][df_list[i]['NLI_mod'] >= -3]
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27\n10 µM', 
+      'Y27 & 50.0' : 'Y27\n50 µM', 
+      'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'Blebbi\n10 µM', 
+      'blebbistatin & 50.0' : 'Blebbi\n50 µM', 
+      'blebbistatin & 100.0' : 'Blebbi\n100 µM',
+      'blebbistatin & 250.0' : 'Blebbi\n250 µM',
+      'LIMKi & 10.0' : 'LIMKi3\n10 µM', 
+      'LIMKi & 20.0' : 'LIMKi3\n20 µM',
+      }
+
+bins = np.linspace(-3, 2, 11)
+
+for k, df_f in enumerate(df_list):
+    ax = axes[k]
+    co_order = co_list[k]
+    for i in range(len(co_order)):
+        df_fc = df_f[df_f[condCol] == co_order[i]]
+        x = df_fc['NLI_mod'].values
+        color = styleDict[co_order[i]]['color']
+        histo, bins = np.histogram(x, bins=bins)
+        histo = histo / np.sum(histo)
+        if i == 0:
+            ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+        else:
+            ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+    ax.set_xlabel('NLI_mod')
+    ax.set_title(D_list[k])
+    ax.legend()
+    
+    ax.set_xlabel('')
+    if k != 0:
+        ax.set_ylabel('')            
+            
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='y', zorder=1)
+    renameAxes(ax, rD, format_xticks = True)
+    renameLegend(ax, rD, loc='best', ncols=1, fontsize=7)
+          
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond1, CountByCell1 = makeCountDf(df_f1, condCol)
+CountByCond2, CountByCell2 = makeCountDf(df_f2, condCol)
+CountByCond3, CountByCell3 = makeCountDf(df_f3, condCol)
+CountByCond = pd.concat([CountByCond1, CountByCond2, CountByCond3])
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+drugPrefix = 'Y27-BBS-LIMKi_'
+name = drugPrefix + 'NLI'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%% 3 drugs NLR --- V2
+
+# Init Plot
+fig, axes = plt.subplots(1,3, figsize=(18/gs.cm_in, 7.5/gs.cm_in), sharey=True)
+
+#### Dataset Y27
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'Y27_'
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+df_plot_Y27 = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+
+#### Plot Y27
+ax = axes[0]
+parameter = 'NLI_mod'
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False)
+
+# Prettify
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=15)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+#### Dataset Blebbi
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+# 
+# 
+dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
+drugs = ['dmso', 'blebbistatin']
+cons = ['0.0', '10.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+bp = makeBoxPairs(co_order)
+bp = [bp[0], bp[3], bp[2], bp[-1]]
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'Blebbi_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'Blebbi 10µM', 
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      'blebbistatin & 100.0' : 'Blebbi 100µM',
+      'blebbistatin & 250.0' : 'Blebbi 250µM', 
+      }
+
+df_plot_blebbi = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+#### Plot Blebbi
+ax = axes[1]
+parameter = 'NLI_mod'
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False)
+
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=15)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('')
+
+#### Dataset LIMKi
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+# dates = ['24-07-04']
+# dates = ['24-03-13']
+dates = ['24-03-13', '24-07-04']
+drugs = ['dmso', 'LIMKi']
+cons = ['0.0', '10.0', '20.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'LIMKi3_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'LIMKi & 10.0' : 'LIMKi3 10 µM', 
+      'LIMKi & 20.0' : 'LIMKi3 20 µM', 
+      }
+
+df_plot_LIMKi3 = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+#### Plot LIMKi
+ax = axes[2]
+parameter = 'NLI_mod'
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False)
+
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=15)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+# CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = '3drugs_NLR_V2'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%% BLEBBISTATIN NLR SOUTENANCE
+
+# Init Plot
+fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in), sharey=True)
+
+
+#### Dataset Blebbi
+gs.set_defense_options_jv()
+
+# Define
+df = MecaData_DrugV4
+# 
+# 
+dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
+drugs = ['dmso', 'blebbistatin']
+cons = ['0.0', '10.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+Filters = [
+           (df_f['NLI_mod'] >=  -4),
+           ]
+df_f = filterDf(df_f, Filters)
+
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+bp = makeBoxPairs(co_order)
+bp = [bp[0], bp[3], bp[2], bp[-1]]
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'Blebbi_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'Blebbi 10µM', 
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      'blebbistatin & 100.0' : 'Blebbi 100µM',
+      'blebbistatin & 250.0' : 'Blebbi 250µM', 
+      }
+
+df_plot_blebbi = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+#### Plot Blebbi
+ax = ax
+parameter = 'NLI_mod'
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False)
+
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$NLR$')
+
+
+plt.tight_layout()
+plt.show()
+
+# Count
+# CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = 'Blebbi_NLR_V2'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
 # %% Plots Y27
 
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 print(df[df['drug']=='Y27']['date'].unique())
 print(df[df['drug']=='Y27']['cell subtype'].unique())
 
@@ -1394,7 +2843,7 @@ print(df[df['drug']=='Y27']['cell subtype'].unique())
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -1414,10 +2863,14 @@ Filters = [(df['validatedThickness'] == True),
 df_f = filterDf(df, Filters)
 
 # Order
-co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
 
 # Group By
 df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [parameter], aggFun = 'mean')
+
+# Group By
+df_fgg = dataGroup(df_fg, groupCol = condCol, idCols = [condCol], numCols = [parameter], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
@@ -1474,7 +2927,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -1496,12 +2949,16 @@ Filters = [(df['validatedThickness'] == True),
 df_f = filterDf(df, Filters)
 
 # Order
-co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
 
 # Group By
 df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
                                       valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
 df_fgw2[parameter+'_wAvg'] /= 1000
+
+# Group By
+df_fgg = dataGroup(df_fgw2, groupCol = condCol, idCols = [condCol], numCols = [parameter+'_wAvg'], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
@@ -1540,13 +2997,98 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+# %%% K
+
+# %%%% Dataset
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+XCol = 'bestH0'
+YCol = 'fit_K'
+fitID='500_75'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df[XCol] <= 1000),
+           ]
+df_f = filterDf(df, Filters)
+df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+# Filter again
+Filters = [(df_ff['fit_K'] >= 0), 
+           (df_ff['fit_K'] <= 1e5), 
+           ]
+df_ff = filterDf(df_ff, Filters)
+
+# Group By
+df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+
+parameter = YCol + '_wAvg'
+df_fgw2[parameter] /= 1000
+
+# %%%% Plot
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Plot
+fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
+ax.set_yscale('log')
+
+fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 1.0,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+# ax.set_ylim([0.4, 200])
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$K$ (kPa)' + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa")
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'E400' + drugSuffix
+figSubDir = ''
+drugPrefix = 'Y27_'
+name = drugPrefix + f'K({lb}-{ub})'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%% Fluctuations
 
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -1696,11 +3238,12 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%% Non-linearity
 
+# %%%% K-sigma
 
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -1723,12 +3266,14 @@ Ncomps = CountByCond.compCount.values[0]
 
 # Order
 co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+bp = makeBoxPairs(co_order)
+bp = bp[:2]
 
 # Group By
 # df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
 
 # Plot
-fig, axes = plt.subplots(3, 1, figsize=(12/gs.cm_in, 18/gs.cm_in), sharex=True, sharey=True)
+fig, axes = plt.subplots(3, 2, figsize=(17/gs.cm_in, 21/gs.cm_in), sharex='col', sharey='col')
 
 intervals = ['200_500', '300_700', '400_900']
 cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
@@ -1740,7 +3285,7 @@ rD = {'none & 0.0' : 'No drug',
 
 for k, cond in enumerate(co_order):  
     for i, interval in enumerate(intervals):
-        ax = axes[i]
+        ax = axes[i,0]
         ax.set_yscale('log')
         df_fc = df_f[df_f[condCol] == cond]        
         
@@ -1762,6 +3307,46 @@ for k, cond in enumerate(co_order):
         ax.set_ylim(0.9, 20)
         if i != len(intervals)-1:
             ax.set_xlabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[i, 1]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.8,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel('')
+    ax.set_ylabel('$K$ (kPa)' + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa")
 
 
 # Show
@@ -1777,12 +3362,254 @@ CountByCond, CountByCell = makeCountDf(df_f, condCol)
 # name = 'K-sigma-3ranges' + drugSuffix
 figSubDir = ''
 drugPrefix = 'Y27_'
-name = drugPrefix + 'K-sigma-3ranges'
+name = drugPrefix + 'K-sigma_and_Kbp'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% Figure NC5-6 - Non Lin VW % Pop
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+#### Default threshold
+th_NLI = np.log10(10)
+df_fNL = computeNLMetrics(df_f, th_NLI = th_NLI)
+
+fig, ax = plt.subplots(figsize = (12/gs.cm_in,10/gs.cm_in), tight_layout = True)
+# condCol, condCat = 'drug', drugs
+
+# df_fNL, condCol = makeCompositeCol(df_fNL, cols=['drug'])
+
+# condCol = 'drug'
+condCat = co_order
+bp = []
+
+plotChars = {'color' : 'black', 'fontsize' : 8}
+
+fig, ax, pvals = plotNLI(fig, ax, df_fNL, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+ax.set_xticklabels(['DMSO', 'Y27\n10 µM', 'Y27\n50 µM'])
+ax.set_xlabel('')
+ax.set_ylabel('Compressions behavior (%)')
+ax.get_legend().set_title(f'Thesh = $\pm${th_NLI:.1f}')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_fNL, condCol)
+# Save
+figSubDir = ''
+drugPrefix = 'Y27_'
+name = drugPrefix + f'VW_categories'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%%% Figure NC5-7 - Non Lin VW vs K(sigma)
+
+# %%%%% Dataset
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+parameter = 'bestH0'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+
+df_f = computeNLMetrics(df_f, th_NLI = np.log10(10)) # np.log10(2)
+CountByCond, CountByCell = makeCountDf(df_f, 'NLI_Plot')
+
+
+#### Set 1 - lin
+
+# Filter again
+Filters = [(df_f['NLI_Plot'] == 'linear'), 
+           ]
+df_f1 = filterDf(df_f, Filters)
+
+# Count
+CountByCond1, CountByCell1 = makeCountDf(df_f1, condCol)
+Ncells1 = CountByCond1.cellCount.values[0]
+Ncomps1 = CountByCond1.compCount.values[0]
+
+
+#### Set 2 - non-lin
+
+# Filter again
+Filters = [(df_f['NLI_Plot'] == 'non-linear'), 
+           ]
+df_f2 = filterDf(df_f, Filters)
+
+# Count
+CountByCond2, CountByCell2 = makeCountDf(df_f2, condCol)
+Ncells2 = CountByCond2.cellCount.values[0]
+Ncomps2 = CountByCond2.compCount.values[0]
+
+
+#### Plot 3 - intermediate
+
+# Filter again
+Filters = [(df_f['NLI_Plot'] == 'intermediate'), 
+           ]
+df_f3 = filterDf(df_f, Filters)
+
+# Count
+CountByCond3, CountByCell3 = makeCountDf(df_f3, condCol)
+Ncells3 = CountByCond3.cellCount.values[0]
+Ncomps3 = CountByCond3.compCount.values[0]
+
+
+# %%%%% Plot
+
+#### Plot 4 - all
+
+intervals = ['450_650', '550_750']
+
+# Plot
+fig4, axes = plt.subplots(len(intervals), 2, figsize=(17/gs.cm_in, 22/gs.cm_in), sharex= True)
+ax.set_yscale('log')
+
+
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+dataList = [df_f1, df_f2]
+# labelAx = ['Linear', 'Non-linear']
+# labelAx = [r'$\bf{Linear (NLI > 1)}$' + '\nK (kPa)', r'$\bf{Non-linear (NLI < 1)}$' + '\nK (kPa)']
+labelAx = [r'$\bf{Linear\ compressions\ (NLI < -1)}$' + f'\n          {Ncells1} cells | {Ncomps1} comp', 
+           r'$\bf{Non' + u"\u2010" + 'linear\ compressions\ (NLI > 1)}$' + f'\n          {Ncells2} cells | {Ncomps2} comp', ]
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+# for k, cond in enumerate(co_order):  
+#     for i, interval in enumerate(intervals):
+#         ax = axes[i]
+#         ax.set_yscale('log')
+#         df_fc = df_f[df_f[condCol] == cond]        
+        
+#         # colorDict = {cond:cL[i]}
+#         # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+#         colorDict = {cond:styleDict[cond]['color']}
+#         labelDict = {cond:rD[cond]}
+
+for k in range(len(dataList)):
+    df_fk = dataList[k]
+    labelAx_k = labelAx[k]
+    for i, interval in enumerate(intervals):
+        for j, cond in enumerate(co_order):
+            df_fkc = df_fk[df_fk[condCol] == cond] 
+            ax = axes[i, k]
+            ax.set_yscale('log')
+            # colorDict = {'dmso':cL[i]}
+            # labelDict = {'dmso':f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+            colorDict = {cond:styleDict[cond]['color']}
+            labelDict = {cond:rD[cond]}
+            plotPopKS_V2(df_fkc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                         colorDict = colorDict, labelDict = labelDict,
+                         fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf)
+        
+            ax.grid(visible=True, which='both', axis='y')
+            ax.set_ylabel('K (kPa)')
+            ax.set_xlabel('')
+            ax.set_xlim(0, 1300)
+            ax.set_ylim(0.8, 30)
+            # ax.legend(loc='upper left')
+            # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize = 6)
+            ax.legend(loc='lower right', fontsize = 6, title = labelAx_k, title_fontsize = 7)
+
+ax.set_xlabel('Stress (Pa)')
+# Prettify
+
+
+
+
+#### Show
+fig4.tight_layout()
+plt.show()
+
+#### Save
+# figSubDir = 'NonLinearity'
+
+# # fig = fig1
+# name = 'nonLin_dmso_w75_NLIsort_LIN'
+# # ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+# #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# CountByCond1.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# # fig = fig2
+# name = 'nonLin_dmso_w75_V2_NLIsort_NONLIN'
+# # ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+# #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# CountByCond2.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# # fig = fig3
+# # name = 'nonLin_dmso_w75_V2_NLIsort_INTER'
+# # ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+# #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# # CountByCond3.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# fig = fig4
+# name = 'nonLin_dmso_w75_V2_NLIsort_ALL2'
+# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
 
 
 # %%% Thickness & Stiffness
@@ -1792,7 +3619,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -1813,14 +3640,15 @@ Filters = [(df['validatedThickness'] == True),
 df_f = filterDf(df, Filters)
 
 # Order
-co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
 
 # Group By
 df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
 df_fg = df_fg[['bestH0']]
-df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
                                       valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
-df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+df_plot = pd.merge(left=df_fg, right=df_fgw_E400, on='cellID', how='inner')
 
 # Plot
 fig, axes = plt.subplots(3, 1, figsize=(9.5/gs.cm_in, 22.5/gs.cm_in), sharex=True, sharey=True)
@@ -1927,12 +3755,147 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+# %%%% 2.2 E_eff
+
+
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+th_NLI = np.log10(10)
+ref_strain = 0.2
+df_f = computeNLMetrics_V2(df_f, th_NLI = th_NLI, ref_strain = ref_strain)
+df_f = df_f.dropna(subset=['bestH0', 'E_eff'])
+
+# Order
+co_order = ['none & 0.0', 'Y27 & 10.0', 'Y27 & 50.0']
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+YCol = 'E_eff_wAvg'
+df_plot[YCol] /= 1000
+
+list_expo = []
+
+for i in range(len(co_order)):
+    
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    # sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+    #                 marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+    #                 zorder = 3)
+    
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    # ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+    #         label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    #                     f'\nA = {A:.1e}' + \
+    #                     f'\nk = {k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+    #                     f'\n$R^2$ = {R2:.2f}' + \
+    #                     f'\np-val = {pval:.2f}')
+
+    # ax.legend(fontsize = 8)
+    # ax.set_xlabel('$H_0}$ (nm)')
+    # ax.set_ylabel('$E_{400}$ (kPa)')
+    # ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+    
+    H_ref = 300
+    df_fc['E_norm'] = df_fc['E_eff_wAvg'] * (H_ref/df_fc['bestH0'])**k
+    list_expo.append(k)
+    
+    df_plot.loc[df_plot[condCol] == co_order[i], 'E_norm'] = df_fc['E_norm']
+    
+
+# Plot
+fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
+ax.set_yscale('log')
+
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter='E_norm',
+                 co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 1.0,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+# ax.set_ylim([0.4, 200])
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+# ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+#### Show
+plt.tight_layout()
+plt.show()
+
 # %%%% 1.5 E400 - All in one
 
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -2053,7 +4016,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 # %%%% 2. K
 # %%%%% Dataset
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
 drugs = ['none', 'Y27']
 substrate = '20um fibronectin discs'
@@ -2203,12 +4166,681 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%% Megaplots
+
+# %%%% Common dataset
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+dates = ['23-03-08', '23-03-09', '24-03-13', '24-07-04']
+drugs = ['none', 'Y27']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
 
 
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'Y27_'
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+df_plot_Y27 = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 7/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(16/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    if i==0:
+        color='dimgray'
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD = {'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 3, figsize=(16/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    if i==0:
+        color='dimgray'
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10µM', 
+      'Y27 & 50.0' : 'Y27 50µM', 
+      # 'ctFieldThickness' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      # 'ctFieldFluctuAmpli' : 'Elastic modulus (Pa)\nfor F < 400pN',
+      }
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+bp = makeBoxPairs(co_order)
+bp = bp[:2]
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma-small
+
+gs.set_manuscript_options_jv()
+
+bp = makeBoxPairs(co_order)
+bp = bp[:2]
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 2, figsize=(16/gs.cm_in, 11/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '400_900']
+ax_titles = ['Low stress', 'High stress']
+# cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 0)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp_SMALL'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+rD = {'none & 0.0' : 'No drug',
+      'Y27 & 10.0' : 'Y27 10 µM', 
+      'Y27 & 50.0' : 'Y27 50 µM', 
+      }
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# E400
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %% Plots Blebbistatin
 
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 print(df[df['drug']=='blebbistatin']['date'].unique())
 print(df[df['drug']=='blebbistatin']['cell subtype'].unique())
 
@@ -2217,7 +4849,7 @@ print(df[df['drug']=='blebbistatin']['cell subtype'].unique())
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # , '22-03-28', '22-03-30', '23-02-16', '23-04-20'
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2250,6 +4882,9 @@ bp = [bp[0], bp[3], bp[2], bp[-1]]
 
 # Group By
 df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [parameter], aggFun = 'mean')
+
+# Group By
+df_fgg = dataGroup(df_fg, groupCol = condCol, idCols = [condCol], numCols = [parameter], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(16/gs.cm_in, 10/gs.cm_in))
@@ -2306,7 +4941,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # , '22-03-28', '22-03-30', '23-02-16', '23-04-20'
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2341,6 +4976,9 @@ bp = [bp[-1], bp[3], bp[0], bp[2], ]
 df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
                                       valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
 df_fgw2[parameter+'_wAvg'] /= 1000
+
+# Group By
+df_fgg = dataGroup(df_fgw2, groupCol = condCol, idCols = [condCol], numCols = [parameter+'_wAvg'], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(16/gs.cm_in, 10/gs.cm_in))
@@ -2391,7 +5029,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # , 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2562,7 +5200,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2571,8 +5209,6 @@ cons = ['0.0', '10.0', '50.0', '100.0']
 substrate = '20um fibronectin discs'
 subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
 
-XCol = 'ctFieldThickness'
-YCol = 'ctFieldFluctuAmpli'
 df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
 
 
@@ -2583,6 +5219,7 @@ Filters = [(df['validatedThickness'] == True),
            (df['drug'].apply(lambda x : x in drugs)),
            (df['cell subtype'].apply(lambda x : x in subtypes)),
            (df['concentration'].apply(lambda x : x in cons)),
+           (df['bestH0'] <= 1000),
            ]
 df_f = filterDf(df, Filters)
 
@@ -2590,6 +5227,8 @@ df_f = filterDf(df, Filters)
 df_f['co'] = df_f['concentration'].astype(float)
 co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
 # co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 100.0'] # , 'blebbistatin & 250.0'
+bp = makeBoxPairs(co_order)
+bp = bp[:3]
 
 # Count
 CountByCond, CountByCell = makeCountDf(df_f, condCol)
@@ -2600,21 +5239,21 @@ Ncomps = CountByCond.compCount.values[0]
 # df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
 
 # Plot
-fig, axes = plt.subplots(3, 1, figsize=(12/gs.cm_in, 18/gs.cm_in), sharex=True, sharey=True)
+fig, axes = plt.subplots(3, 2, figsize=(17/gs.cm_in, 21/gs.cm_in), sharex='col', sharey='col')
 
 intervals = ['200_500', '300_700', '400_900']
 cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
 
 rD = {'dmso & 0.0' : 'DMSO',
-      'blebbistatin & 10.0' : 'Blebbi 10 µM', 
-      'blebbistatin & 50.0' : 'Blebbi 50 µM', 
-      'blebbistatin & 100.0' : 'Blebbi 100 µM',
-      'blebbistatin & 250.0' : 'Blebbi 250 µM', 
+      'blebbistatin & 10.0' : 'Blebbi 10µM', 
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      'blebbistatin & 100.0' : 'Blebbi 100µM',
+      'blebbistatin & 250.0' : 'Blebbi 250µM', 
       }
 
 for k, cond in enumerate(co_order):  
     for i, interval in enumerate(intervals):
-        ax = axes[i]
+        ax = axes[i, 0]
         ax.set_yscale('log')
         df_fc = df_f[df_f[condCol] == cond]        
         
@@ -2630,12 +5269,52 @@ for k, cond in enumerate(co_order):
         ax.grid(visible=True, which='both', axis='y')
         # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
         legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
-        ax.legend(loc='lower right', fontsize = 7, title = legendTitle, title_fontsize = 8)
+        ax.legend(loc='lower right', fontsize = 6, title = legendTitle, title_fontsize = 8)
         # ax.legend().set_visible(False)
         ax.set_xlim(0, 1000)
         ax.set_ylim(0.9, 30)
         if i != len(intervals)-1:
             ax.set_xlabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[i, 1]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.6,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel('')
+    ax.set_ylabel('$K$ (kPa)' + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa")
 
 
 # Show
@@ -2650,12 +5329,86 @@ CountByCond, CountByCell = makeCountDf(df_f, condCol)
 # name = 'K-sigma-3ranges' + drugSuffix
 figSubDir = ''
 drugPrefix = 'Blebbi_'
-name = drugPrefix + 'K-sigma-3ranges'
+name = drugPrefix + 'K-sigma_and_Kbp'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+
+# %%%% Figure NC5-6 - Non Lin VW % Pop
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+# 
+# 
+dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
+drugs = ['dmso', 'blebbistatin']
+cons = ['0.0', '10.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df['bestH0'] <= 1000),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+
+#### Default threshold
+th_NLI = np.log10(10)
+df_fNL = computeNLMetrics(df_f, th_NLI = th_NLI)
+
+fig, ax = plt.subplots(figsize = (12/gs.cm_in,10/gs.cm_in), tight_layout = True)
+# condCol, condCat = 'drug', drugs
+
+# df_fNL, condCol = makeCompositeCol(df_fNL, cols=['drug'])
+
+# condCol = 'drug'
+condCat = co_order
+bp = []
+
+plotChars = {'color' : 'black', 'fontsize' : 8}
+
+fig, ax, pvals = plotNLI(fig, ax, df_fNL, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+ax.set_xticklabels(['DMSO', 'Blebbi\n10 µM', 'Blebbi\n50 µM', 'Blebbi\n100 µM'])
+ax.set_xlabel('')
+ax.set_ylabel('Compressions behavior (%)')
+ax.get_legend().set_title(f'Thesh = $\pm${th_NLI:.1f}')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_fNL, condCol)
+# Save
+figSubDir = ''
+drugPrefix = 'Blebbi_'
+name = drugPrefix + f'VW_categories'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
 
 
 # %%% Thickness & Stiffness
@@ -2665,7 +5418,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2817,7 +5570,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # 
 # 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -2950,7 +5703,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 # %%%%% Dataset
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # 
 dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
@@ -3114,12 +5867,671 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%% Megaplots
+
+# %%%% Common dataset
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+# 
+# 
+dates = ['24-07-04','23-03-16', '23-03-17', '23-02-16', '23-04-20']
+drugs = ['dmso', 'blebbistatin']
+cons = ['0.0', '10.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+bp = makeBoxPairs(co_order)
+bp = [bp[0], bp[3], bp[2], bp[-1]]
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'Blebbi_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'blebbistatin & 10.0' : 'Blebbi 10µM', 
+      'blebbistatin & 50.0' : 'Blebbi 50µM', 
+      'blebbistatin & 100.0' : 'Blebbi 100µM',
+      'blebbistatin & 250.0' : 'Blebbi 250µM', 
+      }
+
+df_plot_blebbi = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+Filters = [
+           (df_plot['E_f_<_400'+'_wAvg'] <=  3e4),
+           ]
+df_plot = filterDf(df_plot, Filters)
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 7/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+# ax.set_ylim([0.4, 200])
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+# plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(17/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    if i==0:
+        color='dimgray'
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      })
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 4, figsize=(16/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.5,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma-small
+
+gs.set_manuscript_options_jv()
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 2, figsize=(16/gs.cm_in, 11/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '400_900']
+ax_titles = ['Low stress', 'High stress']
+# cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.6,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 10)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp_SMALL'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# E400
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+# plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
 # %% Plots LIMKi3
 
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # print(df.drug.unique())
 print(df[df['drug']=='LIMKi']['date'].unique())
 print(df[df['drug']=='LIMKi']['cell subtype'].unique())
@@ -3129,7 +6541,7 @@ print(df[df['drug']=='LIMKi']['cell subtype'].unique())
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -3164,6 +6576,9 @@ bp = []
 
 # Group By
 df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [parameter], aggFun = 'mean')
+
+# Group By
+df_fgg = dataGroup(df_fg, groupCol = condCol, idCols = [condCol], numCols = [parameter], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
@@ -3219,7 +6634,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 dates = ['24-03-13', '24-07-04']
@@ -3256,6 +6671,9 @@ bp = []
 df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
                                       valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
 df_fgw2[parameter+'_wAvg'] /= 1000
+
+# Group By
+df_fgg = dataGroup(df_fgw2, groupCol = condCol, idCols = [condCol], numCols = [parameter+'_wAvg'], aggFun = 'median')
 
 # Plot
 fig, ax = plt.subplots(1,1, figsize=(12/gs.cm_in, 10/gs.cm_in))
@@ -3304,7 +6722,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -3474,7 +6892,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -3502,7 +6920,8 @@ df_f = filterDf(df, Filters)
 # Order
 df_f['co'] = df_f['concentration'].astype(float)
 co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
-# co_order = ['dmso & 0.0', 'blebbistatin & 10.0', 'blebbistatin & 50.0', 'blebbistatin & 100.0'] # , 'blebbistatin & 250.0'
+bp = makeBoxPairs(co_order)
+bp = bp[:3]
 
 # Count
 CountByCond, CountByCell = makeCountDf(df_f, condCol)
@@ -3513,7 +6932,7 @@ Ncomps = CountByCond.compCount.values[0]
 # df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
 
 # Plot
-fig, axes = plt.subplots(3, 1, figsize=(12/gs.cm_in, 18/gs.cm_in), sharex=True, sharey=True)
+fig, axes = plt.subplots(3, 2, figsize=(17/gs.cm_in, 21/gs.cm_in), sharex='col', sharey='col')
 
 intervals = ['200_500', '300_700', '400_900']
 cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
@@ -3525,7 +6944,7 @@ rD = {'dmso & 0.0' : 'DMSO',
 
 for k, cond in enumerate(co_order):  
     for i, interval in enumerate(intervals):
-        ax = axes[i]
+        ax = axes[i,0]
         ax.set_yscale('log')
         df_fc = df_f[df_f[condCol] == cond]        
         
@@ -3548,6 +6967,46 @@ for k, cond in enumerate(co_order):
         if i != len(intervals)-1:
             ax.set_xlabel('')
 
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[i, 1]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.8,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel('')
+    ax.set_ylabel('$K$ (kPa)' + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa")
+
+
 
 # Show
 plt.tight_layout()
@@ -3561,12 +7020,86 @@ CountByCond, CountByCell = makeCountDf(df_f, condCol)
 # name = 'K-sigma-3ranges' + drugSuffix
 figSubDir = ''
 drugPrefix = 'LIMKi3_'
-name = drugPrefix + 'K-sigma-3ranges'
+name = drugPrefix + 'K-sigma_and_Kbp'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% Figure NC5-6 - Non Lin VW % Pop
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+# dates = ['24-07-04']
+# dates = ['24-03-13']
+dates = ['24-03-13', '24-07-04']
+drugs = ['dmso', 'LIMKi']
+cons = ['0.0', '10.0', '20.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+
+#### Default threshold
+th_NLI = np.log10(10)
+df_fNL = computeNLMetrics(df_f, th_NLI = th_NLI)
+
+fig, ax = plt.subplots(figsize = (12/gs.cm_in,10/gs.cm_in), tight_layout = True)
+# condCol, condCat = 'drug', drugs
+
+# df_fNL, condCol = makeCompositeCol(df_fNL, cols=['drug'])
+
+# condCol = 'drug'
+condCat = co_order
+bp = []
+
+plotChars = {'color' : 'black', 'fontsize' : 8}
+
+fig, ax, pvals = plotNLI(fig, ax, df_fNL, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+ax.set_xticklabels(['DMSO', 'LIMKi3\n10 µM', 'LIMKi3\n20 µM'])
+ax.set_xlabel('')
+ax.set_ylabel('Compressions behavior (%)')
+ax.get_legend().set_title(f'Thesh = $\pm${th_NLI:.1f}')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_fNL, condCol)
+# Save
+figSubDir = ''
+drugPrefix = 'LIMKi3_'
+name = drugPrefix + f'VW_categories'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
 
 
 # %%% Thickness & Stiffness
@@ -3576,7 +7109,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -3728,7 +7261,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 # dates = ['24-07-04']
 # dates = ['24-03-13']
@@ -3890,12 +7423,660 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+# %%% Megaplots
+
+# %%%% Common dataset
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+# dates = ['24-07-04']
+# dates = ['24-03-13']
+dates = ['24-03-13', '24-07-04']
+drugs = ['dmso', 'LIMKi']
+cons = ['0.0', '10.0', '20.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'LIMKi3_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'LIMKi & 10.0' : 'LIMKi3 10 µM', 
+      'LIMKi & 20.0' : 'LIMKi3 20 µM', 
+      }
+
+df_plot_LIMKi3 = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+global_rD.update(rD)
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 7/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(16/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      })
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 3, figsize=(16/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 10)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% K-sigma-small
+
+gs.set_manuscript_options_jv()
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 2, figsize=(16/gs.cm_in, 11/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '400_900']
+ax_titles = ['Low stress', 'High stress']
+# cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 0)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp_SMALL'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# E400
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
 # %% Plots latrunculinA
 
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # print(df.drug.unique())
 print(df[df['drug']=='latrunculinA']['date'].unique())
 print(df[df['drug']=='latrunculinA']['cell subtype'].unique())
@@ -3906,7 +8087,7 @@ print(df[df['drug']=='latrunculinA']['concentration'].unique())
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -3995,7 +8176,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -4081,7 +8262,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -4251,7 +8432,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -4345,6 +8526,79 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%%% Figure NC5-6 - Non Lin VW % Pop
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-11-26', '23-12-03']
+drugs = ['dmso', 'latrunculinA']
+cons = ['0.0', '0.1', '0.5', '2.5']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df['bestH0'] <= 1000),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+
+#### Default threshold
+th_NLI = np.log10(10)
+df_fNL = computeNLMetrics(df_f, th_NLI = th_NLI)
+
+fig, ax = plt.subplots(figsize = (12/gs.cm_in,10/gs.cm_in), tight_layout = True)
+# condCol, condCat = 'drug', drugs
+
+# df_fNL, condCol = makeCompositeCol(df_fNL, cols=['drug'])
+
+# condCol = 'drug'
+condCat = co_order
+bp = []
+
+plotChars = {'color' : 'black', 'fontsize' : 8}
+
+fig, ax, pvals = plotNLI(fig, ax, df_fNL, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+ax.set_xticklabels(['DMSO', 'LatA\n0.1 µM', 'LatA\n0.5 µM', 'LatA\n2.5 µM'])
+ax.set_xlabel('')
+ax.set_ylabel('Compressions behavior (%)')
+ax.get_legend().set_title(f'Thesh = $\pm${th_NLI:.1f}')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_fNL, condCol)
+# Save
+figSubDir = ''
+drugPrefix = 'LatA_'
+name = drugPrefix + f'VW_categories'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
 # %%% Thickness & Stiffness
 
 # %%%% 1. E400
@@ -4352,7 +8606,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -4503,7 +8757,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-11-26', '23-12-03']
 drugs = ['dmso', 'latrunculinA']
@@ -4667,10 +8921,555 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
+# %%% Megaplots
+
+# %%%% Common dataset
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-11-26', '23-12-03']
+drugs = ['dmso', 'latrunculinA']
+cons = ['0.0', '0.1', '0.5', '2.5']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+bp = makeBoxPairs(co_order)
+bp = [bp[0], bp[2], bp[1], bp[3]] + [bp[5]]
+
+# Group By
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[['bestH0', 'NLI_mod']]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+drugPrefix = 'LatA_'
+
+rD = {'dmso & 0.0' : 'DMSO',
+      'latrunculinA & 0.1' : 'LatA 0.1 µM', 
+      'latrunculinA & 0.5' : 'LatA 0.5 µM', 
+      'latrunculinA & 2.5' : 'LatA 2.5 µM', 
+      }
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.8,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.8,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(17/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      })
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 4, figsize=(17/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.6,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# Eeff
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+
 
 # %% Plots CK666
 
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 # print(df.drug.unique())
 print(df[df['drug']=='ck666']['date'].unique())
 print(df[df['drug']=='ck666']['cell subtype'].unique())
@@ -4681,7 +9480,7 @@ print(df[df['drug']=='ck666']['concentration'].unique())
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -4769,7 +9568,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -4855,7 +9654,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -4935,7 +9734,7 @@ df_fg2 = filterDf(df_fg, Filters)
 # 1 by 1
 
 # Plot
-fig, axes = plt.subplots(3, 1, figsize=(12/gs.cm_in, 20/gs.cm_in), sharey=True, sharex=True)
+fig, axes = plt.subplots(3, 1, figsize=(8/gs.cm_in, 18/gs.cm_in), sharey=True, sharex=True)
 axes = axes.flatten('C')
 
 for i in range(len(axes)):
@@ -4974,12 +9773,12 @@ for i in range(len(axes)):
                     f'\n$R^2$ = {R2:.2f}' + \
                     f'\np-val = {pval:.2f}')
 
-    ax.legend(fontsize = 8)
+    ax.legend(fontsize = 6)
     ax.set_xlabel('$H_{5mT}$ (nm)')
-    ax.set_ylabel('$H_{5mT}$ fluctuations (nm) [$D_9$-$D_1$]')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
     ax.set_title(co_order[i])
-    if i%2 != 0:
-        ax.set_ylabel('')
+    # if i%2 != 0:
+    #     ax.set_ylabel('')
         
            
 # Prettify
@@ -5023,7 +9822,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -5031,8 +9830,6 @@ cons = ['0.0', '50.0', '100.0']
 substrate = '20um fibronectin discs'
 subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
 
-XCol = 'ctFieldThickness'
-YCol = 'ctFieldFluctuAmpli'
 df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
 
 
@@ -5117,6 +9914,77 @@ ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%%% Figure NC5-6 - Non Lin VW % Pop
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-04-26', '23-04-28']
+drugs = ['dmso', 'ck666']
+cons = ['0.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df['bestH0'] <= 1000),
+           ]
+df_f = filterDf(df, Filters)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+
+#### Default threshold
+th_NLI = np.log10(10)
+df_fNL = computeNLMetrics(df_f, th_NLI = th_NLI)
+
+fig, ax = plt.subplots(figsize = (12/gs.cm_in,10/gs.cm_in), tight_layout = True)
+# condCol, condCat = 'drug', drugs
+
+# df_fNL, condCol = makeCompositeCol(df_fNL, cols=['drug'])
+
+# condCol = 'drug'
+condCat = co_order
+bp = []
+
+plotChars = {'color' : 'black', 'fontsize' : 8}
+
+fig, ax, pvals = plotNLI(fig, ax, df_fNL, condCat, condCol, bp, labels = [], colorScheme = 'white', **plotChars)
+ax.set_xticklabels(['DMSO', 'CK666\n50 µM', 'CK666\n100 µM'])
+ax.set_xlabel('')
+ax.set_ylabel('Compressions behavior (%)')
+ax.get_legend().set_title(f'Thesh = $\pm${th_NLI:.1f}')
+
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_fNL, condCol)
+# Save
+figSubDir = ''
+drugPrefix = 'CK666_'
+name = drugPrefix + f'VW_categories'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
 # %%% Thickness & Stiffness
 
 # %%%% 1. E400
@@ -5124,7 +9992,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -5162,7 +10030,7 @@ df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol
 df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 
 # Plot
-fig, axes = plt.subplots(3, 1, figsize=(9.5/gs.cm_in, 22.5/gs.cm_in), sharex=True, sharey=True)
+fig, axes = plt.subplots(3, 1, figsize=(8/gs.cm_in, 18/gs.cm_in), sharex=True, sharey=True)
 axes = axes.flatten('C')
 
 # ax = axes[0]
@@ -5223,7 +10091,7 @@ for i in range(len(axes)):
                     f'\n$R^2$ = {R2:.2f}' + \
                     f'\np-val = {pval:.2f}')
 
-    ax.legend(fontsize = 8)
+    ax.legend(fontsize = 6)
     ax.set_xlabel('$H_0}$ (nm)')
     ax.set_ylabel('$E_{400}$ (kPa)')
     ax.set_title(co_order[i])
@@ -5274,7 +10142,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_manuscript_options_jv()
 
 # Define
-df = MecaData_DrugV3
+df = MecaData_DrugV4
 
 dates = ['23-04-26', '23-04-28']
 drugs = ['dmso', 'ck666']
@@ -5436,7 +10304,1135 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
+# %%% Megaplots
 
+# %%%% Common dataset
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-04-26', '23-04-28']
+drugs = ['dmso', 'ck666']
+cons = ['0.0', '50.0', '100.0']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[groupNumCol]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+
+
+drugPrefix = 'CK666_'
+
+# Prettify
+rD = {'dmso & 0.0' : 'DMSO',
+      'ck666 & 50.0' : 'CK666 50 µM', 
+      'ck666 & 100.0' : 'CK666 100 µM', 
+      }
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(17/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      })
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 3, figsize=(17/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 6)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 8,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'best')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 (10µM)', 
+#       'Y27 & 50.0' : 'Y27 (50µM)', 
+#       # 'ctFieldThickness' : 'Elastic modulus (Pa)\nfor F < 400pN',
+#       # 'ctFieldFluctuAmpli' : 'Elastic modulus (Pa)\nfor F < 400pN',
+#       }
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+bp = makeBoxPairs(co_order)
+bp = bp[:2]
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 10 µM', 
+#       'Y27 & 50.0' : 'Y27 50 µM', 
+#       }
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.9, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 10 µM', 
+#       'Y27 & 50.0' : 'Y27 50 µM', 
+#       }
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# E400
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %% Plots CalA
+
+df = MecaData_DrugV4
+# print(df.drug.unique())
+print(df[df['drug']=='calyculinA']['date'].unique())
+print(df[df['drug']=='calyculinA']['cell subtype'].unique())
+print(df[df['drug']=='calyculinA']['concentration'].unique())
+
+
+# %%% Megaplots
+
+# %%%% Common dataset
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_DrugV4
+
+dates = ['23-07-17', '23-07-20', '23-09-06']
+drugs = ['dmso', 'calyculinA']
+cons = ['0.0', '0.5', '1.0', '2.0'] # , '0.25'
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+df, condCol = makeCompositeCol(df, cols=['drug', 'concentration'])
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['concentration'].apply(lambda x : x in cons)),
+           (df[XCol] >= 50),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# Order
+df_f['co'] = df_f['concentration'].astype(float)
+co_order = df_f[[condCol, 'co']].sort_values(by = 'co')[condCol].unique()
+
+bp = makeBoxPairs(co_order)
+bp = [bp[0], bp[2], bp[1], bp[3]] + [bp[5]]
+
+# Group By
+groupNumCol = ['bestH0', 'NLI_mod', 'ctFieldThickness', 'ctFieldFluctuAmpli']
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = groupNumCol, aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg2 = df_fg[groupNumCol]
+df_fgw_E400 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
+df_fgw_Eeff = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = 'E_eff', weightCol = 'ciwE_eff', weight_method = 'ciw^2')
+
+
+
+drugPrefix = 'CalA_'
+
+# Prettify
+rD = {'dmso & 0.0' : 'DMSO',
+      'calyculinA & 0.25' : 'CalA 0.25µM',
+      'calyculinA & 0.5' : 'CalA 0.5µM',
+      'calyculinA & 1.0' : 'CalA 1.0µM',
+      'calyculinA & 2.0' : 'CalA 2.0µM',
+      }
+
+# %%%% H0 + E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# H0
+parameter = 'bestH0'
+ax = axes[0]
+ax.set_yscale('log')
+ax.set_ylim([50, 2750])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$H_0$ (nm)')
+
+
+# E400
+parameter = 'E_f_<_400'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{400}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H_E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%%% H0 vs E400
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_E400, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+N = len(co_order)
+
+# Plot
+fig, axes = plt.subplots(1, N, figsize=(17/gs.cm_in, 7/gs.cm_in), sharex=True, sharey=True)
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'+'_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    if i==0:
+        color='dimgray'
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA={A:.1e}' + \
+                        f'\nk={k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$={R2:.2f}' + \
+                        f' | p-val={pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'upper right', ncol=2, handlelength=1) #, bbox_to_anchor=(+0.05, -0.1)
+    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    # if i != 0:
+    #     ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_f_<_400_wAvg':'Elastic modulus (Pa)\nfor F < 400pN - wAvg',
+      'none & 0.0' : 'No drug',
+      })
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 1000)
+    ax.set_ylim(0.4, 500)
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'H0-E400' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'H0-E400'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% Fluctu
+
+gs.set_manuscript_options_jv()
+XCol = 'ctFieldThickness'
+YCol = 'ctFieldFluctuAmpli'
+
+# Plot
+fig, axes = plt.subplots(1, 4, figsize=(17/gs.cm_in, 7/gs.cm_in), sharey=True)
+
+for i in range(len(axes)):
+    ax = axes[i]
+    df_fc = df_fg[df_fg[condCol] == co_order[i]]
+    color = styleDict[co_order[i]]['color']
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 6)
+    Xfit, Yfit = (df_fc[XCol].values), (df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    a_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = a * Xplot + b
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 8,
+            label =  r'$\bf{Fit\ y=ax+b}$' + \
+                    f'\na = {a:.2f}' + r'$\pm$' + f'{a_cihw:.2f}' + \
+                    f'\nb = {b:.2f}' + \
+                    f'\n$R^2$ = {R2:.2f}' + \
+                    f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'best')
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+    ax.set_ylabel('Fluctuations ampli. (nm)')
+    ax.set_title(co_order[i])
+    if i != 0:
+        ax.set_ylabel('')
+        
+    # ax = axes[1,i]
+    # df_fg['Fluctu_ratio'] = df_fg[YCol]/df_fg[XCol]
+    # ax.set_yscale('log')
+    # bp = makeBoxPairs(co_order)
+    # bp = [bp[1]]
+    # fig, ax = D1Plot(df_fg, fig = fig, ax = ax, condition=condCol, parameter='Fluctu_ratio',
+    #                  co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.7,
+    #                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+    #                  showMean = False)
+
+    # ax.set_ylabel('Fluctuations ratio') #  [$D_9$-$D_1$]
+    # # ax.set_title(D_list[k])
+    # ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')      
+        
+           
+# Prettify
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 (10µM)', 
+#       'Y27 & 50.0' : 'Y27 (50µM)', 
+#       # 'ctFieldThickness' : 'Elastic modulus (Pa)\nfor F < 400pN',
+#       # 'ctFieldFluctuAmpli' : 'Elastic modulus (Pa)\nfor F < 400pN',
+#       }
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    renameLegend(ax, rD, loc='upper left', fontsize = 6, hlen=1)
+    ax.set_xlim([0, 600])
+    ax.set_ylim([0, 300])
+    ax.set_xlabel('$H_{5mT}$ (nm)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'Fluctuations' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'Fluctuations'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% K-sigma
+
+gs.set_manuscript_options_jv()
+
+
+# Group By
+# df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex='row', sharey='row')
+
+intervals = ['200_500', '300_700', '400_900']
+ax_titles = ['Low stress', 'Intermediate', 'High stress']
+cL = plt.cm.plasma(np.linspace(0.1, 0.9, len(intervals)))
+
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 10 µM', 
+#       'Y27 & 50.0' : 'Y27 50 µM', 
+#       }
+
+for k, cond in enumerate(co_order):  
+    for i, interval in enumerate(intervals):
+        ax = axes[0,i]
+        ax.set_yscale('log')
+        df_fc = df_f[df_f[condCol] == cond]        
+        
+        # colorDict = {cond:cL[i]}
+        # labelDict = {cond:f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"}
+        colorDict = {cond:styleDict[cond]['color']}
+        labelDict = {cond:rD[cond]}
+        plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
+                     colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
+                     fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf,
+                     shortLegend = True)
+    
+        # Prettify
+        ax.grid(visible=True, which='both', axis='y')
+        # legendTitle = r'$\bf{Whole\  dataset}$ | ' + f'{Ncells} cells | {Ncomps} comp'
+        # legendTitle = r"$\sigma \in$" + f"[{interval.split('_')[0]}, {interval.split('_')[1]}] Pa"
+        ax.set_ylabel('$K$ (kPa)')
+        ax.set_title(ax_titles[i], fontsize=10)
+        ax.legend(loc='lower right', fontsize = 6)#, title = legendTitle, title_fontsize = 8)
+        # ax.legend().set_visible(False)
+        ax.set_xlim(0, 1000)
+        ax.set_ylim(0.5, 30)
+        if i != 0:
+            ax.set_ylabel('')
+            
+            
+stressRanges = ['300_100', '500_100', '700_100']
+for i, fitID in enumerate(stressRanges):  
+    lb = int(fitID.split('_')[0])-int(fitID.split('_')[1])
+    ub = int(fitID.split('_')[0])+int(fitID.split('_')[1])
+
+    df_ff = taka2.getFitsInTable(df_f, fitType='stressGaussian', filter_fitID=fitID)
+
+    # Filter again
+    Filters = [(df_ff['fit_K'] >= 0), 
+               (df_ff['fit_K'] <= 35e3), 
+               ]
+    df_ff = filterDf(df_ff, Filters)
+
+    # Group By
+    # df_fg = dataGroup(df_ff, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    # df_fg = df_fg[['bestH0']]
+    df_fgw2 = dataGroup_weightedAverage(df_ff, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = 'fit_K', weightCol = 'fit_ciwK', weight_method = 'ciw^2')
+    parameter = 'fit_K_wAvg'
+    df_fgw2[parameter] /= 1000
+
+    # Plot
+    ax = axes[1,i]
+    ax.set_yscale('log')
+    ax.set_ylim([1, 35])
+
+    fig, ax = D1Plot(df_fgw2, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                     co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.6,
+                     stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                     showMean = False)
+    # ax.set_ylim([0.4, 200])
+               
+    # Prettify
+    renameAxes(ax, rD, format_xticks = True)
+    renameAxes(ax, renameDict, format_xticks = True, rotation = 15)
+    ax.grid(visible=True, which='major', axis='y')
+    ax.set_xlabel(r"$\sigma \in$" + f"[{lb}, {ub}] Pa")
+    if i == 0:
+        ax.set_ylabel('$K$ (kPa)') #  + r" - $\sigma \in$" + f"[{lb}, {ub}] Pa"
+    else:
+        ax.set_ylabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'K-sigma-3ranges' + drugSuffix
+figSubDir = ''
+
+name = drugPrefix + 'K-sigma_and_Kbp'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%%% NLI & E_eff
+
+gs.set_manuscript_options_jv()
+
+# Select data
+df_plot = pd.merge(left=df_fg2, right=df_fgw_Eeff, on='cellID', how='inner')
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_plot, condCol)
+
+# Plot
+fig, axes = plt.subplots(1,2, figsize=(16/gs.cm_in, 8/gs.cm_in))
+
+# NLI_mod
+parameter = 'NLI_mod'
+ax = axes[0]
+# ax.set_yscale('log')
+# ax.set_ylim([50, 2750])
+fig, ax = D1Plot_violin(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                  co_order = co_order, figSizeFactor = 1, 
+                  stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False)
+
+# fig, ax = D1Plot(df_f, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+#                   co_order = co_order, boxplot = 2, figSizeFactor = 1, markersizeFactor = 0.4,
+#                   stats=True, statMethod='Mann-Whitney', box_pairs = [], statVerbose = False,
+#                   showMean = False, edgecolor='gray')
+
+# bins = np.linspace(-3, 2, 11)
+# for i in range(len(co_order)):
+#     df_fc = df_f[df_f[condCol] == co_order[i]]
+#     x = df_fc['NLI_mod'].values
+#     color = styleDict[co_order[i]]['color']
+#     histo, bins = np.histogram(x, bins=bins)
+#     histo = histo / np.sum(histo)
+#     if i == 0:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = True, lw = 1.5, zorder=0)
+#     else:
+#         ax.stairs(histo, edges=bins, color = color, label = co_order[i], fill = False, lw = 1.5, zorder=3)
+
+           
+# Prettify
+# rD = {'none & 0.0' : 'No drug',
+#       'Y27 & 10.0' : 'Y27 10 µM', 
+#       'Y27 & 50.0' : 'Y27 50 µM', 
+#       }
+
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('NLR')
+
+
+# E400
+parameter = 'E_eff'+'_wAvg'
+df_plot[parameter] /= 1000
+ax = axes[1]
+ax.set_yscale('log')
+# ax.set_ylim([0.4, 200])
+fig, ax = D1Plot(df_plot, fig = fig, ax = ax, condition=condCol, parameter=parameter,
+                 co_order = co_order, boxplot = 3, figSizeFactor = 1, markersizeFactor = 0.9,
+                 stats=True, statMethod='Mann-Whitney', box_pairs = bp, statVerbose = False,
+                 showMean = False)
+
+           
+# Prettify
+renameAxes(ax, rD, format_xticks = True)
+renameAxes(ax, renameDict, format_xticks = True, rotation=10)
+ax.grid(visible=True, which='major', axis='y')
+ax.set_xlabel('')
+ax.set_ylabel('$E_{eff}$ (kPa)')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+# figSubDir = 'Y27'
+# drugSuffix = '_Y27'
+# name = 'bestH0' + drugSuffix
+figSubDir = ''
+name = drugPrefix + 'NLI_Eeff'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
