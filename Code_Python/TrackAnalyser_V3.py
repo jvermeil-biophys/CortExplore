@@ -2301,106 +2301,106 @@ class CellCompression:
             IC = self.listIndent[i]
             if IC.isValidForAnalysis:
             
-            # Identifiers
-            results['date'][i] = ufun.findInfosInFileName(self.cellID, 'date')
-            results['manipID'][i] = ufun.findInfosInFileName(self.cellID, 'manipID')
-            results['cellName'][i] = ufun.findInfosInFileName(self.cellID, 'cellName')
-            results['cellID'][i] = self.cellID
-            results['cellCode'][i] = '_'.join(self.cellID.split('_')[-2:])
-            results['compNum'][i] = i+1
-            
-            # Time-related
-            date_T0 = self.expDf.at[self.expDf.index.values[0], 'date_T0']
-            results['compDuration'][i] = self.expDf.at[self.expDf.index.values[0], 'compression duration']
-            results['totalDuration'][i] = totalDuration
-            results['compStartTime'][i] = IC.rawDf['T'].values[0]
-            results['compAbsStartTime'][i] = IC.rawDf['Tabs'].values[0]
-            results['compStartTimeThisDay'][i] = IC.rawDf['Tabs'].values[0] - date_T0
-            
-            
-            # Thickness-related ( = D3-DIAMETER)
-            previousMask = self.getMaskForCompression(i, task = 'previous')
-            surroundingMask = self.getMaskForCompression(i, task = 'surrounding')
-            previousThickness = np.median(self.tsDf.D3.values[previousMask] - self.DIAMETER)
-            surroundingThickness = np.median(self.tsDf.D3.values[surroundingMask] - self.DIAMETER)
-            surroundingDx = np.median(self.tsDf.dx.values[surroundingMask])
-            surroundingDy = np.median(self.tsDf.dy.values[surroundingMask])
-            surroundingDz = np.median(self.tsDf.dz.values[surroundingMask])
-            
-            results['previousThickness'][i] = previousThickness
-            results['surroundingThickness'][i] = surroundingThickness
-            results['surroundingDx'][i] = surroundingDx
-            results['surroundingDy'][i] = surroundingDy
-            results['surroundingDz'][i] = surroundingDz
-            results['ctFieldDX'][i] = ctFieldDX
-            results['ctFieldDY'][i] = ctFieldDY
-            results['ctFieldDZ'][i] = ctFieldDZ
-            results['ctFieldThickness'][i] = ctFieldThickness
-            results['ctFieldMinThickness'][i] = ctFieldMinThickness
-            results['ctFieldMaxThickness'][i] = ctFieldMaxThickness
-            results['ctFieldVarThickness'][i] = ctFieldVarThickness
-            results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
-            results['jumpD3'][i] = self.listJumpsD3[i]
-            
-            results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
-            results['minThickness'][i] = np.min(IC.hCompr)
-            results['maxIndent'][i] = results['initialThickness'][i] - results['minThickness'][i]
-
-            results['validatedThickness'][i] = np.min([results['initialThickness'][i],results['minThickness'][i],
-                                          results['previousThickness'][i],results['surroundingThickness'][i],
-                                          results['ctFieldThickness'][i]]) > 0
-            
-            # Force-related
-            results['minForce'][i] = np.min(IC.fCompr)
-            results['maxForce'][i] = np.max(IC.fCompr)
-            results['ctFieldForce'][i] = ctFieldForce
-            
-            # Best H0 related
-            results['bestH0'][i] = IC.bestH0
-            results['method_bestH0'][i] = IC.method_bestH0
-            results['error_bestH0'][i] = IC.error_bestH0
-            
-            # Strain-stress-related
-            results['minStress'][i] = np.min(IC.stressCompr)
-            results['maxStress'][i] = np.max(IC.stressCompr)
-            results['minStrain'][i] = np.min(IC.strainCompr)
-            results['maxStrain'][i] = np.max(IC.strainCompr)
-            
-            # Whole curve fits related
-            
-            if fitSettings['doVWCFit'] and IC.isValidForAnalysis:
-                for m in fitSettings['VWCFitMethods']:
-                    try:
-                        m2 = 'vwc_' + m
-                        results['error_'+ m2][i] = IC.dictFitFH_VWC[m]['error']
-                        results['nbPts_'+ m2][i] = IC.dictFitFH_VWC[m]['nbPts']
-                        results['K_'+ m2][i] = IC.dictFitFH_VWC[m]['K']
-                        results['ciwK_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwK']
-                        results['Y_'+ m2][i] = IC.dictFitFH_VWC[m]['Y']
-                        results['ciwY_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwY']
-                        results['H0_'+ m2][i] = IC.dictFitFH_VWC[m]['H0']
-                        results['ciwH0_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwH0']
-                        results['R2_'+ m2][i] = IC.dictFitFH_VWC[m]['R2']
-                        results['Chi2_'+ m2][i] = IC.dictFitFH_VWC[m]['Chi2']
-                        results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
-                        results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
-                    except:
-                        print(IC.dictFitFH_VWC)
-                        
-                if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
-                    try:
-                        method = 'Dimitriadis'
-                        results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
-                        results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
-                        results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
-                        results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
-                        results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
-                        results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
-                        results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
-                        results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
-                        results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
-                    except:
-                        print(IC.dictFitFH_Dimitriadis)
+                # Identifiers
+                results['date'][i] = ufun.findInfosInFileName(self.cellID, 'date')
+                results['manipID'][i] = ufun.findInfosInFileName(self.cellID, 'manipID')
+                results['cellName'][i] = ufun.findInfosInFileName(self.cellID, 'cellName')
+                results['cellID'][i] = self.cellID
+                results['cellCode'][i] = '_'.join(self.cellID.split('_')[-2:])
+                results['compNum'][i] = i+1
+                
+                # Time-related
+                date_T0 = self.expDf.at[self.expDf.index.values[0], 'date_T0']
+                results['compDuration'][i] = self.expDf.at[self.expDf.index.values[0], 'compression duration']
+                results['totalDuration'][i] = totalDuration
+                results['compStartTime'][i] = IC.rawDf['T'].values[0]
+                results['compAbsStartTime'][i] = IC.rawDf['Tabs'].values[0]
+                results['compStartTimeThisDay'][i] = IC.rawDf['Tabs'].values[0] - date_T0
+                
+                
+                # Thickness-related ( = D3-DIAMETER)
+                previousMask = self.getMaskForCompression(i, task = 'previous')
+                surroundingMask = self.getMaskForCompression(i, task = 'surrounding')
+                previousThickness = np.median(self.tsDf.D3.values[previousMask] - self.DIAMETER)
+                surroundingThickness = np.median(self.tsDf.D3.values[surroundingMask] - self.DIAMETER)
+                surroundingDx = np.median(self.tsDf.dx.values[surroundingMask])
+                surroundingDy = np.median(self.tsDf.dy.values[surroundingMask])
+                surroundingDz = np.median(self.tsDf.dz.values[surroundingMask])
+                
+                results['previousThickness'][i] = previousThickness
+                results['surroundingThickness'][i] = surroundingThickness
+                results['surroundingDx'][i] = surroundingDx
+                results['surroundingDy'][i] = surroundingDy
+                results['surroundingDz'][i] = surroundingDz
+                results['ctFieldDX'][i] = ctFieldDX
+                results['ctFieldDY'][i] = ctFieldDY
+                results['ctFieldDZ'][i] = ctFieldDZ
+                results['ctFieldThickness'][i] = ctFieldThickness
+                results['ctFieldMinThickness'][i] = ctFieldMinThickness
+                results['ctFieldMaxThickness'][i] = ctFieldMaxThickness
+                results['ctFieldVarThickness'][i] = ctFieldVarThickness
+                results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
+                results['jumpD3'][i] = self.listJumpsD3[i]
+                
+                results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
+                results['minThickness'][i] = np.min(IC.hCompr)
+                results['maxIndent'][i] = results['initialThickness'][i] - results['minThickness'][i]
+    
+                results['validatedThickness'][i] = np.min([results['initialThickness'][i],results['minThickness'][i],
+                                              results['previousThickness'][i],results['surroundingThickness'][i],
+                                              results['ctFieldThickness'][i]]) > 0
+                
+                # Force-related
+                results['minForce'][i] = np.min(IC.fCompr)
+                results['maxForce'][i] = np.max(IC.fCompr)
+                results['ctFieldForce'][i] = ctFieldForce
+                
+                # Best H0 related
+                results['bestH0'][i] = IC.bestH0
+                results['method_bestH0'][i] = IC.method_bestH0
+                results['error_bestH0'][i] = IC.error_bestH0
+                
+                # Strain-stress-related
+                results['minStress'][i] = np.min(IC.stressCompr)
+                results['maxStress'][i] = np.max(IC.stressCompr)
+                results['minStrain'][i] = np.min(IC.strainCompr)
+                results['maxStrain'][i] = np.max(IC.strainCompr)
+                
+                # Whole curve fits related
+                
+                if fitSettings['doVWCFit'] and IC.isValidForAnalysis:
+                    for m in fitSettings['VWCFitMethods']:
+                        try:
+                            m2 = 'vwc_' + m
+                            results['error_'+ m2][i] = IC.dictFitFH_VWC[m]['error']
+                            results['nbPts_'+ m2][i] = IC.dictFitFH_VWC[m]['nbPts']
+                            results['K_'+ m2][i] = IC.dictFitFH_VWC[m]['K']
+                            results['ciwK_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwK']
+                            results['Y_'+ m2][i] = IC.dictFitFH_VWC[m]['Y']
+                            results['ciwY_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwY']
+                            results['H0_'+ m2][i] = IC.dictFitFH_VWC[m]['H0']
+                            results['ciwH0_'+ m2][i] = IC.dictFitFH_VWC[m]['ciwH0']
+                            results['R2_'+ m2][i] = IC.dictFitFH_VWC[m]['R2']
+                            results['Chi2_'+ m2][i] = IC.dictFitFH_VWC[m]['Chi2']
+                            results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
+                            results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
+                        except:
+                            print(IC.dictFitFH_VWC)
+                            
+                    if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
+                        try:
+                            method = 'Dimitriadis'
+                            results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
+                            results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
+                            results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
+                            results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
+                            results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
+                            results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
+                            results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
+                            results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
+                            results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                        except:
+                            print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults

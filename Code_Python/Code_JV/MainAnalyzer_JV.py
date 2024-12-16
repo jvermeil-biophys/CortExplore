@@ -1166,7 +1166,7 @@ fitSettings = {# H0
                 'doStrainGaussianFits' : False,
                 }
 
-plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressCenters = [ii for ii in range(100, 2000, 100)]
 plot_stressHalfWidth = 100
 
 plotSettings = {# ON/OFF switchs plot by plot
@@ -1178,8 +1178,8 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_stressGaussian':True,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
-                        'S(e)_nPoints':True,
-                        'K(S)_nPoints':True,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
                         'S(e)_strainGaussian':False, # NEW - Jojo
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
@@ -1194,10 +1194,11 @@ plotSettings = {# ON/OFF switchs plot by plot
 # drugTask += ' & 23-04-26 & 23-04-28' # Ck666
 # drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
 # drugTask += ' & 23-09-19' # JLY
-drugTask = '24-03-13' # JLY
+# drugTask = '24-03-13' # JLY
+task = '24-12-11_M1_P1_C3' # JLY
 
 # drugTask = '23-09-19'
-res = taka2.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs_24-03-13', 
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'aaa', 
                                     save = False, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'

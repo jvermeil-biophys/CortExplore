@@ -103,9 +103,7 @@ class PincherTimeLapse:
         self.Zstep = manipDict['multi image Z step']
         self.BeadsZDelta = manipDict['beads bright spot delta']
         
-        
         try:
-            self.Z_symmetry = manipDict['Z symmetry']
             self.insideBeadType = str(manipDict['inside bead type'])
             self.outsideBeadType = str(manipDict['outside bead type'])
             self.beadTypes = [self.insideBeadType, self.outsideBeadType]
@@ -118,9 +116,22 @@ class PincherTimeLapse:
             self.beadTypes = [self.beadType, self.beadType]
             self.dictBeadDiameters = {self.beadType : float(manipDict['bead diameter'])}
             self.dictBeadMagCorr = {self.beadType : float(manipDict['bead magnetization correction'])}
+            
+        try:
+            self.Z_symmetry = manipDict['Z symmetry']
+        except:
             self.Z_symmetry = True
             
-        self.microscope = manipDict['microscope']
+        try:
+            self.matchingDirection = manipDict['multi image Z direction']
+        except:
+            self.matchingDirection = 'upward'
+            
+        try:
+            self.microscope = manipDict['microscope']
+        except:
+            self.microscope = 'labview'
+        
 
         # 3. Field that are just initialized for now and will be filled by calling different methods.
         self.listFrames = []
@@ -2157,8 +2168,8 @@ def smallTracker(dictPaths, metaDf, dictConstants,
 
     #### 3.2 - Compute z for each traj
     if dictOptions['redoAllSteps'] or not trajFilesImported:
-        matchingDirection = dictConstants['multi image Z direction']
-        Z_symmetry = dictConstants['Z symmetry']
+        matchingDirection = PTL.matchingDirection # Read in dictConstants['multi image Z direction'] ; default is: 'upward'
+        Z_symmetry = PTL.Z_symmetry # Read in dictConstants['Z symmetry'] ; default is: True
             
         print(gs.ORANGE + "Deptho detection in '{}' mode".format(matchingDirection) + gs.NORMAL)
         for iB in range(PTL.NB):
