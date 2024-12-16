@@ -3656,8 +3656,8 @@ class IndentCompression:
 
         """
         if self.isValidForAnalysis:
-            ax.scatter(self.hCompr, self.fCompr, marker = 'o', color = '#ADD7E5')
-            ax.scatter(self.hRelax, self.fRelax, marker = 'o', color = '#A3CE88')
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             legendText = ''
             ax.set_xlabel('h (nm)')
@@ -3666,6 +3666,7 @@ class IndentCompression:
             if plotFit:
                 
                 method = 'Full'
+                # dictFit = self.dictFitFH_Chadwick[method]
                 dictFit = self.dictFitFH_Chadwick[method]
                 fitError = dictFit['error']
                     
@@ -3675,10 +3676,10 @@ class IndentCompression:
                     hPredict = dictFit['yPredict']
                     
                     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    ax.plot(hPredict, fFit,'k--', linewidth =3, 
+                    ax.plot(hPredict, fFit,'k--', linewidth = 0.8, 
                             label = legendText, zorder = 2)
-                else:
-                    titleText += '\nFIT ERROR'
+                # else:
+                #     titleText += '\nFIT ERROR'
                     
                 method = 'f_<_400'
                 # dictFit = self.dictFitFH_Chadwick[method]
@@ -3693,8 +3694,8 @@ class IndentCompression:
                     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
                     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
                             label = legendText, zorder = 2)
-                else:
-                    titleText += '\nFIT ERROR'
+                # else:
+                #     titleText += '\nFIT ERROR'
                 
                 method = 'f_in_400_800'
                 # dictFit = self.dictFitFH_Chadwick[method]
@@ -3709,8 +3710,8 @@ class IndentCompression:
                     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
                     ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
                             label = legendText, zorder = 2)
-                else:
-                    titleText += '\nFIT ERROR'
+                # else:
+                #     titleText += '\nFIT ERROR'
                     
             if plotH0:
                 bestH0 = self.bestH0
@@ -3736,7 +3737,7 @@ class IndentCompression:
 
                     ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
                             label = legendText)
-                    ax.plot(plot_startH, plot_startF, marker = 'o', color = 'cyan', zorder = 4)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
 
                     
                 # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
