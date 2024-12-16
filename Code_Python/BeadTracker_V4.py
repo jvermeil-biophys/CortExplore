@@ -179,7 +179,7 @@ class PincherTimeLapse:
         
         # idxAnalysis
         logDf.loc[indexAction, 'idxAnalysis'] = logDf.loc[indexAction, 'iL']
-        for iL in range(1, np.max(logDf.loc[indexAction, 'iL'])+1):
+        for iL in range(1, int(np.max(logDf.loc[indexAction, 'iL']))+1):
             index_iL = logDf[logDf['iL'] == iL].index
             
             i_startOfPrecompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
@@ -2315,7 +2315,7 @@ class BeadDeptho:
                 self.validDepth = zLast-zFirst
                 self.I_cleanROI = I_cleanROI.astype(np.uint16)
                 
-            if self.validDepth < self.nz * (2/3):
+            if self.validDepth < self.nz * (9/16):
                 print('invalid depth')
                 print(self.validDepth, self.nz * (2/3), self.nz)
                 self.validBead = False
