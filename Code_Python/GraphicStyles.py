@@ -238,6 +238,20 @@ def set_manuscript_options_jv(palette = 'Set2'):
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     sns.set_palette(sns.color_palette(palette))
+    
+def set_defense_options_jv(palette = 'Set2'):
+    SMALLER_SIZE = 9
+    SMALL_SIZE = 11
+    MEDIUM_SIZE = 12
+    BIGGER_SIZE = 14
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    sns.set_palette(sns.color_palette(palette))
 
 def set_smallText_options_jv():
     SMALLER_SIZE = 6
@@ -312,15 +326,15 @@ cL_Set21 = cL_Set2 + cL_Set1
 
 # %%
 
-c1 = plt.cm.GnBu(0.2)
-c2 = plt.cm.GnBu(0.4)
-c3 = plt.cm.GnBu(0.6)
-c4 = plt.cm.GnBu(0.8)
+# c1 = plt.cm.GnBu(0.2)
+# c2 = plt.cm.GnBu(0.4)
+# c3 = plt.cm.GnBu(0.6)
+# c4 = plt.cm.GnBu(0.8)
 
-cL = [c1, c2, c3, c4]
+# cL = [c1, c2, c3, c4]
 
-X1, Y1 = np.arange(len(cL)), np.arange(len(cL))
-fig, ax = plt.subplots(1, 1)
-ax.scatter(X1, Y1, c=cL, s=200)
-plt.show()
+# X1, Y1 = np.arange(len(cL)), np.arange(len(cL))
+# fig, ax = plt.subplots(1, 1)
+# ax.scatter(X1, Y1, c=cL, s=200)
 
+# plt.show()

@@ -997,6 +997,8 @@ def squareDistance(M, V, normalize = False): # MUCH FASTER ! **Michael Scott Voi
 #     print(time.time()-top)
     return(R)
 
+
+
 def matchDists(listD, listStatus, Nup, NVox, direction):
     """
     This function transform the different distances curves computed for 
@@ -1341,10 +1343,67 @@ def plotMandForce(d = 0):
     figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
     figSubDir = 'Mat&Meth'
     name = 'Force_vs_MagField'
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+    archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # plotMandForce(d = 0)
+
+def plotForce_Insert(d = 0):
+    D = 4500e-9
+    gs.set_manuscript_options_jv()
+    
+    fig, axes = plt.subplots(1, 1, figsize = (3*1.5/gs.cm_in, 2*1.5/gs.cm_in),
+                             sharex = 'col', sharey = 'row') 
+    
+    #### 1.
+    B = np.linspace(0, 100, 1000)
+    M = computeMag_M450(B, k_batch = 1)
+    F = computeForce_M450(B, D, d)
+    
+    # ax = axes[0,0]
+    # ax.plot(B, M/1e3, c='indigo')
+    # # ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('M (kA/m)')
+    # ax.grid(axis='both')
+    # ax.set_ylim([-2,32])
+    
+    # ax = axes[1,0]
+    # ax.plot(B, F/1e3, c='darkred')
+    # ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('F (nN)')
+    # ax.grid(axis='both')
+    # ax.set_ylim([-0.2,3.2])
+    
+    #### 1.
+    B = np.linspace(0, 10, 500)
+    M = computeMag_M450(B, k_batch = 1)
+    F = computeForce_M450(B, D, d)
+    
+    # ax = axes[0,1]
+    # ax.plot(B, M/1e3, c='indigo')
+    # # ax.set_xlabel('B (mT)')
+    # # ax.set_ylabel('M (pN)')
+    # ax.grid(axis='both')    
+    
+    ax = axes#[1,1]
+    ax.plot(B, F/1e3, c='darkred')
+    # ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('F (pN)')
+    ax.grid(axis='both')
+    ax.tick_params(axis=u'both', which=u'both',length=0, labelsize=8)
+    
+    # fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
+    plt.tight_layout()
+    plt.show()
+    
+    #### Save
+    figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
+    figSubDir = 'Mat&Meth'
+    name = 'Force_vs_MagField_insert'
+    archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+# plotForce_Insert(d = 0)
 
 def chadwickModel(h, E, H0, DIAMETER):
     R = DIAMETER/2

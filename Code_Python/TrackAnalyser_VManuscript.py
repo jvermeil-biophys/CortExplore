@@ -1810,16 +1810,16 @@ class CellCompression:
             xxM2.append(axes[i, 2].get_xlim()[-1])
             yyM2.append(axes[i, 2].get_ylim()[-1])
         
-        xM1 = max(xxM1)
-        xM2 = max(xxM2)
-        yM2 = max(yyM2)
-        for i in range(Np):
+        # xM1 = max(xxM1)
+        # xM2 = max(xxM2)
+        # yM2 = max(yyM2)
+        # for i in range(Np):
             # axes[i, 1].set_xlim([-xM1, xM1])
             # axes[i, 2].set_xlim([0, xM2])
             # axes[i, 2].set_ylim([0, yM2])
-            axes[i, 1].set_xlim([-26, 26])
-            axes[i, 2].set_xlim([0, 0.27])
-            axes[i, 2].set_ylim([0, 1800])
+            # axes[i, 1].set_xlim([-26, 26])
+            # axes[i, 2].set_xlim([0, 0.27])
+            # axes[i, 2].set_ylim([0, 1800])
         
         fig.tight_layout()
         return(fig, axes)
@@ -1856,17 +1856,17 @@ class CellCompression:
             xxM2.append(axes[i, 2].get_xlim()[-1])
             yyM2.append(axes[i, 2].get_ylim()[-1])
         
-        xM1 = max(xxM1)
-        yM1 = max(yyM1)
-        xM2 = max(xxM2)
-        yM2 = max(yyM2)
-        for i in range(Np):
-            # axes[i, 1].set_xlim([0, xM1])
-            # axes[i, 1].set_ylim([0, yM1])
-            # axes[i, 2].set_xlim([0, xM2])
-            # axes[i, 2].set_ylim([0, yM2])
-            axes[i, 1].set_xlim([0, 0.27])
-            axes[i, 1].set_ylim([0, 1800])
+        # xM1 = max(xxM1)
+        # yM1 = max(yyM1)
+        # xM2 = max(xxM2)
+        # yM2 = max(yyM2)
+        # for i in range(Np):
+        #     # axes[i, 1].set_xlim([0, xM1])
+        #     # axes[i, 1].set_ylim([0, yM1])
+        #     # axes[i, 2].set_xlim([0, xM2])
+        #     # axes[i, 2].set_ylim([0, yM2])
+        #     axes[i, 1].set_xlim([0, 0.27])
+        #     axes[i, 1].set_ylim([0, 1800])
         
         fig.tight_layout()
         return(fig, axes)
@@ -1905,13 +1905,13 @@ class CellCompression:
         
         # xM1 = max(xxM1)
         # yM1 = max(yyM1)
-        xM2 = max(xxM2)
-        yM2 = max(yyM2)
-        for i in range(Np):
-            # axes[i, 1].set_xlim([0, xM1])
-            # axes[i, 1].set_ylim([0, yM1])
-            axes[i, 2].set_xlim([0, xM2])
-            axes[i, 2].set_ylim([0, yM2])
+        # xM2 = max(xxM2)
+        # yM2 = max(yyM2)
+        # for i in range(Np):
+        #     # axes[i, 1].set_xlim([0, xM1])
+        #     # axes[i, 1].set_ylim([0, yM1])
+        #     axes[i, 2].set_xlim([0, xM2])
+        #     axes[i, 2].set_ylim([0, yM2])
         
         fig.tight_layout()
         return(fig, axes)
@@ -2224,26 +2224,26 @@ class CellCompression:
             except:
                 pass
             
-            # try:
-            #     name = self.cellID + '_M02-2_F(h)_Residuals'
-            #     fig, ax = self.Mplot_FHR(plotSettings)
-            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
+            try:
+                name = self.cellID + '_M02-2_F(h)_Residuals'
+                fig, ax = self.Mplot_FHR(plotSettings)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
             
-            # try:
-            #     name = self.cellID + '_M03_NonLin'
-            #     fig, ax = self.Mplot_NL1(plotSettings)
-            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
+            try:
+                name = self.cellID + '_M03_NonLin'
+                fig, ax = self.Mplot_NL1(plotSettings)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
             
-            # try:
-            #     name = self.cellID + '_M04_VW-NonLin'
-            #     fig, ax = self.Mplot_NL2(plotSettings)
-            #     ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
-            # except:
-            #     pass
+            try:
+                name = self.cellID + '_M04_VW-NonLin'
+                fig, ax = self.Mplot_NL2(plotSettings)
+                ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            except:
+                pass
             
             # try:
             name = self.cellID + '_M04bis_VW2-NonLin'
@@ -3902,9 +3902,10 @@ class IndentCompression:
             ax.grid(axis = 'both')
             
             if not ss_slope_error:
-                ax.axline((0, 0), slope = ss_slope, linestyle = '--', linewidth = 1.5, color = color_Chad,
-                          label = 'Slope from\nthe linear fit')
-                ax.legend(loc='upper left')
+                pass
+                # ax.axline((0, 0), slope = ss_slope, linestyle = '--', linewidth = 1.5, color = color_Chad,
+                #           label = 'Slope from\nthe linear fit')
+                # ax.legend(loc='upper left')
             
         #### Style
         for ax in axes:
@@ -4153,13 +4154,15 @@ class IndentCompression:
             
             Ym = max(Yvals)
             # Log
-            ax.set_ylim([0.8, 150])
+            ax.set_ylim([0.8, 110])
+            # ax.set_ylim([0.8, 150])
             ax.set_yscale('log')
             # Lin
             # ax.set_xlim([0, Ym *1.2])
             
             Xm = max(Xvals)
-            ax.set_xlim([0, 1550])
+            ax.set_xlim([0, 1000])
+            # ax.set_xlim([0, 1550])
             
             ax.grid(axis='both')
             
@@ -4201,8 +4204,17 @@ class IndentCompression:
                 fPredict = dictFit['yPredict']
                 kPredict = dictFit['kPredict']
                 ePredict = dictFit['ePredict']
+                
+                
+                ciwK, ciwY = dictFit['ciwK'], dictFit['ciwY']
+                ciwE = ciwY + (ciwK*(1 - 0.8)**-4)
+
+                Y_err_div10, K_err_div10 = ciwY/10, ciwK/10
+                Y_NLImod = max(Y, Y_err_div10)
+                K_NLImod = max(K, K_err_div10)                
+                
                 Eeff = Y + K * (0.8**-4)
-                NLI = np.log10((0.8)**-4 * K/Y)
+                NLR = np.log10((0.8)**-4 * K_NLImod/Y_NLImod)
                 
                 legendTextY = r'$\bf{Hooke\ part}$'
                 legendTextY += f'\nY = {Y/1000:.2f} kPa'
@@ -4212,7 +4224,7 @@ class IndentCompression:
                 # legendTextE += '\n$H_0$ = '     + f'{H0:.1f} nm'
                 legendTextE += '\n$E_{eff}$ = ' + f'{Eeff/1000:.2f} kPa'
                 # legendTextE += '\n$R^2$ = '     + f'{R2:.2f}'
-                legendTextE += '\n$NLI$ = '     + f'{NLI:.2f}'
+                legendTextE += '\n$NLR$ = '     + f'{NLR:.2f}'
                 
                 ax.plot(hFit, (ePredict), ls=(0, (3, 2)), c=color_Chad, lw = 1.5, label = legendTextY, zorder = 2)
                 ax.plot(hFit, (kPredict), ls=(0, (3, 2)), c=color_VW, lw = 1.5, label = legendTextK, zorder = 2)
@@ -4417,8 +4429,18 @@ class IndentCompression:
                 fPredict = dictFit['yPredict']
                 kPredict = dictFit['kPredict']
                 ePredict = dictFit['ePredict']
+                # Eeff = Y + K * (0.8**-4)
+                # NLI = np.log10((0.8)**-4 * K/Y)
+                
+                ciwK, ciwY = dictFit['ciwK'], dictFit['ciwY']
+                ciwE = ciwY + (ciwK*(1 - 0.8)**-4)
+
+                Y_err_div10, K_err_div10 = ciwY/10, ciwK/10
+                Y_NLImod = max(Y, Y_err_div10)
+                K_NLImod = max(K, K_err_div10)                
+                
                 Eeff = Y + K * (0.8**-4)
-                NLI = np.log10((0.8)**-4 * K/Y)
+                NLR = np.log10((0.8)**-4 * K_NLImod/Y_NLImod)
                 
                 legendTextY = r'$\bf{Hooke\ part}$'
                 legendTextY += f'\nY = {Y/1000:.2f} kPa'
@@ -4428,7 +4450,7 @@ class IndentCompression:
                 legendTextE += '\n$H_0$ = '     + f'{H0:.1f} nm'
                 legendTextE += '\n$E_{eff}$ = ' + f'{Eeff/1000:.2f} kPa'
                 # legendTextE += '\n$R^2$ = '     + f'{R2:.2f}'
-                legendTextE += '\n$NLI$ = '     + f'{NLI:.2f}'
+                legendTextE += '\n$NLR$ = '     + f'{NLR:.2f}'
                 
                 ax.plot(hFit, (ePredict), ls=(0, (3, 2)), c=color_Chad, lw = 1.5, label = legendTextY, zorder = 2)
                 ax.plot(hFit, (kPredict), ls=(0, (3, 2)), c=color_VW, lw = 1.5, label = legendTextK, zorder = 2)
