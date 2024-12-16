@@ -691,10 +691,10 @@ def fitChadwick_hf(h, f, D):
     
         # bounds on parameters - initial parameters must be within these
         lowerBounds = (0, 0)
-        upperBounds = (np.Inf, np.Inf)
+        upperBounds = (np.inf, np.inf)
         parameterBounds = [lowerBounds, upperBounds]
-
-
+    
+    
         # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
@@ -3205,7 +3205,7 @@ class IndentCompression:
             mask = np.ones_like(self.hCompr, dtype = bool)
         h, f, D = self.hCompr[mask], self.fCompr[mask], self.DIAMETER
         params, ses, error = fitChadwick_hf(h, f, D)
-        
+
         E, H0 = params
         hPredict = inversedChadwickModel(f, E, H0/1000, self.DIAMETER/1000)*1000
         x = f
@@ -3216,7 +3216,6 @@ class IndentCompression:
                                  x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
         
-
         self.dictFitFH_Chadwick[method] = dictFit
         
 

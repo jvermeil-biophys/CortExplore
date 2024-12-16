@@ -32,16 +32,24 @@ import pandas as pd
 import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
-import matplotlib.pyplot as plt
-
 
 import os
 import sys
+import time
+import random
+import warnings
+import itertools
 import matplotlib
 
+from copy import copy
+from cycler import cycler
+from datetime import date
+from scipy.optimize import curve_fit
+from matplotlib.gridspec import GridSpec
 
 #### Local Imports
 
+import sys
 import CortexPaths as cp
 sys.path.append(cp.DirRepoPython)
 sys.path.append(cp.DirRepoPythonUser)
@@ -50,17 +58,15 @@ sys.path.append(cp.DirRepoPythonUser)
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser as taka
+import TrackAnalyser_V2 as taka2
+import TrackAnalyser_V3 as taka3
 
-#### Potentially useful lines of code
-# get_ipython().run_line_magic('load_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
-# cp.DirDataFigToday
 
 #### Pandas
-# pd.set_option('display.max_columns', None)
+pd.set_option('display.max_columns', None)
 # pd.reset_option('display.max_columns')
-# pd.set_option('display.max_rows', None)
-# pd.reset_option('display.max_rows')
+pd.set_option('display.max_rows', None)
+pd.reset_option('display.max_rows')
 
 
 ####  Matplotlib
@@ -68,7 +74,6 @@ matplotlib.rcParams.update({'figure.autolayout': True})
 
 #### Graphic options
 gs.set_default_options_jv()
-
 
 
 # %% TimeSeries functions
@@ -94,7 +99,7 @@ print(allTimeseriesDataFiles)
 
 # =============================================================================
 # %%% Experimental conditions
-expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True , sep = ';')
+expDf = ufun.getExperimentalConditions()
 
 
 
@@ -132,6 +137,68 @@ expDf = ufun.getExperimentalConditions(cp.DirRepoExp, save=True , sep = ';')
 
 
 # %%%% Specific task
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'doVWCFit' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':True, # NEW - Numi
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+
+# drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
+
+Task =  '24-02-26_M3_P1_C4' # Test
+
+# drugTask = '23-09-19'
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = Task, fileName = 'MecaData_test', 
+                                    save = False, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+
+
+
+
 
 # Example : 
 # Task_1 = '22-05-03'

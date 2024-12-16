@@ -70,6 +70,14 @@ elif COMPUTERNAME =='DATA2JHODR':
     DirTempPlots = DirData + '//TempPlots'
     CloudSaving = ''
     
+elif COMPUTERNAME =='DESKTOP-9CTUDCS':
+    suffix = '_JH'
+    DirRepo = "C:/Users/Julien/Nextcloud/CortExplore"
+    DirData = "C:/Users/Julien/Desktop/MagneticPincherData"
+    DirCloud = ""# + suffix
+    DirTempPlots = DirData + '/TempPlots'
+    CloudSaving = ''
+    
     
 # 1.2 Init sub directories
 
