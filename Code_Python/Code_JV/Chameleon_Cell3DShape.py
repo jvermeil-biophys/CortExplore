@@ -43,6 +43,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 gs.set_mediumText_options_jv()
 
 SCALE_100X_ZEN = 7.4588
+XY_scale = 7.4588
+Z_scale = 4/0.875
 
 # %% Utility functions
 
