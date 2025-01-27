@@ -1099,9 +1099,9 @@ def makeDictFit_CVW_hf(params, ses, error,
                 issue += 'Y<0_'
             if not nbPts >= fitValidationSettings['crit_nbPts']:
                 issue += 'nbPts<{:.0f}_'.format(fitValidationSettings['crit_nbPts'])
-            if not nbPts >= fitValidationSettings['crit_R2']:
+            if not R2 >= fitValidationSettings['crit_R2']:
                 issue += 'R2<{:.2f}_'.format(fitValidationSettings['crit_R2'])
-            if not nbPts >= fitValidationSettings['crit_Chi2']:
+            if not Chi2 >= fitValidationSettings['crit_Chi2']:
                 issue += 'Chi2>{:.1f}_'.format(fitValidationSettings['crit_Chi2'])
     
     else:
@@ -1210,9 +1210,9 @@ def makeDictFit_hf(params, ses, error,
                 issue += 'E<0_'
             if not nbPts >= fitValidationSettings['crit_nbPts']:
                 issue += 'nbPts<{:.0f}_'.format(fitValidationSettings['crit_nbPts'])
-            if not nbPts >= fitValidationSettings['crit_R2']:
+            if not R2 >= fitValidationSettings['crit_R2']:
                 issue += 'R2<{:.2f}_'.format(fitValidationSettings['crit_R2'])
-            if not nbPts >= fitValidationSettings['crit_Chi2']:
+            if not Chi2 >= fitValidationSettings['crit_Chi2']:
                 issue += 'Chi2>{:.1f}_'.format(fitValidationSettings['crit_Chi2'])
     
     else:

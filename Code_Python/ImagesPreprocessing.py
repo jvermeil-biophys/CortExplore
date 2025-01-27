@@ -27,10 +27,12 @@ source : https://docs.opencv.org/3.4/db/d5b/tutorial_py_mouse_handling.html
 import os
 import cv2
 import shutil
+from natsort import os_sorted
 import traceback
 
 import numpy as np
 import pyjokes as pj
+import imageio as iio
 
 from skimage import io
 
@@ -44,22 +46,28 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
+import re
+
+def natural_sort_key(s, _nsre=re.compile(r'(\d+)')):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in _nsre.split(s)]
 
 #%% Define parameters # Numi
 
-date = '24.05.22'
-# DirDeptho = '24.05.29_Deptho/Deptho_P3'
+# date = '24.05.22'
+# # DirDeptho = '24.05.29_Deptho/Deptho_P3'
 
-DirSave = os.path.join(cp.DirDataRaw, date) 
+# DirSave = os.path.join(cp.DirDataRaw, date) 
 
-DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
+# DirExt = 'F:/20240522_mdck-epithelia_100x_Mechanics/24.05.22'
 
-# DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
-# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+# # DirExt  = 'F:/20240529_3t3uthcry2_100xoil_Fibro-PEG4.5Beads_Mechanics_Crosslinking-Y27/'+ DirDeptho
+# # DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+
 #%% Define parameters # Jojo
-date = '24.12.11'
-DirExt = 'E:/24-12-11_3T3-LaGFP_20umdiscs_LongSeries/M2_deptho' #'/M4_patterns_ctrl' // \\M1_depthos
-DirSave = os.path.join(cp.DirDataRaw, date + '_depthos/M2') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
+date = '24.12.18'
+DirExt = 'D://RawData_fromMicroscope//24-12-18_3T3-LaGFP_20umdiscs_LIMKi3//M1_deptho' #'/M4_patterns_ctrl' // \\M1_depthos
+DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M1') #  + '_depthos', 'M2' # + '_Deptho', 'M3' //   + '_Deptho', 'M6-7'
 
 # prefix = 'cell'
 # channel = 'w1TIRF DIC'
@@ -85,7 +93,7 @@ imagePrefix = 'tif'
 
 def getListOfSourceFolders(Dir, 
                            forbiddenWords = ['error', 'excluded', 'out', 'bad', 'movie', 'test',
-                                               'film', 'films', 'capture', 'captures',
+                                               'film', 'films', 'capture', 'captures' #, 'deptho', 'depthos',
                                              ], # , 'deptho', 'depthos', 'uM', 'noDrug', 'deptho', 'depthos'
                            compulsaryWords = []): # 'depthos', 'deptho'
     """
@@ -266,6 +274,7 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
     scaleFactor = 4
     path = os.path.join(DirExt, currentCell)
     allFiles = os.listdir(path)
+    allFiles = os_sorted(allFiles)
     
     if microscope == 'metamorph':
         allFiles = [path+'/'+string for string in allFiles if channel in string]
@@ -284,13 +293,18 @@ def Zprojection(currentCell, microscope, kind = 'min', channel = 'nan', prefix =
     allFiles = allFiles[idx]
     frame = cv2.imread(allFiles[0])
     imgWidth, imgHeight = frame.shape[1], frame.shape[0]
-    ic = io.ImageCollection(allFiles, conserve_memory=True)
-    stack = io.concatenate_images(ic)
+    # ic = io.ImageCollection(allFiles, conserve_memory=True)
+    # stack = io.concatenate_images(ic)
+    
+    # Load all the images into a list
+    all_images = [iio.imread(file) for file in allFiles]
+    # Stack images into a single numpy array
+    stack = np.stack(all_images, axis=0)
         
     if kind == 'min':
         Zimg = np.min(stack, axis = 0)
     elif kind == 'max':
-        Zimg = np.max(ic, axis = 0)
+        Zimg = np.max(stack, axis = 0)
         
     Zimg = cv2.resize(Zimg, (int(imgWidth/scaleFactor), int(imgHeight/scaleFactor)))
     Zimg = cv2.normalize(Zimg, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
@@ -379,6 +393,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         cellPath = allCellPaths[i]
         cellName = cellPath.split('\\')[-1]
         allFiles = os.listdir(cellPath)
+        allFiles = os_sorted(allFiles)
         
         # to detect supplementary selections
         try:
@@ -403,9 +418,14 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         
         print(gs.BLUE + 'Loading '+ cellPath +'...' + gs.NORMAL)
         
-        ic = io.ImageCollection(allFiles, conserve_memory = True)
-        stack = io.concatenate_images(ic)
+        # ic = io.ImageCollection(allFiles, conserve_memory = True)
+        # stack = io.concatenate_images(ic)
         
+        # Load all the images into a list
+        all_images = [iio.imread(file) for file in allFiles]
+        # Stack images into a single numpy array
+        stack = np.stack(all_images, axis=0)
+                
         x1, x2 = int(min(refPts[:,0])), int(max(refPts[:,0]))
         y1, y2 = int(min(refPts[:,1])), int(max(refPts[:,1]))
         
@@ -466,7 +486,7 @@ for i in range(len(allCellsRaw)):
         
     if not ufun.containsFilesWithExt(currentCell, '.tif'):
         validCell = False
-        print(gs.BRIGHTRED + '/!\ Is not a valid cell' + gs.NORMAL)
+        print(gs.BRIGHTRED + '!!! Is not a valid cell' + gs.NORMAL)
         
     elif checkIfAlreadyExist and os.path.isfile(os.path.join(DirSave, currentCellName + '.tif')):
         validCell = False

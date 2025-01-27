@@ -548,6 +548,39 @@ output = mainTracker(dates, manips, wells, cells, depthoName, expDf,
 
 # %% Drugs & perturbation
 
+# %%% 24-12-18 // LIMKi3 M1 dmso, M2 10uM, M3 20uM
+
+# %%%% 24-12-18 - One cell 
+
+dates = '24.12.18'
+manips, wells, cells = 1, 1, 1
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = True, trackAll = False)
+
+
+# %%%% 24-12-18
+
+dates = '24.12.18'
+manips, wells, cells = 1, 1, 'all'
+depthoName = f'{dates}_M1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 2, 1, 'all'
+depthoName = f'{dates}_M2_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
+manips, wells, cells = 3, 1, 'all'
+depthoName = f'{dates}_M3_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
+
 
 # %%% 24.07.04 LIMKi - Blebbi - Y27
 # M1 - Blebbi 100uM || M2 - DMSO (4uL) || M3 - LIMKi 20uM || M4 - Blebbi 50uM || M5 - fail || M6 - no drug || M7 - Y27 50uM
