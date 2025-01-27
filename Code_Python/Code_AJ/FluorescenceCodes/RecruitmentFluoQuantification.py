@@ -214,12 +214,13 @@ def AllMMTriplets2Stack(DirExt, DirSave, expt, prefix, channel, subDir = None):
             
     return excludedCells
 
+
 #%% Setting directories
 
 date = '22.12.02'
 channel = 'w3CSU640'
 subDir = '3t3opthorhoa_Fastact640'
-dirFluoRaw = cp.DirData + '/DataFluorescence/Raw/' + date + '/' + subDir
+dirFluoRaw = 'D:/Anumita/MagneticPincherData/DataFluorescence/Raw/22.12.02/3t3optorhoa_Fastact640' #cp.DirData + '/DataFluorescence/Raw/' + date + '/' + subDir
 dirProcessed = os.path.join(cp.DirData + '/DataFluorescence/Processed', date)
 dirSegment = cp.DirData + '/DataFluorescence/Segmentation' 
 
@@ -405,9 +406,10 @@ for j in range(len(allCells)):
         allKymo.append(warped_copy)
     
     
-    plt.style.use('dark_background')
+    # plt.style.use('dark_background')
+    plt.style.use('default')
 
-    cmap = 'plasma'
+    cmap = 'RdPu'
     # cmap = 'viridis'
     allKymo = np.asarray(allKymo)
     
@@ -474,6 +476,7 @@ for j in range(len(allCells)):
     ax1[0].set_title('Normalised')
     fig1.colorbar(im, orientation='vertical', fraction = 0.055, pad = 0.04)
     
+    
     ax1[1].set_title('Not normalised')
     fig1.colorbar(im2, orientation='vertical', fraction = 0.055, pad = 0.04)
     
@@ -484,9 +487,9 @@ for j in range(len(allCells)):
 # plt.close('all')
 
 #%% Plotting normalised actin fluroscence intensity in time
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
 fluoDf = pd.DataFrame(fluoDict)
-plt.figure(figsize=(15,10))
+fig, ax = plt.subplots(figsize=(15,10))
 
 data = fluoDf[fluoDf['cellID'].str.contains('M2')]
 # data = fluoDf[fluoDf['cellID'].str.contains('C9') == False]
@@ -499,6 +502,8 @@ x = data['frame']*timeRes
 
 
 flatui =  ["#FFD700", "#ee82ee", "#1AFFC6"]
+flatui = ["#bb2fa6", "#000000"]
+
 sns.set_palette(flatui)
 
 sns.lineplot(data=data, x = x ,y="fluoFront") #, hue ='cellID')
@@ -507,12 +512,18 @@ sns.lineplot(data=data, x = x ,y="fluoBack")
 control = mpatches.Patch(color=flatui[0], label='Polarised rear (activated)')
 activated = mpatches.Patch(color=flatui[1], label='Polarised front')
 
-plt.legend(handles=[activated, control], fontsize = 20, loc = 'upper left')
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
+x2 = np.linspace(120, 260,7)
+
+# plt.legend(handles=[activated, control], fontsize = 20, loc = 'upper left')
+plt.xticks(fontsize=30)
+plt.yticks(fontsize=30)
 plt.xlabel('Time (secs)', fontsize=30)
 plt.ylabel('Normalised Actin fluoresence intensity', fontsize=30)
 plt.axvline(x = 120, color = 'red')
+
+for i in x2:
+    ax.axvline(x = i, color = "#bb2fa6", linewidth=4, ymax=0.10)
+
 plt.tight_layout()
 plt.ylim(0.4, 1.8)
 

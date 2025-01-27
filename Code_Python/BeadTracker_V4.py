@@ -117,7 +117,21 @@ class PincherTimeLapse:
             self.dictBeadDiameters = {self.beadType : float(manipDict['bead diameter'])}
             self.dictBeadMagCorr = {self.beadType : float(manipDict['bead magnetization correction'])}
             
-        self.microscope = manipDict['microscope']
+        try:
+            self.Z_symmetry = manipDict['Z symmetry']
+        except:
+            self.Z_symmetry = True
+            
+        try:
+            self.matchingDirection = manipDict['multi image Z direction']
+        except:
+            self.matchingDirection = 'upward'
+            
+        try:
+            self.microscope = manipDict['microscope']
+        except:
+            self.microscope = 'labview'
+        
 
         # 3. Field that are just initialized for now and will be filled by calling different methods.
         self.listFrames = []
@@ -144,13 +158,15 @@ class PincherTimeLapse:
         
         # Import status file
         logDf = metaDf[['iL', 'Status']]
-        
+
         #
         logDf['iField'] = np.arange(self.nS, dtype = int)
         logDf['iS'] = logDf['iField'].values + 1
         #
         logDf['idx_NUp'] = np.zeros(self.nS, dtype = int)
         logDf['idx_inNUp'] = np.zeros(self.nS, dtype = int)
+        #
+        logDf['Z_diff'] =  np.zeros(self.nS, dtype = int)
         #
         logDf['nullFrame'] = np.zeros(self.nS, dtype = int)
         logDf['trackFrame'] = np.ones(self.nS, dtype = bool)
@@ -168,9 +184,17 @@ class PincherTimeLapse:
         
         # Passive Part
         NPassive = logDf[logDf['Status'] == 'Passive'].shape[0]
-        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)])
+        logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)]).astype(int)
         logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)])
         
+        #Calculating difference in Z of the 1st and 3rd plance w.r.t the mid plane
+        idx_z1, idx_z2, idx_z3 = logDf['idx_inNUp'] == 1, logDf['idx_inNUp'] == 2, logDf['idx_inNUp'] == 3
+        
+        logDf.loc[idx_z1, 'Z_diff'] = np.round((metaDf.loc[idx_z1, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
+        logDf.loc[idx_z3, 'Z_diff'] = np.round((metaDf.loc[idx_z3, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
+        logDf.loc[idx_z2, 'Z_diff'] = np.round(0, 3)
+    
+    
         # Fluo Part
         logDf[logDf['Status'] == 'Fluo']['idxAnalysis'] = -1
         
@@ -209,7 +233,6 @@ class PincherTimeLapse:
 
         self.logDf = logDf
         self.log_UIxy = log_UIxy
-        
         
         
         
@@ -344,8 +367,6 @@ class PincherTimeLapse:
             print('\n\n* Filled Log Table:\n')
             print(logDf[logDf['UI']])
 
-
-    
     
             
     def importLogDf(self, path):
@@ -374,6 +395,7 @@ class PincherTimeLapse:
             if self.logDf['trackFrame'].values[i]:
                 iL = self.logDf['iL'].values[i]
                 iS = self.logDf['iS'].values[i]
+                Z_diff = self.logDf['Z_diff'].values[i]
                 idx_NUp = self.logDf['idx_NUp'].values[i]
                 idx_inNUp = self.logDf['idx_inNUp'].values[i]
                 Nup = (self.Nuplet * (idx_NUp > 0))  +  (1 * (idx_NUp <= 0))
@@ -381,7 +403,7 @@ class PincherTimeLapse:
                 # Otherwise the image is "alone", like in a compression, and therefore Nup = 1
                 
                 resDf = self.resultsDf.loc[self.resultsDf['Slice'] == iS]
-                frame = Frame(self.I[iS-1], iL, iS, self.NB, Nup, idx_inNUp, idx_NUp, self.scale, resDf)
+                frame = Frame(self.I[iS-1], iL, iS, Z_diff, self.NB, Nup, idx_inNUp, idx_NUp, self.scale, resDf)
                 frame.makeListBeads()
                 
                 self.listFrames.append(frame)
@@ -511,6 +533,7 @@ class PincherTimeLapse:
             self.listTrajectories[iB].dict['Bead'].append(self.listFrames[init_iF].listBeads[init_iBoi[iB]])
             self.listTrajectories[iB].dict['iF'].append(init_iF)
             self.listTrajectories[iB].dict['iS'].append(self.listFrames[init_iF].iS)
+            self.listTrajectories[iB].dict['Z_diff'].append(self.listFrames[init_iF].Z_diff)
             self.listTrajectories[iB].dict['iL'].append(self.listFrames[init_iF].iL)
             self.listTrajectories[iB].dict['iB_inFrame'].append(init_iBoi[iB])
             self.listTrajectories[iB].dict['X'].append(init_BoiXY[iB][0])
@@ -679,6 +702,7 @@ class PincherTimeLapse:
                 self.listTrajectories[iB].dict['iL'].append(self.listFrames[iF].iL)
                 self.listTrajectories[iB].dict['iF'].append(iF)
                 self.listTrajectories[iB].dict['iS'].append(self.listFrames[iF].iS)
+                self.listTrajectories[iB].dict['Z_diff'].append(self.listFrames[iF].Z_diff)
                 self.listTrajectories[iB].dict['iB_inFrame'].append(iBoi[iB])
                 self.listTrajectories[iB].dict['X'].append(BoiXY[iB][0])
                 self.listTrajectories[iB].dict['Y'].append(BoiXY[iB][1])
@@ -889,7 +913,7 @@ class PincherTimeLapse:
 # %%%% Frame
 
 class Frame:
-    def __init__(self, F, iL, iS, NB, Nup, idx_inNUp, idx_NUp, scale, resDf):
+    def __init__(self, F, iL, iS, Z_diff, NB, Nup, idx_inNUp, idx_NUp, scale, resDf):
         ny, nx = F.shape[0], F.shape[1]
         self.F = F # Note : Frame.F points directly to the i-th frame of the image I ! To have 2 different versions one should use np.copy(F)
         self.NBoi = NB
@@ -898,6 +922,7 @@ class Frame:
         self.ny = ny
         self.iL = iL
         self.iS = iS
+        self.Z_diff = Z_diff
         self.listBeads = []
         self.trajPoint = []
         self.Nuplet = Nup
@@ -1008,7 +1033,7 @@ class Trajectory:
         self.nT = 0
         self.iB = iB
         self.dict = {'X': [],'Y': [],'idxAnalysis': [],'StdDev': [],
-                     'iL': [],'Bead': [],'idx_inNUp': [],'idx_NUp': [],'iF': [],'iS': [],'iB_inFrame' : [], 
+                     'iL': [],'Bead': [],'idx_inNUp': [],'idx_NUp': [],'iF': [],'iS': [], 'Z_diff': [], 'iB_inFrame' : [], 
                      'bestStd' : [], 'Zr' : [], 'Neighbour_L' : [], 'Neighbour_R' : []}
         # iF is the index in the listFrames
         # iS is the index of the slice in the raw image MINUS ONE
@@ -1021,11 +1046,14 @@ class Trajectory:
         self.Zstep = Zstep # The step in microns between 2 consecutive frames in a multi-frame Nuplet
         
         #### Z detection settings here
+        # Interpolation factor
         self.HDZfactor = 5
-        self.maxDz_triplets = 60 # Max Dz allowed between images
+        # Max Dz allowed between images
+        self.maxDz_triplets = 60 
         self.maxDz_singlets = 30
-        self.HWScan_triplets = 1200 # Half width of the scans
-        self.HWScan_singlets = 600
+        # Half width of the scans
+        self.HWScan_triplets = 1600 # standard value : 1200 (nm ? i guess)
+        self.HWScan_singlets = 800 # standard value : 600 (nm ? i guess)
         
         
     def __str__(self):
@@ -1038,7 +1066,7 @@ class Trajectory:
         df = pd.DataFrame(self.dict)
         df.to_csv(path, sep = '\t', index = False)
 
-    def computeZ(self, matchingDirection, plot = 0):
+    def computeZ(self, matchingDirection, Z_symmetry, plot = 0):
 
         if len(self.deptho) == 0:
             return('Error, no depthograph associated with this trajectory')
@@ -1056,9 +1084,7 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 40) or (iF > 264 and iF <= 304):
-                # if (iF >= 1080 and iF <= 1100):
-                # # if (iF >= 225 and iF <= 265):
+                # if (iF >= 0 and iF <= 35) or (iF > 635 and iF <= 696):
                 #     plot = 1
 
             # ###################################################################
@@ -1089,7 +1115,7 @@ class Trajectory:
 
 
                     Z = self.findZ_Nuplet(framesNuplet, iFNuplet, Nup, previousZ, 
-                                          matchingDirection, plot)
+                                          matchingDirection, Z_symmetry, plot)
                         
                         
                     previousZ = Z
@@ -1106,13 +1132,16 @@ class Trajectory:
                 
 
     def findZ_Nuplet(self, framesNuplet, iFNuplet, Nup, previousZ, 
-                     matchingDirection, plot = False):
+                     matchingDirection, Z_symmetry, plot = False):
         # try:
+    
         Nframes = len(framesNuplet)
         listStatus_1 = [F.idx_inNUp for F in framesNuplet]
         listXY = [[self.dict['X'][np.where(self.dict['iF']==iF)][0],
                    self.dict['Y'][np.where(self.dict['iF']==iF)][0]] for iF in iFNuplet]
         listiS = [self.dict['iS'][np.where(self.dict['iF']==iF)][0] for iF in iFNuplet]
+        listZ_diff = [self.dict['Z_diff'][np.where(self.dict['iF']==iF)][0] for iF in iFNuplet]
+        
         cleanSize = ufun.getDepthoCleanSize(self.ApproxBeadDiameter, self.scale)
         hdSize = self.deptho.shape[1]
         depthoDepth = self.deptho.shape[0]
@@ -1251,11 +1280,8 @@ class Trajectory:
 
         listProfiles = listProfiles.astype(np.uint16)
 
-
-
         # now use listStatus_1, listProfiles, self.deptho + data about the jump between Nuplets ! (TBA)
         # to compute the correlation function
-        nVoxels = int(np.round(int(self.Zstep)/self.depthoStep))
         
         if previousZ == -1:
             Ztop = 0
@@ -1295,14 +1321,28 @@ class Trajectory:
 
         # Translate the profiles that must be translated (idx_inNUp 1 & 3 if Nup = 3)
         # and don't move the others (idx_inNUp 2 if Nup = 3 or the 1 profile when Nup = 1)
+    
         if Nup > 1:
-            finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
+            if Z_symmetry == True:
+                nVoxels = int(np.round(int(self.Zstep)/self.depthoStep))
+                # print('nVoxels', 'self.Zstep', 'self.depthoStep')
+                # print(nVoxels, self.Zstep, self.depthoStep)
+                
+                finalDists = ufun.matchDists(listDistances, listStatus_1, Nup, 
                                         nVoxels, direction = matchingDirection)
+                
+            elif Z_symmetry == False: 
+                listVox_diff = np.round((np.array(listZ_diff)*1000/self.depthoStep))
+                listVox_diff = listVox_diff.astype(int)
+                # print('listVox_diff', 'listZ_diff', 'self.depthoStep')
+                # print(listVox_diff, listZ_diff, self.depthoStep)
+                
+                finalDists = ufun.matchDists_Zdiff(listDistances, listVox_diff, direction = matchingDirection)
+                  
         elif Nup == 1:
             finalDists = listDistances
 
         sumFinalD = np.sum(finalDists, axis = 0)
-
 
         #### Tweak this part to force the Z-detection to a specific range to prevent abnormal jumps
         if previousZ == -1: # First image => No restriction
@@ -1338,7 +1378,6 @@ class Trajectory:
             deptho_zticks_loc = ticker.FixedLocator(deptho_zticks_list)
             deptho_zticks_format = ticker.FixedFormatter((deptho_zticks_list/self.HDZfactor).astype(int))
 
-            
             if Nup == 1:
                 direction = 'Single Image'
             else:
@@ -1349,7 +1388,6 @@ class Trajectory:
             images_ticks_loc = ticker.MultipleLocator(50)
             axes[0,0].xaxis.set_major_locator(images_ticks_loc)
             axes[0,0].yaxis.set_major_locator(images_ticks_loc)
-            
             
             dx, dy = 50, 50
             axes[0,0].plot([X2], [Y2], marker = '+', c = 'red')
@@ -1371,7 +1409,6 @@ class Trajectory:
             
             pixLineHD = np.arange(0, hdSize, 1)
             zPos = Zscanned
-            
             
             for i in range(Nframes):
                 idx_inNUp = int(framesNuplet[i].idx_inNUp)
@@ -1691,7 +1728,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             validFileGroup = True
                     
                     
-                elif metaDataFormatting == 'loopStruct':
+                elif (metaDataFormatting == 'loopStruct') or (metaDataFormatting == 'constantField'):
                     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
                     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
                     
@@ -1721,6 +1758,39 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                             txtStatusNames.append('')
                             txtResultsNames.append(f_Res)
                             validFileGroup = True
+                            
+                            
+                # elif metaDataFormatting == 'constantField':
+                #     test_image = os.path.isfile(os.path.join(rd, f_root_simple + '.tif'))
+                #     test_field = os.path.isfile(os.path.join(rd, f_root_simple + '_Field.txt'))
+                    
+                #     if test_image and test_field:
+                #         f_Tif = f_root_simple + '.tif'
+                #         f_Field = f_root_simple + '_Field.txt'
+                #         sourceDirsPaths.append(rd)
+                #         fileRoots.append(f_root)
+                #         tifImagesNames.append(f_Tif)
+                #         txtFieldNames.append(f_Field)
+                #         txtStatusNames.append('')
+                #         txtResultsNames.append(f_Res)
+                #         validFileGroup = True
+                    
+                #     else: # Retry in case there was a duplicated image
+                #     # No call to the function that simplifies the names
+                #         test_image = os.path.isfile(os.path.join(rd, f_root + '.tif'))
+                #         test_field = os.path.isfile(os.path.join(rd, f_root + '_Field.txt'))
+                        
+                #         if test_image and test_field:
+                #             f_Tif = f_root + '.tif'
+                #             f_Field = f_root + '_Field.txt'
+                #             sourceDirsPaths.append(rd)
+                #             fileRoots.append(f_root)
+                #             tifImagesNames.append(f_Tif)
+                #             txtFieldNames.append(f_Field)
+                #             txtStatusNames.append('')
+                #             txtResultsNames.append(f_Res)
+                #             validFileGroup = True
+                            
                 
                 if not validFileGroup:
                     print(gs.RED + 'Bizarre! ' + f_Res + ' seems to be missing some associated files!' + gs.NORMAL)
@@ -1734,6 +1804,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
 
         dictPaths = {'sourceDirPath' : sourceDirsPaths[i],
                      'imageFileName' : tifImagesNames[i],
+                     'fieldFileName' : txtFieldNames[i],
                      'resultsFileName' : txtResultsNames[i],
                      'depthoDir' : DirDataRawDeptho,
                      'depthoName' : depthoName,
@@ -1760,7 +1831,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             
             # Columns from the field file
             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
+            metaDf = fieldDf[['T_raw', 'B_set', 'Z_piezo']]
             
             # Format the status file
             statusDf = pd.read_csv(statusPath, sep='_', names=['iL', 'Status', 'Status details'])
@@ -1792,9 +1863,11 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['Status'] = statusDf['Status']
             metaDf.loc[statusDf['Action type'] == mainActionStep, 'Status'] = 'Action_main'
             
+            
         #### 4.2 - Mode using loopStruct for legacy data
         elif metaDataFormatting == 'loopStruct': # ['T_raw', 'B_set', 'iL', 'Status']
             print('Loop Structure Mode !')
+            
             loopStructList = np.array(manipDict['loop structure'].split('_')).astype(int)
             Nstruct = len(loopStructList)
             loop_total_length_woF = loopStructList[0]
@@ -1846,6 +1919,22 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             metaDf['Status'] = list_Status
             
             # TBC
+            
+        elif metaDataFormatting == 'constantField': # ['T_raw', 'B_set', 'iL', 'Status']
+            # Columns from the field file
+            fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
+            metaDf = fieldDf[['T_raw', 'B_set']]
+            
+            N_Loops = 1
+            NFrames = metaDf.shape[0]
+            Status = 'Passive'
+            StatusCol = [Status] * NFrames
+            StatusCol = np.array(StatusCol)
+            
+            iLCol = np.ones(NFrames)
+            
+            metaDf['iL'] = iLCol.astype(int)
+            metaDf['Status'] = StatusCol
         
         #### 5 - Call the smallTracker
         print('Calling the smallTracker...' + gs.NORMAL)
@@ -1881,10 +1970,9 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     resultsPath = os.path.join(dictPaths['sourceDirPath'], dictPaths['resultsFileName'])
     logFilePath = os.path.join(dictPaths['sourceDirPath'], f + '_LogPY.txt')
     fluoDirPath = os.path.join(dictPaths['sourceDirPath'], 'FluoImages')
-    
+    fielFilePath = os.path.join(dictPaths['sourceDirPath'], dictPaths['fieldFileName'])
+
     cellID = ufun.findInfosInFileName(f, 'cellID')
-    
-    
 
     #### 0.3 - Load image, results and initialize PTL object
     
@@ -1893,7 +1981,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     resultsDf = pd.read_csv(resultsPath, usecols=['Area', 'StdDev', 'XM', 'YM', 'Slice'], sep=None, engine='python')   
     PTL = PincherTimeLapse(I, cellID, dictConstants, NB)
     PTL.resultsDf = resultsDf
-        
+    
     #### 0.4 - Make the log table (PTL.logDf)
     logFileImported = False
     if dictOptions['redoAllSteps']:
@@ -1909,7 +1997,6 @@ def smallTracker(dictPaths, metaDf, dictConstants,
         PTL.initializeLogDf(metaDf)
 
     print(gs.BLUE + 'OK!' + gs.NORMAL)
-    
     
     
     #### 0.5 - Detect fluo & black images
@@ -2081,7 +2168,9 @@ def smallTracker(dictPaths, metaDf, dictConstants,
 
     #### 3.2 - Compute z for each traj
     if dictOptions['redoAllSteps'] or not trajFilesImported:
-        matchingDirection = dictConstants['multi image Z direction']
+        matchingDirection = PTL.matchingDirection # Read in dictConstants['multi image Z direction'] ; default is: 'upward'
+        Z_symmetry = PTL.Z_symmetry # Read in dictConstants['Z symmetry'] ; default is: True
+            
         print(gs.ORANGE + "Deptho detection in '{}' mode".format(matchingDirection) + gs.NORMAL)
         for iB in range(PTL.NB):
             np.set_printoptions(threshold=np.inf)
@@ -2089,7 +2178,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
             print(gs.CYAN + 'Computing Z in traj  {:.0f}...'.format(iB+1) + gs.NORMAL)
             Tz = time.time()
             traj = PTL.listTrajectories[iB]
-            traj.computeZ(matchingDirection, plot = 0)
+            traj.computeZ(matchingDirection, Z_symmetry, plot = 0)
             print(gs.CYAN + 'OK! dT = {:.3f}'.format(time.time()-Tz) + gs.NORMAL)
 
     else:

@@ -1,0 +1,14 @@
+spyder-kernels
+scikit-image
+pandas
+matplotlib==3.7
+seaborn==0.11.2
+pyjokes
+pyautogui
+statsmodels
+pyqt5
+scikit-learn
+scipy==1.10
+fsspec
+bokeh
+distinctipy

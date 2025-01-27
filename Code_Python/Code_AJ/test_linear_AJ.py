@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu May 30 13:35:56 2024
+
+@author: BioMecaCell
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Thu May 30 13:18:44 2024
 
 @author: anumi
@@ -26,13 +33,13 @@ from scipy.stats import wilcoxon, mannwhitneyu
 #%%
 
 # path = 'D:/Anumita/MagneticPincherData/Collabs-Internships/Hugo/TestCurve'
-path = 'D:/Anumita/MagneticPincherData/Data_TimeSeries'
-savePath = 'D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replotted'
+path = 'D:/Eloise/MagneticPincherData/Data_Timeseries/Timeseries_24-05-23'
+savePath = 'D:/Eloise/MagneticPincherData/Figures'
 
 files = np.asarray(os.listdir(path))
 
-filename = ['23-07-12', '23-05-23']
-folder = '3T3OptoRhoA_AtBeads_60sFreq'
+filename = ['24-05-23']
+folder = 'HeLa_CellCycle'
 
 # filename = ['22-12-07_M4', '22-12-07_M5', '22-12-07_M8']
 # folder = '3T3OptoRhoA_Y27_50uM'
@@ -264,12 +271,9 @@ for file in (filteredFiles):
 
         manip = file.split('_')[1]
         
-        if manip == 'M3':
+        if manip == 'M1':
             substrate = 'Control'
-        elif manip == 'M1': 
-            substrate = 'Y27 1'
-        elif manip == 'M2': 
-            substrate = 'Y27 2'
+        
         
         # if manip == 'M3':
         #     substrate = 'Control'
@@ -378,7 +382,7 @@ for file in (filteredFiles):
     # dfToSave.to_csv('D:/Anumita/MagneticPincherData/Collabs-Internships/Hugo/JumpCorrect_RefineStart/CSV_fh/'+file+'.csv',
     #                 sep = ';', index = False)
     plt.show()
-    # plt.savefig('D:/Anumita/MagneticPincherData/Figures/NLI_Analysis/24-05-20_Replotted/'+folder+'/Compressions/'+file+'.png')
+    plt.savefig(os.path.join(savePath, 'NLI_Index.png'))
     
     plt.close()
 
@@ -451,7 +455,7 @@ dfToPlot = dfToPlot[(dfToPlot['R2'] > 0.9)] # & (dfToPlot['h0'] < 1500)]
 # substrate = ['Blebbi 10uM', 'Control']
 # substrate = ['Doxy + Global Activation', 'Doxy', 'Control']
 # substrate = ['Blebbi', 'Control']
-substrate = ['Y27 1', 'Y27 2', 'Control']
+manips = ['M1']
 
 
 plt.style.use('dark_background')
@@ -464,10 +468,10 @@ intermediate = []
 N = []
 frac = []
 
-for i in substrate:
-# for i in manips:
-    frac = dfToPlot[dfToPlot['substrate'] == i]
-    # frac = dfToPlot[dfToPlot['manip'] == i]
+# for i in substrate:
+for i in manips:
+    # frac = dfToPlot[dfToPlot['substrate'] == i]
+    frac = dfToPlot[dfToPlot['manip'] == i]
     sLinear = np.sum(frac['nli_plot']=='linear')
     sNonlin = np.sum(frac['nli_plot']=='non-linear')
     sInter = np.sum(frac['nli_plot']=='intermediate')
@@ -476,9 +480,9 @@ for i in substrate:
     intermediate.append(sInter)
     N.append(sLinear + sNonlin + sInter)
 
-a1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[0]].values
-b1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[1]].values
-U1, p = mannwhitneyu(a1, b1)
+# a1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[0]].values
+# b1 = dfToPlot['nli'][dfToPlot['substrate'] == substrate[1]].values
+# U1, p = mannwhitneyu(a1, b1)
 
 N = np.asarray(N)
 linear = (np.asarray(linear)/N)*100
@@ -514,7 +518,7 @@ for xpos, ypos, yval in zip(manips, y1+y2+y3+0.5, N):
 
 ax.spines.right.set_visible(False)
 ax.spines.top.set_visible(False)
-plt.title('Test : Mann-Whitney | p-val = {:.4f}'.format(p), color = fontColour, fontsize = 20)
+# plt.title('Test : Mann-Whitney | p-val = {:.4f}'.format(p), color = fontColour, fontsize = 20)
 plt.xticks(fontsize=30, color = fontColour)
 plt.yticks(fontsize=30, color = fontColour)
 plt.legend(bbox_to_anchor=(1.01,0.5), loc='center left', fontsize = 20, labelcolor='linecolor')
