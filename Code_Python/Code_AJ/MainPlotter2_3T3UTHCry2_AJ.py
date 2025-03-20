@@ -254,14 +254,17 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
     
 # Task = '24-09-05 & 24-08-26 & 24-06-07 & 24-06-08 & 24-05-29 & 24-02-21 & 24-07-15 & 24-09-12 & 24-09-24'
-# Task = '24-05-29 & 24-09-05 & 24-02-21 & 24-09-24 & 24-09-12'
-# Task = '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'
-Task = '24-02-21'
+# Task = '24-05-29 & 24-09-05_M0 & 24-09-05_M1 & 24-09-05_M3 & 24-02-21 & 24-09-24 & 24-09-12'
+Task = '24-05-29 & 24-09-05 & 24-02-21 & 24-09-24 & 24-09-12'
 
-fitsSubDir = 'VWC_24-02-21_24-11-07'
+
+# Task = '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'
+# Task = '24-02-21'
+
+fitsSubDir = 'VWC_AllCrosslinking-GoodExpts_24-09-27_3Expts'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -270,7 +273,7 @@ GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch
 #'VWC_AllUTHCry2_24-07-17_Y27_Crosslinking' : '24-02-21 & 24-05-29 & 24-06-07 & 24-06-08 & 24-07-15'
 
 filename = 'VWC_AllUTHCry2_24-07-17_Y27_Crosslinking'
-GlobalTable = taka.getMergedTable(filename)
+GlobalTable = taka.getMergedTable(filename, mergeUMS = False)
 dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Crosslinkers/Plots/24-08-14'
 
 #Dates available : ['24-05-29', '24-02-21', '24-06-07', '24-06-08']
@@ -4085,7 +4088,7 @@ plt.savefig((dirToSave + '(11b)_{:}_{:}_NLI-corrvFluctu.png').format(str(dates),
 
 filename = 'VWC_AllCrosslinking-GoodExpts_24-09-27'
 
-GlobalTable = taka.getMergedTable(filename)
+GlobalTable = taka.getMergedTable(filename, mergeUMS = False)
 dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/24-11-13_PielTeamMeeting/'
 
 #%%%% Create dataframe for plotting
@@ -4094,11 +4097,11 @@ data = pf.createDataTable(GlobalTable)
 # '24-02-21', '24-05-29',
 dates = [ '24-02-21', '24-05-29', '24-09-05' , '24-09-24' , '24-09-12']
 
-# drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
-# labels = [ 'Dox', 'Dox+Light', 'Y27+Dox', 'Y27+Dox+Light']
+drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
+labels = [ 'Dox', 'Dox+Light', 'Y27+Dox', 'Y27+Dox+Light']
 
-drugs = ['doxy', 'doxy_act']
-labels = ['Dox', 'Dox+Light']
+# drugs = ['doxy', 'doxy_act']
+# labels = ['Dox', 'Dox+Light']
 
 # drugs = [ 'none', 'doxy', 'doxy_act', 'Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
 # labels = [ 'Control','Dox', 'Dox+Light', 'Y27_10', 'Y27+Dox', 'Y27+Dox+Light']
@@ -4131,9 +4134,11 @@ pairs = [ ['doxy', 'doxy_act']]
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 # palette_cond = ['#808080', '#faea93', '#dfc644', '#add2c3', '#5aa688', '#23644a']
+palette_cond = ['#faea93', '#dfc644', '#5aa688', '#23644a']
+
 # palette_cond = [ '#99def0', '#006883']
 
-palette_cond = ['#6fdc6f', '#196619']
+# palette_cond = ['#6fdc6f', '#196619']
 #'#add2c3'
 swarmPointSize = 6
 
@@ -4182,8 +4187,8 @@ fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = p
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 ax.grid(axis='y')
-plt.xticks(**pltTicks, rotation = 45)
-plt.yticks(**pltTicks)
+plt.xticks(**plotTicks, rotation = 45)
+plt.yticks(**plotTicks)
 plt.ylim(-4,4)
 # fig.suptitle(str(dates), **plotChars)
 plt.tight_layout()
@@ -4927,6 +4932,8 @@ fig, ax, pvals, dfP_E = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint,
 plt.show()
 plt.savefig((dirToSave + '(8b)_{:}_{:}_{:}_EPointplot-Normalised.png').format(str(dates), str(condCat), stats))
 
+
+
 nonOutliers_E = np.asarray(dfP_E['dateCell', 'first'][(dfP_E[condCol, 'first'] == condCat[1]) & (dfP_E['normMeasure', 'wAvg'] < 3.0)].values)
 
 plottingParams = {'x' : (condCol, 'first'), 
@@ -5092,24 +5099,24 @@ condCatPoint = dfPairs[condCol, 'first'].unique()
 N_point = len(dfPairs['dateCell', 'first'].unique())
 palette_cell_point = distinctipy.get_colors(N_point)
 
-measure = 'ctFieldThickness'
-stat = 'first'
+measure = 'NLI_mod'
+stat = 'mean'
 plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
-                     pairs = pairs, stat = stat, test = 'greater', palette = palette_cond,
+                     pairs = pairs, stat = stat, test = 'less', palette = palette_cond, y_limits = (-2.5, 2),
                      figsize = (9,9), plotChars = plotChars, plotTicks = plotTicks)
 
 # plt.ylim(-2.5, 2)
-# plt.xticks([1, 2], labels, **plotTicks)
+plt.xticks([1, 2, 3, 4], labels, **plotTicks)
 # plt.yticks([-2, -1, 0, 1, 2], [-2, -1, 0, 1, 2], **plotTicks)
 
 # plt.ylim(0, 2000)
 # plt.ylim(0, 21000)
-plt.xticks([1, 2], labels, **plotTicks)
+# plt.xticks([1, 2], labels, **plotTicks)
 # plt.yticks(np.arange(0, 1400, 100), **plotTicks)
 
 plt.yticks( **plotTicks)
 plt.show()
-plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat), dpi = 100)
+# plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat), dpi = 100)
 
 #%% Calling data - All 'okaish' experiments, wherein results were not so strong
 # Dates available : '24-08-26 & 24-06-07 & 24-06-08 & 24-07-15'

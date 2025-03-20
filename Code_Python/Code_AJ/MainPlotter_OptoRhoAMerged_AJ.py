@@ -284,7 +284,7 @@ GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch
 #%% Calling data
 
 #Dates available : '23-04-25 & 23-05-10_M3 & 23-05-10_M4 & 23-05-10_M5 & 22-12-07'
-filename = 'VWC_60sGlobalActivation'
+filename = 'VWC_60sGlobalActivation_Y27'
 
 GlobalTable = taka.getMergedTable(filename)
 dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/24-11-13_PielTeamMeeting/'
@@ -293,13 +293,13 @@ dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/24-11-13_PielTeamMe
 
 data = pf.createDataTable(GlobalTable)
 
-dates = ['23-04-25' , '23-05-10'] #, '22-12-07']
+dates = ['23-04-25' , '23-05-10', '22-12-07']
 
-# drugs = [ 'none', 'Y27_10', 'Y27_50']
-# labels = ['Control', '10µM Y27', '50µM Y27']
+drugs = [ 'none', 'Y27_10', 'Y27_50']
+labels = ['Control', '10µM Y27', '50µM Y27']
 
-drugs = [ 'none', 'activation']
-labels = ['Control', 'Global Activation']
+# drugs = [ 'none', 'activation']
+# labels = ['Control', 'Global Activation']
 
 Filters = [(data['validatedThickness'] == True),
             (data['error_vwc_Full'] == False),
@@ -327,8 +327,8 @@ pairs = [['none', 'activation']]
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
-# palette_cond_y27 = ['#929292', '#bf7fbf', '#800080'] 
-palette_cond_act = ['#4a4a4a', '#0000ff'] 
+palette_cond_y27 = ['#929292', '#bf7fbf', '#800080'] 
+# palette_cond_act = ['#4a4a4a', '#0000ff'] 
 
 swarmPointSize = 10
 
@@ -521,6 +521,19 @@ plt.show()
 plt.savefig((dirToSave + '(1f)_{:}_{:}_NLImodPLot-DateAverage.png').format(str(dates), str(condCat)))
 
 plt.style.use('default')
+
+
+#%%%% E vs H0
+
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol,  palette = palette_cond_y27, hueType = condCol)
+plt.legend(fontsize = 6, ncol = len(condCat))
+fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(2b)_{:}_{:}_EvH_Conditions.png').format(str(dates), str(condCat)))
+
+
 
 #%%%% ctFieldThickness / ctFieldFluctuations
 

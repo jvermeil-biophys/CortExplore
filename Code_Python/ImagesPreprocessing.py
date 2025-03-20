@@ -49,16 +49,17 @@ import UtilityFunctions as ufun
 
 #%% Define parameters # Numi
 
-date = '24.11.28'
-DirExt = 'H:/Filipe_Data/20241128_3T3Fibcon_100xobj_4.5Fibro-StreptBeads_Mechanics/24.11.28/'
-DirSave = os.path.join(cp.DirDataRaw, date) 
+# date = '25.03.12'
+# DirSave = os.path.join(cp.DirDataRaw, date) 
+# DirExt = 'E:/20250312_3t3optorhoa-VB_NS_100xobj_4.5Fibro-PEGBeads_Mechanics/25.03.12/'
 
-# DirDeptho = '24.11.28_Deptho/Deptho_P2'
-# DirExt  = 'H:/Filipe_Data/20241128_3T3Fibcon_100xobj_4.5Fibro-StreptBeads_Mechanics/'+ DirDeptho
-# DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
+DirDeptho = '25.03.12_Deptho'
+DirExt  = 'E:/20250312_3t3optorhoa-VB_NS_100xobj_4.5Fibro-PEGBeads_Mechanics/'+ DirDeptho
+DirSave = os.path.join(cp.DirDataRaw, DirDeptho) 
 
 microscope = 'labview'
 imagePrefix = 'im'
+condToConcat = 'M2'
 
 # %% Functions
 
@@ -461,7 +462,7 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
 
 #%% Copying and renaming files in the case of using the confocal
 
-# condition = 'M4'
+# condition = 'M3'
 # preprocessing_confocal(DirExt, imagePrefix, condition)
 
 #%% Main function 1/2

@@ -86,3 +86,80 @@ depthoNames = '24.11.15_P'+str(wells)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-12-14 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '24.12.14'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '24.12.14_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 24-12-20 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '24.12.20'
+manips, wells, cells = 'all', 'all', 'all'
+depthoNames = '24.12.20_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 25.01.14 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '25.01.14'
+manips, wells, cells = 3, 'all', 'all'
+depthoNames = '25.01.14_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 25-01-21 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '25.01.21'
+manips, wells, cells = 3, 3, 'all'
+depthoNames = '25.01.21_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 25-01-23 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '25.01.23'
+manips, wells, cells = 1, 1, 6
+depthoNames = '25.01.23_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 25.02.28 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '25.02.28'
+manips, wells, cells = 4, 3, 'all'
+depthoNames = '25.02.28_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)
+
+#%% Deptho from experiment 25-01-23 - Not sorted + antibiotics 
+
+# %%%% M1 : 
+
+dates = '25.03.12'
+manips, wells, cells = 'all', 4, 'all'
+depthoNames = '25.03.12_P'+str(wells)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = False, trackAll = False)

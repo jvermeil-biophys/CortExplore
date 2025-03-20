@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul  8 14:22:32 2024
+Created on Thu Mar  6 11:06:00 2025
 
 @author: anumi
 """
+
 
 # %% > Imports and constants
 
@@ -19,6 +20,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+warnings.filterwarnings('ignore', message='Warning: converting a masked element to nan')
 
 import os
 import sys
@@ -114,15 +118,15 @@ DEFAULT_strainHalfWidths = [0.0125, 0.025, 0.05]
 
 DEFAULT_fitSettings = {# H0
                        'methods_H0':['Chadwick', 'Dimitriadis'],
-                       'zones_H0':['%f_10', '%f_20'],
+                       'zones_H0':['%f_10', '%f_15', '%f_20'],
                        'method_bestH0':'Chadwick',
-                       'zone_bestH0':'%f_10',
+                       'zone_bestH0':'%f_15',
                        # Global fits
                        'doVWCFit' : True,
                        'VWCFitMethods' : ['Full'],
                        'doDimitriadisFit' : False,
                        'DimitriadisFitMethods' : ['Full'],
-                       'doChadwickFit' : False,
+                       'doChadwickFit' : True,
                        'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                        'doDimitriadisFit' : False,
                        'DimitriadisFitMethods' : ['Full'],
@@ -205,13 +209,14 @@ plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
-                'methods_H0':['Chadwick', 'VWC'],
-                'zones_H0':['%f_100'],
+                'methods_H0':['Chadwick', 'VWC', 'Dimitriadis'],
+                'zones_H0':['%f_10', '%f_100'],
                 'method_bestH0':'VWC', 
                 'zone_bestH0':'%f_100',
                 'doVWCFit' : True,
                 'VWCFitMethods' : ['Full'],
-                'doStressRegionFits' : False,
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_in_400_800'],
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
                 'centers_StressFits' : plot_stressCenters,
@@ -234,8 +239,8 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'F(H)_VWC':True,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
-                        'S(e)_stressGaussian':False,
-                        'K(S)_stressGaussian':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
                         'S(e)_nPoints':False,
@@ -247,58 +252,74 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
     
-Task = '22-12-07 & 23-02-02 & 23-04-25'
-fitsSubDir = 'VWC_AllY27_24-09-03'
+Task = '22-12-07 & 23-02-02 & 23-04-25 & 23-03-24 & 24-04-10 & 23-11-21 & 23-10-29'
+fitsSubDir = 'VWC_3T3OptoRhoA-C_AllDrugs_Manuscript'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
                             fileName = fitsSubDir,save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
-#%% Calling data - Analysing with VWC global tables - 23-03-24 - Blebbistatin
-#'VWC_Blebbi_24-07-10' : Blebbistatin
+#%% Calling data - Blebbistatin, Y27 & LIMKi3
 
-filename = 'VWC_Blebbi_24-07-10'
+filename = 'VWC_3T3OptoRhoA-C_AllDrugs_Manuscript'
 GlobalTable = taka.getMergedTable(filename)
 fitsSubDir = filename
-dirToSave = 'H:/Lab Meetings/CortexMeeting_24-07-16/Plots/Blebbistatin/'
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/3T3OptoRhoA-C_AllDrugs/'
 
 
 #%%%% Create dataframe for plotting
 
 data = pf.createDataTable(GlobalTable)
 
-dates = ['23-03-24']
-drugs = ['dmso_10', 'dmso_10_act', 'blebbi_10', 'blebbi_10_act']
-labels = ['DMSO', 'DMSO + Light', 'Blebbi 10uM', 'Blebbi + Light']
+# dates = ['22-12-07', '23-02-02', '23-04-25']
+# drugs = [ 'Y27_10', 'Y27_10_act']
+# labels = []
+
+# dates = ['23-03-24']
+# drugs = ['dmso_10', 'dmso_10_act', 'blebbi_10', 'blebbi_10_act', ]
+# labels = []
+
+dates = ['24-04-10'] # , '23-10-29']
+# drugs = [ 'dmso_4', 'LIMKi3_0.1', 'LIMKi3_0.2', 'LIMKi3_1', 'LIMKi3_20']
+drugs = [ 'dmso_4', 'LIMKi3_20']
+
+labels = []
+
 
 Filters = [(data['validatedThickness'] == True),
             (data['error_vwc_Full'] == False),
             (data['substrate'] == '20um fibronectin discs'), 
             (data['R2_vwc_Full'] > 0.90),
-            (data['bestH0'] <= 1500),
+            (data['bestH0'] <= 1200),
             (data['E_eff'] <= 30000),
-            (data['compNum'] <= 7),
+            # (data['compNum'] <= 7),
             (data['date'].apply(lambda x : x in dates)),
             (data['drug'].apply(lambda x : x in drugs)),
             ]
 
 df = pf.filterDf(Filters, data)
 
-pairs = [ ['dmso_10', 'dmso_10_act'], ['dmso_10', 'blebbi_10'], 
-         ['blebbi_10', 'blebbi_10_act'], ['blebbi_10_act', 'dmso_10_act']]
+pairs = [['dmso_4', 'LIMKi3_20']]
 
 condCol, condCat = 'drug', drugs
 
 plotChars = {'color' : 'white', 'fontsize' : 15}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 16}
+
+avgDf = pf.createAvgDf(df, condCol)
+avgDf = avgDf[avgDf[('compNum', 'count')] > 2]
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
-palette_cond = []
+# palette_cond = ['#6A3E00', '#6A3E00', '#c5b2d2', '#8b66a5','#511978', '#8b66a5','#511978']
+# palette_cond = ['#c5b2d2', '#8b66a5']
+palette_cond = ['#6A3E00',  '#c5b2d2'] #, '#8b66a5'] #,'#511978'] #, '#8b66a5','#511978']
+
+
 swarmPointSize = 10
 
 #%%%% Plot NLI
-
 plt.style.use('dark_background')
 
 fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
@@ -308,6 +329,152 @@ plt.show()
 plt.savefig((dirToSave + '(1)_{:}_{:}_NLIPLot.png').format(str(dates), str(condCat)))
 
 plt.style.use('default')
+
+#%%%% Plot NLImod
+
+########################################
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax = plt.subplots(figsize=(10, 10))
+
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
+                             colorScheme = 'black', test = 'non-param' ,pointSize = 40,
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+# plt.ylim(-4,4.5)
+plt.ylabel('NLR', **plotChars)
+plt.xlabel(' ', **plotChars)
+# plt.tight_layout()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
+
+
+################### box plots #######################
+fig, ax = plt.subplots(figsize = (13,9))
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = None, 
+                                    hueType = None, palette = palette_cond,
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
+
+# plt.ylim(-3,3)
+fig.suptitle(str(dates), **plotChars)
+plt.yticks(**plotTicks)
+plt.xticks(**plotTicks)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
+plt.show()
+
+######## vs. Compressions #########
+
+fig, ax = plt.subplots(figsize = (13,9))
+
+condition = 'doxy_act'
+df_comp = df[df['drug'] == condition]
+
+plottingParams = {'data':df_comp, 
+                  'x' : 'compNum', 
+                  'y' : 'NLI_mod',
+                  'linewidth' : 1, 
+                  'size' :swarmPointSize, 
+                   }
+
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = np.sort(df_comp.compNum.unique()), 
+                                    pairs = None, hueType = 'date', plotType = 'swarm',
+                                    labels = [], plottingParams = plottingParams, plotChars = plotChars)
+
+plt.ylim(-3, 3)
+fig.suptitle(str(dates), **plotChars)
+plt.yticks(**plotTicks)
+plt.xticks(**plotTicks)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1b)_{:}_{:}_NLImodPLot-Comps.png').format(str(dates), condition))
+
+
+######## cell average #########
+
+fig, ax = plt.subplots(figsize = (13,9))
+dates = np.unique(df['date'].values)
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' :swarmPointSize, 
+                    }
+
+fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
+                             hueType = None, palette = palette_cond,
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
+
+plt.ylim(-3,3.5)
+fig.suptitle(str(dates), **plotChars)
+plt.yticks(**plotTicks)
+plt.xticks(**plotTicks)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1c)_{:}_{:}_NLImodPLot_cellAvg.png').format(str(dates), str(condCat)))
+plt.show()
+
+######## coloured Compressions #########
+
+# fig, ax = plt.subplots(figsize = (13,9))
+
+# plottingParams = {'data':df, 
+#                   'x' : condCol, 
+#                   'y' : 'NLI_mod',
+#                   'order' : condCat,
+#                   'linewidth' : 1,
+#                   'size' :swarmPointSize, 
+#                     }
+
+# fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, plotType = 'swarm',
+#                                     hueType = 'compNum', labels = [], plottingParams = plottingParams,
+#                                     plotChars = plotChars)
+
+# plt.ylim(-3, 3)
+# fig.suptitle(str(dates), **plotChars)
+# plt.yticks(**pltTicks)
+# plt.xticks(**pltTicks)
+# plt.tight_layout()
+# plt.savefig((dirToSave + '(1e)_{:}_{:}_{:}_NLImodPLot-DiffComps.png').format(str(dates), condition, str(condCat)))
+
+
+######## coloured dates #########
+
+fig, ax = plt.subplots(figsize = (13,9))
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                  'linewidth' : 1,
+                  'size' :swarmPointSize, 
+                    }
+
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, plotType = 'swarm',
+                                    hueType = 'date', labels = [], plottingParams = plottingParams,
+                                    plotChars = plotChars)
+
+plt.ylim(-3, 3)
+fig.suptitle(str(dates), **plotChars)
+plt.yticks(**plotTicks)
+plt.xticks(**plotTicks)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1f)_{:}_{:}_NLImodPLot-Dates.png').format(str(dates), str(condCat)))
+
 
 #%%%% E vs H0
 fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
@@ -496,354 +663,53 @@ plottingParams = {'data':df,
 fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, hueType = None,
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
-#%% Calling data - Analysing with VWC global tables - ATCC vs OptoRhoA 
+#%%%% Plotnine paired plots
 
-filename = 'VWC_3T3ATCC-OptoRhoA_24-06-12'
-GlobalTable = taka.getMergedTable(filename)
-fitsSubDir = filename
-dirToSave = 'H:/Lab Meetings/Meeting_Alba-Filipe_24-09-04/Plots'
-
-#%%%% Create dataframe for plotting
-
-data = pf.createDataTable(GlobalTable)
-
-celltypes = ['Atcc-2023', 'optoRhoA']
-labels = ['3T3 ATCC', '3T3 OptoRhoA']
-
-Filters = [(data['validatedThickness'] == True),
-            (data['error_vwc_Full'] == False),
-            (data['substrate'] == '20um fibronectin discs'), 
-            (data['R2_vwc_Full'] > 0.90),
-            (data['compression duration'] == '1.5s'),
-            (data['bestH0'] <= 1500),
-            ]
-
-pairs = [['Atcc-2023', 'optoRhoA']] 
-condCol, condCat = 'cell subtype', celltypes
-
-df = pf.filterDf(Filters, data)
-df = df.drop(df[(df['cell subtype'] == 'optoRhoA') & (df['normal field'] != 15.0)].index)
-avgDf = pf.createAvgDf(df, condCol)
-
-plotChars = {'color' : 'white', 'fontsize' : 20}
-
-N = len(df['cellID'].unique())
-palette_cell = distinctipy.get_colors(N)
-palette_cond = []
-swarmPointSize = 10
-
-#%%%% Plot NLImod
-
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+N_point = len(dfPairs['dateCell', 'first'].unique())
 
 
-plottingParams = {'data':df, 
-                  'x' : condCol, 
-                  'y' : 'NLI_mod',
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-                    }
+measure = 'NLI_mod'
+stat = 'mean'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = 'less', palette = palette_cond,
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
 
 
 
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs,
-                                    hueType = None, palette = ['#000000', '#1998b4'],
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.savefig((dirToSave + '(1a)_{:}_NLImodPLot.png').format( str(condCat)))
-
-
-############# cell average ###################
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
-
-
-plottingParams = {'data':avgDf, 
-                  'x' : (condCol, 'first'), 
-                  'y' : ('NLI_mod', 'mean'),
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-
-                    }
-
-
-
-fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
-                             hueType = None,  palette = ['#000000', '#1998b4'],
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.savefig((dirToSave + '(1b)_{:}_NLImodPLot_cellAverage.png').format(str(condCat)))
-
-#%%%% E vs H0
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol, hueType = 'NLI_Plot')
-# # fig.suptitle(str(dates), **plotChars)
-# plt.show()
-# plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format( str(condCat)))
-
-
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_blebbi, hueType = condCol)
-plt.legend(fontsize = 6, ncol = len(condCat))
-# fig.suptitle(str(dates), **plotChars)
+plt.xticks([1, 2], labels, **plotTicks)
+plt.yticks(**plotTicks)
 plt.tight_layout()
 plt.show()
-plt.savefig((dirToSave + '(2b)_{:}_EvH_Conditions.png').format( str(condCat)))
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
 
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_blebbi, hueType = 'cellID')
-plt.legend(fontsize = 6, ncol = len(condCat))
-# fig.suptitle(str(dates), **plotChars)
+
+measure = 'H0_vwc_Full'
+stat = 'mean'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = 'greater', palette = palette_cond,
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 1500))
+
+
+
+plt.xticks([1, 2], labels, **plotTicks)
+plt.yticks(**plotTicks)
 plt.tight_layout()
 plt.show()
-plt.savefig((dirToSave + '(2c)_{:}_{:}_EvH_CellID.png').format( str(condCat)))
-#%% Calling data - Analysing with VWC global tables - All Y27 experiments
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
 
-filename = 'VWC_AllY27_24-09-03'
-GlobalTable = taka.getMergedTable(filename)
-fitsSubDir = filename
-dirToSave = 'H:/Lab Meetings/Meeting_Alba-Filipe_24-09-04/Plots'
-
-#%%%% Create dataframe for plotting
-
-data = pf.createDataTable(GlobalTable)
-
-drugs = ['none', 'Y27_1', 'Y27_10', 'Y27_50']
-labels = ['Control', 'Y27 1μM', 'Y27 10μM', 'Y27 50μM']
-
-Filters = [(data['validatedThickness'] == True),
-            (data['error_vwc_Full'] == False),
-            (data['substrate'] == '20um fibronectin discs'), 
-            (data['R2_vwc_Full'] > 0.90),
-            (data['compression duration'] == '1.5s'),
-            (data['bestH0'] <= 1500),
-            ]
-
-pairs = [['none', 'Y27_1'], ['none', 'Y27_10'], ['none', 'Y27_50']]
-condCol, condCat = 'drug', drugs
-
-df = pf.filterDf(Filters, data)
-avgDf = pf.createAvgDf(df, condCol)
-
-plotChars = {'color' : 'white', 'fontsize' : 20}
-
-N = len(df['cellID'].unique())
-palette_cell = distinctipy.get_colors(N)
-palette_cond = ['#6A3E00', '#c5b2d2', '#8b66a5','#511978']
-swarmPointSize = 10
-
-#%%%% Plot NLImod
-
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
-
-palette_y27 = ['#4C4C4C', '#bce5af', '#90c57f', '#506d47']
-
-plottingParams = {'data':df, 
-                  'x' : condCol, 
-                  'y' : 'NLI_mod',
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-                    }
-
-
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs,
-                                    hueType = None, palette = palette_y27,
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-# plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-# plt.tight_layout()
-plt.savefig((dirToSave + '(1a)_{:}_NLImodPLot.png').format( str(condCat)))
-
-
-############# cell average ###################
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
-
-
-plottingParams = {'data':avgDf, 
-                  'x' : (condCol, 'first'), 
-                  'y' : ('NLI_mod', 'mean'),
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-
-                    }
+measure = 'E_norm'
+stat = 'mean'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = 'greater', palette = palette_cond,
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits =( 0, 10000))
 
 
 
-fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
-                             hueType = None,  palette = palette_y27,
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.savefig((dirToSave + '(1b)_{:}_NLImodPLot_cellAverage.png').format(str(condCat)))
-
-#%%%% E vs H0
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax, df = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol,  palette = palette_cond, hueType = condCol)
-plt.legend(fontsize = 6, ncol = len(condCat))
-fig.suptitle(str(dates), **plotChars)
+plt.xticks([1, 2], labels, **plotTicks)
+plt.yticks(**plotTicks)
 plt.tight_layout()
 plt.show()
-plt.savefig((dirToSave + '(2b)_{:}_{:}_EvH_Conditions.png').format(str(dates), str(condCat)))
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
 
-
-avgDf = avgDf = pf.createAvgDf(df, condCol, dataFluoPath = None, e_norm = True)
-
-#%%%% E vs H0
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol, hueType = 'NLI_Plot')
-# # fig.suptitle(str(dates), **plotChars)
-# plt.show()
-# plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format( str(condCat)))
-
-
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_y27, hueType = condCol)
-# plt.legend(fontsize = 6, ncol = len(condCat))
-# # fig.suptitle(str(dates), **plotChars)
-# plt.tight_layout()
-# plt.show()
-# plt.savefig((dirToSave + '(2b)_{:}_EvH_Conditions.png').format( str(condCat)))
-
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_y27, hueType = 'cellID')
-# plt.legend(fontsize = 6, ncol = len(condCat))
-# # fig.suptitle(str(dates), **plotChars)
-# plt.tight_layout()
-# plt.show()
-# plt.savefig((dirToSave + '(2c)_{:}_{:}_EvH_CellID.png').format( str(condCat)))
-
-#%%  
-
-filename = 'VWC_Blebbi_24-07-10'
-GlobalTable = taka.getMergedTable(filename)
-fitsSubDir = filename
-dirToSave = 'H:/Lab Meetings/Meeting_Alba-Filipe_24-09-04/Plots'
-
-#%%%% Create dataframe for plotting
-
-data = pf.createDataTable(GlobalTable)
-
-drugs = ['dmso_10', 'blebbi_10']
-labels = ['DMSO',  'Blebbi 10μM']
-
-Filters = [(data['validatedThickness'] == True),
-            (data['error_vwc_Full'] == False),
-            (data['substrate'] == '20um fibronectin discs'), 
-            (data['R2_vwc_Full'] > 0.90),
-            (data['compression duration'] == '1.5s'),
-            (data['bestH0'] <= 1500),
-            ]
-
-pairs = [['dmso_10', 'blebbi_10']]
-condCol, condCat = 'drug', drugs
-
-df = pf.filterDf(Filters, data)
-avgDf = pf.createAvgDf(df, condCol)
-
-plotChars = {'color' : 'white', 'fontsize' : 20}
-
-N = len(df['cellID'].unique())
-palette_cell = distinctipy.get_colors(N)
-palette_cond = ['#808080', '#197851']
-swarmPointSize = 10
-
-#%%%% Plot NLImod
-
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
-
-palette_blebbi = ['#4C4C4C', '#89659e']
-
-plottingParams = {'data':df, 
-                  'x' : condCol, 
-                  'y' : 'NLI_mod',
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-                    }
-
-
-fig, ax = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs,
-                                    hueType = None, palette = palette_blebbi,
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-# plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-# plt.tight_layout()
-plt.savefig((dirToSave + '(1a)_{:}_NLImodPLot.png').format( str(condCat)))
-
-
-############# cell average ###################
-fig, ax = plt.subplots(figsize = (13,9))
-dates = np.unique(df['date'].values)
-
-
-plottingParams = {'data':avgDf, 
-                  'x' : (condCol, 'first'), 
-                  'y' : ('NLI_mod', 'mean'),
-                  'order' : condCat,
-                  'linewidth' : 1, 
-                  'size' :swarmPointSize, 
-
-                    }
-
-fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
-                             hueType = None,  palette = palette_blebbi,
-                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
-
-plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.savefig((dirToSave + '(1b)_{:}_NLImodPLot_cellAverage.png').format(str(condCat)))
-
-#%%%% E vs H0
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax, df = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol,  palette = palette_cond, hueType = condCol)
-plt.legend(fontsize = 6, ncol = len(condCat))
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.show()
-plt.savefig((dirToSave + '(2b)_{:}_{:}_EvH_Conditions.png').format(str(dates), str(condCat)))
-
-
-avgDf = avgDf = pf.createAvgDf(df, condCol, dataFluoPath = None, e_norm = True)
-
-#%%%% E vs H0
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol, hueType = 'NLI_Plot')
-# # fig.suptitle(str(dates), **plotChars)
-# plt.show()
-# plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format( str(condCat)))
-
-
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_blebbi, hueType = condCol)
-plt.legend(fontsize = 6, ncol = len(condCat))
-# fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.show()
-plt.savefig((dirToSave + '(2b)_{:}_EvH_Conditions.png').format( str(condCat)))
-
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax = pf.EvsH0(fig, ax, df, condCat, condCol,  palette = palette_blebbi, hueType = 'cellID')
-plt.legend(fontsize = 6, ncol = len(condCat))
-# fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.show()
-plt.savefig((dirToSave + '(2c)_{:}_{:}_EvH_CellID.png').format( str(condCat)))

@@ -32,6 +32,7 @@ import seaborn as sns
 from numpy import unravel_index
 import matplotlib.pyplot as plt
 from scipy import interpolate, signal
+from scipy.interpolate import RegularGridInterpolator as RGI
 import matplotlib.patches as mpatches
 from skimage.transform import warp_polar
 
@@ -51,11 +52,11 @@ from cellpose import plot, models, utils, io
 # os.environ["CELLPOSE_LOCAL_MODELS_PATH"] = "D:/Anumita/MagneticPincherData/DataFluorescence/CellposeModels"
 
 #Font size for plots
-ylabel = 15
-xlabel = 15
-axtitle = 25
+ylabel = 20
+xlabel = 20
+axtitle = 35
 figtitle = 30
-font_ticks = 25
+font_ticks = 20
 
 #%% Functions
 
@@ -214,15 +215,22 @@ def AllMMTriplets2Stack(DirExt, DirSave, expt, prefix, channel, subDir = None):
             
     return excludedCells
 
-
+# Helper function to create directories if they don't exist
+def ensure_dir_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
 #%% Setting directories
 
+DirData = 'D:\\Anumita\\MagneticPincherData\\'
 date = '25.01.09'
 channel = 'Actin'
 # subDir = '3t3opthorhoa_Fastact640'
-dirFluoRaw = 'D:/Anumita/MagneticPincherData/Data_Fluorescence/Raw/25.01.09/' #cp.DirData + '/DataFluorescence/Raw/' + date + '/' + subDir
-dirProcessed = os.path.join(cp.DirData + '/Data_Fluorescence/Processed', date)
-dirSegment = cp.DirData + '/Data_Fluorescence/Segmentation' 
+dirFluoRaw = 'D:\\Anumita\\MagneticPincherData\\Data_Fluorescence\\Raw\\25.01.09\\' #cp.DirData + '/DataFluorescence/Raw/' + date + '/' + subDir
+dirProcessed = os.path.join(DirData, 'Data_Fluorescence', 'Processed', date)
+dirSegment = DirData + 'Data_Fluorescence\\Segmentation' 
+dirSave = os.path.join(DirData, 'Data_Fluorescence', 'Kymographs', date)
+
 
 if not os.path.exists(dirProcessed):
     os.mkdir(dirProcessed)
@@ -235,6 +243,7 @@ timeRes = 10 #in secs
 firstActivation = 6 #in timepoints
 firstActMin = np.round(firstActivation*timeRes / 60, 1)
 
+
 #%% Preprocessing and saving stacks as individual images for cellpose to do its work
 
 allCells = os.listdir(dirFluoRaw)
@@ -244,53 +253,72 @@ allCells = [i for i in allCells if channel in i]
 
 for currentCell in allCells:
     print(gs.GREEN + currentCell + gs.NORMAL)
-    # folderCell = (os.path.join(dirFluoRaw, currentCell))
-    # fileCell = os.path.join(folderCell, currentCell + '_' + channel + '.tif')
     fileCell = os.path.join(dirFluoRaw, currentCell)
 
     stack = cv2.imreadmulti(fileCell, [], cv2.IMREAD_ANYDEPTH)[1]
 
-    filenames = [(f"{i:04d}.tif") for i in range(1, len(stack), 1)]
+    filenames = [(f"{i:04d}.tif") for i in range(len(stack))]
         
     for (j, k) in zip(stack, filenames):
-        original = np.uint8(j)
-        
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        equalised_img = clahe.apply(original)
-        
-        equalised_img = cv2.resize(equalised_img, (int(j.shape[1]/scale_resize), int(j.shape[0]/scale_resize)))
+        j = np.fliplr(j)
 
-        medianBlur = cv2.medianBlur(equalised_img, 5)
-        # gaussianBlur = cv2.GaussianBlur(medianBlur, (5,5), 0)
+        medianBlur = cv2.medianBlur(j, 3)
         
         saveCell = os.path.join(dirProcessed, currentCell)
-        saveChannel = os.path.join(saveCell, channel)
-        
+
         if not os.path.exists(saveCell):
             os.mkdir(saveCell)
         
-        if not os.path.exists(saveChannel):
-            os.mkdir(saveChannel)
+        cv2.imwrite(os.path.join(saveCell, k), medianBlur)
+
+#%% Processing activation region
+
+act_img_path = os.path.join(dirFluoRaw, 'Info', 'Filter5_150ms_HEX37_ActivationRegion.tif')
+act_img = cv2.imread(act_img_path)
+act_img = np.fliplr(act_img)
+act_img = cv2.cvtColor(act_img, cv2.COLOR_BGR2RGB)
+
+# Read the image
+image = cv2.imread(act_img_path)
+image = np.fliplr(image)
+
+# Convert the image to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+blurred = cv2.blur(gray,(55,55))
+
+central_profile = np.mean(gray[170:210, :], axis = 0)
+# plt.plot(central_profile)
+
+threshold_inner_contour = int((50 / 100) * (np.max(central_profile) - np.min(central_profile)))
+threshold_outer_contour = int((10 / 100) * (np.max(central_profile) - np.min(central_profile)))
+
+# Use Canny edge detection
+ret_in,th_in = cv2.threshold(blurred,threshold_inner_contour,255,cv2.THRESH_BINARY)
+ret_out,th_out = cv2.threshold(blurred,threshold_outer_contour,255,cv2.THRESH_BINARY)
+
+# Find contours from the edges
+contour_in, _ = cv2.findContours(th_in, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+contour_out, _ = cv2.findContours(th_out, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+# Draw the contour on the original image
+cv2.drawContours(act_img, contour_in, -1, (0, 255, 0), 1)
+cv2.drawContours(act_img, contour_out, -1, (255, 0, 0), 1)
+
+# Convert BGR to RGB for display
+
+# Display the image with contours
+plt.imshow(blurred)
+plt.show()
+
+# plt.imshow(act_img)
+# plt.axis('off')
+# plt.show()
+
         
-        cv2.imwrite(os.path.join(saveChannel, k), medianBlur)
-        
-        # cv2.imshow('Equalised', gaussianBlur)
-        # if cv2.waitKey(0) & 0xFF == ord('q'):
-        #     break
-        
-cv2.destroyAllWindows()
-    
 #%% Importing the cellpose model
 
-# allCells = ['22-12-02_M3_P1_C19_disc20um']
 allCells = os.listdir(dirProcessed)
-# allCells = [x for x in allCells if 'P1' in x and 'M1' not in x ]
-allCells = [x for x in allCells if 'Actin' in x ]
-# allCells = ['22-12-02_M3_P1_C5_disc20um',
-#             '22-12-02_M3_P1_C11_disc20um', '22-12-02_M3_P1_C14_disc20um',
-#             '22-12-02_M3_P1_C15_disc20um', 
-#             '22-12-02_M3_P1_C17_disc20um', '22-12-02_M3_P1_C18_disc20um',
-#             '22-12-02_M3_P1_C19_disc20um']
+allCells = [x for x in allCells if channel in x and 'Partial-Half' in x]
 
 fluoDict = {'cellID': [], 
             'fluoFront': [],
@@ -303,85 +331,90 @@ allKymoNorm = []
 
 for j in range(len(allCells)):
     currentCell = allCells[j]
-    
-    segFolderCell = os.path.join(dirSegment, currentCell)
-    segFolderCh = os.path.join(dirSegment, currentCell, channel)
-    
+
+    segFolderCell = os.path.join(dirSegment, date)
+    segFolderCh = os.path.join(dirSegment, date, currentCell)
+
     if not os.path.exists(segFolderCell) or not os.path.exists(segFolderCh):
         print(gs.ORANGE + 'Segmentation not done for cell ' + currentCell)
         print('Running model and creating segmented masks..' + gs.NORMAL)
-        
-        try:
-            os.mkdir(segFolderCell)
-        except:
-            pass
-        
-        try:
-            os.mkdir(segFolderCh)
-        except:
-            pass
 
-        
-        filePath = os.path.join(dirProcessed, currentCell, channel)
+        if not os.path.exists(segFolderCell):
+            os.makedirs(segFolderCell)
+
+        if not os.path.exists(segFolderCh):
+            os.makedirs(segFolderCh)
+
+        filePath = os.path.join(dirProcessed, currentCell)
         files = os.listdir(filePath)
-        
+
         model = models.Cellpose(gpu=False, model_type='cyto')
         imgs = [imread(os.path.join(filePath, f)) for f in files]
-        
-        channels = [0,0]
-        masks, flows, styles, diams = model.eval(imgs, diameter = 116, channels=channels,
-                                                 flow_threshold = 0.2, do_3D=False, normalize = True)
-        
-        
-    
-        segFilename = [segFolderCh + '/' + str(k) for k in range(len(masks))] 
-        
-        saveMasks = [io.masks_flows_to_seg(imgs[k], masks[k], flows[k], diams, segFilename[k], channels) \
-                     for k in range(len(masks))]
-    else: 
 
+        channels = [0, 0]
+        masks, flows, styles, diams = model.eval(
+            imgs, diameter=116, channels=channels,
+            flow_threshold=0.2, do_3D=False, normalize=True
+        )
+
+        # Updated segFilename
+        segFilename = [os.path.join(segFolderCh, f"{k}") for k in range(len(masks))]
+        
+        saveMasks = [io.masks_flows_to_seg(
+            imgs[k], masks[k], flows[k], diams, segFilename[k], channels) for k in range(len(masks))]
+    else:
         print(gs.GREEN + 'Segmentation already done for cell ' + currentCell)
         print('Loading masks..' + gs.NORMAL)
-        nMasks = len(os.listdir(segFolderCh))
-        datMasks = [np.load(segFolderCh+'/'+str(x)+'_seg.npy', allow_pickle=True).item()['masks'] for x in range(nMasks)]
-        datImgs = [np.load(segFolderCh+'/'+str(x)+'_seg.npy', allow_pickle=True).item()['img'] for x in range(nMasks)]
 
-        masks = np.asarray(datMasks) 
-        imgs = np.asarray(datImgs) 
+        nMasks = len(os.listdir(segFolderCh))
+        datMasks = [np.load(segFolderCh + '/' + str(x) + '_seg.npy', allow_pickle=True).item()['masks'] for x in range(nMasks)]
+        datImgs = [np.load(segFolderCh + '/' + str(x) + '_seg.npy', allow_pickle=True).item()['img'] for x in range(nMasks)]
         
+        masks = np.asarray(datMasks)
+        imgs = np.asarray(datImgs)
+
     # for each in masks:
     #     plt.imshow(each)
     #     plt.show()
     
-    # plt.close('all')
-    
-    
+    plt.close('all')
+
     allKymo = []
     allMaxValsFront = [] 
     allMaxValsBack = [] 
     kymoNorm = []
+    kymoContour = []
     
     R_in = 40 #in px
-    cortexThickness = 10
+    cortexThickness = 11
     
     for i in range(len(masks)):
         mask = masks[i]
         img = imgs[i]
-        bg = np.mean(img[0:100, 0:100])
+        bg = np.mean(img[0:50, 0:50])
         
         img = img - bg
-        outlines = img.copy()
+        h,w = img.shape
+        size = (w,h)
+        cnt_mask =  np.zeros((h, w), np.uint8)
+        # cnt_mask = cv2.cvtColor(cnt_mask,cv2.COLOR_BGR2GRAY)
+        cnt_mask = cv2.drawContours(cnt_mask, contour_in, -1, (255, 0, 0), 2)
+        cnt_mask = cv2.drawContours(cnt_mask, contour_out, -1, (255, 0, 0), 2)
         
         bw_mask = cellpose.utils.masks_to_edges(mask)*1
         center = cellpose.utils.distance_to_boundary(mask)
         cX, cY = unravel_index(center.argmax(), center.shape)
-    
+
         warped_img = warp_polar(img, center = (cX, cY), radius = 250)
+        
+        if i == 0:
+            warped_contour = warp_polar(cnt_mask, center = (cX, cY), radius = 250)
         
         maskVerifyBounds = np.copy(warped_img)
    
         warped_copy = np.zeros(len(warped_img)-1)
-        warped_mask = warp_polar(bw_mask, center = (cX, cY), radius = 250)*10**12
+        warped_copy_cont = np.zeros(len(warped_contour)-1)
+        warped_mask = warp_polar(bw_mask, center = (cX, cY), radius = 250)
         
         maxValues = np.argmax(warped_img, axis = 1)
         maxInter = signal.savgol_filter(maxValues, 301, 3)
@@ -390,102 +423,140 @@ for j in range(len(allCells)):
         # warped_imgClean = np.asarray([warped_img[:, k] - innerMean for k in range(np.shape(warped_img)[1])]).T
         # warped_imgClean = warped_img - innerMean
         
-        # print(i)
         for j in range(len(warped_img)-1):
             # maxval = int(maxInter[j])
             maxval = np.argmax(warped_mask[j,:])
             # innerMean = np.mean(warped_img[j, 0:cortexThickness])
-            warped_copy[j] = np.average(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
+            warped_copy[j] = np.max(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
+            warped_copy_cont[j] = np.average(warped_contour[j, maxval - cortexThickness:maxval])
             maskVerifyBounds[j, maxval - cortexThickness], maskVerifyBounds[j, maxval] =  0, 0
-            
-            # maxval = int(maxInter[j])
-            # warped_copy[j] = np.average(warped_img[j, maxval - cortexThickness:maxval + cortexThickness])
-            # warped_mask[j, maxval - cortexThickness],  warped_mask[j, maxval + cortexThickness] = 0, 0
-        
-        # final = warped_copy
+
         # plt.imshow(maskVerifyBounds)
         # plt.show()
         
         allKymo.append(warped_copy)
-    
+        kymoContour.append(warped_copy_cont)
     
     # plt.style.use('dark_background')
     plt.style.use('default')
-
-    cmap = 'RdPu'
-    # cmap = 'viridis'
     allKymo = np.asarray(allKymo)
     
     preActivationAvg = np.mean(allKymo[0:firstActivation], axis = 0)
     
-    kymo_norm = [kymoNorm.append(allKymo[k]/preActivationAvg) for k in range(np.shape(allKymo)[0])]
-    
-    kymo_norm = np.asarray(kymoNorm).T
-    allKymo = np.asarray(allKymo).T
+    kymo_norm = np.array([allKymo[k] / preActivationAvg for k in range(np.shape(allKymo)[0])]).T
+    kymo_norm = np.asarray(kymo_norm)
+    allKymo = allKymo.T
+    kymoContour = np.asarray(kymoContour).T
     allKymoNorm.append(kymo_norm)
     
-    for i in range(np.shape(kymo_norm)[1]-1):
-        frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
-        medFront = np.average(kymo_norm[100:200, i])
-        fluoDict['fluoFront'].append(medFront)
-        medBack = np.average(kymo_norm[250:350, i])
-        fluoDict['fluoBack'].append(medBack)
-        fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
-        fluoDict['cellID'].append(currentCell)
-        fluoDict['frame'].append(i)
+    
+    fig1, ax = plt.subplots(1, 2, figsize=(10, 10))
+    
+    x = np.arange(kymo_norm.shape[1])  # 18 columns
+    y = np.arange(kymo_norm.shape[0])
+    duration = (x * timeRes / 60)[-1]  # in minutes
+    
+    # Create meshgrid for x and y coordinates
+    interpolator = RGI((y, x), kymo_norm, method='linear', bounds_error=False)
+    xtime = np.linspace(0, duration, 300)
+    # New grid
+    xnew = np.linspace(0, kymo_norm.shape[1] - 1, 300)  # Interpolated to 300 columns
+    # ynew = np.linspace(0, kymo_norm.shape[0] - 1, kymo_norm.shape[0]) 
+    xxnew, yynew = np.meshgrid(xnew, y, indexing='ij')
+    # Interpolated data
+    points = np.array([yynew.ravel(), xxnew.ravel()]).T  # Create a grid of (y, x) points
+    kymo_interpolated = interpolator(points).reshape(yynew.shape)
+
+    x2 = np.arange(allKymo.shape[1])  # 18 columns
+    y2 = np.arange(allKymo.shape[0])
+    interpolator = RGI((y2, x2), allKymo, method='linear', bounds_error=False)
+    xtime2 = np.linspace(0, duration, 300)
+    # New grid
+    xnew2 = np.linspace(0, allKymo.shape[1] - 1, 300)  # Interpolated to 300 columns
+    xxnew2, yynew2 = np.meshgrid(xnew2, y2, indexing='ij')
+    # Interpolated data
+    points2 = np.array([yynew2.ravel(), xxnew2.ravel()]).T  # Create a grid of (y, x) points
+    allkymo_interpolated = interpolator(points2).reshape(yynew2.shape)
+    # Plot the interpolated data
+    im2 = ax[0].imshow(allkymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 80000)
+    im = ax[1].imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
+    
+    if 'HalfActivation' in currentCell:
+        x1 = np.arange(kymoContour.shape[1])  # 18 columns
+        y1 = np.arange(kymoContour.shape[0])
+        interpolator_cnt = RGI((y1, x1), kymoContour, method='linear', bounds_error=False)
         
+        # New grid
+        xnew1 = np.linspace(0, kymoContour.shape[1] - 1, 300)  # Interpolated to 300 columns
+        xxnew1, yynew1 = np.meshgrid(xnew1, y1, indexing='ij')
+        # Interpolated data
+        points1 = np.array([yynew1.ravel(), xxnew1.ravel()]).T  # Create a grid of (y, x) points
+        kymo_cont_interpolated = interpolator_cnt(points1).reshape(yynew1.shape)
+        kymo_cont_interpolated = cv2.normalize(kymo_cont_interpolated.T, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        
+        _, kymo_cont_thresh = cv2.threshold(kymo_cont_interpolated,20,255,cv2.THRESH_BINARY)
     
-    fig1, ax1 = plt.subplots(1, 2)
-    length = np.shape(kymo_norm)[1]
-    xx = np.arange(length)
-    duration = (xx*timeRes/60)[-1] #in mins
+        rows,cols = kymo_cont_interpolated.shape[:2]
+        contours, _ = cv2.findContours(kymo_cont_thresh, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        colors = ['r', 'b', 'b', 'r']
+        # plt.imshow(cv2.drawContours(np.zeros(kymo_cont_interpolated.shape), contours, -1, (255, 0, 0), 1))
+        angles, count = [], 0
+        for cnt, colour in zip(contours, colors):
+            M = cv2.moments(cnt)
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+            theta = 0.5 * np.arctan2(2 * M["mu11"], M["mu20"] - M["mu02"])
+            endx = cols * np.cos(theta) + center[0]
+            endy = cols * np.sin(theta) + center[1]
+            
+            
+            ax[1].plot([0, cols], [center[1], endy], color = colour, linewidth = 3, linestyle = '--')
+            ax[0].plot([0, cols], [center[1], endy], color = colour, linewidth = 3, linestyle = '--')
+            
+            if count == 1 or count == 2:
+                angles.append((center[1], int(endy)))
+                
+            count = count + 1
     
-    cleanSize = 360
-    yy = np.arange(0,cleanSize-1)
-    f = interpolate.interp2d(xx, yy, kymo_norm, kind='cubic')
-    xxnew =  np.linspace(0, length, 300)
-    xxtime = np.linspace(0, duration, 300)
-    yynew = yy
-    profileROI_hd = f(xxnew, yynew)
-    
-    length = np.shape(allKymo)[1]
-    xx2 = np.arange(length)
-    yy2 = np.arange(0,cleanSize-1)
-    f2 = interpolate.interp2d(xx2, yy2, allKymo, kind='cubic')
-    xxnew2 =  np.linspace(0, length, 300)
-    xxtime2 = np.linspace(0, duration, 300)
-    yynew2 = yy2
-    profileROI_hd2 = f2(xxnew2, yynew2)
-    
-    im = ax1[0].imshow(profileROI_hd, cmap = cmap, vmin = 0)
-    im2 = ax1[1].imshow(profileROI_hd2, cmap = cmap, vmin = 0)
-    
-    xtickslocs = ax1[0].get_xticks()[1:]
-    xtickslocs[-1] = xtickslocs[-1] - 1
-    new_xlabels = np.round(xxtime[(xtickslocs.astype(int))], 1) #Converting frames to second
-    ax1[0].set_xticks(xtickslocs, new_xlabels)
-    ax1[1].set_xticks(xtickslocs, new_xlabels)
-    
-    ax1[0].set_ylabel('Angle (degrees)', fontsize = ylabel)
-    ax1[0].set_xlabel('Time (mins)', fontsize = xlabel)
-    ax1[1].set_xlabel('Time (mins)', fontsize = xlabel)
-    fig1.suptitle(currentCell, fontsize = 16)
-    
-    axline = find_nearest(xxtime, firstActMin)
-    ax1[0].axvline(x = axline, color = 'red')
-    ax1[1].axvline(x = axline, color = 'red')
+        for i in range(np.shape(kymo_norm)[1]-1):
+            frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
+            # medFront = np.average(kymo_norm[100:200, i])
+            medFront = np.average(np.average(kymo_norm[0:angles[1][0], i]) + np.average(kymo_norm[angles[0][0]:359, i]))
+            # fluoDict['fluoFront'].append(medFront)
+            medBack = np.average(kymo_norm[angles[1][0]:angles[0][0], i])
+            fluoDict['fluoBack'].append(medBack)
+            fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
+            fluoDict['cellID'].append(currentCell)
+            fluoDict['frame'].append(i)
     
     
-    ax1[0].set_title('Normalised')
+    ax[0].set_xlim(0, cols)
+    ax[1].set_xlim(0, cols)
+    
+    ax[1].set_title('Normalised', fontsize = ylabel)
     fig1.colorbar(im, orientation='vertical', fraction = 0.055, pad = 0.04)
-    
-    
-    ax1[1].set_title('Not normalised')
+
+    ax[0].set_title('Not normalised', fontsize = ylabel)
     fig1.colorbar(im2, orientation='vertical', fraction = 0.055, pad = 0.04)
     
-    fig1.tight_layout()
-    plt.savefig('{}/{}_{}_Kymo.png'.format(cp.DirDataFigToday, currentCell, channel), dpi = 100)
-    plt.show()
+    ax[0].set_ylabel('Angle (degrees)', fontsize = ylabel)
+    ax[0].set_xlabel('Time (mins)', fontsize = xlabel)
+    ax[1].set_xlabel('Time (mins)', fontsize = xlabel)
+    
+    ax[0].tick_params(axis='both', which='major', labelsize=20)
+    ax[1].tick_params(axis='both', which='major', labelsize=20)
+
+
+    fig1.suptitle(currentCell, fontsize = 16)
+    
+    # axline = find_nearest(xxtime, firstActMin)
+    # ax[0].axvline(x = axline, color = 'red')
+    # ax[1].axvline(x = axline, color = 'red')
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(dirSave, currentCell.split('.tif')[0]+'.png'))
+    # plt.show()
+    
+    
+
 
 # plt.close('all')
 
@@ -621,5 +692,6 @@ excludedCells = AllMMTriplets2Stack(dirExt, dirSave, expt = expt, prefix = prefi
 
 
 
-
-
+plt.imshow(allkymo_interpolated)
+plt.imshow(kymo_cont_interpolated, origin='lower', cmap='Reds', alpha=0.1)
+plt.show()

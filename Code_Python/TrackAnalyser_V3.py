@@ -9,7 +9,7 @@ Created on Fri Sep  2 10:18:47 2022
 """
 Created on Wed Jan 19 13:07:45 2022
 
-@author: JosephVermeil & AnumitaJawahar
+@author: JosephVermeil & Anumita Jawahar
 """
 
 # %% (0) Imports and settings
@@ -1099,9 +1099,9 @@ def makeDictFit_CVW_hf(params, ses, error,
                 issue += 'Y<0_'
             if not nbPts >= fitValidationSettings['crit_nbPts']:
                 issue += 'nbPts<{:.0f}_'.format(fitValidationSettings['crit_nbPts'])
-            if not nbPts >= fitValidationSettings['crit_R2']:
+            if not R2 >= fitValidationSettings['crit_R2']:
                 issue += 'R2<{:.2f}_'.format(fitValidationSettings['crit_R2'])
-            if not nbPts >= fitValidationSettings['crit_Chi2']:
+            if not Chi2 <= fitValidationSettings['crit_Chi2']:
                 issue += 'Chi2>{:.1f}_'.format(fitValidationSettings['crit_Chi2'])
     
     else:
@@ -1210,9 +1210,9 @@ def makeDictFit_hf(params, ses, error,
                 issue += 'E<0_'
             if not nbPts >= fitValidationSettings['crit_nbPts']:
                 issue += 'nbPts<{:.0f}_'.format(fitValidationSettings['crit_nbPts'])
-            if not nbPts >= fitValidationSettings['crit_R2']:
+            if not R2 >= fitValidationSettings['crit_R2']:
                 issue += 'R2<{:.2f}_'.format(fitValidationSettings['crit_R2'])
-            if not nbPts >= fitValidationSettings['crit_Chi2']:
+            if not Chi2 <= fitValidationSettings['crit_Chi2']:
                 issue += 'Chi2>{:.1f}_'.format(fitValidationSettings['crit_Chi2'])
     
     else:
@@ -3631,6 +3631,8 @@ class IndentCompression:
                     elif self.method_bestH0 == 'Chadwick':
                         # chadwickModel(h, E, H0, DIAMETER)
                         low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    elif self.method_bestH0 == 'Chadwick':
+                        low_f = VWC(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
                     else:
                         low_f = np.ones_like(high_h) * bestH0
                     

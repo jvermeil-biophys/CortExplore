@@ -1759,3 +1759,14 @@ depthoNames = '24.11.28_P'+str(wells)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
                                  redoAllSteps = True, trackAll = False)
+
+#%% Deptho from experiment 24-12-27 - Experiment corsslinkers Fibcon 
+
+# %%%% M1 : 
+
+dates = '24.12.27'
+manips, wells, cells = 5, 3, 2
+depthoNames = '24.12.27_P'+str(3)+'_M450_step20_100X'
+
+mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                                 redoAllSteps = True, trackAll = False)

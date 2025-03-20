@@ -19,31 +19,28 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-# from plotnine import (
-#     ggplot,
-#     aes,
-#     stage,
-#     geom_violin,
-#     geom_point,
-#     geom_line,
-#     geom_boxplot,
-#     guides,
-#     scale_fill_manual,
-#     theme,
-#     theme_classic,
-#     facet_wrap,
-#     xlim, ylim,
-#     ggtitle,
-#     scale_color_gradient,
-#     scale_fill_gradient, 
-#     scale_color_gradientn,
-#     scale_fill_gradientn,
-#     guide_colorbar
-# )
-
-# from plotnine.themes.elements import element_rect, element_text
-
-# from statannotations.Annotator import Annotator
+from plotnine import (
+    ggplot,
+    aes,
+    stage,
+    geom_violin,
+    geom_point,
+    geom_line,
+    geom_boxplot,
+    guides,
+    scale_fill_manual,
+    theme,
+    theme_classic,
+    facet_wrap,
+    xlim, ylim,
+    ggtitle,
+    scale_color_gradient,
+    scale_fill_gradient, 
+    scale_color_gradientn,
+    scale_fill_gradientn,
+    guide_colorbar
+)
+from plotnine.themes.elements import element_rect, element_text
 
 import os
 import sys
@@ -60,6 +57,7 @@ import matplotlib.lines as lines
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from scipy.stats import mannwhitneyu, wilcoxon, ranksums, ttest_ind, ttest_rel
+from statannotations.Annotator import Annotator
 
 #### Local Imports
 
@@ -190,51 +188,68 @@ def filterDf(Filters, data):
     data_f = data[globalFilter]
     return data_f
 
-def createAvgDf(data, condCol, dataFluoPath = None, dataAnglesPath = None, e_norm = False):
-    
-    
+def createAvgDf(data, condCol, dataFluoPath = None, e_norm = False):
     group_by_cell = data.groupby(['cellID'])
-    agg_dict = {'H0_vwc_Full':['var', 'std', 'mean', 'count', 'median'], 
-                'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
-                'NLI_Ind':['var', 'std', 'mean', 'count'],
-                'E_eff':['var', 'std', 'mean', 'count', 'median'],
-                'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
-                'cellID' : 'first',
-                'cellName':'first', 
-                'NLI_Plot' : 'first', 
-                'dateCell':'first',
-                'ctFieldFluctuAmpli' : 'first', 
-                'ctFieldThickness' : 'first', 
-                'normFluctu' : 'first',
-                'NLI_mod':['mean', 'count', 'median', 'std', 'var'], 
-                'date' : 'first', 
-                condCol:'first', 'cellCode':'first', 'manip':'first'}
     
     if dataFluoPath != None:
-        added_cols = {'mean_intensity' : 'first',
-                    'mean_subtracted' : 'first'}
-        agg_dict.update(added_cols)
+        avgDf = group_by_cell.agg({'H0_vwc_Full':['var', 'std', 'mean', 'count', 'median'], 
+                                   'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
+                                   'NLI_Ind':['var', 'std', 'mean', 'count'],
+                                   'E_eff':['var', 'std', 'mean', 'count', 'median'],
+                                   'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
+                                   'mean_intensity' : 'first',
+                                   'mean_subtracted' : 'first',
+                                   'cellID' : 'first',
+                                   'cellName':'first', 
+                                   'NLI_Plot' : 'first', 
+                                   'dateCell':'first',
+                                   'ctFieldFluctuAmpli' : 'first', 
+                                   'ctFieldThickness' : 'first', 
+                                   'normFluctu' : 'first',
+                                   'NLI_mod':['mean', 'count', 'std', 'var'], 
+                                   'date' : 'first', 
+                                   condCol:'first', 'cellCode':'first', 'manip':'first'})
+    elif e_norm == True:
+        avgDf = group_by_cell.agg({'H0_vwc_Full':['var', 'std', 'mean', 'count', 'median'], 
+                                   'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
+                                   'NLI_Ind':['var', 'std', 'mean', 'count'],
+                                   'E_eff':['var', 'std', 'mean', 'count', 'median'],
+                                   'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
+                                   'cellID' : 'first',
+                                   'cellName':'first', 
+                                   'NLI_Plot' : 'first', 
+                                   'dateCell':'first',
+                                   'ctFieldFluctuAmpli' : 'first', 
+                                   'ctFieldThickness' : 'first', 
+                                   'normFluctu' : 'first',
+                                   'NLI_mod':['mean', 'count', 'std', 'var'], 
+                                   'E_norm' : ['mean', 'count', 'std', 'var'],
+                                   'date' : 'first', 
+                                   condCol:'first', 'cellCode':'first', 'manip':'first'})
+    else:
+        avgDf = group_by_cell.agg({'H0_vwc_Full':['var', 'std', 'mean', 'count', 'median'], 
+                                   'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
+                                   'NLI_Ind':['var', 'std', 'mean', 'count'],
+                                   'E_eff':['var', 'std', 'mean', 'count', 'median'],
+                                   'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
+                                   'cellID' : 'first',
+                                   'cellName':'first', 
+                                   'NLI_Plot' : 'first', 
+                                   'dateCell':'first',
+                                   'ctFieldFluctuAmpli' : 'first', 
+                                   'ctFieldThickness' : 'first', 
+                                   'normFluctu' : 'first',
+                                   'NLI_mod':['mean', 'count', 'std', 'var'], 
+                                   'date' : 'first', 
+                                   condCol:'first', 'cellCode':'first', 'manip':'first'})
         
-        
-    if e_norm == True:
-        added_cols = {'E_norm' : ['mean', 'count', 'std', 'var']}
-        agg_dict.update(added_cols)
-        
-    if dataAnglesPath != None:
-        added_cols = {'angle_beads' : 'first',
-                      'angle_theta' : 'first',}
-        agg_dict.update(added_cols)
-        
-        
-    avgDf = group_by_cell.agg(agg_dict)
-
     avgDf_wE = group_by_cell.agg({'compNum' : ['count'], 'wE_eff':[ 'sum'], 
                                  'weights_E_eff': ['sum']})
     
     avgDf_wE[('E_eff', 'wAvg')] = avgDf_wE['wE_eff', 'sum'] / avgDf_wE['weights_E_eff', 'sum']
     
     avgDf = avgDf.join(avgDf_wE)
-    
+    # 
     return avgDf.copy()
 
 
@@ -247,7 +262,7 @@ def dfCellPairs(avgDf):
     dfPairs = avgDf[(avgDf[('dateCell', 'first')].apply(lambda x : x in pairedCells))]
     return dfPairs.copy(), pairedCells
 
-def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAnglesPath = None):
+def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None):
 
     data_main = GlobalTable
     
@@ -278,7 +293,7 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
     data_main['NLI'] = np.log10((0.8)**-4 * K/Y)
     
     data_main['bestH0_log'] = np.log10(GlobalTable['H0_vwc_Full'].values)
-    data_main['E_eff_log'] = np.log10(GlobalTable['E_eff'].values)
+    data_main['E_eff_log'] = np.log10(E)
     
     NLItypes = ['linear', 'intermediate', 'non-linear']
     for i in NLItypes:
@@ -302,6 +317,7 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
 
     data_main['NLI_mod'] = np.log10((0.8)**-4 * K_nli/Y_nli)
     data_main['normFluctu'] = data_main['ctFieldFluctuAmpli'] /  data_main['ctFieldThickness']
+    
     
     data_nli = data_main[['cellID', 'compNum', 'NLI_mod']]
 
@@ -330,21 +346,8 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
             dataCell = data_main.loc[data_main['cellID'] == i, 'activation type']
             data_main.loc[data_main['cellID'] == i, 'activation type']  = list(dataAct.loc[dataAct['cellID'] == i, 'activation type'])*len(dataCell)
         
-    data_main['activation type'] = data_main['activation type'].fillna('none')
-    
-    if dataAnglesPath != None:
-        allFilesAngles = os.listdir(dataAnglesPath)
-        allFilesAngles = [i for i in allFilesAngles if '_ComputedAngles.csv' in i]
-        angleFile_compiled = []
-        for i in allFilesAngles:
-            angleFilename = os.path.join(dataAnglesPath, i)
-            angleFile = pd.read_csv(angleFilename, sep = ';')
-            angleFile_compiled.append(angleFile)
-        
-        finalAnglesFile = pd.concat(angleFile_compiled, ignore_index=True)
-        finalAnglesFile = finalAnglesFile.drop(columns=['cellID'])
-        data_main = pd.merge(data_main, finalAnglesFile, on=['dateCell'], how='left')
-                
+        data_main['activation type'] =data_main['activation type'].fillna('none')
+
     return data_main
 
 def plotNLI_Scatter(fig, ax, data, dates, condCat, condCol, pairs, labels = [],  
@@ -762,7 +765,7 @@ def NLIPairsvFluctu(fig, ax, dfPairs, condCol, condCat, palette = sns.color_pale
     return fig, ax
      
 def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 2*10**3), ylim = (100, 10**5),
-          palette = sns.color_palette("tab10"), h_ref = 600, colorScheme = 'black'):
+          palette = sns.color_palette("tab10"), h_ref = 400, colorScheme = 'black'):
     
     
     if colorScheme == 'black':
@@ -962,9 +965,6 @@ def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-side
     lsize = 0.65
     fill_alpha = 0.7
     
-    # if measure == 'E_eff_log':
-    #     dfPairs[('E_eff_log', stat)] = 10**(dfPairs[('E_eff_log', stat)].values)
-    
     x, y = (condCol, 'first'), (measure, stat)
     dfPairsPlot = dfPairs[[x, y, ('dateCell', 'first')]]
     dfPairsPlot.columns = [x[0], y[0], 'dateCell']
@@ -973,9 +973,9 @@ def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-side
     
     pvals = []
     for pair in pairs:
-        a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
-        b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
-        res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
+        a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
+        b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
+        res = wilcoxon(a1, b1, alternative=test, zero_method = 'wilcox')
         pvals.append(res[1])
         
     shift = 0.1
@@ -1004,7 +1004,6 @@ def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-side
     
     if y_limits:
         plot += ylim(y_limits[0], y_limits[1])
-
     
     plot.draw()
     plt.style.use('seaborn-v0_8')
@@ -1048,8 +1047,7 @@ def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [
         y = plotDf[measure]
         
         # Add the rain using the scatter method.
-        ax.scatter(x, y, color = palette[i], s=pointSize, linewidth=1,
-                   edgecolor = 'k', alpha = 0.6)
+        ax.scatter(x, y, color = palette[i], s=pointSize, alpha = 0.6)
 
     boxplot_data = [df[df[condCol] == condition][measure].values 
         for condition in condCat]
@@ -1370,7 +1368,7 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
     
     return fig, ax
 
-def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400,
+def EvH0_LogCellAvg(fig, ax, avgDf, condCat, condCol, hueType, h_ref = 400,
                   palette = sns.color_palette("tab10"), plotChars = {},
                   errorbar = False, pairs = None, colorScheme = 'black'):
     
@@ -1398,7 +1396,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
         palette = ['#b96a9b', '#92bda4']
         for m in mechanicsType:
             eqnText = ''
-            toPlot = data[(data[('NLI_Plot', 'first')] == m)]
+            toPlot = avgDf[(avgDf[('NLI_Plot', 'first')] == m)]
             x, y = toPlot[h].values, toPlot[e].values
             
             params, results = ufun.fitLineHuber((np.log(x)), np.log(y))
@@ -1433,14 +1431,14 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
         plt.legend(fontsize = 10, ncol = len(mechanicsType))
         
     elif hueType == 'cellID':
-        N = len(data[('cellID', 'first')].unique())
+        N = len(avgDf[('cellID', 'first')].unique())
         # palette = (sns.color_palette("Paired", np.round(N/2)) + sns.color_palette("husl",  np.round(N/2)))
-        sns.scatterplot(ax = ax[0], data = data, x = h, y = e, hue = ('cellName', 'first'), 
+        sns.scatterplot(ax = ax[0], data = avgDf, x = h, y = e, hue = ('cellName', 'first'), 
                           s = 150, palette = palette, edgecolor = 'k')
         
         for m in condCat:
             eqnText = ''
-            toPlot = data[(data[(condCol, 'first')] == m)]
+            toPlot = avgDf[(avgDf[(condCol, 'first')] == m)]
             x, y = toPlot[h].values, toPlot[e].values
             
             params, results = ufun.fitLineHuber((np.log(x)), np.log(y))
@@ -1467,7 +1465,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
         
         for m in condCat:
             eqnText = ''
-            toPlot = data[(data[(condCol, 'first')] == m)]
+            toPlot = avgDf[(avgDf[(condCol, 'first')] == m)]
 
             x, y = toPlot[h].values, toPlot[e].values
             
@@ -1490,7 +1488,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
 
             
             # Xfit, Yfit = np.log(toPlot[('bestH0_log', 'mean')].values), np.log(toPlot[('E_norm', 'logAvg')].values)
-            data.loc[(data[(condCol, 'first')] == m), ('E_norm', 'logAvg')] = toPlot[('E_norm', 'logAvg')]
+            avgDf.loc[(avgDf[(condCol, 'first')] == m), ('E_norm', 'logAvg')] = toPlot[('E_norm', 'logAvg')]
             
             
             # [b, a], results = ufun.fitLine(Xfit, Yfit)
@@ -1530,7 +1528,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
     plt.yticks(fontsize=25, color = fontColor)
     plt.tight_layout()
     plt.show()
-    return fig, ax, data.copy()
+    return fig, ax, avgDf.copy()
 
 
 
@@ -1721,18 +1719,14 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
         for pair in pairs:
             a1 = dfPairs[measure][dfPairs[condCol] == pair[0]].values
             b1 = dfPairs[measure][dfPairs[condCol] == pair[1]].values
-            res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
+            res = wilcoxon(a1, b1, alternative=test, zero_method = 'wilcox')
             pvals.append(res[1])
 
         ax = sns.lineplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
                           marker = 'o', **plottingParams)
-        
-        # ax = sns.pointplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
-        #                   marker = 'o', **plottingParams)
 
     if normalize == True:
         dfPairs['normMeasure', marker] = [np.nan]*len(dfPairs)
-        
         pvals = []
         for pair in pairs:
             for cell in pairedCells:
@@ -1744,7 +1738,10 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
                 dfPairs.loc[(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[1]), ('normMeasure', marker)] = ratio
 
             
-            pvals.append(np.nan)
+            a1 = dfPairs[('normMeasure', marker)][dfPairs[condCol] == pair[0]].values
+            b1 = dfPairs[('normMeasure', marker)][dfPairs[condCol] == pair[1]].values
+            res = wilcoxon(a1, b1, alternative=test, zero_method = 'wilcox')
+            pvals.append(res[1])
         
         ax = sns.lineplot(x = condCol, y = ('normMeasure',marker), data = dfPairs,  hue = hueType, 
                           marker = 'o',  markersize = 15, markeredgecolor = 'black', palette = palette)
@@ -1770,64 +1767,6 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
 
     return fig, ax, pvals, dfPairs.copy()
 
-def NLRvAngle(fig, ax, dfPairs, condCat, condCol, pairedCells, palette = sns.color_palette("tab10"),
-                pairs = None, colorScheme = 'black', plotType = False,
-                plottingParams = {}, plotChars = {}):
-    
-    if colorScheme == 'black':
-
-        fig.patch.set_facecolor('black')
-        fontColor = '#ffffff'
-        
-    else: 
-        plt.style.use('default')
-        fontColor = '#000000'
-        
-    measure =  plottingParams['y']
-    condCol =  plottingParams['hue']
-    x = plottingParams['x']
-    
-    if plotType == False:
-        sns.scatterplot(**plottingParams)
-    
-    elif plotType == 'delta':
-        dfPairs['NLI_mod', 'diff'] = [np.nan]*len(dfPairs)
-        for pair in pairs:
-            for cell in pairedCells:
-                c1 = dfPairs[(measure)][(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[0])].values
-                c2 = dfPairs[(measure)][(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[1])].values
-                diff = c2 - c1
-                
-                dfPairs.loc[(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[0]), ('NLI_mod', 'diff')] = diff
-                dfPairs.loc[(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[1]), ('NLI_mod', 'diff')] = diff
-        
-
-        sns.scatterplot(**plottingParams)
-    # elif plotType == 'paired':
-    #     idx = 0
-    #     for i in np.unique(dfPairs['dateCell', 'first'].values):
-    #         toPlot = dfPairs[dfPairs['dateCell', 'first'] == i]
-    #         x1 = toPlot['normFluctu', 'first'][toPlot[condCol, 'first'] == condCat[0]]
-    #         y1 = toPlot['NLI_mod', 'mean'][toPlot[condCol, 'first'] == condCat[0]]
-            
-    #         x2 = toPlot['normFluctu', 'first'][toPlot[condCol, 'first'] == condCat[1]]
-    #         y2 = toPlot['NLI_mod', 'mean'][toPlot[condCol, 'first'] == condCat[1]]
-
-    #         ax.scatter(x1, y1, marker = 'o', color = palette[idx], s = 100)
-    #         ax.scatter(x2, y2, marker = '*',  color = palette[idx], s = 100)
-    #         ax.plot([x1, x2], [y1, y2], color = palette[idx]) 
-            
-    #         idx = idx + 1
-            
-    plt.xticks(**plotChars)
-    plt.yticks(**plotChars)
-    # plt.ylabel(measure, **plotChars)
-    plt.xlabel(condCol, **plotChars)
-    plt.show()
-
-    return fig, ax
-    
-    
 def KvY(condCat, condCol, pairs, plottingParams = {}, plotChars = {}):
    
     data = plottingParams['data']
@@ -1857,7 +1796,6 @@ def KvY(condCat, condCol, pairs, plottingParams = {}, plotChars = {}):
         
         
     return
-
 
 
 def KvY_V0(hueType, condCat, condCol, palette = sns.color_palette("tab10"), 

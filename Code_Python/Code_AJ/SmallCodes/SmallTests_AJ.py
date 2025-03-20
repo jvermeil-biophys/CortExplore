@@ -21,6 +21,7 @@ import os
 import re
 import datetime as dt
 from datetime import date
+import cv2
 import sys
 from skimage import io
 import CortexPaths as cp
@@ -554,14 +555,14 @@ for i in range(len(allTifs)):
         
 #%% Code to create videos with a decently constant frame rate with a timestamp
 
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos'
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos/24.12.20'
 path = 'D:/Anumita/MagneticPincherData/Raw/ToConvert/'
 allFiles = os.listdir(path)
-allTifs = [i for i in allFiles if '22-10-06' in i and '.tif' in i]
-allFields = [i for i in allFiles if '22-10-06' in i and '_Field' in i]
-allLogs = [i for i in allFiles if '22-10-06' in i and '_LogPY' in i]
+allTifs = [i for i in allFiles if '24-12-20' in i and '.tif' in i]
+allFields = [i for i in allFiles if '24-12-20' in i and '_Field' in i]
+allLogs = [i for i in allFiles if '24-12-20' in i and '_LogPY' in i]
 
-activationFrames = np.asarray([])
+activationFrames = np.asarray([0, 666, 1330])
 
 for i in range(len(allTifs)):
     selectedFrames = []
@@ -573,10 +574,10 @@ for i in range(len(allTifs)):
     field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
     status = pd.read_csv(os.path.join(path, log), delimiter = '\t')
     
-    ctfield = status['Slice'][status['status_frame'] == 3.0].values
+    ctfield = status['iS'][status['idx_inNUp'] == 3.0].values
     selectedFrames.extend(ctfield-1)
     
-    comp = status['Slice'][status['status_frame'] == 0.1].values
+    comp = status['iS'][status['idx_inNUp'] == 0.1].values
     compId = np.asarray(np.linspace(0,199,5), dtype = 'int')
     for j in range(len(comp)//200):
         selectedComp = comp[j*200 : (j+1)*200]

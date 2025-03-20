@@ -41,7 +41,6 @@ import PlottingFunctions_AJ as pf
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 from scipy.stats import mannwhitneyu, wilcoxon
-# from statannotations.Annotator import Annotator
 # 
 #### Local Imports
 
@@ -216,7 +215,7 @@ fitSettings = {# H0
                 'doVWCFit' : True,
                 'VWCFitMethods' : ['Full'],
                 'doChadwickFit' : True,
-                'ChadwickFitMethods' : ['Full'],
+                'ChadwickFitMethods' : ['Full', 'f_<_400'],
                 'doStressRegionFits' : False,
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : False,
@@ -252,17 +251,17 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'S(e)_Log':False, # NEW - Numi
                         'K(S)_Log':False, # NEW - Numi
                         }
-Task = '24-11-28_M3'
+Task = '24-12-27'
 
 
-fitsSubDir = 'VWC_Fibcon_24-11-28'
+fitsSubDir = 'VWC_Fibcon_24-12-27'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
-#%% Calling data - 
+#%% Calling data - _24-11-28
 #
 filename = 'VWC_Fibcon_24-11-28'
 GlobalTable = taka.getMergedTable(filename)
@@ -309,46 +308,349 @@ palette_cond = ['#808080', '#ffdb19', '#b29600', '#99c3cf', '#4d96ab' ,'#005f79'
 
 swarmPointSize = 8
 
-#%%%% Plot NLI - Scatterplot
+#%% Calling data - 24-12-27
 
-plotSettings = {'markersize' : 20,
-                'mec' : 'k',
-                'sort' : False,
-                'ls' : 'solid'
-                }
+filename = 'VWC_Fibcon_24-12-27'
+GlobalTable = taka.getMergedTable(filename, mergeUMS = True)
+dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/Fibcon/25.01.27_MeetingwithEMBL/'
 
-marker_dates = {'24-05-29': 'o',
-                '24-02-21': '^', 
-                '24-06-07':'*', 
-                '24-06-08' : '*', 
-                '24-07-15' : 'P'}
+#Dates available : [24-12-27]
 
+#%%%% Create dataframe for plotting
+
+data = pf.createDataTable(GlobalTable)
+
+dates = ['24-12-27']
+manips = ['M6', 'M1', 'M2', 'M5', 'M3', 'M4'] 
+labels = ['7XFN\nNI', '7XFN\n+Dox', '7XFN\n+Dox\n+Light', '1XFN\nNI', '1XFN\n+Dox', '1XFN\n+Dox\n+Light']
+
+# manips = [ 'M1', 'M2', 'M3', 'M4'] 
+# labels = [ '7XFN+\nDox', '7XFN+\nDox+\nLight', '1XFN+\nDox', '1XFN+\nDox+\nLight']
+
+Filters = [(data['validatedThickness'] == True),
+            (data['error_vwc_Full'] == False),
+            (data['substrate'] == '20um fibronectin discs'), 
+            (data['UI_Valid'] == True),
+            # (data['ctFieldThickness'] < 1000), 
+            (data['R2_vwc_Full'] > 0.90),
+            (data['bestH0'] <= 1500),
+            (data['E_eff'] <= 30000),
+            (data['compNum'] <= 6),
+            (data['date'].apply(lambda x : x in dates)),
+            ]
+
+df = pf.filterDf(Filters, data)
+condCol, condCat = 'manip', manips
+avgDf = pf.createAvgDf(df, condCol)
+avgDf = avgDf[avgDf[('compNum', 'count')] > 2]
+
+plotChars = {'color' : '#ffffff', 'fontsize' : 25}
+plotTicks = {'color' : '#ffffff', 'fontsize' : 15}
+
+pairs = [['M6', 'M1'], ['M1', 'M2'], ['M5', 'M3'], ['M3', 'M4']] 
+# pairs = [ ['M1', 'M2'], ['M3', 'M4']] 
+
+N = len(df['cellID'].unique())
+palette_cell = distinctipy.get_colors(N)
+palette_cond = ['#808080', '#ffdb19', '#b29600', '#c1dbe2', '#7fafbc' ,'#003948']
+# palette_cond = [ '#ffdb19', '#b29600', '#7fafbc' ,'#003948']
+
+swarmPointSize = 10
+
+
+#%%%% Plot NLImod
+
+########################################
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'NLI_mod',
+                  'order' : condCat,
+                    }
+
+fig, ax = plt.subplots(figsize=(7, 6))
+
+fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+                             labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
+                             colorScheme = 'black', test = 'non-param', pointSize = 40,
+                             plottingParams = plottingParams, plotTicks = plotTicks, 
+                             plotChars = plotChars)
+
+# plt.ylim(-4,4.5)
+plt.ylabel('NLR', **plotChars)
+plt.xlabel(' ', **plotChars)
+# plt.tight_layout()
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.show()
+
+##################################
+plottingParams = {'data':df, 
+                  'hue' : condCol, 
+                  'x' : 'NLI_mod',
+                  'stat':'percent',
+                  'hue_order':condCat
+                    }
+
+pf.NLR_distplot(condCat = condCat, pairs = pairs, colorScheme = 'white',
+                                    palette = palette_cond,  test = 'param',
+                                    plottingParams = plottingParams, plotChars = plotChars)
+
+plt.tight_layout()
+plt.xlim(-3, 2.5)
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRDistplot.png').format(str(dates), str(condCat)))
+plt.show()
+
+######## cell average #########
+
+fig, ax = plt.subplots(figsize = (7,7))
+dates = np.unique(df['date'].values)
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' :10, 
+                    }
+
+fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
+                             hueType = None, palette = palette_cond, test = 'param',
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
+
+plt.ylim(-3,3.5)
+fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.savefig((dirToSave + '(1c)_{:}_{:}_NLImodPLot_cellAvg.png').format(str(dates), str(condCat)))
+plt.show()
+
+#%%% Boxplots - CtFieldThickness
+
+df_ctField = df.drop_duplicates(subset = 'ctFieldThickness')
+
+plottingParams = {'data':df_ctField, 
+                  'x' : condCol, 
+                  'y' : 'ctFieldThickness',
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' :swarmPointSize, 
+                   }
+
+ylim = 20000
+
+
+####################### Hue type 'condCol'#######################
+fig, ax = plt.subplots(figsize = (13,9))
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs,
+                                           labels = labels, palette = palette_cond,
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+# plt.ylim(0, ylim)
+fig.suptitle(str(dates), **plotChars)
+plt.yticks(**plotTicks)
+plt.xticks(**plotTicks)
+# plt.ylim(0,1500)
+plt.show()
+plt.savefig((dirToSave + '(4b)_{:}_{:}_ctFieldThickness_Conditions.png').format(str(dates), str(condCat)))
+
+
+#%%% Boxplots - E_eff
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'E_eff_log',
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' : 8, 
+                   }
+
+ylim = 20000
+
+####################### Hue type 'condCol'#######################
+fig, ax = plt.subplots(figsize = (13,9))
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, 
+                             labels = labels, palette = palette_cond,
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+# plt.ylim(0, ylim)
+fig.suptitle(str(dates), **plotChars)
+plt.yscale('log')
+y_labels = [100, 500, 5000, 10000, 50000]
+y_ticks = np.log10(np.asarray(y_labels))
+ax.set_yticks(y_ticks, labels = y_labels,**plotTicks)
+ax.set_xticks([0,1,2,3,4,5], labels = labels, **plotTicks)
+
+plt.show()
+plt.savefig((dirToSave + '(4b)_{:}_{:}_EBoxplot_Conditions.png').format(str(dates), str(condCat)))
+
+####################### cell weighted average ############################
 
 fig, ax = plt.subplots(figsize = (13,9))
-fig, ax, pvals = pf.plotNLI_Scatter(fig, ax, df, dates, condCat, condCol, pairs, labels = labels, 
-                                    plotSettings = plotSettings, marker_dates = marker_dates,
-                                    plotChars = plotChars) 
-           
+dates = np.unique(df['date'].values)
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('E_norm', 'mean'),
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' :swarmPointSize, 
+                    }
+
+fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
+                             hueType = None, palette = palette_cond,
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 fig.suptitle(str(dates), **plotChars)
+plt.yscale('log')
+plt.ylim(1000, 50000)
+y_ticks = [100, 500, 5000, 10000, 50000]
+ax.set_yticks(y_ticks, labels = y_ticks, **plotChars)
+
+plt.tight_layout()
+plt.savefig((dirToSave + '(4d)_{:}_{:}_E-normBoxplot_weightedCellAverage.png').format(str(dates), str(condCat)))
 plt.show()
-plt.savefig((dirToSave + '(1a)_{:}_{:}_NLIPLot-Scatter.png').format(str(dates), str(condCat)))
 
-#Plot averages across experiments
-plotSettings = {'marker' : 'o', 
-                'markersize' : 12,
-                'sort' : False,
-                'ls' : 'solid',
-                'mec' : 'k'}
 
+#%%% Box plots - H0
+
+plottingParams = {'data':df, 
+                  'x' : condCol, 
+                  'y' : 'bestH0_log',
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' : 8, 
+                   }
+
+####################### Hue type 'condCol'#######################
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = pairs, palette = palette_cond,
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+
+fig.suptitle(str(dates), **plotChars)
+plt.yscale('log')
+y_labels = np.asarray([100 ,250, 500, 1000, 1500, 2500])
+y_ticks = np.log10(np.asarray(y_labels))
+
+ax.set_yticks(y_ticks, labels =y_labels,**plotTicks)
+ax.set_xticks([0,1,2,3,4,5], labels = labels, **plotTicks)
+plt.show()
+plt.savefig((dirToSave + '(3b)_{:}_{:}_H0Boxplot_Conditions.png').format(str(dates), str(condCat)))
+
+
+####################### cell average ############################
 
 fig, ax = plt.subplots(figsize = (13,9))
-fig, ax, pvals = pf.plotNLI_Scatter_Avg(fig, ax, df,condCat, condCol, pairs, labels = labels, 
-                                    plotSettings = plotSettings,
-                                    plotChars = plotChars) 
-            
+dates = np.unique(df['date'].values)
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('bestH0_log', 'mean'),
+                  'order' : condCat,
+                  'linewidth' : 1, 
+                  'size' :swarmPointSize, 
+                    }
+
+fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
+                             hueType = None, palette = palette_cond,
+                                    labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 fig.suptitle(str(dates), **plotChars)
+plt.yscale('log')
+y_labels = np.asarray([100 ,250, 500, 1000, 1500, 2500])
+y_ticks = np.log10(np.asarray(y_labels))
+ax.set_yticks(y_ticks, labels =y_labels,**plotChars)
+ax.set_xticks([0,1,2,3,4,5], labels = labels, **plotTicks)
+
+plt.savefig((dirToSave + '(3e)_{:}_{:}_H0Boxplot_meancellAverage.png').format(str(dates), str(condCat)))
 plt.show()
-plt.savefig((dirToSave + '(1a)_{:}_{:}_NLIPLot-Scatter_Avg.png').format(str(dates), str(condCat)))
+
+
+#%%% E vs H0
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax, df = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol,  palette = palette_cond, hueType = condCol)
+plt.legend(fontsize = 6, ncol = len(condCat))
+fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(2b)_{:}_{:}_EvH_Conditions.png').format(str(dates), str(condCat)))
+
+
+avgDf = avgDf = pf.createAvgDf(df, condCol, dataFluoPath = None, e_norm = True)
+
+#%%% Plotnine paired plots
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+N_point = len(dfPairs['dateCell', 'first'].unique())
+
+
+measure = 'E_eff_log'
+stat = 'mean'
+test = 'greater'
+plot, pvals = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, test = test, palette = palette_cond,
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 8000))
+
+
+
+plt.xticks([1, 2, 3, 4], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
+
+
+#%%% Point plots
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+condCatPoint = dfPairs[condCol, 'first'].unique()
+
+N_point = len(dfPairs['dateCell', 'first'].unique())
+palette_cell_point = distinctipy.get_colors(N_point)
+testH0 = 'two-sided'
+testE = 'less'
+testNli = 'two-sided'
+
+stats = 'mean'
+
+plottingParams = {'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', stats),
+                  'linewidth' : 1,
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), 
+                                          pairs = pairs, normalize = False, marker = stats,
+                                          test = testNli, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# ax.get_legend().remove()
+plt.show()
+
+
+plt.savefig((dirToSave + '(9a)_{:}_{:}_{:}_NLImodPointplot.png').format(str(dates), str(condCat), stats))
+
+
+plottingParams = { 'x' : (condCol, 'first'), 
+                  'y' : ('H0_vwc_Full', stats),
+                  'linewidth' : 1, 
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
+
+ylim = 1500
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (0,ylim), 
+                                          pairs = pairs, normalize = False, marker = stats,
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+# plt.xlim((-2,3))
+plt.tight_layout()
+plt.savefig((dirToSave + '(7a)_{:}_{:}_{:}_H0Pointplot.png').format(str(dates), str(condCat), stats))
+plt.show()
 
