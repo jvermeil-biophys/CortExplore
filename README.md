@@ -22,11 +22,11 @@ Analyse experiments on the cell cortex
 		- Using 'MainDepthoMaker_NewUser.py' to make a depthograph.
 		- Using 'MainTracker_NewUser.py' to track the beads in Magnetic Pincher timelapses.
 	
-For more questions, contact me at joseph.vermeil@espci.fr
+For more questions, contact joseph.vermeil@espci.fr or anumita.jawahar@espci.fr
 
 
 
 ***
 
-Joseph Vermeil, 2022
+Joseph Vermeil & Anumita Jawahar, 2022
 PMMH Laboratories, ESPCI
