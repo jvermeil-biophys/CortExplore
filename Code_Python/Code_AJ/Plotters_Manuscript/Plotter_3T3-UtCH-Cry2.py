@@ -273,8 +273,8 @@ dirToSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/3T3_UtC
 
 data = pf.createDataTable(GlobalTable)
 
-dates = ['24-01-02']
-drugs = [ 'doxy_1', 'doxy_1_act']
+dates = ['24-09-05' , '24-09-24' , '24-09-12']
+drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
 labels = []
 
 
@@ -291,7 +291,7 @@ Filters = [(data['validatedThickness'] == True),
 
 df = pf.filterDf(Filters, data)
 
-pairs = [ ['doxy_1', 'doxy_1_act']]
+pairs = [ drugs]
 
 condCol, condCat = 'drug', drugs
 
@@ -303,9 +303,9 @@ avgDf = avgDf[avgDf[('compNum', 'count')] > 2]
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
-# palette_cond = ['#6A3E00', '#6A3E00', '#c5b2d2', '#8b66a5','#511978', '#8b66a5','#511978']
+palette_cond = ['#6A3E00', '#6A3E00', '#c5b2d2', '#8b66a5','#511978', '#8b66a5','#511978']
 # palette_cond = ['#c5b2d2', '#8b66a5']
-palette_cond = ['#6A3E00',  '#c5b2d2', '#8b66a5'] #,'#511978'] #, '#8b66a5','#511978']
+# palette_cond = ['#6A3E00',  '#c5b2d2', '#8b66a5'] #,'#511978'] #, '#8b66a5','#511978']
 
 
 swarmPointSize = 10

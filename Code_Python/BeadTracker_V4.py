@@ -242,6 +242,8 @@ class PincherTimeLapse:
                 iS = logDf_loop['iS'].values[-1]
                 
                 logDf_fast = logDf_loop[logDf_loop['Status'].apply(lambda x : x.startswith(fastestPhase))]
+                
+    
                 iS_fast = logDf_fast['iS'].values[-1] # last frame of the "fast" phase
                 
                 while np.sum(self.I[iS-1]) == 0: # while a black image is detected
@@ -1073,8 +1075,8 @@ class Trajectory:
             #### Enable plots of Z detection  here
                 
                 plot = 0
-                # if (iF >= 0 and iF <= 35) or (iF > 635 and iF <= 696):
-                #     plot = 1
+                if (iF >= 675 and iF <= 705): # or (iF > 635 and iF <= 696):
+                    plot = 1
 
             # ###################################################################
 
@@ -1841,7 +1843,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                 
             # Columns from the field file
             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
+            metaDf = fieldDf[['T_raw', 'B_set', 'Z_piezo']]
             
             # 'iL' column
             N = len(metaDf)
@@ -1863,14 +1865,25 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
             N_mainAction_down = loop_mainAction_length//2
             N_passive_2 = N_passive_1
             N_Fluo = loop_fluo_length
-            # print(N_passive_1, N_preAction, N_mainAction_up, N_mainAction_down, N_passive_2, N_Fluo)
+            
+            # N_passive_1 = 18
+            # N_preAction = 133
+            # N_mainAction_up = 67
+            # N_mainAction_down = 66
+            # N_passive_2 = 15
+            # N_Fluo = 0
+            
+            print(NLoops, N_passive_1, N_preAction, N_mainAction_up, N_mainAction_down, N_passive_2, N_Fluo)
             
             loopStatus = ['Passive' for i in range(N_passive_1)] + ['Action' for i in range(N_preAction)] \
                        + ['Action_main' for i in range(N_mainAction_up)] + ['Action' for i in range(N_mainAction_down)] \
                        + ['Passive' for i in range(N_passive_2)] + ['Fluo' for i in range(N_Fluo)]
+                       
+                              
             # print(loopStatus)
             
-            list_Status = loopStatus*NLoops
+            list_Status = loopStatus*NLoops #loopStatus*5 + ['Fluo'] + loopStatus*5
+            print(list_Status)
             metaDf['Status'] = list_Status
             
             # TBC

@@ -72,3 +72,66 @@ for date in dates:
                              'angle_theta' : angle_theta})
     
     dfToSave.to_csv(os.path.join(path, date+'_Side_ComputedAngles.csv'), sep = ';', index=False)
+    
+    
+#%% Creating merged files for compression number, angle between beads and activation region
+
+path = 'D:/Anumita/MagneticPincherData/Data_Polarization/AngleEachCompression'
+rawPath = 'D:/Anumita/MagneticPincherData/Raw'
+savePath = 'D:/Anumita/MagneticPincherData/Data_Polarization'
+
+allCells = os.listdir(path)
+allCells = np.array(['_'.join(i.split('_')[:-1]) for i in allCells if '.csv' in i])
+
+angleInfoCell = pd.DataFrame({'cellID': [], 
+                         'dateCell': [], 
+                         'compNum': [],
+                         'angle_beads' : [],
+                         'angle_act' : [],
+                         'angle_theta' : [],
+                         'cell_radius' : [],
+                         'arc_length' : []
+                         })
+
+for cell in allCells:
+    date = cell.split('_')[0].replace('-', '.')
+    dateCell = date + '_P' + cell.split('P')[-1]  
+    
+    actArea = pd.read_csv(os.path.join(path, cell + '_ActivationArea.csv'), sep=None, engine='python')
+    status = pd.read_csv(os.path.join(rawPath, date, cell + '_disc20um_L50_Status.txt'), header = None, sep = '_')
+    cellArea = pd.read_csv(os.path.join(path, cell + '_CellArea.csv'), sep=None, engine='python')
+    beadPos = pd.read_csv(os.path.join(path, cell + '_BeadPos.csv'), sep=None, engine='python')
+    beadPos = beadPos[beadPos['Slice'].apply(lambda x : x in np.unique(cellArea['Slice'].values))]
+
+    # Looking for the compression numbers of the slices where ROIs were drawn
+    compNums = status[0].iloc[cellArea.Slice]
+    nearestAct = actArea.drop_duplicates(subset='Slice', keep='first')
+    furthestAct = actArea.drop_duplicates(subset='Slice', keep='last')
+
+    beadPos = beadPos.groupby("Slice").mean()
+
+    A = (nearestAct.X.values, nearestAct.Y.values)
+    B = (cellArea.XM.values, cellArea.YM.values)
+    C = (beadPos.XM.values, beadPos.YM.values)
+    D = (furthestAct.X.values, furthestAct.Y.values)
+    
+    angle_beads = angle_between_points(A, B, C)
+    angle_act = angle_between_points(D, B, C)
+    angle_theta = np.round((angle_act / 2  + angle_beads), 2)
+    cell_radius = np.sqrt((cellArea.Area.values/np.pi)) / 15.38 #in microns
+    arc_length = np.round(2*np.pi*cell_radius*(angle_theta/360), 3)
+    
+    columnstoAdd = pd.DataFrame({'cellID': [cell]*len(beadPos), 
+                             'dateCell': [dateCell.replace('.', '-')]*len(beadPos), 
+                             'compNum': compNums,
+                             'angle_beads' : angle_beads,
+                             'angle_act' : angle_act,
+                             'cell_radius' : cell_radius,
+                             'angle_theta' : angle_theta,
+                             'arc_length' : arc_length,
+                             })
+
+    
+    angleInfoCell = pd.concat([angleInfoCell, columnstoAdd], ignore_index=True)
+
+angleInfoCell.to_csv(os.path.join(savePath, date+'_Side_ComputedAngles.csv'), sep = ';', index=False)

@@ -254,51 +254,53 @@ plotSettings = {# ON/OFF switchs plot by plot
 
 
 
-# Task = '24-12-14 & 24-12-20_M1 & 24-12-20_M2 & & 24-12-20_M5 & 25-01-14 & 25-01-23 & 25-01-21  & 25-02-28'
-Task = '24-12-14 & 24-12-20 & & 24-12-20 & 25-01-14 & 25-01-23 & 25-01-21 & 25-02-28 & 25-03-12'
+Task = '24-12-14 & 24-12-20_M1 & 24-12-20_M2 & 24-12-20_M5 & 25-01-14 & 25-01-23 & 25-01-21 & 25-02-28 & 25-03-12'
+# Task = '24-12-14 & 24-12-20 & & 25-01-14 & 25-01-23 & 25-01-21 & 25-02-28 & 25-03-12'
+# Task = '25-03-12_M2_P1_C3'
 
-
-fitsSubDir = 'VWC_optoRhoAVB-NS_updated_25-03-17'
-# fitsSubDir = 'VWC_optoRhoAVB-NS_ForBoxplots'
+fitsSubDir = 'VWC_optoRhoAVB-NS_updated_25-03-24'
+# fitsSubDir = 'VWC_optoRhoAVB-NS_'+Task
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
 
 #%% Calling data - Using non-sorted cells with antibiotics
-
-filename = 'VWC_optoRhoAVB-NS_updated_25-03-17' #25-01-14, 25-01-14, 24-12-20, 25-01-21, 25-01-23
-
+'VWC_optoRhoAVB-NS_updated_25-03-24' 
+filename = 'VWC_optoRhoAVB-NS_updated_25-03-20' 
+ 
 GlobalTable = taka.getMergedTable(filename, mergeUMS = True)
 dirToSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/3T3OptoRhoA-I_Polarity/'
 
 dataActPath = 'D:/Anumita/MagneticPincherData/Raw/ActivationData/25-01-20_ActivationData.csv'
 
-dataAnglesPath = 'D:/Anumita/MagneticPincherData/Data_Polarization'
+dataAnglesPath = 'D:/Anumita/MagneticPincherData/Data_Polarization/'
 
 data = pf.createDataTable(GlobalTable, dataActPath = dataActPath, dataAnglesPath = dataAnglesPath)
 
 #%%%% Create dataframe for plotting
 
-dates = ['24-12-14', '24-12-20' , '24-12-20' , '25-01-14', '25-01-23', '25-01-21', '25-02-28', '25-03-12']
+dates = ['24-12-14', '24-12-20', '25-01-14', '25-01-23', '25-01-21', '25-02-28', '25-03-12']
 # dates = ['25-02-28', '25-03-12']
 
 drugs = ['doxy', 'doxy_act']
 
-# manips = ['M5', 'M1', 'M2', 'M3', 'M4']
-# activation = ['none',   'side', 'away from beads', 'at beads', 'global']
-# labels = [ 'Dox', 'Dox + Side', 'Dox + Away', 'Dox + At', 'Dox + Global']
-# palette_cond = ['#8d9095', '#ffb230',  '#c66440', '#8ec582', '#325eb6']
+manips = ['M5', 'M1', 'M2', 'M3', 'M4']
+activation = ['no light',  'side',  'away from beads',  'at beads', 'global']
+labels = [ 'Dox','Dox + Side',  'Dox + Away', 'Dox + At', 'Dox + Global']
+# labels = [ 'Control', 'Polarized\nFront', 'Side', 'Polarized\nRear', 'Global\nContraction']
+# # labels = []
+palette_cond = ['#8d9095', '#ffb230',  '#c66440', '#8ec582', '#325eb6']
 
 # activation = ['none',   'away from beads'] 
 # labels = [ 'Dox', 'Dox + Away'] 
 # palette_cond = ['#8d9095', '#c66440'] 
 
-activation = ['none', 'side'] 
-labels = [ 'Dox', 'Side'] 
-palette_cond = ['#8d9095','#ffb230']
+# activation = ['no light', 'side'] 
+# labels = [ 'Dox', 'Side'] 
+# palette_cond = ['#8d9095','#ffb230']
 
 # activation = ['none', 'global']
 # labels = [ 'Dox',  'Global Activation']
@@ -315,40 +317,46 @@ palette_cond = ['#8d9095','#ffb230']
 Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
             (data['error_vwc_Full'] == False),
-            # (data['valid_vwc_Full'] == True),
             (data['substrate'] == '20um fibronectin discs'), 
-            (data['R2_vwc_Full'] > 0.90),
+            (data['R2_vwc_Full'] >= 0.90),
             (data['H0_vwc_Full'] <= 1200) & (data['H0_vwc_Full'] > 100),
             (data['E_eff'] <= 30000),
-            # (data['ctFieldThickness'] <= 1200),
+            (data['ctFieldThickness'] <= 1200),
             (data['compNum'] <= 10),
             (data['activation type'].apply(lambda x : x in activation)),
-            # (data['manip'].apply(lambda x : x in manips)),
+            (data['manip'].apply(lambda x : x in manips)),
             (data['drug'].apply(lambda x : x in drugs)),
             (data['date'].apply(lambda x : x in dates)),
             ]
 
 df = pf.filterDf(Filters, data)
-df = df.drop(df[(df['drug'] == 'doxy_act') & (df['compNum'] == 1)].index)
+# df = df.drop(df[(df['drug'] == 'doxy_act') & (df['compNum'] == 1)].index)
 
 condCol, condCat = 'activation type', activation
 # condCol, condCat = 'drug', drugs
 
-avgDf = pf.createAvgDf(df, condCol, dataAnglesPath = dataAnglesPath)
 
-avgDf = avgDf[(avgDf[('compNum', 'count')] > 2) ]
+# mask = (data['cellID'] == '25-01-14_M2_P2_C4')
+# df = df[~mask]
 
-# pairs = [['none', 'at beads'],  ['none' , 'side'], ['none' , 'away from beads'], ['none' , 'global']]
+avgDf = pf.createAvgDf(df, condCol)#, dataAnglesPath = dataAnglesPath)
+avgDf = avgDf[(avgDf[('compNum', 'count')] > 2)]
 
-pairs = [activation]
+pairs = [['no light', 'at beads'],  ['no light' , 'side'], ['no light' , 'away from beads'], ['no light' , 'global']]
+# pairs = None
+# pairs = [activation]
 
-plotChars = {'color' : '#ffffff', 'fontsize' : 20}
-plotTicks = {'color' : '#ffffff', 'fontsize' : 16}
+plotChars = {'color' : '#000000', 'fontsize' : 30}
+plotTicks = {'color' : '#000000', 'fontsize' : 28}
 
 N = len(df['cellID'].unique())
 palette_cell = distinctipy.get_colors(N)
 
 swarmPointSize = 6
+
+
+
+#%%%% Chadwick / Dimitriadis model
 
 #%%%% Plot NLImod
 
@@ -360,11 +368,11 @@ plottingParams = {'data':df,
                   'order' : condCat,
                     }
 
-fig, ax = plt.subplots(figsize=(10, 10))
+fig, ax = plt.subplots(figsize=(15, 10))
 
-fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
+fig, ax, medians = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
                              labels = labels, pairs = pairs, shiftBox = 0.1, shiftSwarm = 0.0,
-                             colorScheme = 'black', test = 'non-param' ,pointSize = 30,
+                             colorScheme = 'white', test = 'non-param' ,pointSize = 30,
                              plottingParams = plottingParams, plotTicks = plotTicks, 
                              plotChars = plotChars)
 
@@ -372,7 +380,7 @@ fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond,
 plt.ylabel('NLR', **plotChars)
 plt.xlabel(' ', **plotChars)
 # plt.tight_layout()
-plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.png').format(str(dates), str(condCat)))
+plt.savefig((dirToSave + '(0a)_{:}_{:}_NLRrainplot.pdf').format(str(dates), str(condCat)), dpi = 50)
 plt.show()
 
 
@@ -385,14 +393,16 @@ plottingParams = {'data':df,
                   'order' : condCat,
                     }
 
-fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = None, 
-                                    hueType = None, palette = palette_cond,
+fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = condCat, pairs = None, colorScheme = 'white',
+                                    hueType = None, palette = palette_cond, plotType = 'violin',
                                     labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 # plt.ylim(-3,3)
-fig.suptitle(str(dates), **plotChars)
+# fig.suptitle(str(dates), **plotChars)
 plt.yticks(**plotTicks)
 plt.xticks(**plotTicks)
+plt.ylabel('NLR')
+plt.xlabel(' ')
 plt.tight_layout()
 plt.savefig((dirToSave + '(1a)_{:}_{:}_NLImodPLot.png').format(str(dates), str(condCat)))
 plt.show()
@@ -401,8 +411,9 @@ plt.show()
 
 fig, ax = plt.subplots(figsize = (13,9))
 
-condition = 'doxy_act'
-df_comp = df[df['drug'] == condition]
+condition = 'at beads'
+df_comp = df[df[condCol] == condition]
+df_comp = df_comp.drop_duplicates()
 
 plottingParams = {'data':df_comp, 
                   'x' : 'compNum', 
@@ -412,7 +423,7 @@ plottingParams = {'data':df_comp,
                    }
 
 fig, ax, pvals = pf.boxplot_perCompression(fig, ax, condCat = np.sort(df_comp.compNum.unique()), 
-                                    pairs = None, hueType = 'date', plotType = 'swarm',
+                                    pairs = None, hueType = None, plotType = 'swarm',
                                     labels = [], plottingParams = plottingParams, plotChars = plotChars)
 
 plt.ylim(-3, 3)
@@ -606,7 +617,7 @@ y_labels = [100, 500, 2000, 5000, 10000, 50000]
 y_ticks = np.log10(np.asarray(y_labels))
 ax.set_yticks(y_ticks, labels =y_labels,**plotTicks)
 
-plt.savefig((dirToSave + '(4b)_{:}_{:}_EBoxplot_Conditions.png').format(str(dates), str(condCat)))
+# plt.savefig((dirToSave + '(4b)_{:}_{:}_EBoxplot_Conditions.png').format(str(dates), str(condCat)))
 plt.show()
 
 
@@ -623,8 +634,8 @@ plottingParams = {'data':avgDf,
                   'size' :swarmPointSize, 
                     }
 
-fig, ax = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
-                             hueType = None, palette = palette_cond,
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, 
+                             hueType = None, palette = palette_cond, colorScheme = 'white',
                              labels = labels, plottingParams = plottingParams, plotChars = plotChars)
 
 
@@ -634,10 +645,8 @@ y_labels = [100, 500, 2000, 5000, 10000, 50000]
 y_ticks = np.log10(np.asarray(y_labels))
 ax.set_yticks(y_ticks, labels =y_labels,**plotTicks)
 plt.tight_layout()
-plt.savefig((dirToSave + '(4d)_{:}_{:}_EBoxplot_cellAverage.png').format(str(dates), str(condCat)))
+# plt.savefig((dirToSave + '(4d)_{:}_{:}_EBoxplot_cellAverage.png').format(str(dates), str(condCat)))
 plt.show()
-
-
 
 #%%%% E vs H0
 fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
@@ -670,7 +679,7 @@ plt.xticks([1, 2], labels, **plotTicks)
 plt.yticks(**plotTicks)
 plt.tight_layout()
 plt.show()
-plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
+# plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
 
 
 
@@ -753,8 +762,7 @@ plt.tight_layout()
 plt.show()
 plt.savefig((dirToSave + '(12a)_{:}_{:}_{:}-{:}_PairedPlot.png').format(str(dates), str(condCat), measure, stat))
 
-
-#%%%% Point-line plots
+#%%%%  Pointplots / Pairedplots
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 condCatPoint = dfPairs[condCol, 'first'].unique()
@@ -925,20 +933,52 @@ plt.savefig((dirToSave + '(8a)_{:}_{:}_{:}_EPointplot.png').format(str(dates), s
 # plt.show()
 # plt.savefig((dirToSave + '(9b)_{:}_{:}_{:}_NLImodPointplot-Normalised.png').format(str(dates), str(condCat), stats))
 
-#%%%% Pointplots with errorbars
+plottingParams = { 'x' : (condCol, 'first'), 
+                  'y' : ('surroundingDz', 'median'),
+                  'linewidth' : 1, 
+                  'markersize' : 10,
+                  'markeredgecolor':'black', 
+                   }
 
+ylim = 1500
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-1000,1200), 
+                                          pairs = pairs, normalize = False, marker = 'first',
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+# plt.xlim((-2,3))
+plt.tight_layout()
+plt.savefig((dirToSave + '(7a)_{:}_{:}_{:}_surroundingDz.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+fig, ax = plt.subplots(figsize = (10,10))
+fig, ax, pvals, dfP_H = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-2,3), 
+                                          pairs = pairs, normalize = True, marker = 'first',
+                                          test = testH0, plottingParams = plottingParams,  palette = palette_cell_point,
+                                          plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+plt.savefig((dirToSave + '(7b)_{:}_{:}_{:}__surroundingDz-Normalised.png').format(str(dates), str(condCat), stats))
+plt.show()
+
+#%%%% Pointplots with errorbars
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 dfPairs = df[df['dateCell'].apply(lambda x : x in pairedCells)]
 
+measure = 'NLI_mod'
 plottingParams = {'x' : condCol, 
-                  'y' : 'NLI_mod',
+                  'y' : measure,
                   'data' : dfPairs,
                   'hue' : 'dateCell',
                   'dodge' : True,
-                  'palette' : palette_cell_point,
+                  'palette' : palette_cell,
                   'errorbar' : 'se'
                    }
 
 fig, ax = plt.subplots(figsize = (13,10))
+
 fig.patch.set_facecolor('black')
 
 ax = sns.pointplot(**plottingParams)
@@ -946,8 +986,9 @@ ax = sns.pointplot(**plottingParams)
 plt.xticks(**plotChars)
 plt.yticks(**plotChars)
 plt.legend(fontsize = 15, labelcolor='linecolor', bbox_to_anchor=(1.05, 1))
+plt.tight_layout()
 plt.show()
-plt.savefig((dirToSave + '(10a)_{:}_{:}_{:}_NLIPoint_Errorbar.png').format(str(dates), str(condCat), stats))
+plt.savefig((dirToSave + '(10a)_{:}_{:}_{:}_Errorbar.png').format(str(dates), str(condCat),  str(measure)))
 
 #%%%% E vs H0
 
@@ -995,23 +1036,52 @@ plt.xticks(**plotChars)
 plt.yticks(**plotChars)
 plt.show()
 
-#%%%% NLR / delta NLR vs. Angle from activation
+#%%%% NLR / Average / Delta NLR vs. Angle from activation
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
 toPlot = dfPairs.dropna(subset=[('angle_beads', 'first')])
+# toPlot = toPlot.drop(toPlot[(toPlot['activation type'] != 'side')].index)
+
+N_cols = distinctipy.get_colors(len(toPlot[('dateCell', 'first')].unique()))
 
 plottingParams = {'data' : toPlot,
                   'x' : ('angle_beads', 'first'),
                   'y' : ('NLI_mod', 'mean'),
-                  'hue' : ('activation type', 'first'),
-                  'palette' : palette_cond,
+                  'hue' : ('dateCell', 'first'),
+                  'palette' : N_cols,
                   's' : 100
                    }
 
 fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-fig, ax = pf.NLRvAngle(fig, ax, toPlot, condCat, condCol, pairedCells, 
+fig, ax = pf.NLRvAngle(fig, ax, toPlot, condCat, condCol, pairedCells, colorScheme = 'white',
                 pairs = pairs,  plotType = False, plottingParams = plottingParams,  
                 palette = palette_cond, plotChars = plotChars)
 
 
+# sns.scatterplot(**plottingParams)
+
+#%%%% NLR per comp vs. Angle from activation
+
+toPlot = df.dropna(subset=[('angle_beads')])
+toPlot = toPlot.drop_duplicates(subset=['dateCell', 'compNum'])
+
+# toPlot = toPlot.drop(toPlot[(toPlot['activation type'] != 'side')].index)
+
+# N_cols = distinctipy.get_colors(86)
+
+plottingParams = {'data' : df,
+                  'x' : ('arc_length'),
+                  'y' : ('NLI_mod'),
+                  'hue' : ('dateCell'),
+                  'palette' : N_cols,
+                  's' : 100
+                   }
+
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax = pf.NLRvAngle(fig, ax, toPlot, condCat, condCol, pairedCells, colorScheme = 'white',
+                pairs = pairs,  plotType = False, plottingParams = plottingParams,  
+                palette = palette_cond, plotChars = plotChars)
+
+ax.legend().set_visible(False)
 # sns.scatterplot(**plottingParams)

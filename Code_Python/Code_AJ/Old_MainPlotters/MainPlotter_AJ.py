@@ -5780,7 +5780,7 @@ fitWidth = 75
 
 #%% Plots for 23-02-02, 22-12-07 and 23-01-23
 
-GlobalTable = taka.getMergedTable('Global_MecaData_Chad_f15_All_23-04-22') #'_tka3_offset15pts')
+GlobalTable = taka.getMergedTable('Global_MecaData_Chad_f15_All_23-04-22', mergeUMS = False) #'_tka3_offset15pts')
 data_main = GlobalTable
 data_main['dateID'] = GlobalTable['date']
 data_main['manipId'] = GlobalTable['manipID']
@@ -7787,7 +7787,7 @@ stressRange = '200_500'
 Filters = [(data['validatedThickness'] == True),
             # (data['substrate'] == '20um fibronectin discs'), 
             # (data['drug'] == 'none'), 
-            (data['bead type'] == 'M450'),
+            # (data['bead type'] == 'M450'),
             # (data['UI_Valid'] == True),
             (data['bestH0'] <= 1900),
             # (data['date'].apply(lambda x : x in dates)),

@@ -5,17 +5,21 @@ Created on Tue May 16 11:51:36 2023
 @author: anumi
 """
 # %% > Imports and constants
-
 #### Main imports
 
 import random
+import distinctipy
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
 
-# import ptitprince as pt
+
+import ptitprince as pt
+from statannotations.Annotator import Annotator
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -27,23 +31,26 @@ import matplotlib.patches as mpatches
 #     geom_point,
 #     geom_line,
 #     geom_boxplot,
+#     geom_segment,
 #     guides,
 #     scale_fill_manual,
 #     theme,
 #     theme_classic,
 #     facet_wrap,
 #     xlim, ylim,
+#     annotate,
 #     ggtitle,
 #     scale_color_gradient,
 #     scale_fill_gradient, 
 #     scale_color_gradientn,
+#     scale_color_manual,
 #     scale_fill_gradientn,
 #     guide_colorbar
 # )
 
-# from plotnine.themes.elements import element_rect, element_text
-
-# from statannotations.Annotator import Annotator
+# from plotnine.positions import position_jitter
+# from plotnine.themes import element_rect, element_text, element_line
+# from plotnine.scales import scale_y_log10, scale_x_log10
 
 import os
 import sys
@@ -70,7 +77,7 @@ sys.path.append(cp.DirRepoPythonUser)
 
 import GraphicStyles as gs
 import UtilityFunctions as ufun
-import TrackAnalyser_V3 as taka
+import TrackAnalyser_V3_Manuscript_AJ as taka
 
 
 #### Potentially useful lines of code
@@ -87,6 +94,7 @@ pd.reset_option('display.max_rows')
 
 ####  Matplotlib
 matplotlib.rcParams.update({'figure.autolayout': True})
+plt.style.use('seaborn-v0_8')
 
 #### Graphic options
 gs.set_default_options_jv()
@@ -107,9 +115,42 @@ markerList10 = ['o', 's', 'D', '>', '^', 'P', 'X', '<', 'v', 'p']
 todayFigDir = cp.DirDataFigToday
 experimentalDataDir = cp.DirRepoExp
 
+plt.rcParams.update({
+    'font.family': 'Arial',   # Choose your font
+})
 
+SCALE_px_cm = 2.60
 
 #%% Functions
+
+def median_normalize_by_first_six(df, y):
+    # Select the first 5 compressions
+    ref = df[df['new_compNum'].between(-6, 0)][y].median()
+    # Normalize all H0 values by this reference
+    df[y + '_norm'] = df[y] / ref
+    return df
+
+def mean_normalize_by_first_six(df, y):
+    # Select the first 5 compressions
+    ref = df[df['new_compNum'].between(-6, 0)][y].mean()
+    # Normalize all H0 values by this reference
+    df[y + '_norm'] = df[y] / ref
+    return df
+
+def NLR_normalize_by_first_six(df, y):
+    # Select the first 5 compressions
+    ref = df[df['new_compNum'].between(-6, 0)][y].mean()
+    # Normalize all H0 values by this reference
+    df[y + '_norm'] = df[y] - ref
+    return df
+
+
+def normalize_by_first_five(df, y):
+    # Select the first 5 compressions
+    ref = df[df['compNum'].between(1, 5)][y].mean()
+    # Normalize all H0 values by this reference
+    df[y + '_norm'] = df[y] / ref
+    return df
 
 def dataGroup(df, groupCol = 'cellID', idCols = [], numCols = [], aggFun = 'mean'):
     agg_dict = {'date':'first',
@@ -183,6 +224,40 @@ def plotCellTimeSeriesData(cellID, fromPython = True):
 
 #%% Plotting Functions
 
+
+def NLIcorr(df):
+    data_nli = df[['cellID', 'compNum', 'NLI_mod']]
+    for i in np.unique(data_nli['cellID'].values):
+       
+        diff = []
+        dataCell = data_nli[data_nli.cellID == i]
+        for j in range(1, dataCell.compNum.max()):
+            if j in dataCell.compNum.values and j+1 in dataCell.compNum.values:
+                diffNLI = dataCell.NLI_mod[dataCell['compNum'] == j+1].values - dataCell.NLI_mod[dataCell['compNum'] == j].values
+                diff.extend(diffNLI)
+                
+            else:
+                diff.append(np.nan)
+        
+        diff = np.abs(diff).copy()
+        df.loc[dataCell.index, 'NLI_corr'] = [np.nanmean((diff))]*len(dataCell)
+    
+    return df
+
+def getSnsPalette(conditions, styleDict):
+    colors = []
+    try:
+        for co in conditions:
+            coStyle = styleDict[co]
+            if 'color' in coStyle.keys():
+                colors.append(coStyle['color'])
+            else:
+                colors.append('')
+        palette = sns.color_palette(colors)
+    except:
+        palette = sns.color_palette(gs.colorList10)
+    return(palette)
+
 def filterDf(Filters, data):
     globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
     for k in range(0, len(Filters)):
@@ -192,13 +267,22 @@ def filterDf(Filters, data):
 
 def createAvgDf(data, condCol, dataFluoPath = None, dataAnglesPath = None, e_norm = False):
     
+    try:
+        data['Chadwick_%f_15_H0_log'] = np.log10((data['Chadwick_%f_15_H0'].values))
+    except:
+        pass
     
     group_by_cell = data.groupby(['cellID'])
     agg_dict = {'H0_vwc_Full':['var', 'std', 'mean', 'count', 'median'], 
                 'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
+                'bestH0':['var', 'std', 'mean', 'count', 'median'],
+                'NLI_corr':'first',
                 'NLI_Ind':['var', 'std', 'mean', 'count'],
                 'E_eff':['var', 'std', 'mean', 'count', 'median'],
                 'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
+                'surroundingDz':['median'],
+                'surroundingDx':['median'],
+                'surroundingThickness':['median'],
                 'cellID' : 'first',
                 'cellName':'first', 
                 'NLI_Plot' : 'first', 
@@ -221,17 +305,30 @@ def createAvgDf(data, condCol, dataFluoPath = None, dataAnglesPath = None, e_nor
         agg_dict.update(added_cols)
         
     if dataAnglesPath != None:
-        added_cols = {'angle_beads' : 'first',
-                      'angle_theta' : 'first',}
+        added_cols = {'angle_beads' : ['first', 'mean'],
+                      'angle_theta' : ['first', 'mean']}
         agg_dict.update(added_cols)
-        
+    
+    try:
+        added_cols = {'E_f_<_400' : ['mean'],
+                      'E_f_<_400_log' : ['mean']}
+        agg_dict.update(added_cols)
+    except:
+        pass
+    
+    try:
+        added_cols = {'Chadwick_%f_15_H0' : ['mean'],
+                      'Chadwick_%f_15_H0_log' : ['mean']}
+        agg_dict.update(added_cols)
+    except:
+        pass
         
     avgDf = group_by_cell.agg(agg_dict)
 
-    avgDf_wE = group_by_cell.agg({'compNum' : ['count'], 'wE_eff':[ 'sum'], 
+    avgDf_wE = group_by_cell.agg({'compNum' : ['count'], 'wE_eff_log':[ 'sum'], 
                                  'weights_E_eff': ['sum']})
     
-    avgDf_wE[('E_eff', 'wAvg')] = avgDf_wE['wE_eff', 'sum'] / avgDf_wE['weights_E_eff', 'sum']
+    avgDf_wE[('E_eff_log', 'wAvg')] = avgDf_wE['wE_eff_log', 'sum'] / avgDf_wE['weights_E_eff', 'sum']
     
     avgDf = avgDf.join(avgDf_wE)
     
@@ -247,7 +344,8 @@ def dfCellPairs(avgDf):
     dfPairs = avgDf[(avgDf[('dateCell', 'first')].apply(lambda x : x in pairedCells))]
     return dfPairs.copy(), pairedCells
 
-def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAnglesPath = None):
+def createDataTable(GlobalTable, fitsSubDir = None, dataFluoPath = None,
+                    dataActPath = None, dataAnglesPath = None, dataBlebPath = None):
 
     data_main = GlobalTable
     
@@ -279,6 +377,8 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
     
     data_main['bestH0_log'] = np.log10(GlobalTable['H0_vwc_Full'].values)
     data_main['E_eff_log'] = np.log10(GlobalTable['E_eff'].values)
+    data_main['weights_E_eff_log'] = np.log10(data_main['E_eff']) / np.log10(data_main['ciwE_eff'])**2
+    data_main['wE_eff_log'] =  data_main['E_eff_log'] * data_main['weights_E_eff_log']
     
     NLItypes = ['linear', 'intermediate', 'non-linear']
     for i in NLItypes:
@@ -304,20 +404,35 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
     data_main['normFluctu'] = data_main['ctFieldFluctuAmpli'] /  data_main['ctFieldThickness']
     
     data_nli = data_main[['cellID', 'compNum', 'NLI_mod']]
-
-    for i in data_nli['cellID'].values:
-        diff = []
-        dataCell = data_nli[data_nli.cellID == i]
-        for j in range(1, dataCell.compNum.max()):
-            if j in dataCell.compNum.values and j+1 in dataCell.compNum.values:
-                diffNLI = dataCell.NLI_mod[dataCell['compNum'] == j+1].values - dataCell.NLI_mod[dataCell['compNum'] == j].values
-                diff.extend(diffNLI)
-            else:
-                diff.append(np.nan)
+    
+    try:
+        data_main['E_f_<_400_log'] = np.log10((GlobalTable['E_f_<_400'].values))
+    except:
+        pass
+    
+    if fitsSubDir != None:
+        df_h0 = taka.getMatchingFits(data_main, fitsSubDir = fitsSubDir, fitType = 'H0')
+        h0_method = ['Chadwick', '%f_15']
+        df_h0 = df_h0[(df_h0['method'] == h0_method[0]) & (df_h0['zone'] == h0_method[1])]
+        data_main = pd.merge(data_main, df_h0[['cellID', 'compNum', 'H0', 'nbPts']], on = ['cellID', 'compNum'], how = 'left')
+        data_main = data_main.rename(columns={'H0':'{:}_{:}_H0'.format(h0_method[0], h0_method[1])})
+    
+    
+    # for i in data_nli['cellID'].values:
+    #     diff = []
+    #     dataCell = data_nli[data_nli.cellID == i]
+    #     for j in range(1, dataCell.compNum.max()):
+    #         if j in dataCell.compNum.values and j+1 in dataCell.compNum.values:
+    #             diffNLI = dataCell.NLI_mod[dataCell['compNum'] == j+1].values - dataCell.NLI_mod[dataCell['compNum'] == j].values
+    #             diff.extend(diffNLI)
+    #             print(i)
+    #         else:
                 
-        diff = np.ma.array(diff, mask=np.isnan(diff), fill_value=None)
-        # data_nli.loc[dataCell.index, 'NLI_corr'] = [np.sqrt(np.mean(diff**2) / len(dataCell))]*len(dataCell)
-        data_main.loc[dataCell.index, 'NLI_corr'] = [np.mean(np.absolute(diff))]*len(dataCell)
+    #             diff.extend(np.nan)
+        
+    #     diff = np.ma.array(diff, mask=np.isnan(diff), fill_value=np.nan)
+    #     # data_nli.loc[dataCell.index, 'NLI_corr'] = [np.sqrt(np.mean(diff**2) / len(dataCell))]*len(dataCell)
+    #     data_main.loc[dataCell.index, 'NLI_corr'] = [np.mean(np.absolute(diff))]*len(dataCell)
     
     
     if dataFluoPath != None:
@@ -330,8 +445,23 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
             dataCell = data_main.loc[data_main['cellID'] == i, 'activation type']
             data_main.loc[data_main['cellID'] == i, 'activation type']  = list(dataAct.loc[dataAct['cellID'] == i, 'activation type'])*len(dataCell)
         
-    data_main['activation type'] = data_main['activation type'].fillna('none')
+    data_main['activation type'] = data_main['activation type'].fillna('no light')
+    data_main['activation frequency'] = data_main['activation frequency'].fillna(0)
+    data_main['first activation'] = data_main['first activation'].fillna(-1)
     
+    # if dataAnglesPath != None:
+    #     allFilesAngles = os.listdir(dataAnglesPath)
+    #     allFilesAngles = [i for i in allFilesAngles if '_ComputedAngles.csv' in i]
+    #     angleFile_compiled = []
+    #     for i in allFilesAngles:
+    #         angleFilename = os.path.join(dataAnglesPath, i)
+    #         angleFile = pd.read_csv(angleFilename, sep = ';')
+    #         angleFile_compiled.append(angleFile)
+        
+    #     finalAnglesFile = pd.concat(angleFile_compiled, ignore_index=True)
+    #     finalAnglesFile = finalAnglesFile.drop(columns=['cellID'])
+    #     data_main = pd.merge(data_main, finalAnglesFile, on=['dateCell'], how='left')
+        
     if dataAnglesPath != None:
         allFilesAngles = os.listdir(dataAnglesPath)
         allFilesAngles = [i for i in allFilesAngles if '_ComputedAngles.csv' in i]
@@ -342,9 +472,23 @@ def createDataTable(GlobalTable, dataFluoPath = None, dataActPath = None, dataAn
             angleFile_compiled.append(angleFile)
         
         finalAnglesFile = pd.concat(angleFile_compiled, ignore_index=True)
-        finalAnglesFile = finalAnglesFile.drop(columns=['cellID'])
-        data_main = pd.merge(data_main, finalAnglesFile, on=['dateCell'], how='left')
-                
+        finalAnglesFile = finalAnglesFile.drop(columns=['dateCell'])
+        data_main = pd.merge(data_main, finalAnglesFile, on=['cellID', 'compNum'], how='left')
+    
+    if dataBlebPath != None:
+        dataBleb = pd.read_csv(dataBlebPath, sep = ';')
+        data_main['blebStatus'] = 0  # Initializing with 0
+        
+        # Loop through each row and update new_column based on compNum threshold
+        for index, row in dataBleb.iterrows():
+            cell_id = row['cellID']
+            comp_num = row['compNum']
+            
+
+            data_main.loc[(data_main['cellID'] == cell_id) & (data_main['compNum'] >= comp_num), 'blebStatus'] = 1
+        
+
+        
     return data_main
 
 def plotNLI_Scatter(fig, ax, data, dates, condCat, condCol, pairs, labels = [],  
@@ -761,7 +905,7 @@ def NLIPairsvFluctu(fig, ax, dfPairs, condCol, condCat, palette = sns.color_pale
     ax.set_xlabel('Activity', **plotChars)
     return fig, ax
      
-def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 2*10**3), ylim = (100, 10**5),
+def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 2*10**3),
           palette = sns.color_palette("tab10"), h_ref = 600, colorScheme = 'black'):
     
     
@@ -770,7 +914,8 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
         fig.patch.set_facecolor('black')
         fontColor = '#ffffff'
     else: 
-        plt.style.use('default')
+        # plt.style.use('default')
+        plt.style.use('seaborn-v0_8')
         fontColor = '#000000'
 
     idx = 0
@@ -818,17 +963,20 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
             fit_y = k * fit_x**a
             
             pval = results.pvalues[1] # pvalue on the param 'a'
-            eqnText += " Y = {:.1e} * X^{:.1f}".format(k, a)
+            # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, a)
+
+
             eqnText += "\np-val = {:.3f}".format(pval)
             ax.scatter(x , y, color = palette[idx], label = m, s = 100)
-            ax.plot(fit_x, fit_y, label =  eqnText, linestyle = '--', linewidth = 6,
-                    color = palette[idx])
-            ax.plot(fit_x, fit_y, label =  eqnText, linestyle = '--', linewidth = 8,
+            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 5,
                     color = 'k')
+            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 2.5,
+                    color = palette[idx])
             
             
             idx = idx + 1
             
+        plt.text(0.5, 0.9, eqnText, fontsize=12, ha='center', fontweight='bold', transform=plt.gca().transAxes)
         plt.legend(fontsize = 12, ncol = len(mechanicsType))
         
     elif hueType == condCol:
@@ -836,53 +984,73 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
         for m in condCat:
             eqnText = ''
             toPlot = data[(data[condCol] == m)]
-            toPlot = toPlot.dropna(subset=['H0_vwc_Full', 'E_eff'])
-            x, y = toPlot['H0_vwc_Full'].values, toPlot['E_eff'].values
+            # toPlot = toPlot.dropna(subset=['H0_vwc_Full', 'E_eff'])
+            # x, y = toPlot['H0_vwc_Full'].values, toPlot['E_eff'].values
+            
+            toPlot = toPlot.dropna(subset=['bestH0_log', 'E_eff_log'])
+            x, y = toPlot['bestH0_log'].values, toPlot['E_eff_log'].values
+            
+            # toPlot = toPlot.dropna(subset=['Chadwick_%f_15_H0_log', 'E_f_<_400_log'])
+            # x, y = toPlot['Chadwick_%f_15_H0_log'].values, toPlot['E_f_<_400_log'].values
             
             
-            params, results = ufun.fitLineHuber((np.log(x)), np.log(y))
-            k = np.exp(params[0])
+            params, results = ufun.fitLineHuber(x,y)
+
+            k = (params[0])
             a = params[1]
             
             fit_x = np.linspace(np.min(x), np.max(x), 50)
-            fit_y = k * fit_x**a
+            # fit_y = k * fit_x**a
+            fit_y = a * fit_x + k
+            
+            fit_y = 10**fit_y
+            fit_x = 10**fit_x
             
             pval = results.pvalues[1] # pvalue on the param 'a'
-            eqnText += " Y = {:.1e} * X^{:.1f}".format(k, a)
+            eqnText += " Fit y = m * x + c\n".format(a, k)
+            eqnText += " y = {:.1e} * x + {:.1f}".format(a, k)
+
+            # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, a)
             eqnText += "\np-val = {:.3f}".format(pval)
             
-            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 8,
-                    color = 'k')
-            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 6,
-                    color = palette[idx])
+            # ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 5,
+            #         color = 'k')
+            # ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 2.5,
+            #         color = palette[idx])
             
-            toPlot['E_norm'] = toPlot['E_eff'] * (h_ref/toPlot['H0_vwc_Full'])**a
-                
-            
+            toPlot['E_norm'] = toPlot['E_eff'] * (h_ref/toPlot['bestH0'])**a
             
             data.loc[(data[condCol] == m), 'E_norm'] = toPlot['E_norm']
 
-            ax.scatter(x , y, color = palette[idx], label = m, s = 100, alpha = 0.5)
+            ax.scatter(10**x , 10**y, color = palette[idx], label = m, s =30, alpha = 0.5)
+            ax.plot(fit_x, fit_y,  linewidth = 3,
+                    color = 'k')
+            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 1.5,
+                    color = palette[idx])
             idx = idx + 1
+            
+        ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0., fontsize = 11)
             
         # plt.legend(fontsize = 12, ncol = len(condCat))
 
     ax.set_yscale('log')
     ax.set_xscale('log')
-    ax.set_ylim(ylim)
-    ax.set_xlim(xlim)
-    ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
-    ax.set_xlabel('BestH0 (nm)', fontsize=30, color = fontColor)
-    plt.xticks(fontsize=25, color = fontColor)
-    plt.yticks(fontsize=25, color = fontColor)
-
+    # ax.set_ylim(ylim)
+    # ax.set_xlim(xlim)
+    # ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
+    # ax.set_xlabel('BestH0 (nm)', fontsize=30, color = fontColor)
+    # plt.xticks(fontsize=25, color = fontColor)
+    # plt.yticks(fontsize=25, color = fontColor)
+    
+    y_labels = np.asarray([100, 500, 1000, 3000, 10000, 25000])
+    # y_ticks = np.log10(y_labels)
+    ax.set_yticks(y_labels, labels = (y_labels)/1000)
+    
     x_ticks = [100, 250, 500, 1000, 1500]
-    ax.set_xticks(x_ticks, labels =x_ticks, fontsize=25, color = fontColor)
+    ax.set_xticks(x_ticks, labels =x_ticks)
 
-    y_ticks = [100, 1000, 5000, 10000, 50000, 10**5]
-    ax.set_yticks(y_ticks, labels =y_ticks, fontsize=25, color = fontColor)
 
-    plt.show()
+    # plt.show()
     return fig, ax, data.copy()
 
 def pairedplot_wfluo(dfPairs, condCol, condCat, measure, stat, pairs, test='two-sided', y_limits = None,
@@ -953,9 +1121,255 @@ def pairedplot_wfluo(dfPairs, condCol, condCat, measure, stat, pairs, test='two-
     return plot, pvals
 
 
+def plotnine_jitter(avgDf, condCol, condCat, measure, stat, pairs, palette, pointSize = 3,
+                       figsize=(17/SCALE_px_cm, 10/SCALE_px_cm), y_limits=None, logScale = False,
+                      plotChars={}, plotTicks={}):
+    
+    lsize = 0.65
+    fill_alpha = 0.8
+    
+    # Prepare the data frame for plotting
+    x, y = (condCol, 'first'), (measure, stat)
+    
+    avgDf_plot = avgDf[[x, y]]
+    avgDf_plot.columns = [x[0], y[0]]
+    # print(avgDf_plot)
+    avgDf_plot[condCol] = pd.Categorical(avgDf_plot[condCol], categories=condCat, ordered=True)
+    # avgDf_plot = avgDf_plot.dropna(subset=[measure, condCol, condCat])
+    
+    # Calculate median for each group
+    df_median = avgDf_plot.groupby(condCol)[measure].median().reset_index()
+
+    # Add x positions for the median lines
+    df_median['x'] = pd.factorize(df_median[condCol])[0] + 1
+    df_median['xend'] = df_median['x'] + .25  # Adjusted to shorten the median line length
+    df_median['x'] = df_median['x'] - .25  # Adjusted to shorten the median line length
+
+    # Set shift for jittering
+    shift = 0.3
+    
+    def rgb_to_hex(rgb):
+        # Convert RGB to hex
+        rgb = [int(c * 255) for c in rgb]
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+    def alt_sign(x):
+        # Helper function to alternate signs
+        return (-1) ** x
+    
+    # Convert palette to hex
+    palette_hex = [rgb_to_hex(rgb) for rgb in palette]
+    
+    avgDf_plot['fill_color'] = avgDf_plot[condCol].map(dict(zip(condCat, palette_hex)))
+    
+    
+    if pairs != None:
+        p_values = {}
+        for (group1, group2) in pairs:
+            group1_data = avgDf_plot[avgDf_plot[condCol] == group1][measure]
+            group2_data = avgDf_plot[avgDf_plot[condCol] == group2][measure]
+            t_stat, p_value = st.mannwhitneyu(group1_data, group2_data)
+            p_values[(group1, group2)] = p_value
+
+    
+    # Build the plot
+    plot = (
+        ggplot(avgDf_plot, aes(x=condCol, y=measure, fill=condCol, color = condCol))
+        + geom_point(position=position_jitter(width=0.10, height=0.0), color='#000000', alpha=fill_alpha, size=pointSize)  # Decreased jitter
+        + geom_boxplot(width=shift, alpha=0, size=lsize, color="black", fill="none")  # Hollow boxplot: color for lines and no fill
+        + scale_fill_manual(values=dict(zip(condCat, palette_hex))) 
+        + geom_segment(
+            mapping=aes(x="x", xend="xend", y=measure, yend=measure),  # Corrected to use 'measure' as y-axis
+            data=df_median, size=1, color='red')  # Directly setting color to red
+        + guides(fill=False)
+        + theme_classic()
+        + theme(figure_size=figsize)
+        + theme(
+            plot_background=element_rect(fill='white'),  # Set plot background to white
+            axis_text=element_text(color='black'),
+            axis_ticks=element_line(color='black'),
+            # panel_grid_major_y=element_line(color='lightgray', size=0.5),  # Light gray horizontal gridlines
+            # panel_grid_minor_y=element_line(color='lightgray', size=0.5),  # Light gray minor gridlines
+            panel_grid_major_y=element_line(color='lightgrey', size=0.5),
+        )
+    )
+
+
+    # Add y limits if provided
+    if y_limits != None:
+        plot += ylim(y_limits[0], y_limits[1])
+        
+    if logScale and measure == 'bestH0_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        ticks = np.asarray([10, 100, 250, 500, 1000, 1200])
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
+    elif logScale and measure == 'E_eff_log' or measure == 'E_f_<_400_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        ticks = np.asarray([500, 1000, 2500, 5000, 10000, 20000, 30000])
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i/1000) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
+        
+    
+    if pairs != None:
+        spacing_offset = 0.15  # Vertical space between different p-value lines
+
+        # Add p-value annotations and bars across the compared groups
+        max_y = avgDf_plot[measure].max()  # Get the maximum y value for positioning
+    
+        for i, ((group1, group2), p_value) in enumerate(p_values.items()):
+            condCatlist = list(condCat)
+            # Get the x positions of the groups being compared
+            x1 = condCatlist.index(group1) + 1
+            x2 = condCatlist.index(group2) + 1
+    
+            # Calculate dynamic y position for each comparison, based on index
+            y_position = max_y + spacing_offset * (i + 1)
+    
+            # Add a bar between the groups at the dynamic y position
+            plot += geom_segment(
+                aes(x=x1, xend=x2, y=y_position, yend=y_position),
+                color="black", size=0.2
+            )
+    
+            # Annotate the p-value above the bar at the dynamic y position
+            plot += annotate('text', x=(x1 + x2) / 2, y=y_position + 0.05,
+                             label=f'p = {p_value:.3f}', color='black', size=10, ha='center')
+
+
+    # Title and labels
+    plot.draw()
+    # plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test, **plotChars)
+    plt.tight_layout()
+    plt.ylabel(measure + ', ' + stat, **plotChars)
+    plt.xlabel(condCol, **plotChars)
+
+    return plot, df_median
+
+
+def norm_pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-sided',
+               figsize = (12/SCALE_px_cm,10/SCALE_px_cm), y_limits = None, logScale = False,
+               palette = sns.color_palette("tab10"), plotChars = {}, plotTicks = {}):
+    
+
+    lsize = 0.65
+    fill_alpha = 0.7
+    
+
+    x, y = (condCol, 'first'), (measure, stat)
+    dfPairsPlot = dfPairs[[x, y, ('dateCell', 'first')]]
+    dfPairsPlot.columns = [x[0], y[0], 'dateCell']
+    
+
+    x, y = x[0], y[0]
+    if 'NLI' in y:
+        dfPairsPlot[y] = (dfPairsPlot[y].values)
+    elif 'log' in y:
+        dfPairsPlot[y] = 10**(dfPairsPlot[y].values)
+        
+    dfPairsPlot[condCol] = pd.Categorical(dfPairsPlot[condCol], categories=condCat, ordered=True)
+    
+    print(x)
+    
+    shift = 0.2
+    
+    def rgb_to_hex(rgb):
+        # Ensure RGB values are in the range [0, 1]
+        rgb = [int(c * 255) for c in rgb]
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+    def alt_sign(x):
+        return (-1) ** x
+    
+    
+    palette_hex = [rgb_to_hex(rgb) for rgb in palette]
+    m1 = aes(x=stage(condCol, after_scale="x+shift*alt_sign(x)"))  # shift outward
+    m2 = aes(x=stage(condCol, after_scale="x-shift*alt_sign(x)"), group="dateCell")  # shift inward
+    
+    dfPairsPlot[('normMeasure')] = np.nan
+
+    # Extract the paired cells from the 'first' column in the MultiIndex
+    pairedCells = dfPairsPlot[('dateCell')].unique().to_numpy()  # Using unique() to avoid duplicate processing
+
+    # Loop over pairs and the cells
+    
+    for pair in pairs:
+        for cell in pairedCells:
+           if y != 'NLI_mod': 
+                # Get the measurement for the first condition (pair[0]) for the given cell
+                c1 = dfPairsPlot[y][(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[0])].values
+                
+                # Get the measurement for the second condition (pair[1]) for the given cell
+                c2 = dfPairsPlot[y][(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[1])].values
+                
+                # Avoid division by zero
+                if len(c1) > 0 and len(c2) > 0:
+                    ratio = np.round(c2 / c1, 3)
+                    # Update the 'normMeasure' column with the ratio for the second condition (pair[1])
+                    dfPairsPlot.loc[(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[0]), ('normMeasure')] = 1
+                    dfPairsPlot.loc[(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[1]), ('normMeasure')] = ratio
+                    
+                
+           elif 'NLI' in y:
+                
+                # Get the measurement for the first condition (pair[0]) for the given cell
+                c1 = dfPairsPlot[y][(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[0])].values
+                # print(c1)
+                # Get the measurement for the second condition (pair[1]) for the given cell
+                c2 = dfPairsPlot[y][(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[1])].values
+                
+                # Avoid division by zero
+                if len(c1) > 0 and len(c2) > 0:
+                    new_c1 = c1 - c1
+                    norm = c2 - c1
+                    # Update the 'normMeasure' column with the ratio for the second condition (pair[1])
+                    dfPairsPlot.loc[(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[0]), ('normMeasure')] = new_c1
+                    dfPairsPlot.loc[(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[1]), ('normMeasure')] = norm
+    
+    plot = (
+    ggplot(dfPairsPlot, aes(x, 'normMeasure', fill=condCol))
+    # + geom_violin(m1, style="left-right", alpha=fill_alpha, size=lsize)
+    + geom_point(m2, color="none", alpha=fill_alpha, size=4)
+    + geom_line(m2, color="gray", size=lsize, alpha=0.6)
+    + geom_boxplot(width=shift, alpha=fill_alpha, size=lsize)    
+    + scale_fill_manual(values=palette_hex)
+    + guides(fill=False)  
+    + theme_classic()
+    + theme(figure_size=figsize)
+    + theme(
+        plot_background=element_rect(fill='white'),  # Set plot background to black
+        axis_text=element_text(color='black'),
+        axis_ticks=element_line(color='black'), 
+        panel_grid_major_y=element_line(color='lightgrey', size=0.5),
+    )
+    )
+    
+    if y_limits:
+        plot += ylim(y_limits[0], y_limits[1])
+    
+    
+    # if logScale and measure == 'bestH0_log' or  measure == 'Chadwick_%f_15_H0_log':
+    #     plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+    #     ticks  =  np.asarray([100 ,250, 500, 1000, 1500])
+
+
+    #     plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
+    # elif logScale and measure == 'E_eff_log' or  measure == 'E_f_<_400_log':
+    #     plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+    #     ticks  = [100, 500, 2000, 5000, 10000,25000, 50000]
+
+    #     plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i/1000) for i in ticks])  #
+        
+    plot.draw()
+    # plt.style.use('seaborn-v0_8')
+    # plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test , **plotChars)
+    plt.tight_layout()
+
+    plt.ylabel(measure + ', ' + stat, **plotChars)
+    plt.xlabel(condCol, **plotChars)
+
+    return plot, dfPairsPlot
 
 def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-sided',
-               figsize = (7,6), y_limits = None,
+               figsize = (12/SCALE_px_cm,10/SCALE_px_cm), y_limits = None, logScale = False,
                palette = sns.color_palette("tab10"), plotChars = {}, plotTicks = {}):
     
 
@@ -971,20 +1385,36 @@ def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-side
 
     dfPairsPlot[condCol] = pd.Categorical(dfPairsPlot[condCol], categories=condCat, ordered=True)
     
-    pvals = []
-    for pair in pairs:
-        a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
-        b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
-        res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
-        pvals.append(res[1])
+    
+    # pvals = []
+    # for pair in pairs:
+    #     a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
+    #     b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
+    #     res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
+    #     pvals.append(res[1])
         
     shift = 0.1
+    
+    def rgb_to_hex(rgb):
+        # Ensure RGB values are in the range [0, 1]
+        rgb = [int(c * 255) for c in rgb]
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
 
     def alt_sign(x):
         return (-1) ** x
-
+    
+    
+    palette_hex = [rgb_to_hex(rgb) for rgb in palette]
     m1 = aes(x=stage(condCol, after_scale="x+shift*alt_sign(x)"))  # shift outward
     m2 = aes(x=stage(condCol, after_scale="x-shift*alt_sign(x)"), group="dateCell")  # shift inward
+    
+    if pairs != None:
+        p_values = {}
+        for (group1, group2) in pairs:
+            group1_data = dfPairsPlot[dfPairsPlot[condCol] == group1][measure]
+            group2_data = dfPairsPlot[dfPairsPlot[condCol] == group2][measure]
+            t_stat, p_value = wilcoxon(group2_data, group1_data, alternative=test, zero_method = 'wilcox')
+            p_values[(group1, group2)] = p_value
 
     plot = (
     ggplot(dfPairsPlot, aes(x[0], y[0], fill=condCol))
@@ -992,30 +1422,191 @@ def pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-side
     + geom_point(m2, color="none", alpha=fill_alpha, size=4)
     + geom_line(m2, color="gray", size=lsize, alpha=0.6)
     + geom_boxplot(width=shift, alpha=fill_alpha, size=lsize)
-    + scale_fill_manual(values=palette)
+    + scale_fill_manual(values=palette_hex)
     + guides(fill=False)  
     + theme_classic()
     + theme(figure_size=figsize)
     + theme(
-        plot_background=element_rect(fill='black'),  # Set plot background to black
-        axis_text=element_text(color='white'),
+        plot_background=element_rect(fill='white'),  # Set plot background to black
+        axis_text=element_text(color='black'),
+        axis_ticks=element_line(color='black'), 
+        panel_grid_major_y=element_line(color='lightgrey', size=0.5),
     )
     )
     
     if y_limits:
         plot += ylim(y_limits[0], y_limits[1])
-
     
+    
+    if pairs != None:
+        spacing_offset = 0.15  # Vertical space between different p-value lines
+
+        # Add p-value annotations and bars across the compared groups
+        max_y = dfPairsPlot[measure].max()  # Get the maximum y value for positioning
+    
+        for i, ((group1, group2), p_value) in enumerate(p_values.items()):
+            condCatlist = list(condCat)
+            # Get the x positions of the groups being compared
+            x1 = condCatlist.index(group1) + 1
+            x2 = condCatlist.index(group2) + 1
+    
+            # Calculate dynamic y position for each comparison, based on index
+            y_position = max_y + spacing_offset * (i + 1)
+    
+            # Add a bar between the groups at the dynamic y position
+            plot += geom_segment(
+                aes(x=x1, xend=x2, y=y_position, yend=y_position),
+                color="black", size=0.2
+            )
+    
+            # Annotate the p-value above the bar at the dynamic y position
+            plot += annotate('text', x=(x1 + x2) / 2, y=y_position + 0.05,
+                             label=f'p = {p_value:.3f}', color='black', size=15, ha='center')
+    
+    
+    if logScale and measure == 'bestH0_log' or  measure == 'Chadwick_%f_15_H0_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        ticks  =  np.asarray([100 ,250, 500, 1000, 1500])
+
+
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
+    elif logScale and measure == 'E_eff_log' or  measure == 'E_f_<_400_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        # plot += ylim(100, 50000)
+        ticks  = [100, 500, 2000, 5000, 10000,25000, 50000]
+
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i/1000) for i in ticks])  #
+        # plot += scale_y_log10()  #
+
+        
     plot.draw()
-    plt.style.use('seaborn-v0_8')
-    plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test , **plotChars)
+    # plt.style.use('seaborn-v0_8')
+    # plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test , **plotChars)
     plt.tight_layout()
 
     plt.ylabel(measure + ', ' + stat, **plotChars)
     plt.xlabel(condCol, **plotChars)
 
-    return plot, pvals
+    return plot
 
+def pairedplot_woHisto(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two-sided',
+               figsize = (12/SCALE_px_cm,10/SCALE_px_cm), y_limits = None, logScale = False,
+               palette = sns.color_palette("tab10"), plotChars = {}, plotTicks = {}):
+    
+
+    lsize = 0.65
+    fill_alpha = 0.7
+    
+    # if measure == 'E_eff_log':
+    #     dfPairs[('E_eff_log', stat)] = 10**(dfPairs[('E_eff_log', stat)].values)
+    
+    x, y = (condCol, 'first'), (measure, stat)
+    dfPairsPlot = dfPairs[[x, y, ('dateCell', 'first')]]
+    dfPairsPlot.columns = [x[0], y[0], 'dateCell']
+
+    dfPairsPlot[condCol] = pd.Categorical(dfPairsPlot[condCol], categories=condCat, ordered=True)
+    
+    # pvals = []
+    # for pair in pairs:
+    #     a1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[0]].values
+    #     b1 = dfPairsPlot[y[0]][dfPairsPlot[condCol] == pair[1]].values
+    #     res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
+    #     pvals.append(res[1])
+        
+    shift = 0.2
+    
+    def rgb_to_hex(rgb):
+        # Ensure RGB values are in the range [0, 1]
+        rgb = [int(c * 255) for c in rgb]
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
+
+    def alt_sign(x):
+        return (-1) ** x
+    
+    palette_hex = [rgb_to_hex(rgb) for rgb in palette]
+    m1 = aes(x=stage(condCol, after_scale="x+shift*alt_sign(x)"))  # shift outward
+    m2 = aes(x=stage(condCol, after_scale="x-shift*alt_sign(x)"), group="dateCell")  # shift inward
+    
+    if pairs != None:
+        p_values = {}
+        for (group1, group2) in pairs:
+            group1_data = dfPairsPlot[dfPairsPlot[condCol] == group1][measure]
+            group2_data = dfPairsPlot[dfPairsPlot[condCol] == group2][measure]
+            t_stat, p_value = wilcoxon(group2_data, group1_data, alternative=test, zero_method = 'wilcox')
+            p_values[(group1, group2)] = p_value
+
+    plot = (
+    ggplot(dfPairsPlot, aes(x[0], y[0], fill=condCol))
+    # + geom_violin(m1, style="left-right", alpha=fill_alpha, size=lsize)
+    + geom_point(m2, color="none", alpha=fill_alpha, size=4)
+    + geom_line(m2, color="gray", size=lsize, alpha=0.6)
+    + geom_boxplot(width=shift, alpha=fill_alpha, size=lsize)
+    + scale_fill_manual(values=palette_hex)
+    + guides(fill=False)  
+    + theme_classic()
+    + theme(figure_size=figsize)
+    + theme(
+        plot_background=element_rect(fill='white'),  # Set plot background to black
+        axis_text=element_text(color='black'),
+        axis_ticks=element_line(color='black'), 
+        panel_grid_major_y=element_line(color='lightgrey', size=0.5),
+    )
+    )
+    
+    if y_limits:
+        plot += ylim(y_limits[0], y_limits[1])
+    
+    
+    if pairs != None:
+        spacing_offset = 0.15  # Vertical space between different p-value lines
+
+        # Add p-value annotations and bars across the compared groups
+        max_y = dfPairsPlot[measure].max()  # Get the maximum y value for positioning
+    
+        for i, ((group1, group2), p_value) in enumerate(p_values.items()):
+            condCatlist = list(condCat)
+            # Get the x positions of the groups being compared
+            x1 = condCatlist.index(group1) + 1
+            x2 = condCatlist.index(group2) + 1
+    
+            # Calculate dynamic y position for each comparison, based on index
+            y_position = max_y + spacing_offset * (i + 1)
+    
+            # Add a bar between the groups at the dynamic y position
+            plot += geom_segment(
+                aes(x=x1, xend=x2, y=y_position, yend=y_position),
+                color="black", size=0.2
+            )
+    
+            # Annotate the p-value above the bar at the dynamic y position
+            plot += annotate('text', x=(x1 + x2) / 2, y=y_position + 0.05,
+                             label=f'p = {p_value:.3f}', color='black', size=15, ha='center')
+    
+    
+    if logScale and measure == 'bestH0_log' or  measure == 'Chadwick_%f_15_H0_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        ticks  =  np.asarray([100 ,250, 500, 1000, 1500])
+
+
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
+    elif logScale and measure == 'E_eff_log' or  measure == 'E_f_<_400_log':
+        plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
+        # plot += ylim(100, 50000)
+        ticks  = [100, 500, 2000, 5000, 10000,25000, 50000]
+
+        plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i/1000) for i in ticks])  #
+        # plot += scale_y_log10()  #
+
+        
+    plot.draw()
+    # plt.style.use('seaborn-v0_8')
+    # plt.title('p = ' + str(np.round(pvals, 4)) + ' | ' + test , **plotChars)
+    plt.tight_layout()
+
+    plt.ylabel(measure + ', ' + stat, **plotChars)
+    plt.xlabel(condCol, **plotChars)
+
+    return plot
 
 def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [], pairs = None, 
              colorScheme = 'black', test = 'non-param', pointSize = 2,
@@ -1048,7 +1639,7 @@ def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [
         y = plotDf[measure]
         
         # Add the rain using the scatter method.
-        ax.scatter(x, y, color = palette[i], s=pointSize, linewidth=1,
+        ax.scatter(x, y, color = palette[i], s=pointSize, linewidth=0.5,
                    edgecolor = 'k', alpha = 0.6)
 
     boxplot_data = [df[df[condCol] == condition][measure].values 
@@ -1058,8 +1649,8 @@ def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [
     POSITIONS = [shiftBox + pos for pos in range(len(condCat))]
     medianprops = {"linewidth": 2, "color": "#FF0000", "solid_capstyle": "butt"}
     # The style of the box ... This is also used for the whiskers
-    boxprops = {"linewidth": 1.5, "color": "#4a4a4a"}
-    ax.boxplot(
+    boxprops = {"linewidth": 1, "color": "#4a4a4a"}
+    boxplot = ax.boxplot(
         boxplot_data, 
         positions=POSITIONS, 
         manage_ticks=False,
@@ -1069,7 +1660,9 @@ def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [
         whiskerprops = boxprops,
         boxprops = boxprops
     )
-
+    
+    medians = [median.get_ydata()[0] for median in boxplot['medians']]
+    
     pvals = []
     if pairs != None:
         for pair in pairs:
@@ -1095,7 +1688,7 @@ def rainplot(fig, ax,  condCat, palette = sns.color_palette("tab10"), labels = [
     plt.ylabel(measure, **plotChars)
     plt.xlabel(condCol, **plotChars)
     
-    return fig, ax
+    return fig, ax, medians
     
     
 def NLR_distplot(condCat, palette = sns.color_palette("tab10"), 
@@ -1157,6 +1750,7 @@ def boxplot_perCompressionLog(fig, ax, condCat, hueType = None, palette = sns.co
                              boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.1})
             
         elif plotType == 'violin':
+            plt.grid(color = '#bcbcbc')
             ax = sns.violinplot(hue = hueType, palette = palette,  **plottingParams) 
             
         plt.legend(loc=2, prop={'size': 16}, ncol = 3)
@@ -1218,7 +1812,7 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
         fig.patch.set_facecolor('black')
         fontColor = plotChars['color']
     else: 
-        plt.style.use('default')
+        plt.style.use('seaborn-v0_8-darkgrid')
         fontColor = '#000000'
     
     measure = plottingParams['y']
@@ -1247,7 +1841,7 @@ def boxplot_perCompression(fig, ax, condCat, hueType = None, palette = sns.color
         if plotType == 'swarm':
             ax = sns.swarmplot(hue = hueType, palette = palette, **plottingParams) 
             ax = sns.boxplot(data = df, x = condCol, y = measure, color = 'grey',  order = condCat,
-                             medianprops={"color": 'darkred', "linewidth": 2},
+                             medianprops={"color": 'darkred', "linewidth": 2}, 
                              boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.1})
             
         elif plotType == 'violin':
@@ -1308,7 +1902,7 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
         fig.patch.set_facecolor('black')
         fontColor = plotChars['color']
     else: 
-        plt.style.use('default')
+        plt.style.use('seaborn-v0_8-darkgrid')
         fontColor = plotChars['color']
         
     measure = plottingParams['y']
@@ -1333,16 +1927,18 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
         plt.legend(loc=2, prop={'size': 7}, ncol = len(condCat))
         
     ax = sns.boxplot(data = avgDf, x = condCol, y = measure, palette = palette,
-                     color = 'grey',  order = condCat,
+                      order = condCat, 
                      medianprops={"color": '#FF0000', "linewidth": 2},
-                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.3})
+                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha':0.2})
     
     
+    medians = []
     pvals = []
     if pairs != None:
         for pair in pairs:
             a1 = avgDf[measure][avgDf[condCol] == pair[0]].values
             b1 = avgDf[measure][avgDf[condCol] == pair[1]].values
+            medians.append(np.asarray([np.median(a1), np.median(b1)]))
             if test == 'non-param':
                 U1, p = mannwhitneyu(a1, b1, nan_policy = 'omit')
             elif test == 'param':
@@ -1368,7 +1964,7 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
     plt.ylabel(measure, **plotChars)
     plt.xlabel(condCol, **plotChars)
     
-    return fig, ax
+    return fig, ax, medians
 
 def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400,
                   palette = sns.color_palette("tab10"), plotChars = {},
@@ -1379,10 +1975,11 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
         fig.patch.set_facecolor('black')
         fontColor = '#ffffff'
     else: 
-        plt.style.use('default')
+        plt.style.use('seaborn-v0_8')
         fontColor = '#000000'
     
-    
+    # h =( 'Chadwick_%f_15_H0_log', 'mean')
+    # e = ('E_f_<_400_log', 'mean')
     h = ('bestH0_log', 'mean')
     e = ('E_eff_log', 'mean')
     
@@ -1430,7 +2027,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
     
             idx = idx + 1
         
-        plt.legend(fontsize = 10, ncol = len(mechanicsType))
+        # plt.legend(fontsize = 10, ncol = len(mechanicsType))
         
     elif hueType == 'cellID':
         N = len(data[('cellID', 'first')].unique())
@@ -1458,7 +2055,7 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
             idx = idx + 1
 
             
-        plt.legend(fontsize = 10, ncol = np.round(N/2))
+        # plt.legend(fontsize = 10, ncol = np.round(N/2))
           
     else:
         palette = palette
@@ -1471,21 +2068,34 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
 
             x, y = toPlot[h].values, toPlot[e].values
             
-            params, results = ufun.fitLineHuber((np.log(x)), np.log(y))
-            k = np.exp(params[0])
+            params, results = ufun.fitLineHuber((x), (y))
+            k = params[0]
             t = params[1]
             
             fit_x = np.linspace(np.min(x), np.max(x), 50)
-        
-            fit_y = k * fit_x**t
+            # fit_y = k * fit_x**t
+            fit_y = t*fit_x + k
+            
+            fit_y = 10**fit_y
+            fit_x = 10**fit_x
+
             pval = results.pvalues[1] # pvalue on the param 'a'
-            eqnText += " Y = {:.1e} * X^{:.1f}".format(k, t)
+            # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, t)
+            eqnText += " Fit Y = m * X + C\n"
+            eqnText += " Y = {:.1e} * X + {:.1f}".format(t, k)
+
             eqnText += "\np-val = {:.3f}".format(pval)
-            ax.scatter(x , y, color = palette[idx], label = m, s = 100, alpha = 0.7)
-            ax.plot(fit_x, fit_y,  lw = 6, linestyle = '--', color = 'k')
+            ax.scatter(10**x , 10**y, color = palette[idx], label = m, s = 50, alpha = 0.7)
+            # ax.plot(fit_x, fit_y,  lw = 6, linestyle = '--', color = 'k')
 
-            ax.plot(fit_x, fit_y, label = eqnText, lw = 6.1, linestyle = '--', color = palette[idx])
+            # ax.plot(fit_x, fit_y, label = eqnText, lw = 6.1, linestyle = '--', color = palette[idx])
+            ax.plot(fit_x, fit_y, linewidth = 3,
+                    color = 'k')
+            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 1.5,
+                    color = palette[idx])
 
+            ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0., fontsize = 11)
+            
             toPlot[('E_norm', 'logAvg')] = toPlot[e] * (h_ref/toPlot[h])**t
 
             
@@ -1507,29 +2117,30 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
             
             idx = idx + 1
         
-        plt.legend(fontsize = 10, ncol = len(condCat))
        
     # for i in range(len(ax)):
     ax.set_yscale('log')
     ax.set_xscale('log')
     # ax[i].set_ylim(100, 10**5)
     # ax[i].set_xlim(100, 2*10**3)
-    ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
-    ax.set_xlabel('BestH0 (nm)', fontsize=30, color = fontColor)
+    # ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
+    # ax.set_xlabel('BestH0 (nm)', fontsize=30, color = fontColor)
     
 
-    x_labels = np.asarray([100, 250, 500, 1000, 1500, 2500])
+    x_labels = np.asarray([100, 250, 500, 1000, 1500])
     x_ticks = np.log10(np.asarray(x_labels))
-    ax.set_xticks(x_ticks, labels = x_labels,**plotChars)
+    ax.set_xticks(x_labels, labels = x_labels,**plotChars)
 
-    y_labels = np.asarray([100, 500, 2500, 10000, 20000, 50000])
+    y_labels =np.asarray([100, 500, 1000, 3000, 10000, 50000])
+
     y_ticks = np.log10(np.asarray(y_labels))
-    ax.set_yticks(y_ticks, labels = y_labels,**plotChars)
+    ax.set_yticks(y_labels, labels = (y_labels)/1000,**plotChars)
     
-    plt.xticks(fontsize=25, color = fontColor)
-    plt.yticks(fontsize=25, color = fontColor)
-    plt.tight_layout()
-    plt.show()
+
+    # plt.xticks(fontsize=25, color = fontColor)
+    # plt.yticks(fontsize=25, color = fontColor)
+    # plt.tight_layout()
+    # plt.show()
     return fig, ax, data.copy()
 
 
@@ -1646,7 +2257,9 @@ def EvH0_wCellAvg(fig, ax, avgDf, condCat, condCol, hueType, h_ref = 400,
         
             fit_y = k * fit_x**t
             pval = results.pvalues[1] # pvalue on the param 'a'
-            eqnText += " Y = {:.1e} * X^{:.1f}".format(k, t)
+            # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, t)
+            eqnText += " Y = {:.1e} * X + {:.1f}".format(k, t)
+
             eqnText += "\np-val = {:.3f}".format(pval)
             ax[0].scatter(x , y, color = palette[idx], label = m, s = 100,  alpha = 0.5)
             ax[0].plot(fit_x, fit_y,  lw = 6, linestyle = '--', color = 'k')
@@ -1724,11 +2337,11 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
             res = wilcoxon(b1, a1, alternative=test, zero_method = 'wilcox')
             pvals.append(res[1])
 
-        ax = sns.lineplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
-                          marker = 'o', **plottingParams)
-        
-        # ax = sns.pointplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
+        # ax = sns.lineplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
         #                   marker = 'o', **plottingParams)
+        
+        ax = sns.pointplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
+                          marker = 'o', **plottingParams)
 
     if normalize == True:
         dfPairs['normMeasure', marker] = [np.nan]*len(dfPairs)
@@ -1784,8 +2397,13 @@ def NLRvAngle(fig, ax, dfPairs, condCat, condCol, pairedCells, palette = sns.col
         fontColor = '#000000'
         
     measure =  plottingParams['y']
-    condCol =  plottingParams['hue']
+    try:
+        condCol =  plottingParams['hue']
+    except:
+        pass
+        
     x = plottingParams['x']
+    palette = plottingParams['palette']
     
     if plotType == False:
         sns.scatterplot(**plottingParams)
@@ -1802,7 +2420,7 @@ def NLRvAngle(fig, ax, dfPairs, condCat, condCol, pairedCells, palette = sns.col
                 dfPairs.loc[(dfPairs[('dateCell', 'first')] == cell) & (dfPairs[condCol] == pair[1]), ('NLI_mod', 'diff')] = diff
         
 
-        sns.scatterplot(**plottingParams)
+        sns.scatterplot(data = dfPairs, x = x, y = ('NLI_mod', 'diff'))
     # elif plotType == 'paired':
     #     idx = 0
     #     for i in np.unique(dfPairs['dateCell', 'first'].values):
@@ -1908,4 +2526,331 @@ def KvY_V0(hueType, condCat, condCol, palette = sns.color_palette("tab10"),
     return
 
 
+def plotPopKS(data_f, styleDict, fitsSubDir = '',  fitType = 'stressGaussian', 
+              fitWidth=75,  condCol = '', 
+              c_min = 0, c_max = np.Inf, legendLabels = [],
+              mode = 'wholeCurve', scale = 'lin', printText = True,
+              returnData = 0, returnCount = 0):
+    
+    plt.style.use('seaborn-v0_8-darkgrid')
+    
+    fig, ax = plt.subplots(1,1, figsize = (15/SCALE_px_cm,10/SCALE_px_cm))
 
+    # globalFilter = pd.Series(np.ones(data.shape[0], dtype = bool))
+    # for k in range(0, len(Filters)):
+    #     globalFilter = globalFilter & Filters[k]
+    # data_f = data[globalFilter]
+    
+    if mode == 'wholeCurve':
+        Sinf, Ssup = 0, np.Inf
+        ax.set_xlim([0, 1050])  
+        
+    else:
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+    
+        globalExtraFilter = extraFilters[0]
+        for k in range(1, len(extraFilters)):
+            globalExtraFilter = globalExtraFilter & extraFilters[k]
+        data_f = data_f[globalExtraFilter]
+            
+        ax.set_xlim([Sinf-50, Ssup+50])     
+    
+    fitId = '_' + str(fitWidth)
+    data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+
+
+    conditions = np.array(data_ff[condCol].unique())
+
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    #### NOTE
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    data_ff['A'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg = grouped1.agg({'compNum' : 'count',
+                            'A': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg['K_wAvg'] = data_agg['A']/data_agg['weight']
+    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
+    
+    # Compute the weighted std
+    data_ff['B'] = data_ff['fit_K']    
+    for co in conditions:
+        centers = np.array(data_ff[data_ff[condCol] == co]['fit_center'].unique())
+        centers = np.array([ce for ce in centers if ((ce<c_max) and (ce>c_min))])
+        
+        for ce in centers:
+            weighted_mean_val = data_agg.loc[(data_agg[condCol] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
+
+            index_loc = (data_ff[condCol] == co) & (data_ff['fit_center'] == ce)
+            col_loc = 'B'
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    data_ff['C'] = data_ff['B'] * data_ff['weight']
+    grouped2 = data_ff.groupby(by=[condCol, 'fit_center'])
+    data_agg2 = grouped2.agg({'compNum' : 'count',
+                              'C': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
+    data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
+    
+    
+    # Combine all in data_agg
+    data_agg['K_wVar'] = data_agg2['K_wVar']
+    data_agg['K_wStd'] = data_agg2['K_wStd']
+    data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
+    
+    
+    # Plot
+    
+    if legendLabels == []:
+        legendLabels = conditions
+        
+    for i in range(len(conditions)):
+        co = conditions[i]
+        df = data_agg[data_agg[condCol] == co]
+        
+        df = df[df['compCount']  > 25]
+        
+        
+        color = styleDict[co]['color']
+        marker = styleDict[co]['marker']
+        label = styleDict[co]['label']
+        centers = df['fit_center'].values
+        Kavg = df['K_wAvg'].values
+        Kste = df['K_wSte'].values
+        N = df['compCount'].values
+         
+        
+        
+        dof = N
+        alpha = 0.975
+        q = st.t.ppf(alpha, dof) # Student coefficient
+    
+        if scale == 'lin':
+            if co == conditions[0]:
+                texty = Kavg + 1500
+            else:
+                texty = texty + 300
+            ax.set_yscale('linear')
+            ax.set_ylim([0, 18])
+                
+        elif scale == 'log':
+            if co == conditions[0]:
+                texty = Kavg**0.95
+            else:
+                texty = texty**0.98
+            ax.set_yscale('log')
+        
+        cellCount = len(np.unique(data_ff['cellID'][data_ff[condCol] == co].values))
+        legendTxt = label + '\nNCells = {}\nNComp = {}'.format(cellCount, sum(N))
+        
+        
+        # label = '{} | NCells = {}'.format(legendLabels[i], cellCount)
+
+        # weighted means -- weighted ste 95% as error
+        ax.errorbar(centers, Kavg/1000, yerr = q*Kste/1000, 
+                    color = color, lw = 2, marker = marker, markersize = 6, mec = 'k',
+                    ecolor = color, elinewidth = 1.2, capsize = 5, capthick = 1.2, 
+                    label = legendTxt)
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        color = '#000000'
+        ax.legend( bbox_to_anchor=(1.02, 1), loc = 'upper left', fontsize = 9)
+        ax.set_xlabel('Stress (Pa)', fontsize = 15,  color = color)
+        ax.set_ylabel('K (kPa)', fontsize = 15, color = color)
+        ax.tick_params(axis='both', colors= color) 
+        ax.xaxis.set_tick_params(labelsize=15)
+        ax.yaxis.set_tick_params(labelsize=15)
+        ax.grid(visible=True, which='major', axis='y') #, color = '#3a3b3b')
+        
+        if printText:
+            for kk in range(len(N)):
+                ax.text(x=centers[kk], y=texty[kk]/1000, s='n='+str(N[kk]), fontsize = 8, color = color)
+    
+    # Define the count df
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condCol]
+    count_df = data_ff[cols_count_df]
+    
+    # Define the export df
+    # cols_export_df = ['date', 'manipID', 'cellID', 'compNum', condCol]
+    # export_df = data_ff[cols_export_df]
+    cols_export_df = [c for c in data_agg.columns if c not in ['weights', 'A', 'B', 'C']]
+    export_df = data_agg[cols_export_df]
+    
+    # Make output
+    
+    output = (fig, ax)
+    if returnData > 0:
+        output += (export_df, )
+    
+    #### NOT FINISHED
+    if returnCount > 0:
+        groupByCell = count_df.groupby('cellID')
+        d_agg = {'compNum':'count', condCol:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+        groupByCond = df_CountByCell.reset_index().groupby(condCol)
+        d_agg = {'cellID': 'count', 'compCount': 'sum', 
+                  'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+        d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+        df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+        
+        if returnCount == 1:
+            output += (df_CountByCond, )
+        elif returnCount == 2:
+            output += (df_CountByCond, df_CountByCell)
+
+    return(output, count_df)
+
+
+def plotCellKS(data_f, fitsSubDir = '', condCol = '', fitType = 'stressGaussian', chosenCells = None, 
+              fitWidth=75,  c_min = 0, c_max = np.Inf,  mode = 'wholeCurve'):
+    
+    plt.style.use('seaborn-v0_8-darkgrid')
+    
+    fig, ax = plt.subplots(1,1, figsize = (7,6))
+
+
+    if mode == 'wholeCurve':
+        Sinf, Ssup = 0, np.Inf
+        ax.set_xlim([0, 1050])  
+        
+    else:
+        bounds = mode.split('_')
+        Sinf, Ssup = int(bounds[0]), int(bounds[1])
+        extraFilters = [data_f['minStress'] <= Sinf, data_f['maxStress'] >= Ssup] # >= 800
+    
+    
+    fitId = '_' + str(fitWidth)
+    data_ff = taka.getFitsInTable(data_f, fitsSubDir, fitType=fitType, filter_fitID=fitId)
+    
+    # Filter the table
+    data_ff = data_ff[(data_ff['fit_center'] >= Sinf) & (data_ff['fit_center'] <= Ssup)]    
+    data_ff = data_ff.drop(data_ff[data_ff['fit_error'] == True].index)
+    data_ff = data_ff.drop(data_ff[data_ff['fit_K'] < 0].index)
+    data_ff = data_ff.dropna(subset = ['fit_ciwK'])
+    data_ff = data_ff.drop(data_ff[data_ff['fit_ciwK'] > 10**4].index)
+    
+    # Compute the weights
+    data_ff['weight'] = (data_ff['fit_K']/data_ff['fit_ciwK'])**2
+    
+    #### NOTE
+    # In the following lines, the weighted average and weighted variance are computed
+    # using new columns as intermediates in the computation.
+    #
+    # Col 'A' = K x Weight --- Used to compute the weighted average.
+    # 'K_wAvg' = sum('A')/sum('weight') in each category (group by condCol and 'fit_center')
+    #
+    # Col 'B' = (K - K_wAvg)**2 --- Used to compute the weighted variance.
+    # Col 'C' =  B * Weight     --- Used to compute the weighted variance.
+    # 'K_wVar' = sum('C')/sum('weight') in each category (group by condCol and 'fit_center')
+    
+    # Compute the weighted mean
+    
+    cells = np.array(data_ff['cellID'].unique())
+    
+    data_ff['A'] = data_ff['fit_K'] * data_ff['weight']
+    grouped1 = data_ff.groupby(by=['cellID', 'fit_center'])
+    data_agg = grouped1.agg({'compNum' : 'count',
+                            'A': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg['K_wAvg'] = data_agg['A']/data_agg['weight']
+    data_agg = data_agg.rename(columns = {'compNum' : 'compCount'})
+    
+    # Compute the weighted std
+    data_ff['B'] = data_ff['fit_K']    
+    for co in cells:
+        centers = np.array(data_ff[data_ff['cellID'] == co]['fit_center'].unique())
+        centers = np.array([ce for ce in centers if ((ce<c_max) and (ce>c_min))])
+        
+        for ce in centers:
+            weighted_mean_val = data_agg.loc[(data_agg['cellID'] == co) & (data_agg['fit_center'] == ce), 'K_wAvg'].values[0]
+
+            index_loc = (data_ff['cellID'] == co) & (data_ff['fit_center'] == ce)
+            col_loc = 'B'
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, 'fit_K'] - weighted_mean_val
+            data_ff.loc[index_loc, col_loc] = data_ff.loc[index_loc, col_loc] ** 2
+            
+    data_ff['C'] = data_ff['B'] * data_ff['weight']
+    grouped2 = data_ff.groupby(by=['cellID', 'fit_center'])
+    data_agg2 = grouped2.agg({'compNum' : 'count',
+                              'C': 'sum', 'weight': 'sum'}).reset_index()
+    data_agg2['K_wVar'] = data_agg2['C']/data_agg2['weight']
+    data_agg2['K_wStd'] = data_agg2['K_wVar']**0.5
+    
+    
+    # Combine all in data_agg
+    data_agg['K_wVar'] = data_agg2['K_wVar']
+    data_agg['K_wStd'] = data_agg2['K_wStd']
+    data_agg['K_wSte'] = data_agg['K_wStd'] / data_agg['compCount']**0.5
+
+    
+    available_cells = data_ff['cellID'].unique()
+    cells = [c for c in cells if c in available_cells]
+    colors = distinctipy.get_colors(len(cells))
+    
+    # Get unique cell types
+    cell_types = data_ff.set_index('cellID').loc[cells][condCol]
+    unique_cell_types = cell_types.unique()
+    
+    # Generate a color for each cell type
+    type_colors = dict(zip(unique_cell_types, distinctipy.get_colors(len(unique_cell_types))))
+    
+    for i in range(len(cells)):
+        co = cells[i]
+        df = data_agg[data_agg['cellID'] == co]
+        
+        centers = df['fit_center'].values
+        Kavg = df['K_wAvg'].values
+        Kste = df['K_wSte'].values
+        N = df['compCount'].values
+          
+        dof = N
+        alpha = 0.975
+        q = st.t.ppf(alpha, dof) 
+        
+        if condCol == '':
+            color = colors[i]
+        else:
+            cell_type = cell_types.loc[co]
+            if isinstance(cell_type, pd.Series):
+                cell_type = cell_type.iloc[0]
+            color = type_colors[cell_type]
+            
+        label = co
+
+        ax.errorbar(centers,  Kavg/1000, yerr = q*Kste/1000, label = label,
+                    color = color, lw = 1, ls = 'solid', marker = 'o', markersize = 8, mec = 'k',
+                    ecolor = color, elinewidth = 0.8, capsize = 4, capthick = 0.8)
+        
+        # ax.set_title('K(s) - All compressions pooled')
+        color = '#000000'
+        ax.legend(loc = 'upper left', fontsize = 9)
+        ax.set_xlabel('Stress (Pa)', fontsize = 20,  color = color)
+        ax.set_ylabel('K (kPa)', fontsize = 20, color = color)
+        ax.tick_params(axis='both', colors= color) 
+        ax.xaxis.set_tick_params(labelsize=20)
+        ax.yaxis.set_tick_params(labelsize=20)
+        ax.grid(visible=True, which='major', axis='y') #, color = '#3a3b3b')
+        
+      
+    return (fig, ax)

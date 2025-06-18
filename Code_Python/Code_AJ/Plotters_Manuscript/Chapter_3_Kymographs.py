@@ -52,11 +52,13 @@ from cellpose import plot, models, utils, io
 # os.environ["CELLPOSE_LOCAL_MODELS_PATH"] = "D:/Anumita/MagneticPincherData/DataFluorescence/CellposeModels"
 
 #Font size for plots
-ylabel = 20
-xlabel = 20
-axtitle = 35
-figtitle = 30
-font_ticks = 20
+ylabel = 12
+xlabel = 12
+axtitle = 12
+figtitle =12
+font_ticks = 12
+
+SCALE_px_cm = 2.60
 
 #%% Functions
 
@@ -229,7 +231,7 @@ channel = 'Actin'
 dirFluoRaw = 'D:\\Anumita\\MagneticPincherData\\Data_Fluorescence\\Raw\\25.01.09\\' #cp.DirData + '/DataFluorescence/Raw/' + date + '/' + subDir
 dirProcessed = os.path.join(DirData, 'Data_Fluorescence', 'Processed', date)
 dirSegment = DirData + 'Data_Fluorescence\\Segmentation' 
-dirSave = os.path.join(DirData, 'Data_Fluorescence', 'Kymographs', date)
+dirSave ='D:/Anumita/NextCloud/Anumita - Manuscript/Figures/Chapter_3/ActinFluorescenceKymographs'
 
 
 if not os.path.exists(dirProcessed):
@@ -239,9 +241,8 @@ if not os.path.exists(cp.DirDataFigToday):
     os.mkdir(cp.DirDataFigToday)
 
 
-timeRes = 10 #in secs
+timeRes = 10.149580600000002 #in secs
 firstActivation = 6 #in timepoints
-firstActMin = np.round(firstActivation*timeRes / 60, 1)
 
 
 #%% Preprocessing and saving stacks as individual images for cellpose to do its work
@@ -301,8 +302,12 @@ contour_in, _ = cv2.findContours(th_in, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPL
 contour_out, _ = cv2.findContours(th_out, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
 # Draw the contour on the original image
-cv2.drawContours(act_img, contour_in, -1, (0, 255, 0), 1)
-cv2.drawContours(act_img, contour_out, -1, (255, 0, 0), 1)
+cv2.drawContours(act_img, contour_in, -1, (0, 0,0), 1)
+cv2.drawContours(act_img, contour_out, -1, (0, 255, 0), 1)
+
+cv2.drawContours(blurred, contour_in, -1, (0, 0,0), 1)
+cv2.drawContours(blurred, contour_out, -1, (0, 255, 0), 1)
+
 
 # Convert BGR to RGB for display
 
@@ -318,7 +323,8 @@ plt.show()
 #%% Importing the cellpose model
 
 allCells = os.listdir(dirProcessed)
-allCells = [x for x in allCells if channel in x and 'Partial-Half' in x]
+allCells = [x for x in allCells if channel in x and 'Global' in x and 'C4' not in x]
+
 
 fluoDict = {'cellID': [], 
             'fluoFront': [],
@@ -353,7 +359,7 @@ for j in range(len(allCells)):
 
         channels = [0, 0]
         masks, flows, styles, diams = model.eval(
-            imgs, diameter=116, channels=channels,
+            imgs, diameter=112, channels=channels,
             flow_threshold=0.2, do_3D=False, normalize=True
         )
 
@@ -377,7 +383,7 @@ for j in range(len(allCells)):
     #     plt.imshow(each)
     #     plt.show()
     
-    plt.close('all')
+    # plt.close('all')
 
     allKymo = []
     allMaxValsFront = [] 
@@ -449,18 +455,19 @@ for j in range(len(allCells)):
     kymoContour = np.asarray(kymoContour).T
     allKymoNorm.append(kymo_norm)
     
-    
-    fig1, ax = plt.subplots(1, 2, figsize=(10, 10))
+    # fig1, ax = plt.subplots(1, 2, figsize=(16/SCALE_px_cm, 12/SCALE_px_cm))
+    fig1, ax = plt.subplots(1, 1, figsize=(12/SCALE_px_cm, 12/SCALE_px_cm))
+
     
     x = np.arange(kymo_norm.shape[1])  # 18 columns
     y = np.arange(kymo_norm.shape[0])
-    duration = (x * 10 / 60)[-1]  # in minutes
-    
+    duration = (x * timeRes / 60)[-1]  # in minutes
+    activations = np.asarray([1.0, 2.0, 3.0])
     # Create meshgrid for x and y coordinates
     interpolator = RGI((y, x), kymo_norm, method='linear', bounds_error=False)
     xtime = np.linspace(0, duration, 300)
     # New grid
-    xnew = np.linspace(0, kymo_norm.shape[1], 300)  # Interpolated to 300 columns
+    xnew = np.linspace(0, kymo_norm.shape[1] - 1, 300)  # Interpolated to 300 columns
     # ynew = np.linspace(0, kymo_norm.shape[0] - 1, kymo_norm.shape[0]) 
     xxnew, yynew = np.meshgrid(xnew, y, indexing='ij')
     # Interpolated data
@@ -472,22 +479,26 @@ for j in range(len(allCells)):
     interpolator = RGI((y2, x2), allKymo, method='linear', bounds_error=False)
     xtime2 = np.linspace(0, duration, 300)
     # New grid
-    xnew2 = np.linspace(0, allKymo.shape[1] , 300)  # Interpolated to 300 columns
+    xnew2 = np.linspace(0, allKymo.shape[1] - 1, 300)  # Interpolated to 300 columns
     xxnew2, yynew2 = np.meshgrid(xnew2, y2, indexing='ij')
     # Interpolated data
     points2 = np.array([yynew2.ravel(), xxnew2.ravel()]).T  # Create a grid of (y, x) points
     allkymo_interpolated = interpolator(points2).reshape(yynew2.shape)
     # Plot the interpolated data
-    im2 = ax[0].imshow(allkymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 80000)
-    im = ax[1].imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
+    # im2 = ax[0].imshow(allkymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 80000)
+    # im = ax[1].imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
+    im = ax.imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
     
-    if 'HalfActivation' in currentCell:
+        
+    if 'HalfActivation' in currentCell or 'Global' in currentCell:
         x1 = np.arange(kymoContour.shape[1])  # 18 columns
         y1 = np.arange(kymoContour.shape[0])
         interpolator_cnt = RGI((y1, x1), kymoContour, method='linear', bounds_error=False)
         
         # New grid
         xnew1 = np.linspace(0, kymoContour.shape[1] - 1, 300)  # Interpolated to 300 columns
+        
+        
         xxnew1, yynew1 = np.meshgrid(xnew1, y1, indexing='ij')
         # Interpolated data
         points1 = np.array([yynew1.ravel(), xxnew1.ravel()]).T  # Create a grid of (y, x) points
@@ -498,7 +509,8 @@ for j in range(len(allCells)):
     
         rows,cols = kymo_cont_interpolated.shape[:2]
         contours, _ = cv2.findContours(kymo_cont_thresh, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        colors = ['r', 'b', 'b', 'r']
+        colors = ['#35b779', 'k', 'k', '#35b779']
+        # colors = []
         # plt.imshow(cv2.drawContours(np.zeros(kymo_cont_interpolated.shape), contours, -1, (255, 0, 0), 1))
         angles, count = [], 0
         for cnt, colour in zip(contours, colors):
@@ -509,53 +521,76 @@ for j in range(len(allCells)):
             endy = cols * np.sin(theta) + center[1]
             
             
-            ax[1].plot([0, cols], [center[1], endy], color = colour, linewidth = 3, linestyle = '--')
-            ax[0].plot([0, cols], [center[1], endy], color = colour, linewidth = 3, linestyle = '--')
+            # ax[1].plot([0, cols], [center[1], endy], color = colour, linewidth = 1, linestyle = '--')
+            ax.plot([0, cols], [center[1], endy], color = colour, linewidth = 1, linestyle = '--')
             
             if count == 1 or count == 2:
                 angles.append((center[1], int(endy)))
                 
             count = count + 1
     
+        # for i in range(np.shape(kymo_norm)[1]-1):
+        #     frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
+        #     # medFront = np.average(kymo_norm[100:200, i])
+        #     medFront = np.average(np.average(kymo_norm[0:angles[1][0], i]) + np.average(kymo_norm[angles[0][0]:359, i]))
+        #     # fluoDict['fluoFront'].append(medFront)
+        #     medBack = np.average(kymo_norm[angles[1][0]:angles[0][0], i])
+        #     fluoDict['fluoBack'].append(medBack)
+        #     fluoDict['fluoFront'].append(medFront)
+        #     fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
+        #     fluoDict['cellID'].append(currentCell)
+        #     fluoDict['frame'].append(i)
+        
         for i in range(np.shape(kymo_norm)[1]-1):
             frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
-            # medFront = np.average(kymo_norm[100:200, i])
-            medFront = np.average(np.average(kymo_norm[0:angles[1][0], i]) + np.average(kymo_norm[angles[0][0]:359, i]))
-            # fluoDict['fluoFront'].append(medFront)
+            total = np.average(kymo_norm[:, i])
             medBack = np.average(kymo_norm[angles[1][0]:angles[0][0], i])
+            front_up, front_down = kymo_norm[0:angles[1][0], i], kymo_norm[angles[0][0]:359, i]
+            whole_front = np.concatenate((front_up.flatten(), front_down.flatten()))
+            medFront =   np.average(whole_front)
+            fluoDict['fluoFront'].append(medFront)
             fluoDict['fluoBack'].append(medBack)
-            fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
+            fluoDict['fluoTotal'].append(total)
             fluoDict['cellID'].append(currentCell)
             fluoDict['frame'].append(i)
     
     
-    ax[0].set_xlim(0, cols)
-    ax[1].set_xlim(0, cols)
-    
-    ax[1].set_title('Normalised', fontsize = ylabel)
-    fig1.colorbar(im, orientation='vertical', fraction = 0.055, pad = 0.04)
+    xtick_positions = np.asarray([0, 1, 2, 3, 4])
+    xtick_activations = np.asarray([np.abs(xtime - i).argmin() for i in activations])
+    xticks = np.asarray([np.abs(xtime - i).argmin() for i in xtick_positions])
+    xtick_labels = np.asarray([-1, 0, 1, 2, 3])
 
-    ax[0].set_title('Not normalised', fontsize = ylabel)
-    fig1.colorbar(im2, orientation='vertical', fraction = 0.055, pad = 0.04)
-    
-    ax[0].set_ylabel('Angle (degrees)', fontsize = ylabel)
-    ax[0].set_xlabel('Time (mins)', fontsize = xlabel)
-    ax[1].set_xlabel('Time (mins)', fontsize = xlabel)
-    
-    ax[0].tick_params(axis='both', which='major', labelsize=20)
-    ax[1].tick_params(axis='both', which='major', labelsize=20)
+    ax.set_xticks(xticks, xtick_labels)
+    # ax[1].set_xticks(xticks, xtick_labels)
 
+    for i in xtick_activations:
+        ax.axvline(x = i, color = '#0096FF', ymin = 0, ymax = 0.1)
+        # ax[1].axvline(x = i, color = '#0096FF', ymin = 0, ymax = 0.1)
+    
+    # ax.set_xlim(0, cols)
+    # ax[1].set_xlim(0, cols)
+    
+    ax.set_title('Normalised', fontsize = ylabel)
+    fig1.colorbar(im, orientation='vertical', fraction = 0.055, pad = 0.04).ax.tick_params(labelsize=10)
 
-    fig1.suptitle(currentCell, fontsize = 16)
+    # ax[0].set_title('Not normalised', fontsize = ylabel)
+    # fig1.colorbar(im2, orientation='vertical', fraction = 0.055, pad = 0.04).ax.tick_params(labelsize=10)
+    
+    ax.set_ylabel('Angle (degrees)', fontsize = ylabel)
+    ax.set_xlabel('Time (mins)', fontsize = xlabel)
+    # ax[1].set_xlabel('Time (mins)', fontsize = xlabel)
+    
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    # ax[1].tick_params(axis='both', which='major', labelsize=10)
+
+    fig1.suptitle(currentCell, fontsize = 12)
     
     # axline = find_nearest(xxtime, firstActMin)
-    # ax[0].axvline(x = axline, color = 'red')
-    # ax[1].axvline(x = axline, color = 'red')
+    
     plt.tight_layout()
-    # plt.savefig(os.path.join(dirSave, currentCell.split('.tif')[0]+'.png'))
     plt.show()
-    
-    
+    plt.savefig(os.path.join(dirSave, currentCell.split('.tif')[0]+'.pdf'), dpi = 200)
+
 
 
 # plt.close('all')
@@ -563,135 +598,67 @@ for j in range(len(allCells)):
 #%% Plotting normalised actin fluroscence intensity in time
 # plt.style.use('dark_background')
 fluoDf = pd.DataFrame(fluoDict)
-fig, ax = plt.subplots(figsize=(15,10))
 
-data = fluoDf[fluoDf['cellID'].str.contains('M2')]
-# data = fluoDf[fluoDf['cellID'].str.contains('C9') == False]
-# data = fluoDf[fluoDf['cellID'].str.contains('C13') == False]
+fig, ax = plt.subplots(figsize=(15/SCALE_px_cm,10/SCALE_px_cm))
 
-data = data[(data['frame'] < 27)]
-# data = data[(data['frame'] > 11)]
-
-x = data['frame']*timeRes
+# data = fluoDf[fluoDf['cellID'].str.contains('Partial-Half')]
+data = fluoDf[fluoDf['cellID'].str.contains('Global')]
 
 
-flatui =  ["#FFD700", "#ee82ee", "#1AFFC6"]
-flatui = ["#bb2fa6", "#000000"]
+x = (data['frame']*timeRes)/60
 
-sns.set_palette(flatui)
 
-sns.lineplot(data=data, x = x ,y="fluoFront") #, hue ='cellID')
-sns.lineplot(data=data, x = x ,y="fluoBack")
+# flatui =  ["#FFD700", "#ee82ee", "#1AFFC6"]
+# flatui = ["#bb2fa6", "#000000"]
+palette = ['#fdae61', '#000004']
 
-control = mpatches.Patch(color=flatui[0], label='Polarised rear (activated)')
-activated = mpatches.Patch(color=flatui[1], label='Polarised front')
+sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1])
+sns.lineplot(data=data, x = x ,y="fluoBack", color=palette[0])
 
-x2 = np.linspace(120, 260,7)
+sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1], style = 'cellID', alpha = 0.5)
+sns.lineplot(data=data, x = x ,y="fluoBack", color=palette[0], style = 'cellID', alpha = 0.5)
 
-# plt.legend(handles=[activated, control], fontsize = 20, loc = 'upper left')
-plt.xticks(fontsize=30)
-plt.yticks(fontsize=30)
-plt.xlabel('Time (secs)', fontsize=30)
-plt.ylabel('Normalised Actin fluoresence intensity', fontsize=30)
-plt.axvline(x = 120, color = 'red')
+rear = mpatches.Patch(color=palette[0], label='Polarised rear (Activated)')
+front = mpatches.Patch(color=palette[1], label='Polarised front')
 
+
+
+plt.legend(handles=[rear, front], fontsize = 11, loc = 'upper left')
+plt.xticks(fontsize=11)
+plt.yticks(fontsize=11)
+plt.xlabel('Time (mins)')
+plt.ylabel('', fontsize=11)
+plt.title('Normalized Actin Fluorescence Intensity', fontweight = 'bold', fontsize=11)
+
+x2 = np.asarray([1, 2, 3])
 for i in x2:
-    ax.axvline(x = i, color = "#bb2fa6", linewidth=4, ymax=0.10)
+    ax.axvline(x = i, color = "blue", linewidth=4, ymax=0.10)
 
 plt.tight_layout()
-plt.ylim(0.4, 1.8)
-
-plt.savefig('{}/{}_{}_ActinRecruitmentvTime.png'.format(cp.DirDataFigToday, currentCell, channel), dpi = 100)
-
+plt.ylim(0.2, 1.5)
 plt.show()
+
+plt.savefig('{}/_{}_ActinRecruitmentvTime_Global.pdf'.format(cp.DirDataFigToday,channel), dpi = 200)
+
 
 #%% Plotting total actin intensity
-plt.figure(figsize=(15,10))
-flatui =  ["#1AFFC6", "#FFD700", "#ee82ee"]
-sns.set_palette(flatui)
+fig, ax = plt.subplots(figsize=(15/SCALE_px_cm,10/SCALE_px_cm))
 
-sns.lineplot(data=data, x = x ,y="fluoTotal")
-plt.ylim(0.4, 1.8)
-plt.axvline(x = 120, color = 'red')
-plt.xticks(fontsize=25)
-plt.yticks(fontsize=25)
-plt.xlabel('Time (secs)', fontsize=30)
-# plt.ylabel('Total Normalised Actin fluoresence intensity', fontsize=30)
-plt.axvline(x = 120, color = 'red')
+sns.lineplot(data=data, x = x ,y="fluoTotal", color = "#3f0f3e")
+sns.lineplot(data=data, x = x ,y="fluoTotal", color = "#3f0f3e", style = 'cellID')
+
+plt.ylim(0.2, 1.5)
+plt.xticks(fontsize=11)
+plt.yticks(fontsize=11)
+plt.xlabel('Time (mins)', fontsize=11)
+
+x2 = np.asarray([1, 2, 3])
+for i in x2:
+    ax.axvline(x = i, color = "blue", linewidth=4, ymax=0.10)
+
+plt.title('Total Actin Fluorescence Intensity', fontweight = 'bold', fontsize=11)
 plt.tight_layout()
-
-plt.savefig('{}/{}_TotalActinRecruitmentvTime.png'.format(cp.DirDataFigToday, channel), dpi = 100)
+plt.legend().remove()
 plt.show()
+plt.savefig('{}/{}_TotalActinRecruitmentvTime_Global.pdf'.format(cp.DirDataFigToday, channel), dpi = 100)
 
-#%% Plotting actin intensity box plots before / after activation
-# fluoDf = pd.DataFrame(fluoDict)
-# data = fluoDf[fluoDf['cellID'].str.contains('M3')]
-# dataPreAct =  data[(data['frame'] < 11)]
-# dataPostAct =  data[(data['frame'] < 27) & (data['frame'] > 11)]
-# fig1, axes = plt.subplots((1, 2), figsize = (15,10))
-
-# sns.pointplot(x = x, y = y, data=data, hue = 'cellID', ax = axes[0], dodge = True)
-
-
-#%%
-allMedFront = []
-allMedBack = []
-for i in range(np.shape(kymo_norm)[1]-1):
-    medFront = np.median(kymo_norm[150:200, i])
-    allMedFront.append(medFront)
-    medBack = np.median(kymo_norm[300:350, i])
-    allMedBack.append(medBack)
-
-plt.plot(allMedFront)
-plt.plot(allMedBack)
-plt.show()
-#%% Creating stacks from individual files
-
-expt = '20230405_3t3optoLARG_ActinRecruitmentDynamics_SPY650'
-# subDir = 'Rpe1Tiam_Fastact640'
-dirExt = 'F:/Cortex Experiments/Fluorescence Experiments/'
-dirSave = 'D:/Anumita/MagneticPincherData/DataFluorescence/Raw/'
-prefix = 'cell'
-channel = 'w4CSU561'
-
-excludedCells = AllMMTriplets2Stack(dirExt, dirSave, expt = expt, prefix = prefix, channel = channel)
-
-#%% Extras
-
-
-# x = np.linspace(0, len(warped_img)-1, len(warped_img))
-# f = interpolate.interp1d(x, maxValues, kind='cubic')
-# xnew = x
-# maxInter = f(xnew)
-# t, c, k = interpolate.splrep(x, maxValues, s=0, k=5)
-# print('''\
-# t: {}
-# c: {}
-# k: {}
-# '''.format(t, c, k))
-# N = 600
-# xmin, xmax = x.min(), x.max()
-# xx = np.linspace(xmin, xmax, N)
-# f = interpolate.BSpline(t, c, k, extrapolate=False)
-# maxInter = f(xnew)
-# plt.plot(x, maxValues)
-# plt.plot(x, maxInter)
-# plt.show()
-
-# contour = np.asarray(np.where(bw_mask == 1)).T
-
-# r = np.asarray([np.hypot(i[0] - cX, i[1] - cY) for i in contour])
-# r_in = r - R_in
-# avg_r_in = np.mean(r_in)
-# theta =  np.asarray([np.arctan2(i[0] - cX, i[1] - cY) for i in contour])
-
-# xy = np.asarray([[i[0], i[1]] for i in contour])
-# xy_in = np.asarray([[int(i*np.cos(j) + cX), int(i*np.sin(j) + cY)] for i, j in zip(r_in, theta)])
-# xy_in_fit = np.asarray([[int(avg_r_in*np.cos(j) + cX), int(avg_r_in*np.sin(j) + cY)] for j in theta])
-
-
-
-
-plt.imshow(allkymo_interpolated)
-plt.imshow(kymo_cont_interpolated, origin='lower', cmap='Reds', alpha=0.1)
-plt.show()

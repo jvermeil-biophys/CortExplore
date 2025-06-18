@@ -139,11 +139,28 @@ class PincherTimeLapse:
 
         self.BeadsZDelta = manipDict['beads bright spot delta']
         # self.BeadTypeStr = manipDict['bead type']
-        self.beadTypes = [bT for bT in str(manipDict['bead type']).split('_')]
-        self.beadDiameters = [int(bD) for bD in str(manipDict['bead diameter']).split('_')]
-        self.dictBeadDiameters = {}
-        for k in range(len(self.beadTypes)):
-            self.dictBeadDiameters[self.beadTypes[k]] = self.beadDiameters[k]
+        # self.beadTypes = [bT for bT in str(manipDict['bead type']).split('_')]
+        
+        try:
+            self.Z_symmetry = manipDict['Z symmetry']
+            self.insideBeadType = str(manipDict['inside bead type'])
+            self.outsideBeadType = str(manipDict['outside bead type'])
+            self.beadTypes = [self.insideBeadType, self.outsideBeadType]
+            self.dictBeadDiameters = {self.insideBeadType : float(manipDict['inside bead diameter']),
+                                      self.outsideBeadType : float(manipDict['outside bead diameter'])}
+            self.dictBeadMagCorr = {self.insideBeadType : float(manipDict['inside bead magnetization correction']),
+                                      self.outsideBeadType : float(manipDict['outside bead magnetization correction'])}
+        except:
+            self.beadType = str(manipDict['bead type'])
+            self.beadTypes = [self.beadType, self.beadType]
+            self.dictBeadDiameters = {self.beadType : float(manipDict['bead diameter'])}
+            self.dictBeadMagCorr = {self.beadType : float(manipDict['bead magnetization correction'])}
+            self.Z_symmetry = True
+            
+        # self.beadDiameters = [int(bD) for bD in str(manipDict['bead diameter']).split('_')]
+        # self.dictBeadDiameters = {}
+        # for k in range(len(self.beadTypes)):
+        #     self.dictBeadDiameters[self.beadTypes[k]] = self.beadDiameters[k]
 
         self.microscope = manipDict['microscope']
         
@@ -2326,26 +2343,26 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
         #### 3.1 - Infer or detect Boi sizes in the first image
         # [Detection doesn't work well !]
 
-        if len(PTL.beadTypes) == 1:
-            if 'M450' in PTL.beadTypes[0]:
-                D = 4.5
-            elif 'M270' in PTL.beadTypes[0]:
-                D = 2.7
+        # if len(PTL.beadTypes) == 1:
+        #     if 'M450' in PTL.beadTypes[0]:
+        #         D = 4.5
+        #     elif 'M270' in PTL.beadTypes[0]:
+        #         D = 2.7
 
-            first_iF = PTL.listTrajectories[0].dict['iF'][0]
-            for B in PTL.listFrames[first_iF].listBeads:
-                B.D = D
-        else:
-            PTL.listFrames[0].detectDiameter(plot = 0)
+        #     first_iF = PTL.listTrajectories[0].dict['iF'][0]
+        #     for B in PTL.listFrames[first_iF].listBeads:
+        #         B.D = D
+        # else:
+        #     PTL.listFrames[0].detectDiameter(plot = 0)
 
-        # Propagate it across the trajectories
-        for iB in range(PTL.NB):
-            traj = PTL.listTrajectories[iB]
-            B0 = traj.dict['Bead'][0]
-            D = B0.D
-            traj.D = D
-            for B in traj.dict['Bead']:
-                B.D = D
+        # # Propagate it across the trajectories
+        # for iB in range(PTL.NB):
+        #     traj = PTL.listTrajectories[iB]
+        #     B0 = traj.dict['Bead'][0]
+        #     D = B0.D
+        #     traj.D = D
+        #     for B in traj.dict['Bead']:
+        #         B.D = D
 
         #### 3.2 - Detect neighbours
 
@@ -2375,67 +2392,92 @@ def mainTracker(dates, manips, wells, cells, depthoNames, expDf, NB = 2,
     #### 4. Compute dz
 
         #### 4.1 - Import depthographs
+#         HDZfactor = PTL.listTrajectories[0].HDZfactor
+        
+#         if len(PTL.beadTypes) == 1:
+#             depthoPath = os.path.join(DirDataRawDeptho, depthoNames)
+# #             depthoExist = os.path.exists(depthoPath+'_Deptho.tif')
+#             deptho = io.imread(depthoPath+'_Deptho.tif')
+#             depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
+#             depthoStep = depthoMetadata.loc[0,'step']
+#             depthoZFocus = depthoMetadata.loc[0,'focus']
+
+#             # increase the resolution of the deptho with interpolation
+#             # print('deptho shape check')
+#             # print(deptho.shape)
+#             nX, nZ = deptho.shape[1], deptho.shape[0]
+#             XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+#             # print(XX.shape, ZZ.shape)
+#             fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+#             ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
+#             # print(ZZ_HD.shape)
+#             depthoHD = fd(XX, ZZ_HD)
+#             depthoStepHD = depthoStep/HDZfactor
+#             depthoZFocus = depthoZFocus*HDZfactor
+#             # print(depthoHD.shape)
+#             #
+#             for iB in range(PTL.NB):
+#                 traj = PTL.listTrajectories[iB]
+#                 traj.deptho = depthoHD
+#                 traj.depthoPath = depthoPath
+#                 traj.depthoStep = depthoStepHD
+#                 traj.depthoZFocus = depthoZFocus
+#                 traj.HDZfactor = HDZfactor
+        
+            
+#         if len(PTL.beadTypes) > 1:
+#             for dN in depthoNames:
+#                 print(depthoNames)
+#                 depthoPath = os.path.join(DirDataRawDeptho, dN)
+#                 deptho = io.imread(depthoPath+'_Deptho.tif')
+#                 depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
+#                 depthoStep = depthoMetadata.loc[0,'step']
+#                 depthoZFocus = depthoMetadata.loc[0,'focus']
+
+#                 # increase the resolution of the deptho with interpolation
+#                 nX, nZ = deptho.shape[1], deptho.shape[0]
+#                 XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
+#                 fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
+#                 ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
+#                 depthoHD = fd(XX, ZZ_HD)
+#                 depthoStepHD = depthoStep/HDZfactor
+#                 depthoZFocusHD = depthoZFocus*HDZfactor
+#                 #
+#                 if 'M450' in dN:
+#                     depthoD = 4.5
+#                 elif 'M270' in dN:
+#                     depthoD = 2.7
+#                 for iB in range(PTL.NB):
+#                     traj = PTL.listTrajectories[iB]
+#                     if traj.D == depthoD:
+#                         traj.deptho = depthoHD
+#                         traj.depthoPath = depthoPath
+#                         traj.depthoStep = depthoStepHD
+#                         traj.depthoZFocus = depthoZFocusHD
+    
+        
         HDZfactor = PTL.listTrajectories[0].HDZfactor
         
-        if len(PTL.beadTypes) == 1:
-            depthoPath = os.path.join(DirDataRawDeptho, depthoNames)
-#             depthoExist = os.path.exists(depthoPath+'_Deptho.tif')
-            deptho = io.imread(depthoPath+'_Deptho.tif')
-            depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
-            depthoStep = depthoMetadata.loc[0,'step']
-            depthoZFocus = depthoMetadata.loc[0,'focus']
+        depthoPathRoot = os.path.join(DirDataRawDeptho, depthoNames)
+        depthoMetadata = pd.read_csv(depthoPathRoot+'_Metadata.csv', sep=';')
+        deptho = io.imread(depthoPathRoot+'_Deptho.tif')
+        #### HERE ! NEW FEATURE
+        deptho = filters.gaussian(deptho, sigma=(4,0))
+        depthoStep = depthoMetadata.loc[0,'step']
+        depthoZFocus = depthoMetadata.loc[0,'focus']
+        
+        depthoHD = ufun.resize_2Dinterp(deptho, fx=1, fy=HDZfactor)    
+        depthoStepHD = depthoStep/HDZfactor
+        depthoZFocus = depthoZFocus*HDZfactor
 
-            # increase the resolution of the deptho with interpolation
-            # print('deptho shape check')
-            # print(deptho.shape)
-            nX, nZ = deptho.shape[1], deptho.shape[0]
-            XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-            # print(XX.shape, ZZ.shape)
-            fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-            ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-            # print(ZZ_HD.shape)
-            depthoHD = fd(XX, ZZ_HD)
-            depthoStepHD = depthoStep/HDZfactor
-            depthoZFocus = depthoZFocus*HDZfactor
-            # print(depthoHD.shape)
-            #
-            for iB in range(PTL.NB):
-                traj = PTL.listTrajectories[iB]
-                traj.deptho = depthoHD
-                traj.depthoPath = depthoPath
-                traj.depthoStep = depthoStepHD
-                traj.depthoZFocus = depthoZFocus
-                traj.HDZfactor = HDZfactor
-
-        if len(PTL.beadTypes) > 1:
-            for dN in depthoNames:
-                depthoPath = os.path.join(DirDataRawDeptho, dN)
-                deptho = io.imread(depthoPath+'_Deptho.tif')
-                depthoMetadata = pd.read_csv(depthoPath+'_Metadata.csv', sep=';')
-                depthoStep = depthoMetadata.loc[0,'step']
-                depthoZFocus = depthoMetadata.loc[0,'focus']
-
-                # increase the resolution of the deptho with interpolation
-                nX, nZ = deptho.shape[1], deptho.shape[0]
-                XX, ZZ = np.arange(0, nX, 1), np.arange(0, nZ, 1)
-                fd = interpolate.interp2d(XX, ZZ, deptho, kind='cubic')
-                ZZ_HD = np.arange(0, nZ, 1/HDZfactor)
-                depthoHD = fd(XX, ZZ_HD)
-                depthoStepHD = depthoStep/HDZfactor
-                depthoZFocusHD = depthoZFocus*HDZfactor
-                #
-                if 'M450' in dN:
-                    depthoD = 4.5
-                elif 'M270' in dN:
-                    depthoD = 2.7
-                for iB in range(PTL.NB):
-                    traj = PTL.listTrajectories[iB]
-                    if traj.D == depthoD:
-                        traj.deptho = depthoHD
-                        traj.depthoPath = depthoPath
-                        traj.depthoStep = depthoStepHD
-                        traj.depthoZFocus = depthoZFocusHD
-
+        for iB in range(PTL.NB):
+            traj = PTL.listTrajectories[iB]
+            traj.deptho = depthoHD
+            traj.depthoPath = depthoPathRoot+'_Deptho.tif'
+            traj.depthoStep = depthoStepHD
+            traj.depthoZFocus = depthoZFocus
+            traj.HDZfactor = HDZfactor
+            
         #### 4.2 - Compute z for each traj
         #### ! Expt dependence here !
         if PTL.microscope == 'metamorph' or PTL.microscope == 'zen':

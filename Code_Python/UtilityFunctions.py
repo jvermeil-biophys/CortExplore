@@ -1629,7 +1629,7 @@ def simpleSaveFig(fig, name, savePath, ext, dpi):
     fig.savefig(figPath, dpi=dpi)
     
 
-def archiveFig(fig, name = '', ext = '.png', dpi = 100,
+def archiveFig(fig, name = '', ext = '.pdf', dpi = 100,
                figDir = '', figSubDir = '', cloudSave = 'flexible'):
     """
     This is supposed to be a "smart" figure saver.

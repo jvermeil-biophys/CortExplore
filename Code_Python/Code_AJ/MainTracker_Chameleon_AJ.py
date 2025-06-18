@@ -114,7 +114,7 @@ mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '25.01.14'
-manips, wells, cells = 3, 'all', 'all'
+manips, wells, cells = 2, 2, 4
 depthoNames = '25.01.14_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
@@ -125,11 +125,11 @@ mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '25.01.21'
-manips, wells, cells = 3, 3, 'all'
+manips, wells, cells = 2, 2, 3
 depthoNames = '25.01.21_P'+str(wells)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
-                                 redoAllSteps = False, trackAll = False)
+                                 redoAllSteps = True, trackAll = False)
 
 #%% Deptho from experiment 25-01-23 - Not sorted + antibiotics 
 
@@ -158,7 +158,7 @@ mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf,
 # %%%% M1 : 
 
 dates = '25.03.12'
-manips, wells, cells = 'all', 4, 'all'
+manips, wells, cells = 3, 3, 'all'
 depthoNames = '25.03.12_P'+str(wells)+'_M450_step20_100X'
 
 mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 

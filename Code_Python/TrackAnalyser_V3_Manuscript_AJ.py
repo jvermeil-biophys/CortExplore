@@ -1657,15 +1657,13 @@ class CellCompression:
                 color = color, ls = '--', linewidth = 1, zorder = 1, s = 4)
         
         for ii in range(self.Ncomp):
-            try:
-                IC = self.listIndent[ii]
-                compValid = IC.isValidForAnalysis
-            except:
-                compValid = False
+            IC = self.listIndent[ii]
+            
+            compValid = IC.isValidForAnalysis
             
             if compValid:
                 fitError = IC.dictFitFH_Chadwick['Full']['error']
-                
+
                 if (not fitError):                
                     ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 4,
                             color = 'chartreuse', linestyle = '-', linewidth = 1.25, zorder = 3)
@@ -1779,6 +1777,7 @@ class CellCompression:
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
                                  # figsize = (3, 4))
                                 figsize = (4*nColsSubplot, 4*nRowsSubplot))
+        
         figTitle = 'Thickness-Force of indentations\n'
         if plotH0:
             figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
@@ -1794,12 +1793,9 @@ class CellCompression:
                 ax = axes[colSp]
             elif nRowsSubplot >= 1:
                 ax = axes[rowSp,colSp]
-            
-            try:
-                IC = self.listIndent[i]
-                IC.plot_FH_VWC(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
-            except:
-                pass
+                
+            IC = self.listIndent[i]
+            IC.plot_FH_VWC(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
             
         fig.tight_layout()
         return(fig, axes)
@@ -1826,12 +1822,9 @@ class CellCompression:
                 ax = axes[colSp]
             elif nRowsSubplot >= 1:
                 ax = axes[rowSp,colSp]
-            
-            try:
-                IC = self.listIndent[i]
-                IC.plot_FH(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
-            except:
-                pass
+                
+            IC = self.listIndent[i]
+            IC.plot_FH(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
             
         fig.tight_layout()
         return(fig, axes)
@@ -2291,10 +2284,7 @@ class CellCompression:
             
         for i in range(N):
             
-            try:
-                IC = self.listIndent[i]
-            except:
-                pass
+            IC = self.listIndent[i]
             
             # Identifiers
             results['date'][i] = ufun.findInfosInFileName(self.cellID, 'date')
@@ -2558,7 +2548,6 @@ class IndentCompression:
 
         # refineStartStop()
         self.isRefined = False
-        
         self.jMax = np.argmax(self.rawDf.B)
         self.rawT0 = self.rawDf['T'].values[0]
         self.jStart = 0
@@ -2570,8 +2559,7 @@ class IndentCompression:
         self.TCompr = (self.rawDf['T'].values[:self.jMax+1])
         self.TRelax = (self.rawDf['T'].values[self.jMax+1:])
         self.BCompr = (self.rawDf.B.values[:self.jMax+1])
-        self.BRelax = (self.rawDf.B.values[self.jMax+1:])
-
+        self.BRelax = (self.rawDf.B.values[self.jMax+1:])   
 
         
         self.Df = self.rawDf
@@ -3418,7 +3406,7 @@ class IndentCompression:
         """
         
         if self.isValidForAnalysis and plotSettings['F(H)_VWC']:
-            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 1.5)
+            ax.plot(self.hCompr, self.fCompr, color = '#adadad', marker = 'o')
             # ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             legendText = ''
@@ -3440,14 +3428,14 @@ class IndentCompression:
                     ePredict = dictFit['ePredict']
                     Eeff = Y + K * (0.8**-4)
                     
-                    legendTextE = 'VWC Fit ;H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, Eeff, R2, Chi2)
-                    legendTextK = 'Van Wyk ;K = {:.2e}Pa'.format(K)
-                    legendTextY = 'Chadwick ;Y = {:.2e}Pa'.format(Y)
+                    legendTextE = 'van Wyk-Hook\nE-eff = {:.2e}Pa\nR2 = {:.3f}'.format(H0, Eeff, R2)
+                    legendTextK = 'van Wyk Fit\nK = {:.2e}Pa'.format(K)
+                    legendTextY = 'Hookean Fit\nY = {:.2e}Pa'.format(Y)
                     
                     
-                    ax.plot(hFit, (fPredict),'k--', linewidth = 1.5, label = legendTextE, zorder = 2)
-                    ax.plot(hFit, (kPredict),'--', linewidth =1.5, label = legendTextK, zorder = 2, color = '#75305b') # '#75305b') #'#940000')
-                    ax.plot(hFit, (ePredict),'--', linewidth = 1.5, label = legendTextY, zorder = 2, color = '#62a07c') #'#62a07c') #'#237e76')
+                    ax.plot(hFit, (fPredict),'k--', linewidth = 3, linestyle = 'dashdot', label = legendTextE, zorder = 2)
+                    ax.plot(hFit, (kPredict),'--', linewidth =3, label = legendTextK, zorder = 2, color = '#8b0000') # '#75305b') #'#940000')
+                    ax.plot(hFit, (ePredict),'--', linewidth = 3, label = legendTextY, zorder = 2, color = '#0042c7') #'#62a07c') #'#237e76')
                     
                 # else:
                 #     titleText += '\nFIT ERROR'
@@ -3505,13 +3493,18 @@ class IndentCompression:
                     else:
                         low_f = np.ones_like(high_h) * bestH0
                     
-                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
-                    # plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
-                    # plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+                    
+                    # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    
+                    legendText = 'van Wyk-Hook Fit\n'
+                    legendText += 'H0 = {:.2f}nm'.format(bestH0)
 
-                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#b29600', markersize = 5, 
-                            label = legendText)
-                    # ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#0C8C00', markersize = 10)
+                    # ax.plot(plot_startH, plot_startF, ls = '--', color = 'k', linewidth = 3,
+                    #         label = legendText, zorder = 4)
 
                     
                 # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
@@ -3531,13 +3524,13 @@ class IndentCompression:
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
 
-                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.legend(loc = 'upper right', prop={'size': 8})
                 ax.title.set_text(titleText)
 
                 
                 
-            ax = ufun.setAllTextFontSize(ax, size = 9)
-            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax = ufun.setAllTextFontSize(ax, size = 14)
+            ax.legend(loc = 'upper right', prop={'size': 8})
             ax.title.set_text(titleText)
             
                     
@@ -3575,8 +3568,8 @@ class IndentCompression:
 
         """
         if self.isValidForAnalysis:
-            ax.scatter(self.hCompr, self.fCompr, marker = 'o', color = '#ADD7E5')
-            ax.scatter(self.hRelax, self.fRelax, marker = 'o', color = '#A3CE88')
+            ax.scatter(self.hCompr, self.fCompr, marker = 'o', color = '#adadad')
+            ax.scatter(self.hRelax, self.fRelax, marker = 'o', color = '#cfe2f3')
             titleText = self.cellID + '__c' + str(self.i_indent + 1)
             legendText = ''
             ax.set_xlabel('h (nm)')
@@ -3593,27 +3586,30 @@ class IndentCompression:
                     fFit = dictFit['x']
                     hPredict = dictFit['yPredict']
                     
-                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    # ax.plot(hPredict, fFit,'k--', linewidth =3, 
-                    #         label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                    legendText = 'Whole Curve Fit\n'
+
+                    legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}'.format(H0, E, R2)
+                    ax.plot(hPredict, fFit,'--', linewidth =3, color = '#0042c7', label = legendText, zorder = 2)
+                else:
+                    titleText += '\nFIT ERROR'
                     
-                # method = 'f_<_400'
-                # # dictFit = self.dictFitFH_Chadwick[method]
+                method = 'f_<_400'
                 # dictFit = self.dictFitFH_Chadwick[method]
-                # fitError = dictFit['error']
+                dictFit = self.dictFitFH_Chadwick[method]
+                fitError = dictFit['error']
                     
-                # if not fitError:
-                #     H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                #     fFit = dictFit['x']
-                #     hPredict = dictFit['yPredict']
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fFit = dictFit['x']
+                    hPredict = dictFit['yPredict']
                     
-                #     legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                #     ax.plot(hPredict, fFit,'g--', linewidth = 0.8, 
-                #             label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                    # legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    legendText = 'Fit @ F < 400pN\n'
+                    legendText += 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}'.format(H0, E, R2)
+
+                    ax.plot(hPredict, fFit,'g--', linewidth = 3, color = '#e77129', label = legendText, zorder = 2)
+                else:
+                    titleText += '\nFIT ERROR'
                 
                 # method = 'f_in_400_800'
                 # # dictFit = self.dictFitFH_Chadwick[method]
@@ -3651,13 +3647,16 @@ class IndentCompression:
                     else:
                         low_f = np.ones_like(high_h) * bestH0
                     
-                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    # legendText = 'bestH0 =   {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    legendText = 'Fit  @ 15% of Max. Force\n'
+                    legendText += 'H0 =   {:.2f}nm'.format(bestH0)
+
                     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                    # ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
-                    #         label = legendText)
-                    # ax.plot(plot_startH, plot_startF, marker = 'o', color = 'cyan', zorder = 4)
+                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#0C8C00', markersize = 10)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = '#0C8C00',
+                            linewidth = 3, zorder = 4, label = legendText)
 
                     
                 # if 'H0_Chadwick_' + 'ratio_2-2.5' in self.dictH0.keys():
@@ -3677,13 +3676,13 @@ class IndentCompression:
                 #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
                     
 
-                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.legend(loc = 'upper right', prop={'size': 8})
                 ax.title.set_text(titleText)
 
                 
                 
-            ax = ufun.setAllTextFontSize(ax, size = 9)
-            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax = ufun.setAllTextFontSize(ax, size = 14)
+            ax.legend(loc = 'upper right', prop={'size': 8})
             ax.title.set_text(titleText)
             
                     
@@ -4824,15 +4823,12 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         i_tsDf = ufun.findFirst(1, maskComp)
                 
         #### 3.3 Create IndentCompression object
-        try:
-            IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
-            CC.listIndent.append(IC)
-            doThisCompAnalysis = IC.validateForAnalysis()
-        except:
-            doThisCompAnalysis = False
+
+        IC = IndentCompression(CC, thisCompDf, thisExpDf, i, i_tsDf)
+        CC.listIndent.append(IC)
     
         #### 3.4 State if i-th compression is valid for analysis
-        # doThisCompAnalysis = IC.validateForAnalysis()
+        doThisCompAnalysis = IC.validateForAnalysis()
 
 
         if doThisCompAnalysis:

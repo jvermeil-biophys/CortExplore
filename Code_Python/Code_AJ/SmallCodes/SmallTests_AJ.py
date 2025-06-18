@@ -557,12 +557,14 @@ for i in range(len(allTifs)):
 
 pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos/24.12.20'
 path = 'D:/Anumita/MagneticPincherData/Raw/ToConvert/'
-allFiles = os.listdir(path)
-allTifs = [i for i in allFiles if '24-12-20' in i and '.tif' in i]
-allFields = [i for i in allFiles if '24-12-20' in i and '_Field' in i]
-allLogs = [i for i in allFiles if '24-12-20' in i and '_LogPY' in i]
 
-activationFrames = np.asarray([0, 666, 1330])
+motif = '23-05-10_M2_P1_C2_disc20um_L40'
+allFiles = os.listdir(path)
+allTifs = [i for i in allFiles if motif in i and '.tif' in i]
+allFields = [i for i in allFiles if motif in i and '_Field' in i]
+allLogs = [i for i in allFiles if motif in i and '_LogPY' in i]
+
+activationFrames = np.asarray([0, 436, 1745])
 
 for i in range(len(allTifs)):
     selectedFrames = []
@@ -603,7 +605,61 @@ for i in range(len(allTifs)):
     
     io.imsave(os.path.join(pathSave, tif), new_stack)
         
+#%% Code to create videos with a decently constant frame rate with a timestamp
+
+#-Using new _LogPY files
+
+pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos/'
+path = 'D:/Anumita/MagneticPincherData/Raw/ToConvert/'
+
+motif = '23-05-10_M2_P1_C2_disc20um_L40'
+allFiles = os.listdir(path)
+allTifs = [i for i in allFiles if motif in i and '.tif' in i]
+allFields = [i for i in allFiles if motif in i and '_Field' in i]
+allLogs = [i for i in allFiles if motif in i and '_LogPY' in i]
+
+activationFrames = np.asarray([0, 434, 1743])
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')[:3000]
+    status = pd.read_csv(os.path.join(path, log), delimiter = '\t')[:3000]
+    
+    ctfield = status['Slice'][status['status_frame'] == 1.0].values
+    selectedFrames.extend(ctfield)
+    
+    comp = status['Slice'][status['status_frame'] == 0.1].values
+    compId = np.asarray(np.linspace(0,199,5), dtype = 'int')
+    for j in range(len(comp)//200):
+        selectedComp = comp[j*200 : (j+1)*200]
+        idx = np.asarray(selectedComp[compId], dtype = 'int')
+        selectedFrames.extend(idx)
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[1, 1])/1000
+    
+    activationSlices = np.concatenate([np.where(selectedFrames == k)[0] for k in activationFrames])
+    activationSlices = activationSlices.flatten()
+    
+    for z in range(len(new_stack)):
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 2,(0,0,0),5,cv2.LINE_AA)
         
+        if len(activationFrames) != 0 and z in activationSlices:
+            cv2.circle(new_stack[z, :, :], (242, 209), 230, (0,0,255), 3)
+    
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+                
+                
         
 #%% Small code to plot forces
 
@@ -667,9 +723,9 @@ def computeMag_M450(B):
     return(M)
 
 V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
-m = computeMag_M450(30 * 10**(-3))*V
+m = computeMag_M450(50* 10**(-3))*V
 
-d = 400 * 10**-9
+d = 600 * 10**-9
 
 F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
 
@@ -865,10 +921,11 @@ for i in allFiles:
 
 #%% Code to create videos with a decently constant frame rate with a timestamp with Status File
 
-pathSave = 'D:/Anumita/MagneticPincherData/Raw/Videos'
-path = 'D:/Anumita/MagneticPincherData/Raw/24.04.24'
+pathSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_3/Converted'
+path = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_3/TIFsToConvert'
 allFiles = os.listdir(path)
-key = '24-04-24'
+
+key = '24-12-14_M2_P1_C8_disc20um_L50'
 allTifs = [i for i in allFiles if key in i and '.tif' in i]
 allFields = [i for i in allFiles if key in i and '_Field' in i]
 allLogs = [i for i in allFiles if key in i and '_Status' in i]
@@ -881,7 +938,7 @@ for i in range(len(allTifs)):
     file = allFields[i]
     log = allLogs[i]
     
-    print(tif)
+    # print(tif)
     field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
     status = pd.read_csv(os.path.join(path, log), delimiter = '_',  header=None)
     
@@ -889,9 +946,9 @@ for i in range(len(allTifs)):
     selectedFrames.extend(ctfield)
     
     fluo = (status[1][status[1] == 'Fluo'].index)
-    precomp_relax = (status[2][(status[2] == 'sigmoid-15.00-1.00') | \
+    precomp_relax = (status[2][(status[2] == 'sigmoid-5.00-1.00') | \
                                (status[2] == 'constant-1.00-1.00') | \
-                               (status[2] == 't^4-50.00-15.00')].index)[::6]
+                               (status[2] == 't^4-50.00-5.00')].index)[::6]
     comp = (status[2][status[2] == 't^4-1.00-50.00'].index)[::60]
 
     selectedFrames.extend(precomp_relax)
@@ -909,9 +966,9 @@ for i in range(len(allTifs)):
     activationSlices = (status[1][status[1] == 'Fluo'].index) + 1
 
     for (z, j) in zip(range(len(new_stack)), selectedFrames):
-        print(j)
+        # print(j)
         text = str(dt.timedelta(seconds = times[z]))[2:9]
-        cv2.putText(new_stack[z, :, :], text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.5,(0,0,0),2,cv2.LINE_AA)
+        cv2.putText(new_stack[z, :, :], text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2,(0,0,0),5,cv2.LINE_AA)
         
         if j in activationSlices:
             print('True')
@@ -1094,3 +1151,109 @@ for i in cellNames:
         
     newStatus.to_csv(os.path.join(cellPath, i + '_Status.txt'), sep='_', index=False, header=False )
     newField.to_csv(os.path.join(cellPath, i + '_Field.txt'), sep='\t', index=False, header=False )
+    
+#%% Code to create videos with a decently constant frame rate with a timestamp with Status File
+# Only taking first image of constant field, each loop
+
+pathSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_3/Converted'
+path = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_3/TIFsToConvert'
+allFiles = os.listdir(path)
+
+key = '25-01-21_M4_P1_C6'
+allTifs = [i for i in allFiles if key in i and '.tif' in i]
+allFields = [i for i in allFiles if key in i and '_Field' in i]
+allLogs = [i for i in allFiles if key in i and '_Status' in i]
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    # print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+    status = pd.read_csv(os.path.join(path, log), delimiter = '_',  header=None)
+    
+    
+    for k in range(1, status[0].max()+ 1):
+        ctfield =( status[0][status[0] == k].index)[0]
+        selectedFrames.append(ctfield)
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[0, 1])/1000
+    comps = np.arange(1, status[0].max()+ 1) 
+    
+    for (z, j) in zip(range(len(new_stack)), selectedFrames):
+        # print(j)
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2,(0,0,0),5,cv2.LINE_AA)
+        # cv2.putText(new_stack[z, :, :], 'compNum :', (310,280), cv2.FONT_HERSHEY_SIMPLEX,1.05,(255,255,255),2,cv2.LINE_AA)
+        cv2.putText(new_stack[z, :, :],  str(comps[z]), (10,320), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+
+    
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+    
+#%% Code to create videos with a decently constant frame rate with a timestamp with Status File
+# Only taking first image of constant field, each loop
+
+pathSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_2/Converted'
+path = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_2/TIFsToConvert'
+allFiles = os.listdir(path)
+
+key = '23-04-25'
+allTifs = [i for i in allFiles if key in i and '.tif' in i]
+allFields = [i for i in allFiles if key in i and '_Field' in i]
+allLogs = [i for i in allFiles if key in i and '_LogPY' in i]
+
+for i in range(len(allTifs)):
+    selectedFrames = []
+    tif = allTifs[i]
+    file = allFields[i]
+    log = allLogs[i]
+    
+    # print(tif)
+    field = np.loadtxt(os.path.join(path, file), delimiter = '\t')
+    status = pd.read_csv(os.path.join(path, log), delimiter = '\t')
+    # loopStruct = 301
+    loopStruct = 434
+
+    for k in range(1, int(status.iloc[:,0].max()/loopStruct) + 1):
+        ctfield =status.iloc[:,0][status.iloc[:,0] == loopStruct*(k-1)].values
+        print(k)
+        selectedFrames.extend(ctfield)
+    
+    selectedFrames = np.asarray(np.sort(selectedFrames))
+
+    stack = tiff.imread(os.path.join(path, tif))
+
+    new_stack = stack[selectedFrames, :, :]
+    times = (field[selectedFrames, 1] - field[0, 1])/1000
+    
+    for (z, j) in zip(range(len(new_stack)), selectedFrames):
+        # print(j)
+        text = str(dt.timedelta(seconds = times[z]))[2:9]
+        cv2.putText(new_stack[z, :, :], text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2,(0,0,0),5,cv2.LINE_AA)
+        # cv2.putText(new_stack[z, :, :], text, (250, 380), cv2.FONT_HERSHEY_SIMPLEX, 2,(0,0,0),5,cv2.LINE_AA)
+
+        # cv2.putText(new_stack[z, :, :], 'compNum :', (310,280), cv2.FONT_HERSHEY_SIMPLEX,1.05,(255,255,255),2,cv2.LINE_AA)
+        # if z > 4:
+        #     # cv2.putText(new_stack[z, :, :],  str(z - 4), (10,380), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+        #     cv2.putText(new_stack[z, :, :],  str(z - 4), (400,60), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+        # else:
+        #     # cv2.putText(new_stack[z, :, :],  str(0), (10,380), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+        #     cv2.putText(new_stack[z, :, :],  str(0), (400,60), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+            
+            
+    
+        # cv2.putText(new_stack[z, :, :],  str(comps[z]), (10,380), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+        cv2.putText(new_stack[z, :, :],  str(z), (400,60), cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,0),3,cv2.LINE_AA)
+        
+
+    io.imsave(os.path.join(pathSave, tif), new_stack)
+
+
+#%% Checking the difference 

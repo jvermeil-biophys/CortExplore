@@ -36,6 +36,8 @@ import GraphicStyles as gs
 import GlobalConstants as gc
 import UtilityFunctions as ufun
 
+from BeadTracker import mainTracker
+
 from BeadTracker_V3 import mainTracker_V3
 from BeadTracker_V4 import mainTracker_V4
 
@@ -725,9 +727,19 @@ manips, wells, cells = 9, 2, 2
 depthoNames = '22.03.31_P1_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoNames, expDf, 
-                     redoAllSteps = True, MatlabStyle = True, trackAll = False, 
+                     redoAllSteps = True,  trackAll = False, 
                      sourceField = 'default')
 
+
+# %%%% M9 : Global activation, 800ms once
+
+dates = '22.03.31'
+
+manips, wells, cells = 9, 2, 2
+depthoNames = '22.03.31_P1_M450_step20_100X'
+
+output = mainTracker_V4(dates, manips, wells, cells, depthoNames, expDf, 
+                     redoAllSteps = True, trackAll = False, metaDataFormatting = 'loopStruct')
 
 
 # %% 28/04/2022 : Experiment in PMMH Mechanics:

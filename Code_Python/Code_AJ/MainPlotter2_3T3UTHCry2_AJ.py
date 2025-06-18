@@ -4095,10 +4095,10 @@ dirToSave = 'D:/Anumita/MagneticPincherData/Figures/Projects/24-11-13_PielTeamMe
 
 data = pf.createDataTable(GlobalTable)
 # '24-02-21', '24-05-29',
-dates = [ '24-02-21', '24-05-29', '24-09-05' , '24-09-24' , '24-09-12']
+dates = [ '24-09-05' , '24-09-24' , '24-09-12']
 
 drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
-labels = [ 'Dox', 'Dox+Light', 'Y27+Dox', 'Y27+Dox+Light']
+labels = [ 'Dox', 'Dox+Light', 'Y27\n+Dox', 'Y27\n+Dox\n+Light']
 
 # drugs = ['doxy', 'doxy_act']
 # labels = ['Dox', 'Dox+Light']
@@ -4156,7 +4156,7 @@ plottingParams = {'data':df,
 fig, ax = plt.subplots(figsize=(7, 6))
 
 fig, ax = pf.rainplot(fig, ax, condCat, palette = palette_cond, 
-                             labels = labels, pairs = pairs, SHIFT = 0.15,
+                             labels = labels, pairs = pairs, 
                              colorScheme = 'black', test = 'non-param',
                              plottingParams = plottingParams, plotTicks = plotTicks, 
                              plotChars = plotChars)
