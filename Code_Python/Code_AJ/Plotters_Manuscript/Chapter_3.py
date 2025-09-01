@@ -196,6 +196,8 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'S(e)_strainGaussian':True, # NEW - Jojo
                         'K(S)_strainGaussian':True, # NEW - Jojo
                         'Plot_Ratio':True, # NEW
+                        'F(h)_log-log':True,
+                        'F(h)_Chadwick_bonded':True,
                         # Fits plotting parameters
                         # Stress
                         'plotStressCenters':DEFAULT_plot_stressCenters,
@@ -226,6 +228,10 @@ fitSettings = {# H0
                 'VWCFitMethods' : ['Full'],
                 'doChadwickFit' : True,
                 'ChadwickFitMethods' : ['Full', 'f_<_400'],
+                'doChadwick-BondedFit' : True,
+                'Chadwick-BondedFitMethods' : ['Full'],
+                'doChadwick-log' : True,
+                'Chadwick-logFitMethods' : ['Full'],
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
                 'centers_StressFits' : plot_stressCenters,
@@ -258,21 +264,22 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_strainGaussian':False, # NEW - Jojo
                         'S(e)_Log':False, # NEW - Numi
                         'K(S)_Log':False, # NEW - Numi
-                        'Plot_Ratio':False
+                        'Plot_Ratio':False,
+                        'F(h)_log-log':True,
+                        'F(h)_Chadwick_bonded':True
                         }
 
 
 Task = '24-12-14 & 24-12-20 & 25-01-14 & 25-01-23 & 25-01-21 & 25-02-28 & 25-03-12'
 # Task = '25-01-21_M2_P2_C3'
 
-
-fitsSubDir = 'VWC-Chadwick_Chapter-3_25-04-09'
+fitsSubDir = 'Chadwick_bonded_Indentation_Tests'
 # Task = '25-03-12'
 
 # fitsSubDir = 'VWC-Chadwick_Chapter-3_25-03-12'
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -292,6 +299,7 @@ dataActPath = 'D:/Anumita/MagneticPincherData/Raw/ActivationData/25-01-20_Activa
 dataBlebPath = os.path.join(cp.DirDataAnalysis, '25-05-25_BlebbingCells_IOptoRhoA.csv')
 
 
+
 data = pf.createDataTable(GlobalTable, dataActPath=dataActPath, dataBlebPath = dataBlebPath,
                           fitsSubDir = filename)
 
@@ -300,7 +308,7 @@ plt.style.use('seaborn-v0_8')
 #%%%% Filters
 
 styleActivation =  {'no light':{'color': '#808080','marker':'o', 'label': 'No Light'}, 
-                    # 'global':{'color': '#0000ff','marker':'o', 'label': 'Global\nActivation'},
+                   'global':{'color': '#0000ff','marker':'o', 'label': 'Global\nActivation'},
                     }
 
 styleDf = pd.DataFrame(styleActivation)
@@ -311,9 +319,9 @@ activation = list(styleActivation.keys())
 
 celltypes = ['optoRhoA-NS']
 magField = [5.0]
-drugs = ['doxy', 'doxy_act']
-activationfreq = [0, 3]
-firstAct = [-1, 1]
+drugs = ['doxy'] #, 'doxy_act']
+activationfreq = [0] #, 3]
+firstAct = [-1] #, 1]
 dates = ['24-12-14',  '25-01-14', '25-01-21', '25-01-23',  '25-02-28' ,'25-03-12']
 
 # Here I am not considering the experiment where I activated the same cells 
@@ -347,8 +355,7 @@ blebCells = ['24-12-14_M2_P2_C9',
 Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
             (data['error_vwc_Full'] == False),
-            
-
+        
             (data['substrate'] == '20um fibronectin discs'), 
             (data['R2_vwc_Full'] >= 0.90),
             (data['H0_vwc_Full'] <= 1200) & (data['H0_vwc_Full'] > 100),
@@ -361,7 +368,6 @@ Filters = [(data['validatedThickness'] == True),
             (data['activation frequency'].apply(lambda x : x in activationfreq)),
             (data['first activation'].apply(lambda x : x in firstAct)),
             (data['date'].apply(lambda x : x in dates)),
-            # ~(data['dateCell'].apply(lambda x : x in chosenPairs)),
             ]
 
 df = pf.filterDf(Filters, data)
@@ -390,6 +396,187 @@ avgDf = avgDf[(avgDf[('compNum', 'count')] > 2)]
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
+#%%% E-400 vs E-eff (log-log)
+
+
+plt.style.use('seaborn-v0_8')
+fig, ax = plt.subplots(figsize=(12/SCALE_px_cm, 12/SCALE_px_cm))
+
+
+plottingParams = {'data':df,
+                  'x':'E_f_<_400_log',
+                  'y':'E_eff_log',
+                  'hue':'NLI_Plot',
+                  'legend':False
+                    }
+
+ax = sns.scatterplot(**plottingParams)
+
+params, results = ufun.fitLineOLS(df['E_f_<_400_log'].values, 
+                                    df['E_eff_log'].values)
+
+b, a = params[0], params[1]
+
+x = (np.linspace(df['E_f_<_400_log'].min(), df['E_f_<_400_log'].max()))
+Y=a*x+b
+
+
+fitParamsText = 'Fit y = ax + b\n'
+fitParamsText += 'a = {:.2f}, b = {:.2f}\n'.format(a, b)
+fitParamsText += 'R2 = {:.3f}\n'.format((results.rsquared))
+
+ax.plot(x, Y, color = 'grey', label = fitParamsText)
+Y2 = x
+ax.plot(x, Y2, color = 'black', ls = '--')
+
+categories = ['linear', 'intermediate', 'non-linear']
+colors = ['b', 'g', 'r']
+
+for i, j in zip(categories, colors):
+    df_plot = df.loc[df['NLI_Plot'] == i]
+    params, results = ufun.fitLineOLS(df_plot['E_f_<_400_log'].values, 
+                                      df_plot['E_eff_log'].values)
+    
+    
+    b, a = params[0], params[1]
+
+    x = (np.linspace(df['E_f_<_400_log'].min(), df['E_f_<_400_log'].max()))
+    Y=a*x+b
+    fitParamsText = ''
+    fitParamsText += i + '\n'
+    fitParamsText += 'a = {:.2f}, b = {:.2f}\n'.format(a, b)
+    fitParamsText += 'R2 = {:.3f}\n'.format((results.rsquared))
+
+    ax.plot(x, Y, color = j, label = fitParamsText)
+
+plt.ylim(2, 4.5)
+plt.xlim(2, 4.5)
+
+plt.legend()
+plt.show()
+
+#%%% E-400 vs E-eff
+
+
+plt.style.use('seaborn-v0_8')
+fig, ax = plt.subplots(figsize=(12/SCALE_px_cm, 12/SCALE_px_cm))
+
+
+plottingParams = {'data':df,
+                  'x':'E_f_<_400',
+                  'y':'E_eff',
+                  'hue':'NLI_Plot',
+                  # 'legend':False
+                    }
+
+ax = sns.scatterplot(**plottingParams)
+
+params, results = ufun.fitLineOLS(df['E_f_<_400'].values, 
+                                    df['E_eff'].values)
+
+b, a = params[0], params[1]
+
+x = (np.linspace(df['E_f_<_400'].min(), df['E_f_<_400'].max()))
+Y=a*x+b
+
+
+fitParamsText = 'Fit y = ax + b\n'
+fitParamsText += 'a = {:.2f}, b = {:.2f}\n'.format(a, b)
+fitParamsText += 'R2 = {:.3f}\n'.format((results.rsquared))
+
+ax.plot(x, Y, color = 'grey', label = fitParamsText)
+Y2 = x
+ax.plot(x, Y2, color = 'black', ls = '--')
+
+categories = ['linear', 'intermediate', 'non-linear']
+colors = ['b', 'g', 'r']
+
+for i, j in zip(categories, colors):
+    df_plot = df.loc[df['NLI_Plot'] == i]
+    params, results = ufun.fitLineOLS(df_plot['E_f_<_400'].values, 
+                                      df_plot['E_eff'].values)
+    
+    
+    b, a = params[0], params[1]
+
+    x = (np.linspace(df['E_f_<_400'].min(), df['E_f_<_400'].max()))
+    Y=a*x+b
+    fitParamsText = ''
+    fitParamsText += i + '\n'
+    fitParamsText += 'a = {:.2f}, b = {:.2f}\n'.format(a, b)
+    fitParamsText += 'R2 = {:.3f}\n'.format((results.rsquared))
+
+    ax.plot(x, Y, color = j, label = fitParamsText)
+
+# plt.ylim(2, 4.5)
+# plt.xlim(2, 4.5)
+
+plt.legend()
+plt.show()
+
+#%%% NLR vs NLR corrected with CIW
+
+plt.style.use('seaborn-v0_8')
+fig, ax = plt.subplots(figsize=(12/SCALE_px_cm, 12/SCALE_px_cm))
+
+# Ensure consistent ID
+df['cellID_comp'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+# Prepare Y and K data
+df_y = pd.concat([
+    df[['cellID_comp', 'Y_vwc_Full']].rename(columns={'Y_vwc_Full': 'Y'}).assign(fitType='og'),
+    df[['cellID_comp', 'Y_NLImod']].rename(columns={'Y_NLImod': 'Y'}).assign(fitType='corr')
+])
+
+df_k = pd.concat([
+    df[['cellID_comp', 'K_vwc_Full']].rename(columns={'K_vwc_Full': 'K'}).assign(fitType='og'),
+    df[['cellID_comp', 'K_NLImod']].rename(columns={'K_NLImod': 'K'}).assign(fitType='corr')
+])
+
+# Merge Y and K on index
+df_combined = df_y.merge(df_k, on=['cellID_comp', 'fitType'])
+
+palette = distinctipy.get_colors(len(df['cellID_comp'].unique()))
+# Draw line from og → corr for each cellID_comp
+for cid in df_combined['cellID_comp'].unique():
+    sub = df_combined[df_combined['cellID_comp'] == cid]
+    if len(sub) == 2:
+        ax.plot(sub['Y'], sub['K'], color='gray', linewidth=1, alpha=0.4)
+        
+# sns.scatterplot(data=df_combined[df_combined['fitType'] == 'og'], x='Y', y='K', style='cellID_comp',
+#                 palette = palette, color = 'blue', s = 100, linewidth = 1, ax=ax, alpha = 0.4)
+# sns.scatterplot(data=df_combined[df_combined['fitType'] == 'corr'], x='Y', y='K', style='cellID_comp', 
+#                 palette = palette, color = 'red', s = 175, linewidth = 1, ax=ax, alpha = 0.4)
+
+marker_style = 'o'  # or any shape: 's', '^', 'D', etc.
+
+# First plot: fitType == 'og' (blue)
+for cid in df_combined['cellID_comp'].unique():
+    subset = df_combined[(df_combined['fitType'] == 'og') & (df_combined['cellID_comp'] == cid)]
+    sns.scatterplot(data=subset, x='Y', y='K', marker=marker_style,
+                    color='blue', s=80, linewidth=1, ax=ax, alpha=0.5, label=f'OG - {cid}')
+
+# Second plot: fitType == 'corr' (red)
+for cid in df_combined['cellID_comp'].unique():
+    subset = df_combined[(df_combined['fitType'] == 'corr') & (df_combined['cellID_comp'] == cid)]
+    sns.scatterplot(data=subset, x='Y', y='K', marker=marker_style,
+                    color='red', s=80, linewidth=1, ax=ax, alpha=0.5, label=f'Corr - {cid}')
+    
+# 1:1 reference line
+ax.axline((1, 1), slope=1, color='C0', linestyle='--', linewidth=1)
+
+# Log scales
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.tick_params(axis='y', labelsize=14)
+ax.tick_params(axis='x', labelsize=14)
+
+# Optionally clean up legend or adjust
+ax.get_legend().remove()
+# ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+
+# # Adjust layout to make space for the legend
+# fig.subplots_adjust(right=0.6)
 #%%% NLI vs. Compression
 
 plt.style.use('seaborn-v0_8')
@@ -416,8 +603,8 @@ compCount = toPlot.groupby('compNum').count()
 toPlot = toPlot[toPlot['new_compNum'] < 7] #After the 7th compression, number of cells go from 19 (max) to 8
 
 # Apply this to each cellID group
-toPlot_NLR = toPlot.groupby('dateCell', group_keys=False).apply(pf.NLR_normalize_by_first_six, measure)
-
+toPlot_NLR = toPlot.dropna(subset = [measure])
+toPlot_NLR = toPlot_NLR.groupby('dateCell', group_keys=False).apply(pf.NLR_normalize_by_first_six, measure)
 measure_new = measure + '_norm'
 
 #Remove compressions where 
@@ -431,12 +618,14 @@ plottingParams1 = {'data':toPlot_NLR,
                   'alpha':0.5,
                  }
 
+
 plottingParams2 = {'data':toPlot_NLR,
                   'x':'new_compNum', 
                   'y':measure_new, 
                   'marker':'o',
                   'color':'black',
-                  'estimator':'mean'
+                  'estimator':'mean',
+                  'errorbar': 'ci',
                  }
 
 
@@ -868,17 +1057,17 @@ plt.yticks(**plotTicks)
 plt.show()
 plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_GlobalActivation_Ioptorhoa.pdf').format(str(dates), str(condCat)))
 
-# fig, axes = plt.subplots(figsize = (13,9))
-# fig, axes, avgDf = pf.EvH0_LogCellAvg(fig, axes,  dfPairs, condCat, condCol, hueType = 'condCol',
-#                                       colorScheme = 'white', palette = palette_cond)
-# fig.suptitle(str(dates), **plotChars)
-# plt.tight_layout()
-# plt.show()
-# plt.savefig((dirToSave + '(2a)_{:}_{:}_logAvgEvH_NLI.png').format(str(dates), str(condCat)))
+fig, axes = plt.subplots(figsize = (13,9))
+fig, axes, avgDf = pf.EvH0_LogCellAvg(fig, axes,  dfPairs, condCat, condCol, hueType = 'condCol',
+                                      colorScheme = 'white', palette = palette_cond)
+fig.suptitle(str(dates), **plotChars)
+plt.tight_layout()
+plt.show()
+
+plt.savefig((dirToSave + '(2a)_{:}_{:}_logAvgEvH_NLI.png').format(str(dates), str(condCat)))
 
 
-
-# avgDf = avgDf = pf.createAvgDf(df, condCol, dataFluoPath = None, e_norm = True)
+avgDf = pf.createAvgDf(dataSlopes, condCol, dataFluoPath = None, e_norm = True)
 
 #%%% Plotnine paired plots
 #%%%% NLI - Pairedplot
@@ -888,7 +1077,7 @@ stat = 'mean'
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
-plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      pairs = pairs, stat = stat, palette = palette_cond, test= 'less',
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = (-2.1,2))
 
@@ -934,6 +1123,30 @@ stat = 'first'
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
+plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     figsize = (10/SCALE_px_cm,10/SCALE_px_cm), test = 'greater',
+                     pairs = pairs, stat = stat, palette = palette_cond, 
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+
+
+plt.xticks([1,2], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+
+plt.xlabel('')
+plt.title('NLR Correlation', fontweight='bold', **plotChars)
+
+plt.show()
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired-woBlebs.pdf'))
+
+
+#%%%% NLR - correlation
+measure = 'NLI_corr'
+stat = 'first'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
 plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      figsize = (10/SCALE_px_cm,10/SCALE_px_cm), test = 'greater',
                      pairs = pairs, stat = stat, palette = palette_cond, 
@@ -948,7 +1161,7 @@ plt.xlabel('')
 plt.title('NLR Correlation', fontweight='bold', **plotChars)
 
 plt.show()
-plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_normPaired-woBlebs.pdf'))
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_normPaired-woBlebs.pdf'))
 
 
 
@@ -972,7 +1185,7 @@ plt.xlabel('')
 plt.title('Mean H0 per cell (nm)\n ', fontweight='bold', **plotChars)
 
 plt.show()
-plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired_woBlebs.pdf'))
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired_woBlebs.pdf'))
 
 #%%%% BestH0 - Normalized Pairedplot
 measure = 'bestH0_log'
@@ -1038,6 +1251,48 @@ plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotC
 plt.show()
 plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_normPaired_woBlebs.pdf'))
 
+#%%%% E_normalized
+measure = 'E_norm'
+stat = 'mean'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, palette = palette_cond, test = 'greater',
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+
+
+plt.xticks([1,2], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotChars)
+
+plt.show()
+plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired.pdf'))
+
+#%%%% E_normalized, normalized
+measure = 'E_norm'
+stat = 'mean'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided',
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+
+
+plt.xticks([1,2], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotChars)
+
+
+plt.show()
+plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
 
 #%%% Pointplots
 
@@ -1071,6 +1326,81 @@ fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, p
 
 plt.show()
 plt.savefig((dirToSave + '(9a)_{:}_{:}_{:}_NLImodPointplot.png').format(str(dates), str(condCat), stats))
+
+#%%% Cell-dependent NLR Variability
+
+plotter = df
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_var = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(0, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+# ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+plottingParams = {'data':plotter, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10,
+                 
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+var_pop = plotter[('NLI_mod', 'mean')].var()
+text = 'STD of the Population = {:.2f}'.format(var_pop)
+plt.text(0, 3, text, fontsize=12)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
 
 
 
@@ -1144,8 +1474,6 @@ ax2 = ax.twinx()
 # Example of plotting another line on the twin axis
 ax2 = sns.lineplot(ax=ax2, **plottingParams2)
 
-
-
 # plt.ylabel('(%) Percentage of Blebbing Cells', **plotChars)
 # plt.xlabel('Compressions Post-Activation', **plotChars)
 y_labels_2 = np.linspace(0, 25, 6)
@@ -1155,14 +1483,13 @@ ax2.set_ylim(-1, 25)
 ax2.set_yticks(y_labels_2, labels = y_labels_2,**plotTicks)
 
 
-
-
 # plt.xticks(**plotTicks)
 # plt.yticks(**plotTicks)
 N = 2  # You can change N to any value
 for i in range(0, 3):
     plt.axvline(x= 0.3 + (i*3), color='blue', linestyle='-', 
                 ymin=0, ymax=0.1, linewidth=2)
+    
 plt.xlim(0, 9)
 plt.savefig(os.path.join(dirToSave, 'BlebbingCellsvComp_IOpto.pdf'), dpi = 200)
 
@@ -1182,12 +1509,12 @@ dirToSave = 'D:/Anumita/NextCloud/Anumita - Manuscript/Figures/Chapter_3/'
 dataActPath = 'D:/Anumita/MagneticPincherData/Raw/ActivationData/25-01-20_ActivationData.csv'
 
 data = pf.createDataTable(GlobalTable, dataActPath=dataActPath, fitsSubDir = filename)
-
+plt.style.use('seaborn-v0_8')
 
 #%%%% Filters
 
-styleDox =  {'none':{'color': '#000000','marker':'o', 'label': 'Non-induced'},
-               # 'doxy':{'color': '#808080','marker':'o', 'label': 'Induced'},
+styleDox =  {#'none':{'color': '#000000','marker':'o', 'label': 'Non-induced'},
+             'doxy':{'color': '#808080','marker':'o', 'label': 'Induced'},
             }
 
 styleDf = pd.DataFrame(styleDox)
@@ -1238,10 +1565,7 @@ avgDf = avgDf[(avgDf[('compNum', 'count')] > 2)]
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
-
-
 #%%% Mean NLR Boxplot
-
 
 y = 'NLI_mod' 
 
@@ -1285,15 +1609,12 @@ plottingParams = {'data':avgDf,
                     }
 
 
-
-
 fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
 fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, labels = labels,
                              palette = palette_cond,colorScheme = 'white',
                              plottingParams = plottingParams, plotChars = plotChars)
 
 # fig.suptitle(str(dates), **plotChars)
-
 
 plt.yscale('log')
 y_labels = np.asarray([100 ,250, 500, 1000, 1500])
@@ -1321,7 +1642,6 @@ plottingParams = {'data':avgDf,
                     }
 
 
-
 fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
 fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, labels = labels,
                              palette = palette_cond,colorScheme = 'white',
@@ -1339,6 +1659,113 @@ plt.title('Mean Effective Elasticity (kPa)', fontweight='bold', **plotChars)
 plt.show()
 plt.savefig((dirToSave + 'Mean-{:}_I-OptoRhoA_NI-Ind.pdf'.format(y)))
 
+#%%% NLI correlation
+
+y = 'NLI_corr' 
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : (y, 'first'),
+                  'order' : condCat,
+                  's':6,
+                  "linewidth": 0.5,
+                  'edgecolor':'#ffffff',
+                  'dodge':True
+                    }
+
+fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, labels = labels,
+                             palette = palette_cond,colorScheme = 'white',
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+
+# plt.yscale('log')
+# y_labels = np.asarray([100 ,250, 500, 1000, 1500])
+# y_ticks = np.log10(np.asarray(y_labels))
+# ax.set_yticks(y_ticks, labels =y_labels,**plotTicks)
+
+plt.ylabel('')
+plt.xlabel('')
+plt.title('NLI Correlation', fontweight='bold', **plotChars)
+plt.show()
+plt.savefig((dirToSave + 'Mean-{:}_I-OptoRhoA_NI-Ind.pdf'.format(y)))
+
+#%%% Cell-dependent NLR Variability
+
+plotter = df[df['date'] == '24-12-14']
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_var = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(0, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+# ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}-IOptoRhoA_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf[avgDf[('date', 'first')] == '24-12-14']
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+plottingParams = {'data':plotter, 
+                  'x' : ('date', 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10,
+                 
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+var_pop = plotter[('NLI_mod', 'mean')].var()
+text = 'STD of the Population = {:.2f}'.format(var_pop)
+plt.text(0, 3, text, fontsize=12)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}-IOptoRhoA_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
+
 #%%% Fluctuations vs Thickness
 
 fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm))
@@ -1347,7 +1774,7 @@ plottingParams = {'data':avgDf,
                   'x' :('bestH0' , 'mean'),
                   'y':('ctFieldFluctuAmpli' , 'first'),
                   's':30
-                    }
+                  }
 
 params, results = ufun.fitLineHuber(avgDf[('bestH0' , 'mean')], avgDf[('ctFieldFluctuAmpli' , 'first')])
 pval = results.pvalues[1]
@@ -1360,7 +1787,6 @@ eqnText += " Fit y = m * x + c\n".format(a, k)
 eqnText += " y = {:.1e} * x + {:.1f}\n".format(a, k)
 eqnText += " p-val = {:.3f}".format(pval)
 
-
 ax = sns.scatterplot(label = eqnText, color = styleActivation[activation[0]]['color'],  **plottingParams)
 plt.plot(x, y, color = styleActivation[activation[0]]['color'])
 
@@ -1370,3 +1796,20 @@ plt.yticks(**plotTicks)
 ax.set_ylim(0, 1000)
 plt.show()
 plt.savefig((dirToSave + 'Fluctuations_bestH0_{:}_{:}.pdf').format(celltypes, drugs), dpi = 200)
+
+#%%% Coefficient of variation between compressions and within cells of a population
+
+groupedDf = df.groupby('cellID')
+
+plottingParams = {'data':bleb_metrics, 
+                  'x' : 'compNum', 
+                  'y' : ('blebStatus', 'percent'),
+                  'linewidth' : 2,
+                  'markersize' : 6,
+                  'markeredgecolor':'black', 
+                  'color' : 'k',
+                  'marker' : 'o'
+                   }
+
+
+ax2 = sns.lineplot(ax=ax2, **plottingParams2)

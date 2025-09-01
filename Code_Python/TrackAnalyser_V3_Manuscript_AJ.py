@@ -3422,16 +3422,16 @@ class IndentCompression:
                 if not fitError:
                     K, Y, H0 = dictFit['K'], dictFit['Y'], dictFit['H0']
                     R2, Chi2 =  dictFit['R2'], dictFit['Chi2']
+                    print(R2)
                     hFit = dictFit['x']
                     fPredict = dictFit['yPredict']
                     kPredict = dictFit['kPredict']
                     ePredict = dictFit['ePredict']
                     Eeff = Y + K * (0.8**-4)
-                    
-                    legendTextE = 'van Wyk-Hook\nE-eff = {:.2e}Pa\nR2 = {:.3f}'.format(H0, Eeff, R2)
+            
+                    legendTextE = 'van Wyk-Hook\nE-eff = {:.2e}Pa\nR2 = {:.3f}'.format(Eeff, R2)
                     legendTextK = 'van Wyk Fit\nK = {:.2e}Pa'.format(K)
                     legendTextY = 'Hookean Fit\nY = {:.2e}Pa'.format(Y)
-                    
                     
                     ax.plot(hFit, (fPredict),'k--', linewidth = 3, linestyle = 'dashdot', label = legendTextE, zorder = 2)
                     ax.plot(hFit, (kPredict),'--', linewidth =3, label = legendTextK, zorder = 2, color = '#8b0000') # '#75305b') #'#940000')
@@ -3494,15 +3494,15 @@ class IndentCompression:
                         low_f = np.ones_like(high_h) * bestH0
                     
                     
-                    # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    legendText = 'H0 = {:.2f}nm'.format(bestH0)# + '\n' + str_m_z
                     
-                    legendText = 'van Wyk-Hook Fit\n'
-                    legendText += 'H0 = {:.2f}nm'.format(bestH0)
+                    # legendText = 'van Wyk-Hook Fit\n'
+                    # legendText += 'H0 = {:.2f}nm'.format(bestH0)
 
                     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
                     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
 
-                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#0C8C00', markersize = 10)
+                    ax.plot([bestH0], [0], ls = '', marker = '*', color = '#0C8C00', label = legendText, markersize = 10)
                     # ax.plot(plot_startH, plot_startF, ls = '--', color = 'k', linewidth = 3,
                     #         label = legendText, zorder = 4)
 
@@ -3530,7 +3530,7 @@ class IndentCompression:
                 
                 
             ax = ufun.setAllTextFontSize(ax, size = 14)
-            ax.legend(loc = 'upper right', prop={'size': 8})
+            ax.legend(loc = 'upper right', prop={'size': 10})
             ax.title.set_text(titleText)
             
                     

@@ -788,11 +788,13 @@ sns.lineplot(data = dfToPlot, x = 'compNo', y = param, hue = 'cellID')
 plt.style.use('default')
 
 plot = dfToPlot
-y = (plot['h0'] - plot['minH'])/plot['h0']
 
-sns.boxplot(x = 'e', y = y, data=plot, color = 'grey', 
+plot['y_strain'] = ((plot['h0'] - plot['minH'])/plot['h0']).values
+
+sns.boxplot(y = 'nli', x = 'y_strain', data=plot, color = 'grey', 
                     medianprops={"color": 'darkred', "linewidth": 2},\
                     boxprops={ "edgecolor": 'k',"linewidth": 2, 'alpha' : 0.9})
     
-sns.swarmplot(x = 'e', y = y, data=plot,linewidth = 1, hue = 'cellID',
-              edgecolor='k')
+plt.show()
+# sns.swarmplot(x = 'e', y = y, data=plot,linewidth = 1, hue = 'cellID',
+#               edgecolor='k')

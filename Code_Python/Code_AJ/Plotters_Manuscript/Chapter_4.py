@@ -52,6 +52,7 @@ import GraphicStyles as gs
 import UtilityFunctions as ufun
 import TrackAnalyser_V3 as taka
 
+import TrackAnalyser_V3_Manuscript_AJ as taka_ms
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -207,6 +208,71 @@ DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                                      + '_' + str(DEFAULT_fitSettings['overlapFitLog']),
                         }
     
+#%% Mechanics
+
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick', 'VWC', 'Dimitriadis'],
+                'zones_H0':['%f_10', '%f_15', '%f_100'],
+                'method_bestH0':'Chadwick', 
+                'zone_bestH0':'%f_15',
+                'doVWCFit' : True,
+                'VWCFitMethods' : ['Full'],
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400'],
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 75
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        'Plot_Ratio':False
+                        }
+
+
+Task = '24-12-14'
+# Task = '25-01-21_M2_P2_C3'
+
+
+fitsSubDir = 'IntroPlots_25-06-12'
+# Task = '25-03-12'
+
+# fitsSubDir = 'VWC-Chadwick_Chapter-3_25-03-12'
+
+GlobalTable_meca = taka_ms.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
+                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
+                            fitSettings = fitSettings, plotSettings = plotSettings,
+                            fitsSubDir = fitsSubDir) # task = 'updateExisting'
+
 
 #%% Mechanics
 
@@ -303,7 +369,7 @@ styleActivation =  {'no light':{'color': '#808080','marker':'o', 'label': 'Non-P
                     'away from beads':{'color': '#512DA8','marker':'o', 'label': 'Polarized\nFront'},
                     # 'side':{'color': '#BA1E74','marker':'o', 'label': 'Middle'},
                     # 'at beads':{'color': '#fcb001','marker':'o', 'label': 'Polarized\nRear'},
-                    # 'global':{'color': '#0000ff','marker':'o', 'label': 'Global\nActivation'},
+                  #  'global':{'color': '#0000ff','marker':'o', 'label': 'Global\nActivation'},
                     }
 
 styleDf = pd.DataFrame(styleActivation)
@@ -392,6 +458,30 @@ plt.xscale('log')
 x_labels = np.asarray([100 ,250, 500, 1000, 1500])
 x_ticks = np.log10(np.asarray(x_labels))
 ax.set_xticks(x_ticks, labels = np.asarray(x_labels),**plotTicks)
+
+
+#%%% Z-difference vs BestH0
+
+df['D2'] =  (np.sqrt(df['surroundingDx']**2 + df['surroundingDy']**2)) - 4500
+df['ampliDz'] = np.abs(df['surroundingDz'])
+
+plottingParams = {'data':df,
+                  'x':'D2',
+                  'y':'ampliDz',
+                  'hue':condCol
+                 }
+
+fig, ax = plt.subplots(figsize = (15/SCALE_px_cm,10/SCALE_px_cm))
+
+
+
+sns.scatterplot(**plottingParams)
+# plt.xscale('log')
+
+# x_labels = np.asarray([100 ,250, 500, 1000, 1500])
+# x_ticks = np.log10(np.asarray(x_labels))
+# ax.set_xticks(x_ticks, labels = np.asarray(x_labels),**plotTicks)
+
 
 #%%% NLI vs. Compression
 
@@ -1078,26 +1168,113 @@ plt.show()
 
 toPlot = df[df['dateCell'].apply(lambda x : x in pairedCells)]
 
-fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax = plt.subplots(figsize=(18/SCALE_px_cm, 10/SCALE_px_cm))
 fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, ax, toPlot, condCat, condCol,
                                               hueType = condCol, h_ref = 500,
-                                              colorScheme = 'white', palette = palette_cond)
-fig.suptitle(str(dates), **plotChars)
+                                              colorScheme = 'white', 
+                                              palette = palette_cond)
+# fig.suptitle(str(dates), **plotChars)
+plt.xticks(**plotTicks)
+plt.yticks(**plotTicks)
 plt.show()
-# plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format(str(dates), str(condCat)))
+plt.savefig((dirToSave + '{:}_{:}_EvH_NLI.pdf').format(str(dates), str(condCat)))
 
-fig, axes = plt.subplots(figsize = (13,9))
-fig, axes, avgDf = pf.EvH0_LogCellAvg(fig, axes,  dfPairs, condCat, condCol, hueType = 'condCol',
-                                      colorScheme = 'white', palette = palette_cond)
-fig.suptitle(str(dates), **plotChars)
-plt.tight_layout()
-plt.show()
+
+# fig, axes = plt.subplots(figsize = (13,9))
+# fig, axes, avgDf_EvH = pf.EvH0_LogCellAvg(fig, axes,  dfPairs, condCat, condCol, hueType = condCol,
+#                                       colorScheme = 'white', palette = palette_cond)
+# fig.suptitle(str(dates), **plotChars)
+# plt.tight_layout()
+# plt.show()
 # plt.savefig((dirToSave + '(2a)_{:}_{:}_logAvgEvH_NLI.png').format(str(dates), str(condCat)))
-
 
 avgDf =  pf.createAvgDf(dataSlopes, condCol, dataFluoPath = None, e_norm = True)
 
+
+#%%% EvH0 Paired
+
+toPlot = df[df['dateCell'].apply(lambda x : x in pairedCells)]
+N_point = len(dfPairs['dateCell', 'first'].unique())
+palette_cell_point = distinctipy.get_colors(N_point)
+
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax = pf.EvH_Pairs(fig, ax, toPlot, condCol, condCat, palette = palette_cell_point, 
+                colorScheme = 'white', metric = 'compression',plotChars = plotTicks)
+
+y_labels = np.asarray([100, 500, 1000, 3000, 10000, 25000])
+y_ticks = np.log10((y_labels))
+ax.set_yticks(y_ticks, labels = (y_labels)/1000,**plotTicks)
+
+x_labels = np.asarray([100 ,250, 500, 1000, 1500])
+x_ticks = np.log10(np.asarray(x_labels))
+ax.set_xticks(x_ticks, labels =x_labels,**plotTicks)
+
+#%%% Mean E_norm boxpltos
+
+plotChars = {'color' : '#000000', 'fontsize' : 10}
+plotTicks = {'color' : '#000000', 'fontsize' : 10}
+
+y = 'E_norm' 
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : (y, 'mean'),
+                  'order' : condCat,
+                  's':4,
+                  "linewidth": 0.1,
+                  'edgecolor':'k',
+                  'dodge':True
+                    }
+
+
+
+fig, ax = plt.subplots(figsize = (12/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, labels = labels,
+                             palette = palette_cond,colorScheme = 'white',
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+# fig.suptitle(str(dates), **plotChars)
+
+plt.xlim(-0.5, 4.5)
+plt.yscale('log')
+
+y_labels = [100, 500, 1000, 2500, 5000, 10000, 25000]
+y_ticks = np.log10(np.asarray(y_labels))
+ax.set_yticks(y_ticks, labels = np.asarray(y_labels)/1000,**plotTicks)
+
+
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Elasticity', fontweight='bold', **plotChars)
+plt.show()
+plt.savefig((dirToSave + 'Mean-{}_I-OptoRhoA_'+str(y)+'.pdf'))
+
 #%%% Plotnine paired plots
+
+#%%%% Z-Difference
+
+measure = 'surroundingDz'
+stat = 'median'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, palette = palette_cond, test= 'two-sided',
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+
+
+plt.xticks([1,2], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.xlabel('')
+# plt.axhline(y= 0, ls = (0, (5, 10)), color = 'red', alpha = 0.4, lw = 2)
+
+plt.title('Z-Difference (nm)', fontweight='bold', **plotChars)
+plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_normPaired.pdf'))
+
+plt.show()
+
 #%%%% NLI - Pairedplot
 measure = 'NLI_mod'
 stat = 'mean'
@@ -1175,7 +1352,7 @@ stat = 'mean'
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
-plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure,  test = 'less',
+plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure,  test = 'two-sided',
                      pairs = pairs, stat = stat, palette = palette_cond, logScale = True,
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
 
@@ -1185,18 +1362,18 @@ plt.yticks(**plotTicks)
 plt.ylabel('')
 plt.xlabel('')
 plt.title('Cortical Thickness (nm)\n ', fontweight='bold', **plotChars)
-plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired.pdf'))
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired.pdf'))
 
 plt.show()
 
 #%%%% BestH0 - Normalized Pairedplot
 measure = 'bestH0_log'
-stat = 'mean'
+stat = 'nanmean'
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
-plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+plot, dfPairsPlot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      pairs = pairs, stat = stat, palette = palette_cond, 
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = (0,3))
 
@@ -1218,9 +1395,9 @@ stat = 'mean'
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
-plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided', logScale = True,
-                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 25))
 
 
 plt.xticks([1,2], labels, **plotTicks)
@@ -1239,7 +1416,7 @@ stat = 'mean'
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
-plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+plot, dfPairsPlot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided',
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 4))
 
@@ -1249,20 +1426,22 @@ plt.yticks(**plotTicks)
 plt.ylabel('')
 plt.xlabel('')
 plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotChars)
-plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
 
 plt.show()
-plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
+
 
 #%%%% E_normalized
-measure = 'E_norm'
+measure = 'E_norm_log'
 stat = 'mean'
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
 plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
-                     pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided',
+                     pairs = pairs, stat = stat, palette = palette_cond, test = '                     -sided',
+                     logScale = True,
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
 
 
@@ -1270,7 +1449,7 @@ plt.xticks([1,2], labels, **plotTicks)
 plt.yticks(**plotTicks)
 plt.ylabel('')
 plt.xlabel('')
-plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotChars)
+# plt.title('Mean Elasticity (kPa)\n ', fontweight='bold', **plotChars)
 
 plt.show()
 plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_Paired.pdf'))
@@ -1284,7 +1463,7 @@ dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
                      pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided',
-                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0,3))
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 3.8))
 
 
 plt.xticks([1,2], labels, **plotTicks)
@@ -1320,6 +1499,83 @@ plt.xticks(**plotChars)
 plt.yticks(**plotChars)
 plt.show()
 
+
+#%%% Cell-dependent NLR Variability
+
+plotter = df
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_var = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(0, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+# ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+plottingParams = {'data':plotter, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10,
+                 
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+var_pop = plotter[('NLI_mod', 'mean')].var()
+text = 'STD of the Population = {:.2f}'.format(var_pop)
+plt.text(0, 3, text, fontsize=12)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
+
+
 #%%% Point-line plots
 
 dfPairs, pairedCells = pf.dfCellPairs(avgDf)
@@ -1327,6 +1583,7 @@ condCatPoint = dfPairs[condCol, 'first'].unique()
 N_point = len(dfPairs['dateCell', 'first'].unique())
 palette_cell_point = distinctipy.get_colors(N_point)
 
+#%%
 testH0 = 'two-sided'
 testE = 'less'
 testNli = 'two-sided'
@@ -1334,14 +1591,14 @@ stats = 'mean'
 
 
 plottingParams = {'x' : (condCol, 'first'), 
-                  'y' : ('NLI_mod', stats),
+                  'y' : ('bestH0', 'mean'),
                   'linewidth' : 1,
                   'markersize' : 10,
                   'markeredgecolor':'black', 
                    }
 
 fig, ax = plt.subplots(figsize = (10,10))
-fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim = (-3,3), 
+fig, ax, pvals, dfP = pf.pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, ylim =None, 
                                           pairs = pairs, normalize = False, marker = stats,colorScheme = 'white',
                                           test = 'less', plottingParams = plottingParams,  palette = palette_cell_point,
                                           plotChars = plotChars)

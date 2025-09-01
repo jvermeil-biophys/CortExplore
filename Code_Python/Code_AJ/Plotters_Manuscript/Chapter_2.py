@@ -286,18 +286,19 @@ plotSettings = {# ON/OFF switchs plot by plot
 #                 }
 
 
-Task = '24-05-29 & 24-09-05_M0 & 24-09-05_M1 & 24-09-05_M3 & 24-09-05_M4 & 24-02-21 & 24-09-24 & 24-09-12'
+# Task = '24-05-29 & 24-09-05_M0 & 24-09-05_M1 & 24-09-05_M3 & 24-09-05_M4 & 24-02-21 & 24-09-24 & 24-09-12'
 # Task = '23-02-16 & 23-02-23 & 23-03-08 & 23-03-09 & 23-03-16 & 23-03-17 & 23-03-24 & 22-12-07_M4 & 23-02-02_M1 & 23-01-23_M1 & 23-04-25 & 23-05-10 & 23-05-23_M1 & 23-07-07_M2 & 23-07-12_M1'
+Task = '23-07-12_M1_P1_C4'
 
         
 plt.style.use(())
-fitsSubDir ='VWC-Chadwick_Chapter-2_UtCH-Cry2_25-04-01'
+fitsSubDir ='VWC-Chadwick_Chapter-2_23-07-12_M1_P1_C4'
 
 
 sns.set_theme()
 
 GlobalTable_meca = taka.computeGlobalTable_meca(task = Task, mode = 'fromScratch', 
-                            fileName = fitsSubDir, save = True, PLOT = False, source = 'Python',
+                            fileName = fitsSubDir, save = True, PLOT = True, source = 'Python',
                             fitSettings = fitSettings, plotSettings = plotSettings,
                             fitsSubDir = fitsSubDir) # task = 'updateExisting'
 
@@ -321,15 +322,16 @@ fitsSubDir = 'VWC-Chadwick_Chapter-2_C-OptoRhoA_5mTv15mT_25-04-14'
 
 #%%% Create dataframe for plotting
 
-styleDict =  {5.0:{'color': '#20a39a','marker':'o', 'label': '5mT'},
+styleDict =  {#5.0:{'color': '#20a39a','marker':'o', 'label': '5mT'},
                15.0:{'color': '#2478b7','marker':'o', 'label': '15mT'},
                }
 
 celltypes = ['optoRhoA']
-magField = [5.0]#, 15.0]
+magField = [15.0]#, 15.0]
 drugs = ['none']
 
-dates = ['23-06-28', '23-07-07' ]
+# # dates = ['23-06-28', '23-07-07' ]
+# dates = ['23-07-07'] #, '23-07-07' ]
 
 Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
@@ -343,7 +345,7 @@ Filters = [(data['validatedThickness'] == True),
             (data['compression duration'] == '1.5s'),
             (data['cell subtype'].apply(lambda x : x in celltypes)),
             (data['drug'].apply(lambda x : x in drugs)),
-            (data['date'].apply(lambda x : x in dates)),
+            # (data['date'].apply(lambda x : x in dates)),
             ]
 
 df = pf.filterDf(Filters, data)
@@ -512,6 +514,80 @@ plt.legend(fontsize=12)
 ax.set_ylim(0, 1000)
 plt.show()
 plt.savefig((dirToSave + 'Fluctuations_bestH0_{:}.pdf').format(str(magField), dpi = 200))
+#%%% Cell-dependent NLR Variability
+
+plotter = df[df['date'] =='23-07-07']
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_std = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(-0.5, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+
+plt.savefig((dirToSave + '{:}-COptoRhoA_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf[avgDf[('date', 'first')] == '23-07-07']
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+
+plottingParams = {'data':plotter, 
+                  'x' : ('date', 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+std_pop = plotter[('NLI_mod', 'mean')].std()
+text = 'STD of Population = {:.2f}'.format(std_pop)
+plt.text(0, 3, text, fontsize=12)
+
+plt.savefig((dirToSave + '{:}-COptoRhoA_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
 
 #%%% Plotnine jitter plots
 #%%%% NLI
@@ -606,12 +682,14 @@ styleDrugs = {'global':{'color': '#103551','marker':'o', 'label': 'Global Activa
                'no light':{'color': '#2986CC','marker':'o', 'label': '3T3 C-OptoRhoA'},
                }
 
-celltypes = ['Atcc-2023', 'optoRhoA' ] 
+celltypes = ['Atcc-2023'] 
+# celltypes = ['optoRhoA' ] 
+
 # celltypes = ['Atcc-2023'] #, 'Atcc-2023'] 
 
 # celltypes = ['optoRhoA'] 
-# magFields = [5.0]
-magFields = [5.0, 14.0, 15.0]
+magFields = [5.0]
+# magFields = [ 14.0, 15.0]
 # 
 activation = ['no light']
 drugs = ['none']
@@ -679,7 +757,7 @@ rangeCurve = pf.plotPopKS(df,  fitsSubDir = fitsSubDir, fitType = 'stressGaussia
 
 fig2, ax2, exportDf2, countDf2 = rangeCurve[0]
 ax2.set_ylim(2, 9)
-plt.savefig(os.path.join(dirToSave, 'KvS_200_600_WTvOpt.pdf'), dpi = 100)
+# plt.savefig(os.path.join(dirToSave, 'KvS_200_600_WTvOpt.pdf'), dpi = 100)
 plt.show()
 
 data_ff = taka.getFitsInTable(df, fitsSubDir, filter_fitID='_75')
@@ -860,7 +938,7 @@ plt.ylabel('')
 plt.xlabel('')
 plt.title('Cortical Thickness (nm)', fontweight='bold', **plotChars)
 plt.tight_layout()
-plt.savefig((dirToSave + 'C-Opto_{:}.pdf').format(str(y)), dpi = 200)
+# plt.savefig((dirToSave + 'C-Opto_{:}.pdf').format(str(y)), dpi = 200)
 plt.show()
 
 #%%% E-eff
@@ -907,16 +985,20 @@ plt.show()
 
 fig, axes = plt.subplots(2, 1, figsize = (21/SCALE_px_cm,21/SCALE_px_cm))
 
-fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, axes[0], df, condCat, condCol, hueType = condCol,
+fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, axes[0], df, condCat, condCol,
+                                              hueType = condCol, metrics = 'Chadwick',
                                               colorScheme = 'white', palette = palette_cond)
 
-fig, ax, avgDf = pf.EvH0_LogCellAvg(fig, axes[1],  avgDf, condCat, condCol, hueType = 'condCol',
+fig, ax, avgDf = pf.EvH0_LogCellAvg(fig, axes[1],  avgDf, condCat, condCol, 
+                                    hueType = 'condCol', metrics = 'Chadwick',
                                       colorScheme = 'white', palette = palette_cond)
 # fig.suptitle(str(dates), **plotChars)
 
 for ax in np.atleast_1d(axes):
     ax.tick_params(axis='both', labelsize=plotTicks['fontsize'], colors=plotTicks['color'])
 plt.tight_layout()
+plt.savefig((dirToSave + 'C-Opto_logE_400pNvChadwick_f15.pdf'))
+
 plt.show()
 plt.savefig((dirToSave + 'C-Opto_logE_400pNvChadwick_f15.pdf'))
 
@@ -1022,14 +1104,15 @@ ax = sns.histplot( **plottingParams)
 
 ax.tick_params(axis='both', labelsize=plotTicks['fontsize'])
 
+plt.axhline(y=0, color='r', linestyle='--')
 
 plt.ylabel('Mean NLR per Cell (nm)', fontweight='bold', **plotChars)
 
 plt.tight_layout()
 # fig.title('Mean NLR per cell', fontweight='bold', **plotChars)
-
-
-plt.savefig((dirToSave + 'WT-C-Opto_Displot.pdf').format( str(condCat)), dpi = 200)
+plt.ylim(-2.2, 1.2)
+plt.xlim(0, 20)
+plt.savefig((dirToSave + '{:}_WT-C-Opto_Displot.pdf').format( str(condCat)), dpi = 200)
 plt.show()
 
 
@@ -1254,7 +1337,7 @@ styleActivation =  {'no light':{'color': '#2986CC','marker':'o', 'label': 'C-Opt
 celltypes = ['optoRhoA']
 activation = ['no light', 'global']
 magField = [14.0, 15.0]
-drugs = ['none', 'activation']
+drugs = ['none']
 activationfreq = [0, 3]
 firstAct = [-1, 1]
 dates = [ '23-04-25', '23-05-10']
@@ -1553,7 +1636,7 @@ plt.title('Cortical Thickness \n @ 15% Max Force (nm)', fontweight='bold', **plo
 
 plt.tight_layout()
 plt.show()
-# plt.savefig((dirToSave + 'C-Opto_{:}_{:}-{:}_PairedPlot.pdf').format(str(condCat), measure, stat))
+plt.savefig((dirToSave + 'C-Opto_{:}_{:}-{:}_PairedPlot.pdf').format(str(condCat), measure, stat))
 
 # Normalized
 plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
@@ -1569,14 +1652,14 @@ plt.xlabel('')
 plt.title('Normalized Cortical Thickness', fontweight='bold', **plotChars)
 plt.tight_layout()
 plt.show()
-# plt.savefig((dirToSave + 'C-Opto_{:}_{:}-{:}_NormPairedPlot.pdf').format(str(condCat), measure, stat))
+plt.savefig((dirToSave + 'C-Opto_{:}_{:}-{:}_NormPairedPlot.pdf').format(str(condCat), measure, stat))
 #%%%% E_f_<_400
 
 
 measure = 'E_f_<_400_log'
 stat = 'mean'
 plot = pf.pairedplot_woHisto(dfPairs, condCol = condCol, condCat = condCat, measure = measure, logScale = True,
-                     pairs = pairs, stat = stat, test = 'two-sided', palette = palette_cond,
+                     pairs = pairs, stat = stat, test = 'greater', palette = palette_cond,
                      plotChars = plotChars, plotTicks = plotTicks)
 
 
@@ -1753,6 +1836,84 @@ plt.tight_layout()
 plt.savefig((dirToSave + y_new + 'vsComp_Sequence-{:}_C-Opto.pdf').format(str(condCat) ), dpi = 100)
 
 plt.show()
+
+
+#%%% Cell-dependent NLR Variability
+
+plotter = df
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_var = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(0, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+plottingParams = {'data':plotter, 
+                  'x' : (condCol, 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10,
+                 
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+var_pop = plotter[('NLI_mod', 'mean')].var()
+text = 'STD of the Population = {:.2f}'.format(var_pop)
+plt.text(0, 3, text, fontsize=12)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
+
+
 
 #%%% E_400pN vs. Compression
 
@@ -2994,7 +3155,7 @@ option = 'blebbi'
 
 if option == 'blebbi':
     styleDict =  {'dmso_10':{'color': '#7f7f7f','marker':'o', 'label': 'DMSO'},
-                     'blebbi_10':{'color': '#38761D','marker':'o', 'label': '10µM\nBlebbi'},
+                  'blebbi_10':{'color': '#38761D','marker':'o', 'label': '10µM\nBlebbi'},
                    }
     dates = ['23-03-24']
     drugs = ['dmso_10', 'blebbi_10']
@@ -3015,9 +3176,10 @@ elif option == 'Y27':
 celltypes = ['optoRhoA']
 
 magField = [14.0, 15.0]
-activationfreq = [0, 3]
-firstAct = [-1, 1]
+activationfreq = [0]
+firstAct = [-1]
 # drugs = ['none', 'Y27_10', 'Y27_50']
+# dates = ['23-02-02']
 
 Filters = [(data['validatedThickness'] == True),
            (data['UI_Valid'] == True),
@@ -3031,14 +3193,16 @@ Filters = [(data['validatedThickness'] == True),
             (data['compression duration'] == '1.5s'),
             (data['cell subtype'].apply(lambda x : x in celltypes)),
             (data['drug'].apply(lambda x : x in drugs)),
-            # (data['activation frequency'].apply(lambda x : x in activationfreq)),
-            # (data['first activation'].apply(lambda x : x in firstAct)),
+            (data['activation frequency'].apply(lambda x : x in activationfreq)),
+            (data['first activation'].apply(lambda x : x in firstAct)),
             (data['date'].apply(lambda x : x in dates)),
             ]
 
 df = pf.filterDf(Filters, data)
 condCol, condCat = 'drug', drugs
 df = pf.NLIcorr(df)
+
+df['activity'] = df['ctFieldFluctuAmpli'] / df['ctFieldThickness']
 
 styleDf = pd.DataFrame(styleDict)
 styleDf = styleDf.transpose()
@@ -3069,7 +3233,7 @@ rangeCurve = pf.plotPopKS(df,  fitsSubDir = fitsSubDir, fitType = 'stressGaussia
 
 fig2, ax2, exportDf2, countDf2 = rangeCurve[0]
 ax2.set_ylim(2, 9)
-plt.savefig(os.path.join(dirToSave, 'KvS_200_600_{:}_COpto.pdf'.format(option)), dpi = 200)
+# plt.savefig(os.path.join(dirToSave, 'KvS_200_600_{:}_COpto.pdf'.format(option)), dpi = 200)
 plt.show()
 
 #%%% Fluctuations vs Thickness
@@ -3184,6 +3348,47 @@ plt.title('Effective Elasticity (kPa)', fontweight='bold', **plotChars)
 plt.show()
 plt.savefig((dirToSave + '{:}_COptoRhoA_{:}.pdf').format(option, y), dpi = 200)
 
+
+#%%% Activity (Fluctuations / Thickness)
+
+plotChars = {'color' : '#000000', 'fontsize' : 10}
+plotTicks = {'color' : '#000000', 'fontsize' : 10}
+
+dfPlot = df.drop_duplicates(subset = ['cellID'])
+
+y = 'activity' 
+
+plottingParams = {'data':dfPlot, 
+                  'x' : (condCol), 
+                  'y' : (y),
+                  'order' : condCat,
+                  's':3,
+                  "linewidth": 0.5,
+                  'edgecolor':'k',
+                  'dodge':True
+                    }
+
+
+
+fig, ax = plt.subplots(figsize = (8/SCALE_px_cm,8/SCALE_px_cm))
+
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs, labels = labels,
+                             palette = palette_cond,colorScheme = 'white',
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+
+# plt.ylim(0, 1.5)
+
+plt.xlim(-0.5, 2.5)
+
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Activity (Fluctuations / Thickness)', fontweight='bold', **plotChars)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '{:}_COptoRhoA_{:}.pdf').format(option, y), dpi = 200)
+
+
 #%%% VWC %F_100
 
 plotChars = {'color' : '#000000', 'fontsize' : 10}
@@ -3258,19 +3463,21 @@ plt.ylabel('')
 plt.xlabel('')
 plt.title('Mean NLR per Cell', fontweight='bold', **plotChars)
 plt.show()
-plt.savefig((dirToSave + '{:}_COptoRhoA_{:}.pdf').format(option, y), dpi = 200)
+# plt.savefig((dirToSave + '{:}_COptoRhoA_{:}.pdf').format(option, y), dpi = 200)
 
 #%%% E vs H0
 
-# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
-# fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol, hueType = condCol,
-#                                               colorScheme = 'white', palette = palette_cond)
-# fig.suptitle(str(dates), **plotChars)
-# plt.show()
+fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol, hueType = condCol,
+                                                      colorScheme = 'white', palette = palette_cond,
+                                                      metrics = 'Chadwick')
+fig.suptitle(str(dates), **plotChars)
+plt.show()
 # plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format(str(dates), str(condCat)))
 
 fig, ax = plt.subplots(figsize=(18/SCALE_px_cm, 10/SCALE_px_cm))
-fig, ax, avgDf = pf.EvH0_LogCellAvg(fig, ax,  avgDf, condCat, condCol, hueType = 'condCol',
+fig, ax, avgDf = pf.EvH0_LogCellAvg(fig, ax,  avgDf, condCat, condCol, 
+                                    hueType = 'condCol', metrics = 'Chadwick',
                                       colorScheme = 'white', palette = palette_cond)
 
 # fig.suptitle(str(dates), **plotChars)
@@ -3280,14 +3487,84 @@ plt.yticks(**plotTicks)
 plt.show()
 plt.savefig((dirToSave + '(2a)_{:}_{:}_logAvgEvH_NLI.pdf').format(str(dates), str(condCat)))
 
+avgDf =  pf.createAvgDf(dataSlopes, condCol, dataFluoPath = None, e_norm = True)
+
+#%%% E_normalized
+
+y = 'E_norm_log' 
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : (y, 'mean'),
+                  'order' : condCat,
+                  's':4,
+                  "linewidth": 0.5,
+                  'edgecolor':'k',
+                  'dodge':True,
+                    }
+
+
+
+fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
+
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs,test = 'non-param',
+                             palette = palette_cond,colorScheme = 'white',
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+x_ticks = [0,1,2]
+ax.set_xticks(x_ticks, labels = labels,**plotTicks)
+
+y_labels = np.asarray([100, 500, 1000, 3000, 10000, 25000])
+y_ticks = np.log10(np.asarray(y_labels))
+ax.set_yticks(y_ticks, labels =(y_labels)/1000,**plotTicks)
+
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Effective Elasticity (kPa)', fontweight='bold', **plotChars)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '{:}-C-Opto_{:}.pdf').format(option, str(y)), dpi = 200)
+
+#%%% NLI_Corr
+
+y = 'NLI_corr' 
+
+plottingParams = {'data':avgDf, 
+                  'x' : (condCol, 'first'), 
+                  'y' : (y, 'first'),
+                  'order' : condCat,
+                  's':4,
+                  "linewidth": 0.5,
+                  'edgecolor':'k',
+                  'dodge':True,
+                    }
+
+
+
+fig, ax = plt.subplots(figsize = (10/SCALE_px_cm,10/SCALE_px_cm), tight_layout = True)
+
+fig, ax, medians = pf.boxplot_perCell(fig, ax, condCat = condCat, pairs = pairs,test = 'non-param',
+                             palette = palette_cond,colorScheme = 'white',
+                             plottingParams = plottingParams, plotChars = plotChars)
+
+x_ticks = [0,1,2]
+ax.set_xticks(x_ticks, labels = labels,**plotTicks)
+
+
+plt.ylabel('')
+plt.xlabel('')
+plt.title('NLI-corr', fontweight='bold', **plotChars)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '{:}-C-Opto_{:}.pdf').format(option, str(y)), dpi = 200)
 
 #%%% Plotnine paired plots
 #%%%% NLI
 measure = 'NLI_mod'
 stat = 'mean'
 plot= pf.plotnine_jitter(avgDf, condCol = condCol, condCat = condCat, measure = measure, 
-                     pairs = pairs, stat = stat, palette = palette_cond_y27,pointSize = 2.5,
-                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (-2.1,2))
+                         pairs = pairs, stat = stat, palette = palette_cond_y27,pointSize = 2.5,
+                         plotChars = plotChars, plotTicks = plotTicks, y_limits = (-2.1,2))
 
 
 plt.xticks([1,2,3, 4], labels, **plotTicks)
@@ -3389,6 +3666,81 @@ plotTicks = {'color' : '#000000', 'fontsize' : 12}
 avgDf = pf.createAvgDf(df, condCol)
 avgDf = avgDf[(avgDf[('compNum', 'count')] > 2)]
 
+#%%% Cell-dependent NLR Variability
+
+plotter = df
+
+plotter = plotter.groupby('cellID', \
+                          group_keys=False).apply(pf.NLR_normalize_by_first_six,
+                                                  'NLI_mod', clip = (0, 6),
+                                                  col = 'compNum')
+
+
+plotter2 = avgDf[('cellID', 'first')]
+colorblind_type = "Deuteranomaly"
+
+unique_cellIDs = plotter['cellID'].unique()
+Ncells = len(unique_cellIDs)
+palette = distinctipy.get_colors(Ncells, colorblind_type=colorblind_type)
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+cellID_to_color = {cell: palette[i] for i, cell in enumerate(unique_cellIDs)}
+
+plottingParams = {'data':plotter, 
+                  'x' : ('cellID'), 
+                  'y' : ('NLI_mod_norm'),
+                  'hue':'cellID',
+                  'palette':cellID_to_color,
+                  's':4
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+for collection in ax.collections:
+    collection.set_edgecolor('k')
+    collection.set_linewidth(0.5) 
+
+
+avg_var = plotter['NLI_mod_std'].mean()
+
+for _, row in plotter.iterrows():
+    plt.errorbar(x=row['cellID'], y=row['NLI_mod_ref'], yerr=row['NLI_mod_std'],
+                 fmt="none", color=cellID_to_color[row['cellID']],
+                 capsize=5, alpha=0.4, lw = 0.3,  capthick=1)
+    
+    
+text = 'Average STD of Cells = {:.2f}'.format(avg_var)
+
+plt.text(0, 3, text, fontsize=12)
+x_labels = ['C'+str(i+1) for i in range(Ncells)]
+ax.set_xticks(ax.get_xticks(), labels =x_labels, rotation = 90, **plotTicks)
+plt.ylim(-3, 3.5)
+# ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StandardDev.pdf').format(condCat), dpi = 200)
+
+#%%% Cell-dependent NLR evolution
+
+plotter = avgDf
+
+fig, ax = plt.subplots(figsize = (20/SCALE_px_cm,10/SCALE_px_cm))
+
+plottingParams = {'data':plotter, 
+                  'x' : ('drug', 'first'), 
+                  'y' : ('NLI_mod', 'mean'),
+                  'hue':('cellID','first'),
+                  'palette':cellID_to_color,
+                  's':10,
+                 
+                 }
+
+sns.swarmplot(**plottingParams, ax = ax)
+plt.ylim(-3, 3.5)
+
+var_pop = plotter[('NLI_mod', 'mean')].var()
+text = 'STD of the Population = {:.2f}'.format(var_pop)
+plt.text(0, 3, text, fontsize=12)
+ax.get_legend().remove()
+plt.savefig((dirToSave + '{:}_NLI_StdDevofMean.pdf').format(condCat), dpi = 200)
+
 
 #%%% Plotnine jitter plots
 
@@ -3461,7 +3813,7 @@ Task = '24-05-29 & 24-09-05 & 24-02-21 & 24-09-24 & 24-09-12'
 
 filename = 'VWC-Chadwick_Chapter-2_UtCH-Cry2_25-04-01'
 GlobalTable = taka.getMergedTable(filename, mergeUMS = True)
-dirToSave = 'D:/Anumita/MagneticPincherData/Figures/FiguresForManuscript/Chapter_2/'
+dirToSave = 'D:/Anumita/NextCloud/Anumita - Manuscript/Figures/Chapter_2/UtCH_Replots/'
 data = pf.createDataTable(GlobalTable, fitsSubDir = filename)
 plt.style.use('seaborn-v0_8')
 
@@ -3488,14 +3840,14 @@ elif option == 'doxy_2_Y27_10_act':
 celltypes = ['uth-cry2']
 # drugs = ['doxy', 'doxy_act']
 # drugs = ['none', 'doxy', 'doxy_act', 'Y27_10', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
-drugs = [ 'doxy', 'doxy_act',  'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
+# drugs = [  'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
 
+# drugs = [ 'doxy', 'doxy_act', 'doxy_2_Y27_10', 'doxy_2_Y27_10_act']
 
 magField = [5.0]
 activationfreq = [0, 1]
 firstAct = [-1, 1]
 dates = ['24-05-29',  '24-09-05' ,'24-09-24', '24-09-12']
-# dates = ['24-05-29']
 
 # dates = ['24-09-05' ,'24-09-24', '24-09-12']
 
@@ -3518,6 +3870,7 @@ Filters = [
 df = pf.filterDf(Filters, data)
 # condCol, condCat = 'drug', drugs
 condCol, condCat = 'drug', drugs
+df = pf.NLIcorr(df)
 
 # comps = np.linspace(1, 10, 10)
 # condCol, condCat = 'compNum', comps
@@ -3529,7 +3882,7 @@ labels = list(styleDf['label'].values)
 palette_cond = pf.getSnsPalette(condCat, styleDict)
 
 # pairs = [['none', 'doxy'], ['doxy', 'doxy_act'], ['Y27_10', 'doxy_2_Y27_10'],  ['none', 'Y27_10'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']]
-pairs = [['doxy', 'doxy_act'], ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']]
+pairs = [['doxy', 'doxy_act']] #, ['doxy_2_Y27_10', 'doxy_2_Y27_10_act']]
 
 # pairs = [['24-05-29', '24-02-21'], ['24-02-21', '24-09-05'], ['24-05-29', '24-09-24'], ['24-02-21', '24-09-12']]
 
@@ -3575,7 +3928,37 @@ plt.tight_layout()
 # fig.title('Mean NLR per cell', fontweight='bold', **plotChars)
 
 
-plt.savefig((dirToSave + '{:}_Displot.pdf'.format(option)).format( str(condCat)), dpi = 200)
+# plt.savefig((dirToSave + '{:}_Displot.pdf'.format(option)).format( str(condCat)), dpi = 200)
+plt.show()
+
+#%%% NLR, Displot per compression
+
+plottingParams = {
+    'data': df,
+    'col': condCol,  
+    'y': 'NLI_mod',      
+    'stat':'percent',
+    'bins':15,
+    'hue':condCol,  
+    'palette': palette_cond,
+    'line_kws':{"linewidth": 3},
+    'kde':True,
+    }
+
+fig, ax = plt.subplots(figsize=(15/SCALE_px_cm, 15/SCALE_px_cm))
+
+g = sns.displot( **plottingParams)
+
+ax.tick_params(axis='both', labelsize=15)
+for ax in g.axes.flat:
+    ax.axhline(y=0, ls='--', color='red', lw=2, alpha=0.5)
+    ax.tick_params(axis='both', labelsize=15)
+
+plt.ylabel('NLR per compression', fontweight='bold', **plotChars)
+
+plt.tight_layout()
+
+plt.savefig((dirToSave + '{:}_Displot_percompression.pdf'.format(option)).format( str(condCat)), dpi = 200)
 plt.show()
 
 #%%% NLI vs. Compression
@@ -3771,6 +4154,33 @@ plt.tight_layout()
 plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_gLobalActivation_NLRrainplot.pdf'.format(str(dates), y)), dpi = 200)
 plt.show()
 
+#%%% E vs H0
+
+toPlot = df[df['dateCell'].apply(lambda x : x in pairedCells)]
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+# fig, ax = plt.subplots(figsize = (13,9), tight_layout = True)
+# fig, ax, dataSlopes = pf.EvsH0_perCompression(fig, ax, df, condCat, condCol,
+#                                               hueType = condCol, h_ref = 500,
+#                                               colorScheme = 'white', palette = palette_cond)
+# fig.suptitle(str(dates), **plotChars)
+# plt.show()
+# plt.savefig((dirToSave + '(2a)_{:}_{:}_EvH_NLI.png').format(str(dates), str(condCat)))
+
+
+fig, axes = plt.subplots(figsize=(18/SCALE_px_cm, 10/SCALE_px_cm))
+fig, axes, avgDf_EvH = pf.EvH0_LogCellAvg(fig, axes,  dfPairs, condCat, condCol, hueType = condCol,
+                                      colorScheme = 'white', palette = palette_cond)
+# fig.suptitle(str(dates), **plotChars)
+
+plt.xticks(**plotTicks)
+plt.yticks(**plotTicks)
+plt.tight_layout()
+plt.show()
+plt.savefig((dirToSave + '(2a)_{:}_{:}_logAvgEvH_NLI.pdf').format(str(dates), str(condCat)))
+
+avgDf =  pf.createAvgDf(dataSlopes, condCol, dataFluoPath = None, e_norm = True)
+
 
 #%%% Plotnine paired plots
 #%%%% NLI - Pairedplot
@@ -3782,7 +4192,8 @@ dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
 plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
-                     pairs = pairs, stat = stat, palette = palette_cond, 
+                     figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
+                     pairs = pairs, stat = stat, palette = palette_cond, test = 'less',
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = (-2.1,2))
 
 
@@ -3792,8 +4203,33 @@ plt.ylabel('')
 plt.xlabel('')
 plt.title('Mean NLR per cell (A.U.)', fontweight='bold', **plotChars)
 
+
 plt.show()
 plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_Paired.pdf'.format(measure, str(dates))))
+
+#%%%% NLR - Normalized Pairedplot
+measure = 'NLI_mod'
+stat = 'mean'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                          figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
+                     pairs = pairs, stat = stat, palette = palette_cond, 
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
+
+
+plt.xticks([1,2, 3, 4], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.axhline(y= 0, ls = '--', color = 'red', lw = 1, alpha = 0.5)
+
+plt.xlabel('')
+plt.title('Normalized NLR per Cell', fontweight='bold', **plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_normPaired.pdf'.format(measure, str(dates))))
 
 #%%%% H0- Pairedplot
 measure = 'bestH0_log'
@@ -3803,6 +4239,7 @@ dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
 plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
                      pairs = pairs, stat = stat, palette = palette_cond, logScale = True,
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
 
@@ -3816,6 +4253,28 @@ plt.title('Mean H0 per cell (nm)', fontweight='bold', **plotChars)
 plt.show()
 plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_Paired.pdf'.format(measure, str(dates))))
 
+#%%%% BestH0 - Normalized Pairedplot
+measure = 'bestH0_log'
+stat = 'mean'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot, dfPairsPlot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, palette = palette_cond, figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0,2.5))
+
+
+plt.xticks([1,2, 3, 4], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Thickness per Cell', fontweight='bold', **plotChars)
+plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_normPaired.pdf'.format(measure, str(dates))))
+
+plt.show()
+
+
 #%%%% E_eff - Pairedplot
 measure = 'E_eff_log'
 stat = 'mean'
@@ -3824,6 +4283,7 @@ dfPairs, pairedCells = pf.dfCellPairs(avgDf)
 
 
 plot = pf.pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
                      pairs = pairs, stat = stat, palette = palette_cond, logScale = True,
                      plotChars = plotChars, plotTicks = plotTicks, y_limits = None)
 
@@ -3833,6 +4293,29 @@ plt.yticks(**plotTicks)
 plt.ylabel('')
 plt.xlabel('')
 plt.title('Effective Elasticity per cell (kPa)', fontweight='bold', **plotChars)
+
+plt.show()
+plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_Paired.pdf'.format(measure, str(dates))))
+
+#%%%% E_eff - Normalized Pairedplot
+measure = 'E_eff_log'
+stat = 'mean'
+
+dfPairs, pairedCells = pf.dfCellPairs(avgDf)
+
+
+plot, dfPairsPlot = pf.norm_pairedplot(dfPairs, condCol = condCol, condCat = condCat, measure = measure, 
+                     pairs = pairs, stat = stat, palette = palette_cond, test = 'two-sided',
+                     figsize = (15/SCALE_px_cm,10/SCALE_px_cm),
+                     plotChars = plotChars, plotTicks = plotTicks, y_limits = (0, 4))
+
+
+plt.xticks([1,2, 3, 4], labels, **plotTicks)
+plt.yticks(**plotTicks)
+plt.ylabel('')
+plt.xlabel('')
+plt.title('Normalized Effective Elasticity (kPa)\n ', fontweight='bold', **plotChars)
+# plt.savefig((dirToSave + measure + '_I-OptoRhoA_'+str(activation)+'_NormPaired.pdf'))
 
 plt.show()
 plt.savefig((dirToSave + '{:}-{:}_UtCH-Cry2_Drugs-Activation_Paired.pdf'.format(measure, str(dates))))

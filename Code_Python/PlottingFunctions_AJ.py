@@ -8,6 +8,7 @@ Created on Tue May 16 11:51:36 2023
 #### Main imports
 
 import random
+
 import distinctipy
 import numpy as np
 import pandas as pd
@@ -15,42 +16,41 @@ import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
 
-
-import ptitprince as pt
-from statannotations.Annotator import Annotator
+# import ptitprince as pt
+# from statannotations.Annotator import Annotator
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-# from plotnine import (
-#     ggplot,
-#     aes,
-#     stage,
-#     geom_violin,
-#     geom_point,
-#     geom_line,
-#     geom_boxplot,
-#     geom_segment,
-#     guides,
-#     scale_fill_manual,
-#     theme,
-#     theme_classic,
-#     facet_wrap,
-#     xlim, ylim,
-#     annotate,
-#     ggtitle,
-#     scale_color_gradient,
-#     scale_fill_gradient, 
-#     scale_color_gradientn,
-#     scale_color_manual,
-#     scale_fill_gradientn,
-#     guide_colorbar
-# )
+from plotnine import (
+    ggplot,
+    aes,
+    stage,
+    geom_violin,
+    geom_point,
+    geom_line,
+    geom_boxplot,
+    geom_segment,
+    guides,
+    scale_fill_manual,
+    theme,
+    theme_classic,
+    facet_wrap,
+    xlim, ylim,
+    annotate,
+    ggtitle,
+    scale_color_gradient,
+    scale_fill_gradient, 
+    scale_color_gradientn,
+    scale_color_manual,
+    scale_fill_gradientn,
+    guide_colorbar
+)
 
-# from plotnine.positions import position_jitter
-# from plotnine.themes import element_rect, element_text, element_line
-# from plotnine.scales import scale_y_log10, scale_x_log10
+from plotnine.positions import position_jitter
+from plotnine.themes import element_rect, element_text, element_line
+from plotnine.scales import scale_y_log10, scale_x_log10
 
 import os
 import sys
@@ -61,6 +61,8 @@ import itertools
 import matplotlib
 
 from copy import copy
+from numpy import nansum
+from numpy import nanmean
 from cycler import cycler
 from datetime import date
 import matplotlib.lines as lines
@@ -137,11 +139,15 @@ def mean_normalize_by_first_six(df, y):
     df[y + '_norm'] = df[y] / ref
     return df
 
-def NLR_normalize_by_first_six(df, y):
+def NLR_normalize_by_first_six(df, y, clip =(-6,0), col = 'new_compNum'):
     # Select the first 5 compressions
-    ref = df[df['new_compNum'].between(-6, 0)][y].mean()
+    ref = df[df[col].between(clip[0], clip[1])][y].mean()
+    std = df[df[col].between(clip[0], clip[1])][y].std()
     # Normalize all H0 values by this reference
     df[y + '_norm'] = df[y] - ref
+    df[y + '_ref'] = 0
+    df[y + '_mean'] = ref
+    df[y + '_std'] = std
     return df
 
 
@@ -224,7 +230,6 @@ def plotCellTimeSeriesData(cellID, fromPython = True):
 
 #%% Plotting Functions
 
-
 def NLIcorr(df):
     data_nli = df[['cellID', 'compNum', 'NLI_mod']]
     for i in np.unique(data_nli['cellID'].values):
@@ -241,7 +246,6 @@ def NLIcorr(df):
         
         diff = np.abs(diff).copy()
         df.loc[dataCell.index, 'NLI_corr'] = [np.nanmean((diff))]*len(dataCell)
-    
     return df
 
 def getSnsPalette(conditions, styleDict):
@@ -277,6 +281,7 @@ def createAvgDf(data, condCol, dataFluoPath = None, dataAnglesPath = None, e_nor
                 'bestH0_log':['var', 'std', 'mean', 'count', 'median'],
                 'bestH0':['var', 'std', 'mean', 'count', 'median'],
                 'NLI_corr':'first',
+                # 'activity':'first',
                 'NLI_Ind':['var', 'std', 'mean', 'count'],
                 'E_eff':['var', 'std', 'mean', 'count', 'median'],
                 'E_eff_log':['var', 'std', 'mean', 'count', 'median'], 
@@ -301,7 +306,8 @@ def createAvgDf(data, condCol, dataFluoPath = None, dataAnglesPath = None, e_nor
         
         
     if e_norm == True:
-        added_cols = {'E_norm' : ['mean', 'count', 'std', 'var']}
+        added_cols = {'E_norm' : ['mean', 'count', 'std', 'var'],
+                      'E_norm_log':['mean', 'count', 'std', 'var']}
         agg_dict.update(added_cols)
         
     if dataAnglesPath != None:
@@ -906,7 +912,7 @@ def NLIPairsvFluctu(fig, ax, dfPairs, condCol, condCat, palette = sns.color_pale
     return fig, ax
      
 def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 2*10**3),
-          palette = sns.color_palette("tab10"), h_ref = 600, colorScheme = 'black'):
+          palette = sns.color_palette("tab10"), h_ref = 600, colorScheme = 'black', metrics = 'VWC'):
     
     
     if colorScheme == 'black':
@@ -939,7 +945,6 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
                 
                 ax.plot(fit_x, fit_y, label =  eqnText, linestyle = '--', linewidth = 6,
                         color = 'black')
-                
                 
                 
             except:
@@ -987,11 +992,13 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
             # toPlot = toPlot.dropna(subset=['H0_vwc_Full', 'E_eff'])
             # x, y = toPlot['H0_vwc_Full'].values, toPlot['E_eff'].values
             
-            toPlot = toPlot.dropna(subset=['bestH0_log', 'E_eff_log'])
-            x, y = toPlot['bestH0_log'].values, toPlot['E_eff_log'].values
+            if metrics == 'VWC':
+                toPlot = toPlot.dropna(subset=['bestH0_log', 'E_eff_log'])
+                x, y = toPlot['bestH0_log'].values, toPlot['E_eff_log'].values
             
-            # toPlot = toPlot.dropna(subset=['Chadwick_%f_15_H0_log', 'E_f_<_400_log'])
-            # x, y = toPlot['Chadwick_%f_15_H0_log'].values, toPlot['E_f_<_400_log'].values
+            if metrics == 'Chadwick':
+                toPlot = toPlot.dropna(subset=['Chadwick_%f_15_H0_log', 'E_f_<_400_log'])
+                x, y = toPlot['Chadwick_%f_15_H0_log'].values, toPlot['E_f_<_400_log'].values
             
             
             params, results = ufun.fitLineHuber(x,y)
@@ -999,32 +1006,34 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
             k = (params[0])
             a = params[1]
             
-            fit_x = np.linspace(np.min(x), np.max(x), 50)
-            # fit_y = k * fit_x**a
+            fit_x = np.log10(np.linspace(10**np.min(x), 10**np.max(x), 50))
             fit_y = a * fit_x + k
-            
-            fit_y = 10**fit_y
-            fit_x = 10**fit_x
-            
-            pval = results.pvalues[1] # pvalue on the param 'a'
-            eqnText += " Fit y = m * x + c\n".format(a, k)
-            eqnText += " y = {:.1e} * x + {:.1f}".format(a, k)
 
+            pval = results.pvalues[1] # pvalue on the param 'a'
+            # eqnText += " Fit y = m * x + c\n"
+            eqnText += "m = {:.2f}\n".format(a)
+            eqnText += "c = {:.1e}\n".format(10**k/1000)
             # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, a)
-            eqnText += "\np-val = {:.3f}".format(pval)
+            eqnText += "p-val = {:.3f}".format(pval)
             
             # ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 5,
             #         color = 'k')
             # ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 2.5,
             #         color = palette[idx])
             
-            toPlot['E_norm'] = toPlot['E_eff'] * (h_ref/toPlot['bestH0'])**a
+            if metrics == 'VWC':
+                toPlot['E_norm'] = toPlot['E_eff'] * (h_ref/toPlot['bestH0'])**a
+                
+            if metrics == 'Chadwick':
+                toPlot['E_norm'] = toPlot['E_f_<_400'] * (h_ref/toPlot['Chadwick_%f_15_H0'])**a
             
+            toPlot['E_norm_log'] = np.log10(toPlot['E_norm'].values)
+                
             data.loc[(data[condCol] == m), 'E_norm'] = toPlot['E_norm']
-
-            ax.scatter(10**x , 10**y, color = palette[idx], label = m, s =30, alpha = 0.5)
-            ax.plot(fit_x, fit_y,  linewidth = 3,
-                    color = 'k')
+            data.loc[(data[condCol] == m), 'E_norm_log'] = toPlot['E_norm_log']
+            
+            ax.scatter(x , y, color = palette[idx], label = m, s =50, alpha = 0.5)
+            ax.plot(fit_x, fit_y,  linewidth = 3, color = 'k')
             ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 1.5,
                     color = palette[idx])
             idx = idx + 1
@@ -1033,8 +1042,8 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
             
         # plt.legend(fontsize = 12, ncol = len(condCat))
 
-    ax.set_yscale('log')
-    ax.set_xscale('log')
+    # ax.set_yscale('log')
+    # ax.set_xscale('log')
     # ax.set_ylim(ylim)
     # ax.set_xlim(xlim)
     # ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
@@ -1042,12 +1051,13 @@ def EvsH0_perCompression(fig, ax, data, condCat, condCol, hueType, xlim = (100, 
     # plt.xticks(fontsize=25, color = fontColor)
     # plt.yticks(fontsize=25, color = fontColor)
     
-    y_labels = np.asarray([100, 500, 1000, 3000, 10000, 25000])
-    # y_ticks = np.log10(y_labels)
-    ax.set_yticks(y_labels, labels = (y_labels)/1000)
+    y_labels = np.asarray([100, 500, 1000, 3000, 10000, 50000])
+    y_ticks = np.log10(y_labels)
+    ax.set_yticks(y_ticks, labels = (y_labels)/1000)
     
-    x_ticks = [100, 250, 500, 1000, 1500]
-    ax.set_xticks(x_ticks, labels =x_ticks)
+    x_labels = np.asarray([100, 250, 500, 1000, 1500])
+    x_ticks = np.log10(x_labels)
+    ax.set_xticks(x_ticks, labels =x_labels)
 
 
     # plt.show()
@@ -1293,7 +1303,7 @@ def norm_pairedplot(dfPairs, condCol, condCat, measure, stat, pairs, test = 'two
     
     for pair in pairs:
         for cell in pairedCells:
-           if y != 'NLI_mod': 
+           if 'NLI' not in y: 
                 # Get the measurement for the first condition (pair[0]) for the given cell
                 c1 = dfPairsPlot[y][(dfPairsPlot[('dateCell')] == cell) & (dfPairsPlot[condCol] == pair[0])].values
                 
@@ -1589,10 +1599,10 @@ def pairedplot_woHisto(dfPairs, condCol, condCat, measure, stat, pairs, test = '
 
 
         plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i) for i in ticks])  # Set log scale breaks (e.g., 10, 100, 1000)
-    elif logScale and measure == 'E_eff_log' or  measure == 'E_f_<_400_log':
+    elif logScale and measure == 'E_eff_log' or  measure == 'E_f_<_400_log' or measure == 'E_norm_log':
         plot += theme(panel_grid_major_y=element_line(color='lightgrey', size=0.5))
         # plot += ylim(100, 50000)
-        ticks  = [100, 500, 2000, 5000, 10000,25000, 50000]
+        ticks  = [100, 500, 2000, 5000, 10000,25000]
 
         plot += scale_y_log10(breaks=np.log10(ticks), labels = [str(i/1000) for i in ticks])  #
         # plot += scale_y_log10()  #
@@ -1967,7 +1977,7 @@ def boxplot_perCell(fig, ax, condCat, hueType = None, palette = sns.color_palett
     return fig, ax, medians
 
 def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400,
-                  palette = sns.color_palette("tab10"), plotChars = {},
+                  palette = sns.color_palette("tab10"), plotChars = {}, metrics = 'VWC',
                   errorbar = False, pairs = None, colorScheme = 'black'):
     
     if colorScheme == 'black':
@@ -1980,8 +1990,15 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
     
     # h =( 'Chadwick_%f_15_H0_log', 'mean')
     # e = ('E_f_<_400_log', 'mean')
-    h = ('bestH0_log', 'mean')
-    e = ('E_eff_log', 'mean')
+    
+    if metrics == 'VWC':
+
+        h = ('bestH0_log', 'mean')
+        e = ('E_eff_log', 'mean')
+    
+    if metrics == 'Chadwick':
+        h = ('Chadwick_%f_15_H0_log', 'mean')
+        e = ('E_f_<_400_log', 'mean')
     
     
     # if errorbar == True:
@@ -2069,34 +2086,30 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
             x, y = toPlot[h].values, toPlot[e].values
             
             params, results = ufun.fitLineHuber((x), (y))
-            k = params[0]
-            t = params[1]
             
-            fit_x = np.linspace(np.min(x), np.max(x), 50)
-            # fit_y = k * fit_x**t
-            fit_y = t*fit_x + k
+            k = (params[0])
+            a = params[1]
             
-            fit_y = 10**fit_y
-            fit_x = 10**fit_x
+            fit_x = np.log10(np.linspace(10**np.min(x), 10**np.max(x), 50))
+            fit_y = a * fit_x + k
+            
 
             pval = results.pvalues[1] # pvalue on the param 'a'
             # eqnText += " Y = {:.1e} * X^{:.1f}".format(k, t)
-            eqnText += " Fit Y = m * X + C\n"
-            eqnText += " Y = {:.1e} * X + {:.1f}".format(t, k)
+            eqnText += "m = {:.2f}\n".format(a)
+            eqnText += "c = {:.1e}\n".format(10**k/1000)
 
-            eqnText += "\np-val = {:.3f}".format(pval)
-            ax.scatter(10**x , 10**y, color = palette[idx], label = m, s = 50, alpha = 0.7)
+            eqnText += "p-val = {:.3f}".format(pval)
+            ax.scatter(x , y, color = palette[idx], label = m, s = 50, alpha = 0.7)
             # ax.plot(fit_x, fit_y,  lw = 6, linestyle = '--', color = 'k')
-
+            
             # ax.plot(fit_x, fit_y, label = eqnText, lw = 6.1, linestyle = '--', color = palette[idx])
-            ax.plot(fit_x, fit_y, linewidth = 3,
-                    color = 'k')
-            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 1.5,
-                    color = palette[idx])
+            ax.plot(fit_x, fit_y, linewidth = 3,    color = 'k')
+            ax.plot(fit_x, fit_y, label =  eqnText, linewidth = 1.5,  color = palette[idx])
 
             ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0., fontsize = 11)
             
-            toPlot[('E_norm', 'logAvg')] = toPlot[e] * (h_ref/toPlot[h])**t
+            toPlot[('E_norm', 'logAvg')] = toPlot[e] * (h_ref/toPlot[h])**a
 
             
             # Xfit, Yfit = np.log(toPlot[('bestH0_log', 'mean')].values), np.log(toPlot[('E_norm', 'logAvg')].values)
@@ -2119,8 +2132,8 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
         
        
     # for i in range(len(ax)):
-    ax.set_yscale('log')
-    ax.set_xscale('log')
+    # ax.set_yscale('log')
+    # ax.set_xscale('log')
     # ax[i].set_ylim(100, 10**5)
     # ax[i].set_xlim(100, 2*10**3)
     # ax.set_ylabel('E_effective (Pa)', fontsize=30, color = fontColor)
@@ -2129,12 +2142,11 @@ def EvH0_LogCellAvg(fig, ax, data, condCat, condCol, hueType = None, h_ref = 400
 
     x_labels = np.asarray([100, 250, 500, 1000, 1500])
     x_ticks = np.log10(np.asarray(x_labels))
-    ax.set_xticks(x_labels, labels = x_labels,**plotChars)
+    ax.set_xticks(x_ticks, labels = x_labels,**plotChars)
 
     y_labels =np.asarray([100, 500, 1000, 3000, 10000, 50000])
-
     y_ticks = np.log10(np.asarray(y_labels))
-    ax.set_yticks(y_labels, labels = (y_labels)/1000,**plotChars)
+    ax.set_yticks(y_ticks, labels = (y_labels)/1000,**plotChars)
     
 
     # plt.xticks(fontsize=25, color = fontColor)
@@ -2340,7 +2352,7 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
         # ax = sns.lineplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
         #                   marker = 'o', **plottingParams)
         
-        ax = sns.pointplot(palette = palette, data = dfPairs, hue = hueType, style = styleType,
+        ax = sns.pointplot(palette = palette, data = dfPairs, hue = hueType,
                           marker = 'o', **plottingParams)
 
     if normalize == True:
@@ -2383,6 +2395,60 @@ def pointplot_cellAverage(fig, ax, dfPairs, condCatPoint, pairedCells, marker, p
 
     return fig, ax, pvals, dfPairs.copy()
 
+
+
+def EvH_Pairs(fig, ax, dfPairs, condCol, condCat, palette = sns.color_palette("tab10"), 
+                colorScheme = 'black', metric = 'mean', plotChars = {}):
+    
+    if colorScheme == 'black':
+        plt.style.use('default')
+        fig.patch.set_facecolor('black')
+        fontColor = '#ffffff'
+    else: 
+        plt.style.use('default')
+        fontColor = '#000000'
+    
+    if metric == 'mean':
+        
+        idx = 0
+        for i in np.unique(dfPairs['dateCell', 'first'].values):
+            toPlot = dfPairs[dfPairs['dateCell', 'first'] == i]
+            y1 = toPlot['E_eff_log', 'mean'][toPlot[condCol, 'first'] == condCat[0]]
+            x1 = toPlot['bestH0_log', 'mean'][toPlot[condCol, 'first'] == condCat[0]]
+            
+            y2 = toPlot['E_eff_log', 'mean'][toPlot[condCol, 'first'] == condCat[1]]
+            x2 = toPlot['bestH0_log', 'mean'][toPlot[condCol, 'first'] == condCat[1]]
+    
+            ax.scatter(x1, y1, marker = 'o', color = palette[idx], s = 100)
+            ax.scatter(x2, y2, marker = '*',  color = palette[idx], s = 100)
+            ax.plot([x1, x2], [y1, y2], color = palette[idx]) 
+            
+            idx = idx + 1
+            
+    elif metric == 'compression':
+        idx = 0
+        for i in np.unique(dfPairs['dateCell'].values):
+            toPlot = dfPairs[dfPairs['dateCell'] == i]
+            y1 = toPlot['E_eff_log'][toPlot[condCol] == condCat[0]]
+            x1 = toPlot['bestH0_log'][toPlot[condCol] == condCat[0]]
+            
+            y2 = toPlot['E_eff_log'][toPlot[condCol] == condCat[1]]
+            x2 = toPlot['bestH0_log'][toPlot[condCol] == condCat[1]]
+    
+            ax.scatter(x1, y1, marker = 'o', color = palette[idx], s = 100)
+            ax.scatter(x2, y2, marker = '*',  color = palette[idx], s = 100)
+            
+                
+            idx = idx + 1
+    # plt.xticks(**plotChars)
+    # plt.yticks(**plotChars)
+    # fig.suptitle(str(condCat), **plotChars)
+    ax.set_ylabel('Effective Elasticity', **plotChars)
+    ax.set_xlabel('Cortical Thickness', **plotChars)
+    return fig, ax
+        
+        
+        
 def NLRvAngle(fig, ax, dfPairs, condCat, condCol, pairedCells, palette = sns.color_palette("tab10"),
                 pairs = None, colorScheme = 'black', plotType = False,
                 plottingParams = {}, plotChars = {}):
@@ -2662,7 +2728,8 @@ def plotPopKS(data_f, styleDict, fitsSubDir = '',  fitType = 'stressGaussian',
             ax.set_yscale('log')
         
         cellCount = len(np.unique(data_ff['cellID'][data_ff[condCol] == co].values))
-        legendTxt = label + '\nNCells = {}\nNComp = {}'.format(cellCount, sum(N))
+        compCount = (np.max(df['compCount'].values))
+        legendTxt = label + '\nNCells = {}\nNComp = {}'.format(cellCount, compCount)
         
         
         # label = '{} | NCells = {}'.format(legendLabels[i], cellCount)
@@ -2720,7 +2787,7 @@ def plotPopKS(data_f, styleDict, fitsSubDir = '',  fitType = 'stressGaussian',
         elif returnCount == 2:
             output += (df_CountByCond, df_CountByCell)
 
-    return(output, count_df)
+    return (output), count_df
 
 
 def plotCellKS(data_f, fitsSubDir = '', condCol = '', fitType = 'stressGaussian', chosenCells = None, 

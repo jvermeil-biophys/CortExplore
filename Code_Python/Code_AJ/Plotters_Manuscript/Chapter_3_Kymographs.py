@@ -56,9 +56,11 @@ ylabel = 12
 xlabel = 12
 axtitle = 12
 figtitle =12
-font_ticks = 12
+font_ticks = 15
 
 SCALE_px_cm = 2.60
+SCALE_100X_ZEN = 7.4588
+
 
 #%% Functions
 
@@ -285,13 +287,30 @@ image = np.fliplr(image)
 
 # Convert the image to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
 blurred = cv2.blur(gray,(55,55))
 
-central_profile = np.mean(gray[170:210, :], axis = 0)
-# plt.plot(central_profile)
+central_profile = np.mean(blurred[170:210, :], axis = 0)
 
 threshold_inner_contour = int((50 / 100) * (np.max(central_profile) - np.min(central_profile)))
 threshold_outer_contour = int((10 / 100) * (np.max(central_profile) - np.min(central_profile)))
+
+plt.plot(central_profile, color = 'k', lw = 3)
+
+plt.axhline(y = threshold_inner_contour, color = 'red', ls = '--')
+plt.axhline(y = threshold_outer_contour, color = 'green', ls = '--')
+
+x_ticks = np.asarray([0,  10, 20, 30])
+
+x_ticks_labels = (x_ticks*SCALE_100X_ZEN)
+
+plt.xticks(x_ticks_labels, labels =x_ticks)
+
+
+plt.xticks(fontsize = 15)
+plt.yticks(fontsize = 15)
+plt.show()
+
 
 # Use Canny edge detection
 ret_in,th_in = cv2.threshold(blurred,threshold_inner_contour,255,cv2.THRESH_BINARY)
@@ -302,17 +321,31 @@ contour_in, _ = cv2.findContours(th_in, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPL
 contour_out, _ = cv2.findContours(th_out, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 
 # Draw the contour on the original image
-cv2.drawContours(act_img, contour_in, -1, (0, 0,0), 1)
+cv2.drawContours(act_img, contour_in, -1, (255, 0,0), 1)
 cv2.drawContours(act_img, contour_out, -1, (0, 255, 0), 1)
 
-cv2.drawContours(blurred, contour_in, -1, (0, 0,0), 1)
-cv2.drawContours(blurred, contour_out, -1, (0, 255, 0), 1)
 
+cv2.drawContours(blurred, contour_in, -1, (255, 0,0), 1)
+cv2.drawContours(blurred, contour_out, -1, (255, 0, 0), 1)
+
+# plt.axhline(y = 170, color = 'red')
+# plt.axhline(y = 210, color = 'red')
 
 # Convert BGR to RGB for display
+# gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+y_ticks = np.asarray([0, 10, 20, 30, 40])
+x_ticks = np.asarray([0,  10, 20, 30])
 
+y_ticks_labels = (y_ticks*SCALE_100X_ZEN).astype(int)
+x_ticks_labels = (x_ticks*SCALE_100X_ZEN)
+
+plt.yticks(y_ticks_labels, labels =y_ticks)
+plt.xticks(x_ticks_labels, labels =x_ticks)
+
+plt.xticks(fontsize = 15)
+plt.yticks(fontsize = 15)
 # Display the image with contours
-plt.imshow(blurred)
+plt.imshow(act_img)
 plt.show()
 
 # plt.imshow(act_img)
@@ -323,8 +356,9 @@ plt.show()
 #%% Importing the cellpose model
 
 allCells = os.listdir(dirProcessed)
-allCells = [x for x in allCells if channel in x and 'Global' in x and 'C4' not in x]
+allCells = [x for x in allCells if channel in x and 'Partial-Half' in x and 'C4' not in x]
 
+plt.style.use('default')
 
 fluoDict = {'cellID': [], 
             'fluoFront': [],
@@ -358,29 +392,60 @@ for j in range(len(allCells)):
         imgs = [imread(os.path.join(filePath, f)) for f in files]
 
         channels = [0, 0]
-        masks, flows, styles, diams = model.eval(
-            imgs, diameter=112, channels=channels,
-            flow_threshold=0.2, do_3D=False, normalize=True
-        )
+        masks, flows, styles, diams = model.eval(imgs, diameter=100, channels=channels,
+                                                flow_threshold=0.2, do_3D=False, normalize=True
+                                                )
 
         # Updated segFilename
-        segFilename = [os.path.join(segFolderCh, f"{k}") for k in range(len(masks))]
+        segFilename = [os.path.join(segFolderCh, f"{k:04d}") for k in range(len(masks))]
         
-        saveMasks = [io.masks_flows_to_seg(
-            imgs[k], masks[k], flows[k], diams, segFilename[k], channels) for k in range(len(masks))]
+        saveMasks = [io.masks_flows_to_seg(images = imgs[k], 
+                                           masks = masks[k], 
+                                           flows = flows[k], 
+                                           file_names = segFilename[k], 
+                                           channels = channels, 
+                                           diams = diams,
+                                          ) for k in range(len(masks))]
     else:
         print(gs.GREEN + 'Segmentation already done for cell ' + currentCell)
         print('Loading masks..' + gs.NORMAL)
 
-        nMasks = len(os.listdir(segFolderCh))
-        datMasks = [np.load(segFolderCh + '/' + str(x) + '_seg.npy', allow_pickle=True).item()['masks'] for x in range(nMasks)]
-        datImgs = [np.load(segFolderCh + '/' + str(x) + '_seg.npy', allow_pickle=True).item()['img'] for x in range(nMasks)]
+        nMasks = [f"{no:04d}" for no in range(len(os.listdir(segFolderCh)))]
+        datMasks = [np.load(segFolderCh + '/' + x + '_seg.npy', allow_pickle=True).item()['masks'] for x in nMasks]
+        
+        
+        filenames = [(np.load(segFolderCh + '/' +x + '_seg.npy', allow_pickle=True).item()['filename']).split('\\')[-2:] \
+                     for x in nMasks]
+        datImgs = [imread(os.path.join(dirProcessed, f[0], f[1] + '.tif')) for f in filenames]        
+        datOutlines = [np.load(segFolderCh + '/' + x + '_seg.npy', allow_pickle=True).item()['outlines'] for x in nMasks]
         
         masks = np.asarray(datMasks)
         imgs = np.asarray(datImgs)
 
-    # for each in masks:
-    #     plt.imshow(each)
+    # for q, w in zip(imgs, datOutlines):
+    #     # Convert mask to 8-bit for contours
+    #     mask_8bit = (w > 0).astype('uint8') * 255
+    #     # _, img_8bit = cv2.threshold(img_8bit, 127, 255, cv2.THRESH_BINARY)
+    #     contours, _ = cv2.findContours(mask_8bit, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    #     # Make sure q is 8-bit grayscale
+    #     if q.dtype != 'uint8':
+    #         q_8bit = cv2.convertScaleAbs(q, alpha=(255.0/65535.0))
+    #     else:
+    #         q_8bit = q
+    
+    #     # Convert grayscale to BGR (OpenCV default color order)
+    #     bgr_img = cv2.cvtColor(q_8bit, cv2.COLOR_GRAY2BGR)
+    
+    #     # Draw contours in red (BGR red is (0, 0, 255))
+    #     img_with_contours = cv2.drawContours(bgr_img.copy(), contours, -1, (0, 0, 255), 1)
+    
+    #     # Convert BGR to RGB for matplotlib display
+    #     rgb_img = cv2.cvtColor(img_with_contours, cv2.COLOR_BGR2RGB)
+    
+    #     plt.imshow(rgb_img)
+    #     plt.title(currentCell + '\n' + str(j))
+    #     plt.axis('off')
     #     plt.show()
     
     # plt.close('all')
@@ -417,7 +482,7 @@ for j in range(len(allCells)):
             warped_contour = warp_polar(cnt_mask, center = (cX, cY), radius = 250)
         
         maskVerifyBounds = np.copy(warped_img)
-   
+
         warped_copy = np.zeros(len(warped_img)-1)
         warped_copy_cont = np.zeros(len(warped_contour)-1)
         warped_mask = warp_polar(bw_mask, center = (cX, cY), radius = 250)
@@ -428,16 +493,23 @@ for j in range(len(allCells)):
         
         # warped_imgClean = np.asarray([warped_img[:, k] - innerMean for k in range(np.shape(warped_img)[1])]).T
         # warped_imgClean = warped_img - innerMean
-        
+        innerBounds, outerBounds = [], []
         for j in range(len(warped_img)-1):
             # maxval = int(maxInter[j])
-            maxval = np.argmax(warped_mask[j,:])
+            maxval = int(np.argmax(warped_mask[j,:]))
             # innerMean = np.mean(warped_img[j, 0:cortexThickness])
-            warped_copy[j] = np.max(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
+            warped_copy[j] = np.median(warped_img[j, maxval - cortexThickness:maxval]) #- innerMean
             warped_copy_cont[j] = np.average(warped_contour[j, maxval - cortexThickness:maxval])
-            maskVerifyBounds[j, maxval - cortexThickness], maskVerifyBounds[j, maxval] =  0, 0
+            maskVerifyBounds[j, maxval - cortexThickness], maskVerifyBounds[j, maxval] =   0, 0
+            innerBounds.append((maxval - cortexThickness, j))
+            outerBounds.append((maxval, j))
+        
+        innerBounds, outerBounds = np.asarray(innerBounds),np.asarray(outerBounds)
+        # plt.scatter(innerBounds[:, 0], innerBounds[:, 1], color='red', s=0.1)
+        # plt.scatter(outerBounds[:, 0], outerBounds[:, 1], color='red', s=0.2)
 
-        # plt.imshow(maskVerifyBounds)
+        # plt.imshow(maskVerifyBounds, cmap='magma' )
+        # plt.title(currentCell + '\n' + str(i))
         # plt.show()
         
         allKymo.append(warped_copy)
@@ -489,8 +561,7 @@ for j in range(len(allCells)):
     # im = ax[1].imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
     im = ax.imshow(kymo_interpolated.T, aspect='auto', cmap='magma', origin='lower', vmin = 0, vmax = 2.0)
     
-        
-    if 'HalfActivation' in currentCell or 'Global' in currentCell:
+    if 'HalfActivation' in currentCell:
         x1 = np.arange(kymoContour.shape[1])  # 18 columns
         y1 = np.arange(kymoContour.shape[0])
         interpolator_cnt = RGI((y1, x1), kymoContour, method='linear', bounds_error=False)
@@ -520,7 +591,6 @@ for j in range(len(allCells)):
             endx = cols * np.cos(theta) + center[0]
             endy = cols * np.sin(theta) + center[1]
             
-            
             # ax[1].plot([0, cols], [center[1], endy], color = colour, linewidth = 1, linestyle = '--')
             ax.plot([0, cols], [center[1], endy], color = colour, linewidth = 1, linestyle = '--')
             
@@ -528,33 +598,31 @@ for j in range(len(allCells)):
                 angles.append((center[1], int(endy)))
                 
             count = count + 1
-    
-        # for i in range(np.shape(kymo_norm)[1]-1):
-        #     frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
-        #     # medFront = np.average(kymo_norm[100:200, i])
-        #     medFront = np.average(np.average(kymo_norm[0:angles[1][0], i]) + np.average(kymo_norm[angles[0][0]:359, i]))
-        #     # fluoDict['fluoFront'].append(medFront)
-        #     medBack = np.average(kymo_norm[angles[1][0]:angles[0][0], i])
-        #     fluoDict['fluoBack'].append(medBack)
-        #     fluoDict['fluoFront'].append(medFront)
-        #     fluoDict['fluoTotal'].append(np.average(kymo_norm[:, i]))
-        #     fluoDict['cellID'].append(currentCell)
-        #     fluoDict['frame'].append(i)
+
         
         for i in range(np.shape(kymo_norm)[1]-1):
             frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
-            total = np.average(kymo_norm[:, i])
-            medBack = np.average(kymo_norm[angles[1][0]:angles[0][0], i])
+            total = np.median(kymo_norm[:, i])
+            medBack = np.median(kymo_norm[angles[1][0]:angles[0][0], i])
             front_up, front_down = kymo_norm[0:angles[1][0], i], kymo_norm[angles[0][0]:359, i]
-            whole_front = np.concatenate((front_up.flatten(), front_down.flatten()))
-            medFront =   np.average(whole_front)
+            whole_front = np.concatenate((front_up, front_down))
+            medFront =   np.median(whole_front)
             fluoDict['fluoFront'].append(medFront)
             fluoDict['fluoBack'].append(medBack)
             fluoDict['fluoTotal'].append(total)
             fluoDict['cellID'].append(currentCell)
             fluoDict['frame'].append(i)
     
-    
+    if 'Global' in currentCell:
+        for i in range(np.shape(kymo_norm)[1]-1):
+            frames = np.linspace(0, np.shape(kymo_norm)[1]-1, np.shape(kymo_norm)[1])
+            fluoDict['fluoFront'].append(np.nan)
+            total = np.median(kymo_norm[:, i])
+            fluoDict['fluoBack'].append(np.nan)
+            fluoDict['fluoTotal'].append(total)
+            fluoDict['cellID'].append(currentCell)
+            fluoDict['frame'].append(i)
+            
     xtick_positions = np.asarray([0, 1, 2, 3, 4])
     xtick_activations = np.asarray([np.abs(xtime - i).argmin() for i in activations])
     xticks = np.asarray([np.abs(xtime - i).argmin() for i in xtick_positions])
@@ -596,13 +664,13 @@ for j in range(len(allCells)):
 # plt.close('all')
 
 #%% Plotting normalised actin fluroscence intensity in time
-# plt.style.use('dark_background')
+plt.style.use('seaborn-v0_8')
 fluoDf = pd.DataFrame(fluoDict)
 
 fig, ax = plt.subplots(figsize=(15/SCALE_px_cm,10/SCALE_px_cm))
 
-# data = fluoDf[fluoDf['cellID'].str.contains('Partial-Half')]
-data = fluoDf[fluoDf['cellID'].str.contains('Global')]
+data = fluoDf[fluoDf['cellID'].str.contains('Partial-Half')]
+# data = fluoDf[fluoDf['cellID'].str.contains('Global')]
 
 
 x = (data['frame']*timeRes)/60
@@ -610,20 +678,20 @@ x = (data['frame']*timeRes)/60
 
 # flatui =  ["#FFD700", "#ee82ee", "#1AFFC6"]
 # flatui = ["#bb2fa6", "#000000"]
-palette = ['#fdae61', '#000004']
+palette = ['#fcb001', '#000004']
 
-sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1])
-sns.lineplot(data=data, x = x ,y="fluoBack", color=palette[0])
+# sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1])
+sns.lineplot(data=data, x = x ,y="fluoBack", estimator = 'median', color=palette[0])
 
-sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1], style = 'cellID', alpha = 0.5)
-sns.lineplot(data=data, x = x ,y="fluoBack", color=palette[0], style = 'cellID', alpha = 0.5)
+# sns.lineplot(data=data, x = x ,y="fluoFront", color=palette[1], hue = 'cellID', alpha = 0.5)
+sns.lineplot(data=data, x = x ,y="fluoBack", color=palette[0], style = 'cellID', alpha = 0.3)
 
 rear = mpatches.Patch(color=palette[0], label='Polarised rear (Activated)')
-front = mpatches.Patch(color=palette[1], label='Polarised front')
+# front = mpatches.Patch(color=palette[1], label='Polarised front')
 
 
 
-plt.legend(handles=[rear, front], fontsize = 11, loc = 'upper left')
+plt.legend(handles=[rear], fontsize = 11, loc = 'upper left')
 plt.xticks(fontsize=11)
 plt.yticks(fontsize=11)
 plt.xlabel('Time (mins)')
@@ -635,7 +703,7 @@ for i in x2:
     ax.axvline(x = i, color = "blue", linewidth=4, ymax=0.10)
 
 plt.tight_layout()
-plt.ylim(0.2, 1.5)
+plt.ylim(0.8, 1.4)
 plt.show()
 
 plt.savefig('{}/_{}_ActinRecruitmentvTime_Global.pdf'.format(cp.DirDataFigToday,channel), dpi = 200)

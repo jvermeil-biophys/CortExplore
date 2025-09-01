@@ -21,7 +21,7 @@ import os
 import re
 import datetime as dt
 from datetime import date
-import cv2
+# import cv2
 import sys
 from skimage import io
 import CortexPaths as cp
@@ -722,14 +722,18 @@ def computeMag_M450(B):
     M = 1.05*1600 * (0.001991*B**3 + 17.54*B**2 + 153.4*B) / (B**2 + 35.53*B + 158.1)
     return(M)
 
-V = (4/3)*np.pi*((4.5*10**(-6))/2)**3
-m = computeMag_M450(50* 10**(-3))*V
+bead_dia = 4.5*10**(-6)
+V = (4/3)*np.pi*(bead_dia/2)**3
+m = computeMag_M450(15)*V
 
-d = 600 * 10**-9
+d = 600 * 10**-9 + bead_dia
 
-F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
+# F = (6*(4*np.pi*10**(-7))*m**2)/(4*np.pi*d**4)
 
-f = F * 10**12 # in pN
+
+F = (3e5 * 2 * m**2) / (d**4)
+
+f = F #* 10**12 # in pN
 
 print(f)
 
