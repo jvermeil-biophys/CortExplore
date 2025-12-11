@@ -74,58 +74,6 @@ DirSave = os.path.join(cp.DirDataRaw, date + '_depthos', 'M1') #  + '_depthos', 
 microscope = 'labview'
 imagePrefix = 'im'
 
-# %% Functions
-
-def preprocessing_confocal(DirExt, imagePrefix, condition):
-    allCells = np.asarray(os.listdir(DirExt))
-    cellNames = ['-'.join(cell.split('-')[:3]) for cell in allCells if condition in cell]
-    cellNames = list(set(cellNames))
-    
-    for i in cellNames:
-        print(gs.BLUE + 'Moving files for ' + i + '...' + gs.NORMAL)
-
-        subCells = [j for j in allCells if i in j]
-        cellPath = os.path.join(DirExt, i)
-        cnt = 1
-        newStatus = pd.DataFrame(columns=[0, 1, 2])
-        newField = pd.DataFrame()
-        maxLoop = 0
-        
-        if not os.path.exists(cellPath):
-            os.mkdir(cellPath)
-            
-        for k in subCells:
-            
-            cellFramesPath = os.path.join(DirExt, k)
-            cellFrames = os.listdir(cellFramesPath)
-            cellFrames = [frame for frame in cellFrames if imagePrefix in frame]
-            for imgNo in range(1, len(cellFrames) + 1):
-                srcPath = '{:}/{:}{:}.tif'.format(cellFramesPath, imagePrefix, imgNo)
-                destPath = '{:}/{:}{:}.tif'.format(cellPath, imagePrefix, cnt)
-                shutil.copy(srcPath, destPath)
-                
-                cnt = cnt + 1
-            
-            status = pd.read_csv(os.path.join(cellFramesPath , k+'_Status.txt'), sep = '_', header = None)
-            newLoopCol = status[0] + maxLoop
-            maxLoop = newLoopCol.max()
-            status[0] = newLoopCol
-            newStatus = pd.concat([newStatus, status])
-            
-            field = pd.read_csv(os.path.join(cellFramesPath, k+'_Field.txt'), sep = '\t', header = None)
-            newField = pd.concat([newField, field])
-            
-            log = os.path.join(cellFramesPath , k+'_log.txt')
-            shutil.copy(log, os.path.join(cellPath , k+'_log.txt'))
-            
-        newStatus.to_csv(os.path.join(cellPath, i + '_Status.txt'), sep='_', index=False, header=False )
-        newField.to_csv(os.path.join(cellPath, i + '_Field.txt'), sep='\t', index=False, header=False )
-            
-
-# # prefix = ''
-# # channel = ''
-# microscope = 'labview'
-# imagePrefix = 'Image'
 
 # %% Functions
 
@@ -435,11 +383,10 @@ def cropAndCopy(DirSrc, DirDst, allRefPoints, allCellPaths, microscope, channel 
         
         refPts = np.array(allRefPoints[i])
         cellPath = allCellPaths[i]
+        cellName = cellPath.split('\\')[-1]
         allFiles = os.listdir(cellPath)
         allFiles = os_sorted(allFiles)
-        
-        print(cellName)
-        
+                
         # to detect supplementary selections
         try:
             if (allCellPaths[i-1]==allCellPaths[i]):

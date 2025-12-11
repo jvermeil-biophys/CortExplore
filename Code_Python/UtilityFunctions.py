@@ -34,6 +34,7 @@ import os
 import re
 import time
 import shutil
+import random
 import numbers
 import pyautogui
 import matplotlib
@@ -43,6 +44,7 @@ import traceback
 # import scipy
 from scipy import interpolate
 from scipy import signal
+from scipy import odr
 
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
@@ -1361,7 +1363,8 @@ def plotMandForce(d = 0):
     ax.set_ylim([-2,32])
     
     ax = axes[1,0]
-    ax.plot(B, F/1e3, c='darkred')
+    # ax.plot(B, F/1e3, c='darkred')
+    ax.plot(B, F, c='darkred')
     ax.set_xlabel('B (mT)')
     ax.set_ylabel('F (nN)')
     ax.grid(axis='both')
@@ -1379,7 +1382,8 @@ def plotMandForce(d = 0):
     ax.grid(axis='both')    
     
     ax = axes[1,1]
-    ax.plot(B, F/1e3, c='darkred')
+    # ax.plot(B, F/1e3, c='darkred')
+    ax.plot(B, F, c='darkred')
     ax.set_xlabel('B (mT)')
     # ax.set_ylabel('F (pN)')
     ax.grid(axis='both')
@@ -1389,11 +1393,11 @@ def plotMandForce(d = 0):
     plt.show()
     
     #### Save
-    figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-    figSubDir = 'Mat&Meth'
-    name = 'Force_vs_MagField'
-    archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
+    # figSubDir = 'Mat&Meth'
+    # name = 'Force_vs_MagField'
+    # archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+    #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # plotMandForce(d = 0)
 
@@ -1639,6 +1643,23 @@ def fitLineHuber(X, Y, with_wlm_results = False):
         w_model = sm.WLS(Y, X, weights)
         w_results = w_model.fit()
         out = (results.params, results, w_results)
+    return(out)
+
+
+def fitLineTLS(X, Y):
+    """
+
+    """
+    def linearFun(B, X):
+        return(B[0]*X + B[1])
+    linear = odr.Model(linearFun)
+    data = odr.Data(X, Y, wd=1, we=1)
+    fit = odr.ODR(mydata, linear, beta0=[0, 0])
+    output = fit.run()
+    a, b = output.beta
+
+    out = ((a, b), output)
+    
     return(out)
 
 
@@ -1929,6 +1950,78 @@ def lighten_color(color, amount=0.5):
         c = color
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return(colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2]))
+
+# %% Test
+
+# %%% Dataset
+
+# Atrue = +1
+# Btrue = 0
+# XVarTrue = 1.0
+# YVarTrue = 5.0
+
+# # Adimension by data spanning? Adimension the variance
+
+# Xtrue = np.arange(start = -10, stop = 11, step = 0.2)
+# Ytrue = Atrue*Xtrue + Btrue
+
+# Xr = Xtrue + np.random.normal(loc=0.0, scale=XVarTrue**0.5, size=len(Xtrue))
+# Yr = Ytrue + np.random.normal(loc=0.0, scale=YVarTrue**0.5, size=len(Ytrue))
+
+# %%% Function
+
+def fitLineTLS(X, Y, wd=1, we=1):
+    """
+
+    """
+    def linearFun(B, X):
+        return(B[0]*X + B[1])
+    linear = odr.Model(linearFun)
+    data = odr.Data(X, Y, wd=wd, we=we)
+    fit = odr.ODR(data, linear, beta0=[0, 0])
+    output = fit.run()
+    a, b = output.beta
+    out = ((b, a), output)
+    return(out)
+
+
+# #### Test
+# Xplot = np.linspace(-10, 10, num = 100)
+
+# # OLS - X vs Y
+# [b_xy, a_xy], results_xy = fitLine(Xr, Yr)
+# Yplot_xy = a_xy * Xplot + b_xy
+
+# # OLS - X vs Y
+# [B_yx, A_yx], results_yx = fitLine(Yr, Xr)
+# a_yx, b_yx = 1/A_yx, -B_yx/A_yx
+# Yplot_yx = a_yx * Xplot + b_yx
+
+# # ODR - True variances
+# [b_odr1, a_odr1], results_odr1 = fitLineTLS(Xr, Yr, wd=1/XVarTrue, we=1/YVarTrue)
+# Yplot_odr1 = a_odr1 * Xplot + b_odr1
+
+# # ODR - Estimated variances
+# [b_odr2, a_odr2], results_odr2 = fitLineTLS(Xr, Yr, wd=1, we=1)
+# Yplot_odr2 = a_odr2 * Xplot + b_odr2
+
+# # ODR - Force to XvY equivalent ----> Works as intended !
+# [b_odr3, a_odr3], results_odr3 = fitLineTLS(Xr, Yr, wd=1, we=0.000001)
+# Yplot_odr3 = a_odr3 * Xplot + b_odr3
+
+# fig, ax = plt.subplots(1, 1)
+# ax.plot(Xr, Yr, 'ko')
+# ax.plot(Xplot, Yplot_xy,   'b--', label=f'XvY | a={a_xy:.2f}')
+# ax.plot(Xplot, Yplot_yx,   'r--', label=f'YvX | a={a_yx:.2f}')
+# ax.plot(Xplot, Yplot_odr1, 'g-',  label=f'TLS true | a={a_odr1:.2f}')
+# ax.plot(Xplot, Yplot_odr2, 'k-',  label=f'TLS est | a={a_odr2:.2f}')
+# ax.plot(Xplot, Yplot_odr3, 'c-',  label=f'TLS all y | a={a_odr3:.2f}')
+# ax.grid()
+# ax.legend(fontsize = 11)
+
+
+# plt.show()
+
 
 # %%% User Input
 

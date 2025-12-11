@@ -13,6 +13,7 @@ import re
 import numpy as np
 import pandas as pd
 import skimage as skm
+import scipy.stats as st
 import scipy.ndimage as ndi
 
 import seaborn as sns
@@ -42,6 +43,7 @@ sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python')
 sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python/Code_JV')
 
 import GraphicStyles as gs
+import CortexPaths as cp
 import UtilityFunctions as ufun
 from Chameleon_BeadTracker import smallTracker
 
@@ -64,6 +66,47 @@ def filterDf(df, F):
     df_f = df[totalF]
     return(df_f)
 
+def makeCompositeCol(df, cols=[]):
+    N = len(cols)
+    if N > 1:
+        newColName = ''
+        for i in range(N):
+            newColName += cols[i]
+            newColName += ' & '
+        newColName = newColName[:-3]
+        df[newColName] = ''
+        for i in range(N):
+            df[newColName] += df[cols[i]].astype(str)
+            df[newColName] = df[newColName].apply(lambda x : x + ' & ')
+        df[newColName] = df[newColName].apply(lambda x : x[:-3])
+    else:
+        newColName = cols[0]
+    return(df, newColName)
+
+
+def makeCountDf(df, condition):
+    if not condition in ['compNum', 'cellID', 'manipID', 'date']:
+        cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condition]
+        count_df = df[cols_count_df]
+        groupByCell = count_df.groupby('cellID')
+        d_agg = {'compNum':'count', condition:'first', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+    
+    else:
+        cols_count_df = ['compNum', 'cellID', 'manipID', 'date']
+        count_df = df[cols_count_df]
+        groupByCell = count_df.groupby('cellID')
+        d_agg = {'compNum':'count', 'date':'first', 'manipID':'first'}
+        df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(condition)
+    d_agg = {'cellID': 'count', 'compCount': 'sum', 
+             'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+    
 
 # %%% For image processing
 
@@ -3065,13 +3108,13 @@ global_df.to_csv(os.path.join(resCrossDir, f'{date}_global_DfMerged.csv'), sep='
 # %%% Dataset
 
 #### Standard
-global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
+global_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/All_global_DfMerged.csv"), sep=None, engine='python')
 global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
 global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
 # global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
 
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-07-21'
+# figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+# figSubDir = '24-07-21'
 
 global_df['D_fbL'] = global_df['Q_fbL']/global_df['h3']
 global_df['D_fbN'] = global_df['Q_fbN']/global_df['h3']
@@ -3104,7 +3147,7 @@ fluo_df_fg = dataGroup(fluo_df_f, groupCol = 'cellID', idCols = ['date', 'manip'
                        numCols = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h3', 'D1_fbN', 'D1_fbL', 'D1_vb', 'D1_gf'],
                        aggFun = 'median')
 
-meca_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/MecaData_Chameleon_CompFluo.csv", sep=None, engine='python')
+meca_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/MecaData_Chameleon_CompFluo.csv"), sep=None, engine='python')
 meca_df['cellID_2'] = meca_df['cellID'].apply(lambda x : '-'.join(x.split('-')[:-1]))
 Filters = [(meca_df['date'] == '24-06-14'),
            (meca_df['surroundingThickness'] <= 900),
@@ -3119,8 +3162,8 @@ merged_df['D2_fbL'] = 1000*merged_df['Q_fbL']/merged_df['surroundingThickness']
 merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
 merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
 
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-07-23'
+figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+figSubDir = 'Test_Paper'
 
 # %%% Plot quantity - per comp
 
@@ -3365,8 +3408,8 @@ plt.show()
 #### Save
 figSubDir = 'Manuscript_E-h_fluo'
 name = 'Qactin_GF_vs_h5mT_DEFENSE'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Plot quantity - One cell !
 
@@ -3393,8 +3436,8 @@ metric = 'Q_gf'
 Filters = [
            #  (global_df['h3'] < 1.1),
            # (global_df['Q_gf'] < 40),
-           # (global_df['date'] == '24-06-14'),
-            (global_df['cellID'] == '24-06-14_M1_P1_C2'),
+            (global_df['date'] == '24-06-14'),
+            (global_df['cellID'] == '24-06-14_M1_P1_C5'),
            ]
 
 df_f = filterDf(global_df, Filters)
@@ -3450,8 +3493,8 @@ ax.scatter(X, Y, c=C, marker='o', s=40, zorder=3, cmap = cMap, ec='w', linewidth
 
 # ax.legend(loc = 'upper left')
 
-ax.set_xlim([0, 550])
-ax.set_ylim([0, 15])
+# ax.set_xlim([0, 550])
+# ax.set_ylim([0, 15])
 
 
 ax.set_ylabel('Actin Quantity (a.u.)')
@@ -3466,11 +3509,138 @@ plt.show()
 
 #### Save
 figSubDir = 'E-h-Fluo'
-name = 'ONE_CELL_Qactin_GF_vs_h5mT_V2'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+name = 'Qactin_GF_vs_h5mT_'
+# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+# %%% Plot all cells for one date
+
+#### NEW HERE !!
+
+
+figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+figSubDir = 'Test_Paper'
+
+# '24-02-27', '24-05-24', '24-06-14'
+date = '24-06-14'
+XCol = 'h3'
+YCol = 'Q_gf'
+
+Filters = [(global_df[XCol] < 1.1),
+           (global_df[YCol] < 40),
+           (global_df['date'] == date),
+           ]
+condCol = 'date'
+
+df_f = filterDf(global_df, Filters)
+CID = df_f.reset_index()['cellID'].unique()
+Ncells = len(CID)
+
+res_dict = {'cellID':[],
+            'DH':[],
+            'CvH':[],
+            'expo':[],
+            'expo_ciw':[],
+            }
+
+#### Plot 1
+## Initialize
+ncols = 5
+nrows = 1 + (Ncells-1)//ncols
+fig, axes = plt.subplots(nrows, ncols, figsize=(35/gs.cm_in, nrows*6/gs.cm_in), sharex=True, sharey=True)
+axes_f = axes.flatten()
+
+## Make the plot
+for i in range(Ncells):
+    ### Data
+    cid = CID[i]        
+    df_cell = df_f[df_f['cellID'] == cid]
+    
+    DH = np.max(df_cell[XCol].values) - np.min(df_cell[XCol].values)
+    CvH = np.std(np.log(df_cell[XCol].values)) / np.mean(np.log(df_cell[XCol].values))
+    res_dict['cellID'].append(cid)
+    res_dict['DH'].append(DH)
+    res_dict['CvH'].append(CvH)
+    
+    Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values)
+    
+    # OLS
+    perc, dof, = 0.975, len(Yfit)-2
+    q = st.t.ppf(perc, dof)
+    [b, a], results = ufun.fitLine(Xfit, Yfit)
+    A, alpha = np.exp(b), a
+    alphaCiw = results.HC3_se[1] * q
+    R2 = results.rsquared
+    pval = results.pvalues[1]
+    
+    # ODR
+    # def funFit(B, X):
+    #     return(B[0]*X + B[1])
+    # linear = odr.Model(funFit)
+    # mydata = odr.Data(Xfit, Yfit, wd=1, we=1)
+    # myodr = odr.ODR(mydata, linear, beta0=[-1.5, 2.])
+    # myoutput = myodr.run()
+    # a, b = myoutput.beta
+    # A, alpha = np.exp(b), a
+    # perc, dof, = 0.975, len(Yfit)-2
+    # q = st.t.ppf(perc, dof)
+    # alphaCiw = myoutput.sd_beta[0] * q
+    # R2 = 1
+    # pval = 0
+    
+    res_dict['expo'].append(alpha)
+    res_dict['expo_ciw'].append(alphaCiw)
+    
+    ### Plot
+    ax = axes_f[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    valid = True
+    if valid:
+        color = gs.cL_Set2[0]
+    else:
+        color = gs.cL_Set2[1]
+        
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**alpha
+        
+    sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
+                    marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
+    ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
+            label = \
+                    # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                    # f'\nA = {A:.1e}' + \
+                    f'$\\alpha$  = {alpha:.2f} $\\pm $ {alphaCiw:.2f}' # + \
+                    )
+        
+    ### Format
+    ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
+    # ax.set_ylabel(dict_axisLabels[YCol])
+    # ax.set_xlabel(dict_axisLabels[XCol])
+    ax.grid(visible=True, which='major', axis='both')
+    # ax.set_xlim([50, 1100])
+    ax.set_title(cid, fontsize = 10)
+    
+df_res = pd.DataFrame(res_dict)
+fig, ax = plt.subplots(1, 1, figsize=(10, 10), sharex=True, sharey=True)
+sns.boxplot(data = df_res, ax = ax, y='expo', 
+            width=0.4, color='.9', showfliers = False,
+            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            )
+sns.swarmplot(data = df_res, ax = ax, y='expo',
+              size = 10, hue = 'cellID', legend=False)
+
+### Format
+ax.grid(axis='y')
+ax.set_ylabel('Exponent of the Q-h fit')
+
+
+plt.show()
 
 # %%% Plot density - per comp
 
@@ -3817,7 +3987,7 @@ fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
 # Filter global_df
 
 df = merged_df.copy()
-df = df.rename(columns={'surroundingThickness':'H 5mT'})
+df = df.rename(columns={'surroundingThickness':'H 5mT', 'date_x':'date'})
 
 x = 'H 5mT'
 y = 'D2_gf'
@@ -3900,7 +4070,7 @@ def makeCountDf_Fluo(df):
     
     return(df_CountByCond, df_CountByCell)
 
-CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond, CountByCell = makeCountDf_Fluo(df)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
@@ -3913,7 +4083,7 @@ fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
 # Filter global_df
 
 df = merged_df.copy()
-df = df.rename(columns={'surroundingThickness':'H 5mT'})
+df = df.rename(columns={'surroundingThickness':'H 5mT', 'date_x':'date'})
 hue = 'H 5mT'
 # x = 'D2_fbL'
 x = 'D2_gf'
@@ -3997,7 +4167,7 @@ def makeCountDf_Fluo(df):
     
     return(df_CountByCond, df_CountByCell)
 
-CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond, CountByCell = makeCountDf_Fluo(df)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%%% 3.
@@ -4008,7 +4178,7 @@ fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
 # Filter global_df
 
 df = merged_df.copy()
-df = df.rename(columns={'surroundingThickness':'H 5mT'})
+df = df.rename(columns={'surroundingThickness':'H 5mT', 'date_x':'date'})
 
 hue = 'D2_gf'
 x = 'H 5mT'
@@ -4095,7 +4265,7 @@ def makeCountDf_Fluo(df):
     
     return(df_CountByCond, df_CountByCell)
 
-CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+CountByCond, CountByCell = makeCountDf_Fluo(df)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%%% 3. V2
@@ -4173,6 +4343,109 @@ plt.show()
 #### Save
 figSubDir = 'Manuscript_E-h_fluo'
 name = 'Comp_E_vs_h5mT'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = '', cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 200,
+                figDir = figDir, figSubDir = '', cloudSave = 'flexible')
+
+
+
+def makeCountDf_Fluo(df):
+    cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+    count_df = df[cols_count_df]
+    groupByCell = count_df.groupby('cellID')
+    d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+    groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+    d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+    d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+    df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+    return(df_CountByCond, df_CountByCell)
+
+df = df.rename(columns={'date_x':'date'})
+
+
+CountByCond, CountByCell = makeCountDf_Fluo(df)
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t') 
+
+# %%%% 4. Quantity
+
+
+fig, ax = plt.subplots(1, 1, figsize=(16/gs.cm_in, 10/gs.cm_in))
+gs.set_default_options_jv(palette = 'Set2')
+
+# Filter global_df
+ 
+df = merged_df.copy()
+df = df.rename(columns={'surroundingThickness':'H 5mT'})
+
+hue = 'E_f_<_400'
+x = 'H 5mT'
+y = 'Q_gf'
+style = None
+s = 40
+alpha = 1
+zo = 5
+ec = 'None'
+
+df[y] /= 1000
+
+
+# ax = axes[0]
+# # ax.plot([], [], label=r'$\bf{Density\ (a.u.)}$', ls='-', color='w')
+# sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+#                 ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+# # ax.plot([], [], label=r' ', ls='-', color='w')
+# ax.set_ylabel('$E_{400}$ (kPa)')
+# ax.set_xlabel('$H_{5mT}$ (nm)')
+# ax.set_ylim([0, ax.get_ylim()[-1]])
+# ax.set_xlim([0, ax.get_xlim()[-1]])
+# ax.legend(fontsize = 8, loc='upper right', 
+#           title = r'$\bf{Density\ (a.u.)}$', title_fontsize = 9, ncol = 2)
+# ax.grid()
+
+
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
+                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
+ax.set_ylabel('$Q$ (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylim([0, ax.get_ylim()[-1]])
+ax.set_xlim([90, 1100])
+# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
+ax.grid()
+
+Xfit, Yfit = np.log(df[x].values), np.log(df[y].values)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results=True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+# ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+# ax.legend(fontsize = 8, loc='upper right', )
+ax.legend(fontsize = 8, loc='upper left', 
+          title = r'$\bf{E_{400} (kPa)}$', title_fontsize = 9, ncol = 2)
+
+
+ax.grid(which = 'both', alpha = 0.4)
+
+
+# fig.suptitle('Stiffness v density 2 - with cell w. avg.')
+fig.tight_layout()
+plt.show()
+
+#### Save
+figSubDir = 'Manuscript_E-h_fluo'
+name = 'Comp_Q_vs_h5mT'
 ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                 figDir = figDir, figSubDir = '', cloudSave = 'flexible')
 ufun.archiveFig(fig, name = name, ext = '.png', dpi = 200,
@@ -4344,7 +4617,7 @@ ax.scatter(X, Y, c=C, marker='o', s=20, zorder=3, cmap = cMap) # , style='cellNu
 
 Xg = df_fg['h3_mean', 'median'].values
 Yg = df_fg[metric + '_mean', 'median'].values
-# Xerr = df_fg['h3', 'median'].values
+# Xerr = df_fg['h3', 'median'].values 
 Ygerr = df_fg[metric + '_mean', 'std'].values
 
 ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,

@@ -51,6 +51,13 @@ import GraphicStyles as gs
 import UtilityFunctions as ufun
 
 
+#### Errors for chi2
+
+err_chi2_H = 7 # nm
+err_chi2_F = 100 # pN
+err_chi2_Stress = 100 # Pa
+err_chi2_Strain = 0.01 # %
+
 # %%% Smaller settings
 
 # Pandas settings
@@ -688,13 +695,13 @@ def fitChadwick_hf(h, f, D):
         initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
         
         initialParameters = [initE, initH0]
-    
+        
         # bounds on parameters - initial parameters must be within these
         lowerBounds = (0, 0)
-        upperBounds = (np.Inf, np.Inf)
+        upperBounds = (np.inf, np.inf)
         parameterBounds = [lowerBounds, upperBounds]
-
-
+        
+        
         # params = [E, H0] ; ses = [seE, seH0]
         params, covM = curve_fit(inversedChadwickModel, f, h, p0=initialParameters, bounds = parameterBounds)
         ses = np.array([covM[0,0]**0.5, covM[1,1]**0.5])
@@ -772,7 +779,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
     
         # bounds on parameters - initial parameters must be within these
         lowerBounds = (0, max(h))
-        upperBounds = (np.Inf, np.Inf)
+        upperBounds = (np.inf, np.inf)
         parameterBounds = [lowerBounds, upperBounds]
 
     
@@ -995,7 +1002,7 @@ def fitChadwick_hf_fixedH0(h, f, D, H0):
     
         # bounds on parameters - initial parameters must be within these
         lowerBounds = (0)
-        upperBounds = (np.Inf)
+        upperBounds = (np.inf)
         parameterBounds = [lowerBounds, upperBounds]
 
 
@@ -1041,7 +1048,7 @@ def makeDictFit_CVW_hf(params, ses, error,
         The x-variable values array predicted from the fit.
     err_chi2 : float
         The typical error on the y-variable used to compute the chi2.
-        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+        See in the top of this code for default values of errors used in Chi2 computations.
     fitValidationSettings : dict
         Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
 
@@ -1155,7 +1162,7 @@ def makeDictFit_hf(params, ses, error,
         The x-variable values array predicted from the fit.
     err_chi2 : float
         The typical error on the y-variable used to compute the chi2.
-        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+        See in the top of this code for default values of errors used in Chi2 computations.
     fitValidationSettings : dict
         Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
 
@@ -1180,7 +1187,7 @@ def makeDictFit_hf(params, ses, error,
         i) from scipy import stats
         ii) df = nb_pts - nb_parms ; se = diag(cov)**0.5
         iii) Student t coefficient : q = stat.t.ppf(1 - alpha / 2, df)
-        iv) ConfInt = [params - q*se, params + q*se]
+        iv)  ConfInt = [params - q*se, params + q*se]
 
     """
     if not error:
@@ -1262,7 +1269,7 @@ def makeDictFit_ss(params, ses, error,
         The x-variable values array predicted from the fit.
     err_chi2 : float
         The typical error on the y-variable used to compute the chi2.
-        Typically, err_chi2 = 30nm for thicknesses, 100pN for forces, 0.01 for strains.
+        See in the top of this code for default values of errors used in Chi2 computations.
     fitValidationSettings : dict
         Dictionary that contains the validation criteria for nbPts, R2 and Chi2.
 
@@ -1709,7 +1716,7 @@ class CellCompression:
         (axmbis, axMbis) = axbis.get_ylim()
         
         try:
-            axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
+            axbis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values/1e3))])
         except:
             pass
         
@@ -3196,7 +3203,7 @@ class IndentCompression:
         ePredict = VWC(h_sort, 0, Y/1e6, H0)
         y, yPredict = f_sort, fPredict
         #### err_Chi2 for distance (nm)
-        err_chi2 = 10
+        err_chi2 = err_chi2_H
         dictFit = makeDictFit_CVW_hf(params, ses, error, 
                                  h_sort, y, yPredict, kPredict, ePredict, # h_sort instead of h
                                  err_chi2, fitValidationSettings)
@@ -3218,7 +3225,7 @@ class IndentCompression:
         Returns
         -------
         None.
-
+ 
         """
         if len(mask) == 0:
             mask = np.ones_like(self.hCompr, dtype = bool)
@@ -3230,7 +3237,7 @@ class IndentCompression:
         x = f
         y, yPredict = h, hPredict
         #### err_Chi2 for distance (nm)
-        err_chi2 = 10
+        err_chi2 = err_chi2_H
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
@@ -3265,7 +3272,7 @@ class IndentCompression:
         x = h
         y, yPredict = f, fPredict
         #### err_Chi2 for force (pN)
-        err_chi2 = 100
+        err_chi2 = err_chi2_F
         dictFit = makeDictFit_hf(params, ses, error, 
                            x, y, yPredict, 
                            err_chi2, fitValidationSettings)
@@ -3347,7 +3354,7 @@ class IndentCompression:
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
         #### err_Chi2 for strain
-        err_chi2 = 0.01
+        err_chi2 = err_chi2_Strain
         
         dictFit = makeDictFit_ss(params, ses, error, 
                                  center, halfWidth, x, y, yPredict, 
@@ -3383,7 +3390,7 @@ class IndentCompression:
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
         #### err_Chi2 for strain
-        err_chi2 = 0.01
+        err_chi2 = err_chi2_Strain
         center = np.median(x)
         halfWidth = (np.max(x) - np.min(x))/2
         
@@ -3421,7 +3428,7 @@ class IndentCompression:
         x = stress[mask]
         y, yPredict = strain[mask], strainPredict
         #### err_Chi2 for strain
-        err_chi2 = 0.01
+        err_chi2 = err_chi2_Strain
         center = np.median(x)
         halfWidth = (np.max(x) - np.min(x))/2
         
@@ -3679,7 +3686,6 @@ class IndentCompression:
             ax.set_ylabel('f (pN)')
     
             if plotFit:
-                
                 method = 'Full'
                 # dictFit = self.dictFitFH_Chadwick[method]
                 dictFit = self.dictFitFH_Chadwick[method]
@@ -3712,21 +3718,24 @@ class IndentCompression:
                 # else:
                 #     titleText += '\nFIT ERROR'
                 
-                method = 'f_in_400_800'
-                # dictFit = self.dictFitFH_Chadwick[method]
-                dictFit = self.dictFitFH_Chadwick[method]
-                fitError = dictFit['error']
-                    
-                if not fitError:
-                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                    fFit = dictFit['x']
-                    hPredict = dictFit['yPredict']
-                    
-                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
-                            label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
+                try:
+                    method = 'f_in_400_800'
+                    # dictFit = self.dictFitFH_Chadwick[method]
+                    dictFit = self.dictFitFH_Chadwick[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fFit = dictFit['x']
+                        hPredict = dictFit['yPredict']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                    # else:
+                    #     titleText += '\nFIT ERROR'
+                except:
+                    pass
                     
             if plotH0:
                 bestH0 = self.bestH0
@@ -4548,7 +4557,7 @@ class IndentCompression:
         x = strain[mask]
         y, yPredict = stress[mask], stressPredict
         #### err_Chi2 for stress
-        err_chi2 = 100
+        err_chi2 = err_chi2_Stress
         
         dictFit = makeDictFit_ss(params, ses, error, 
                                  center, halfWidth, x, y, yPredict, 
@@ -4656,7 +4665,7 @@ class IndentCompression:
         x = f
         y, yPredict = h, hPredict
         #### err_Chi2 for distance (nm)
-        err_chi2 = 10
+        err_chi2 = err_chi2_H
         dictFit = makeDictFit_hf(params, ses, error, 
                                  x, y, yPredict, 
                                  err_chi2, fitValidationSettings)
@@ -4699,7 +4708,7 @@ class IndentCompression:
             x = stress[mask]
             y, yPredict = strain[mask], strainPredict
             #### err_Chi2 for strain
-            err_chi2 = 0.01
+            err_chi2 = err_chi2_Strain
             center = np.median(x)
             halfWidth = (np.max(x) - np.min(x))/2
             
@@ -5607,7 +5616,6 @@ def getAnalysisTable(fileName):
     if 'ExpDay' in df.columns:
         dateColumn = 'ExpDay'
     elif 'date' in df.columns:
-        
         dateColumn = 'date'
         
     # try:

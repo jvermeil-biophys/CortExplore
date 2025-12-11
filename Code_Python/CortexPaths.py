@@ -87,7 +87,7 @@ DirRepoExp = os.path.join(DirRepo, "Data_Experimental" + suffix)
 
 DirDataRaw = os.path.join(DirData, "Raw")
 DirDataRawDeptho = os.path.join(DirDataRaw, 'DepthoLibrary')
-DirDataRawDepthoInter = os.path.join(DirDataRawDeptho, 'IntermediateSteps')
+DirDataRawDepthoInter = os.path.join(DirDataRawDeptho, 'Intermediate_Py')
 
 # DirDataExp = os.path.join(DirData, "Data_Experimental")
 

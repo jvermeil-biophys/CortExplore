@@ -279,44 +279,44 @@ output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf,
 
 # %%% 18-12-12
 # %%%% M1 - Ctrl 
-dates = '18.09.24'
+dates = '18.12.12'
 manips, wells, cells = 1, 'all', 'all'
-depthoName = '18.08.28_M450_step20_100X'
+depthoName = '18.12.12_M450_step20_100X'
 
-output = mainTracker(dates, manips, wells, cells, depthoName, expDf, 
-                     redoAllSteps = False, trackAll = False, 
-                     sourceField = 'default')
+# output = mainTracker(dates, manips, wells, cells, depthoName, expDf, 
+#                      redoAllSteps = False, trackAll = False, 
+#                      sourceField = 'default')
 
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'loopStruct', redoAllSteps = True, trackAll = False)
 
 
 # %%% 18-10-30
 # %%%% M2 - Blebbi 
-dates = '18.09.24'
-manips, wells, cells = 1, 'all', 'all'
-depthoName = '18.08.28_M450_step20_100X'
+dates = '18.10.30'
+manips, wells, cells = 2, 'all', 'all'
+depthoName = '18.10.30_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoName, expDf, 
                      redoAllSteps = False, trackAll = False, 
                      sourceField = 'default')
  
 # %%%% M3 - CalA 
-dates = '18.09.24'
-manips, wells, cells = 1, 'all', 'all'
-depthoName = '18.08.28_M450_step20_100X'
+dates = '18.10.30'
+manips, wells, cells = 3, 'all', 'all'
+depthoName = '18.10.30_M450_step20_100X'
 
 output = mainTracker(dates, manips, wells, cells, depthoName, expDf, 
                      redoAllSteps = False, trackAll = False, 
                      sourceField = 'default')
 
 # %%%% M4 - Ctrl
-dates = '18.09.24'
-manips, wells, cells = 1, 'all', 'all'
-depthoName = '18.08.28_M450_step20_100X'
+dates = '18.10.30'
+manips, wells, cells = 4, 'all', 'all'
+depthoName = '18.10.30_M450_step20_100X'
 
-output = mainTracker(dates, manips, wells, cells, depthoName, expDf, 
-                     redoAllSteps = False, trackAll = False, 
-                     sourceField = 'default')
-
+output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, 
+                        metaDataFormatting = 'loopStruct', redoAllSteps = False, trackAll = False)
 
 
 # %%% 18-09-25

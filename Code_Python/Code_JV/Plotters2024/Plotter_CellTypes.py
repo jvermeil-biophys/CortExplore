@@ -669,7 +669,7 @@ def D2Plot_wFit(data, fig = None, ax = None,
 def plotPopKS_V2(data, fig = None, ax = None, 
                  condition = '', co_order = [], colorDict = {}, labelDict = {},
                  fitType = 'stressRegion', fitWidth=75, markersizefactor = 1,
-                 mode = 'wholeCurve', scale = 'lin', Sinf = 0, Ssup = np.Inf):
+                 mode = 'wholeCurve', scale = 'lin', Sinf = 0, Ssup = np.inf):
     
     #### Init
     co_values = data[condition].unique()     
@@ -1126,8 +1126,8 @@ def computeNLMetrics_V2(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
             index = data_main[(data_main['NLI_mod'] > -th_NLI) & (data_main['NLI_mod'] < th_NLI)].index
             ID = 0.5
         for j in index:
-            data_main['NLI_Plot'][j] = i
-            data_main['NLI_Ind'][j] = ID
+            data_main.loc[j, 'NLI_Plot'] = i
+            data_main.loc[j, 'NLI_Ind'] = ID
 
 
     return(data_main)
@@ -1136,20 +1136,22 @@ def computeNLMetrics_V2(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
 
 # %% > Data import & export
 # %%% MecaData_Cells
-# MecaData_Cells = taka3.getMergedTable('MecaData_CellTypes')
-MecaData_Cells = taka3.getMergedTable('MecaData_CellTypes_wMDCK')
+MecaData_Cells = taka3.getMergedTable('MecaData_CellTypes_V2')
+# MecaData_Cells = taka3.getMergedTable('MecaData_CellTypes_wMDCK')
 
 MecaData_Phy = taka3.getMergedTable('MecaData_Physics_V2')
+
+# MecaData_HeLa = taka3.getMergedTable('MecaData_HeLaFucci_V1')
 
 # %%%
 
 
 MecaData_Cells2 = pd.concat([MecaData_Cells, MecaData_Phy])
-MecaData_Cells2['Indent_ID'] = MecaData_Cells2['cellID'] + '_' + MecaData_Cells2['compNum'].astype('str')
-MecaData_Cells2 = MecaData_Cells2.drop_duplicates(subset='Indent_ID')
+# MecaData_Cells2['Indent_ID'] = MecaData_Cells2['cellID'] + '_' + MecaData_Cells2['compNum'].astype('str')
+# MecaData_Cells2 = MecaData_Cells2.drop_duplicates(subset='Indent_ID')
 
-path = "D:/MagneticPincherData/Data_Analysis/MecaData_CellTypes_V2.csv"
-MecaData_Cells2.to_csv(path, index=False)
+# path = DirDataAnalysis + "/MecaData_CellTypes_V3.csv"
+# MecaData_Cells2.to_csv(path, index=False)
 
 
 # %%%
@@ -2015,8 +2017,8 @@ ufun.archiveFig(fig2, name = 'StiffnessVThickness_ByComp_CellTypes_V2', ext = '.
 
 # %% Plots - All cell types - Manuscript
 
-figDir = 'D:/MagneticPincherData/Figures/CellTypesDataset_V2'
-figSubDir = 'Soutenance'
+figDir = os.path.join(cp.DirDataFig, 'CellTypesDataset_V2')
+figSubDir = 'Paper'
 
 df = MecaData_Cells
 print(df['cell type'].unique())
@@ -2651,7 +2653,7 @@ for k, cond in enumerate(co_order):
         try:
             plotPopKS_V2(df_fc, fig = fig, ax = ax, condition = condCol, co_order = [], 
                          colorDict = colorDict, labelDict = labelDict, markersizefactor = 0.75,
-                         fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.Inf)
+                         fitType = 'stressGaussian', fitWidth=75, mode = interval, Sinf = 0, Ssup = np.inf)
         except:
             pass
     
@@ -2862,8 +2864,33 @@ Filters = [
 df_f = filterDf(df_f, Filters)
 
 # Order
+# co_order = ['3T3 & Atcc-2023', 
+#             '3T3 & aSFL-A11', 
+#             'MDCK & WT',
+#             'DC & mouse-primary', 
+#             'HoxB8-Macro & ctrl', 
+#             'Dicty & DictyBase-WT', 
+#             ]
+
+# colorsD = {'3T3 & Atcc-2023'      : gs.cL_Set2[0], 
+#       '3T3 & aSFL-A11'       : gs.cL_Set2[1],  
+#       'DC & mouse-primary'   : gs.cL_Set2[2],  
+#       'Dicty & DictyBase-WT' : gs.cL_Set2[3],  
+#       'HoxB8-Macro & ctrl'   : gs.cL_Set2[4],  
+#       'MDCK & WT'            : gs.cL_Set2[5],
+#       }
+
+# rD = {'3T3 & Atcc-2023'      :  '3T3 ATCC', 
+#       '3T3 & aSFL-A11'       : r'3T3 $\alpha$SFL',  
+#       'DC & mouse-primary'   :  'Primary DC',  
+#       'Dicty & DictyBase-WT' :  'Dictys Ax3',  
+#       'HoxB8-Macro & ctrl'   :  'HoxB8 Macro',  
+#       'MDCK & WT'            :  'MDCK',
+#       }
+
+# Order
 co_order = ['3T3 & Atcc-2023', 
-            '3T3 & aSFL-A11', 
+            'HeLa & fucci', 
             'MDCK & WT',
             'DC & mouse-primary', 
             'HoxB8-Macro & ctrl', 
@@ -2871,15 +2898,15 @@ co_order = ['3T3 & Atcc-2023',
             ]
 
 colorsD = {'3T3 & Atcc-2023'      : gs.cL_Set2[0], 
-      '3T3 & aSFL-A11'       : gs.cL_Set2[1],  
-      'DC & mouse-primary'   : gs.cL_Set2[2],  
-      'Dicty & DictyBase-WT' : gs.cL_Set2[3],  
-      'HoxB8-Macro & ctrl'   : gs.cL_Set2[4],  
-      'MDCK & WT'            : gs.cL_Set2[5],
-      }
+           'HeLa & fucci'         : gs.cL_Set2[1],  
+           'DC & mouse-primary'   : gs.cL_Set2[2],  
+           'Dicty & DictyBase-WT' : gs.cL_Set2[3],  
+           'HoxB8-Macro & ctrl'   : gs.cL_Set2[4],  
+           'MDCK & WT'            : gs.cL_Set2[5],
+           }
 
 rD = {'3T3 & Atcc-2023'      : '3T3 ATCC', 
-      '3T3 & aSFL-A11'       : r'3T3 $\alpha$SFL',  
+      'HeLa & fucci'         : 'HeLa Fucci',  
       'DC & mouse-primary'   : 'Primary DC',  
       'Dicty & DictyBase-WT' : 'Dictys Ax3',  
       'HoxB8-Macro & ctrl'   : 'HoxB8 Macro',  
@@ -2958,7 +2985,7 @@ for i in range(len(axes)):
                         f'\np-val = {pval:.2f}')
 
     ax.legend(fontsize = 6, loc = 'best', handlelength=1)
-    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_xlabel('$H_{0}$ (nm)')
     ax.set_ylabel('$E_{eff}$ (kPa)')
     ax.set_title(co_order[i])
     if i%3 != 0:
@@ -2997,7 +3024,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 gs.set_defense_options_jv()
 
 # Define
-df = MecaData_Cells2
+df = MecaData_Cells
 excluded_subtypes = ['tko']
 drugs = ['dmso', 'none']
 substrates = ['BSA coated glass', '20um fibronectin discs']
@@ -3033,6 +3060,7 @@ Filters = [
 df_f = filterDf(df_f, Filters)
 
 # Order
+# Order
 co_order = ['3T3 & Atcc-2023', 
             '3T3 & aSFL-A11', 
             'MDCK & WT',
@@ -3049,12 +3077,12 @@ colorsD = {'3T3 & Atcc-2023'      : gs.cL_Set2[0],
       'MDCK & WT'            : gs.cL_Set2[5],
       }
 
-rD = {'3T3 & Atcc-2023'      : '3T3 ATCC', 
+rD = {'3T3 & Atcc-2023'      :  '3T3 ATCC', 
       '3T3 & aSFL-A11'       : r'3T3 $\alpha$SFL',  
-      'DC & mouse-primary'   : 'Primary DC',  
-      'Dicty & DictyBase-WT' : 'Dictys Ax3',  
-      'HoxB8-Macro & ctrl'   : 'HoxB8 Macro',  
-      'MDCK & WT'            : 'MDCK',
+      'DC & mouse-primary'   :  'Primary DC',  
+      'Dicty & DictyBase-WT' :  'Dictys Ax3',  
+      'HoxB8-Macro & ctrl'   :  'HoxB8 Macro',  
+      'MDCK & WT'            :  'MDCK',
       }
 
 # Group By
@@ -3145,7 +3173,7 @@ for i in range(len(axes)):
             ) # label =  r'$Fit\ y\ =\ A.x^k$'
 
     ax.legend(fontsize = 7, loc = 'best', handlelength=1)
-    ax.set_xlabel('$H_0}$ (nm)')
+    ax.set_xlabel('$H_{0}$ (nm)')
     ax.set_ylabel('$E_{eff}$ (kPa)')
     ax.set_title(co_order[i])
     if i%3 != 0:
@@ -3537,3 +3565,176 @@ ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
 ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+# %%% Test for Paper
+
+gs.set_manuscript_options_jv()
+
+# Define
+df = MecaData_Cells
+excluded_subtypes = ['tko']
+drugs = ['dmso', 'none']
+substrates = ['BSA coated glass', '20um fibronectin discs']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_400'
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'].apply(lambda x : x in substrates)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x not in excluded_subtypes)),
+           (df['valid_f_<_400'] == True),
+           (df[XCol] <= 1000),
+           (df[YCol] <=  1e5),
+           ]
+df_f = filterDf(df, Filters)
+
+df_f.loc[df_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
+
+df_f, condCol = makeCompositeCol(df_f, cols=['cell type', 'cell subtype'])
+df_f = computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+# YCol = 'E_eff'
+
+# Filter
+Filters = [
+           (df_f[YCol] <=  1e5),
+           ]
+df_f = filterDf(df_f, Filters)
+
+# Order
+co_order = ['3T3 & Atcc-2023', 
+            'HeLa & fucci', 
+            'MDCK & WT',
+            'DC & mouse-primary', 
+            'HoxB8-Macro & ctrl', 
+            'Dicty & DictyBase-WT', 
+            ]
+
+colorsD = {'3T3 & Atcc-2023'      : gs.cL_Set2[0], 
+           'HeLa & fucci'         : gs.cL_Set2[1],  
+           'DC & mouse-primary'   : gs.cL_Set2[2],  
+           'Dicty & DictyBase-WT' : gs.cL_Set2[3],  
+           'HoxB8-Macro & ctrl'   : gs.cL_Set2[4],  
+           'MDCK & WT'            : gs.cL_Set2[5],
+           }
+
+rD = {'3T3 & Atcc-2023'      : '3T3 ATCC', 
+      'HeLa & fucci'         : 'HeLa Fucci',  
+      'DC & mouse-primary'   : 'Primary DC',  
+      'Dicty & DictyBase-WT' : 'Dictys Ax3',  
+      'HoxB8-Macro & ctrl'   : 'HoxB8 Macro',  
+      'MDCK & WT'            : 'MDCK',
+      }
+
+# Group By
+df_fg = dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = ['bestH0'], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[['bestH0']]
+df_fgw2 = dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw' + YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+# Plot
+fig, axes = plt.subplots(2, 3, figsize=(17/gs.cm_in, 12/gs.cm_in), sharex=True, sharey=True)
+axes = axes.flatten('C')
+
+# ax = axes[0]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_f, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol, condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+# ax = axes[1]
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# fig, ax = D2Plot_wFit(df_plot, fig = fig, ax = ax, 
+#                 XCol = XCol, YCol = YCol + '_wAvg', condition=condCol, co_order = [],
+#                 modelFit=True, modelType='y=k*x^a', writeEqn = True, robust = True,
+#                 figSizeFactor = 1, markersizeFactor = 1)
+
+YCol += '_wAvg'
+df_plot[YCol] /= 1000
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    print(co_order[i], len(df_fc))
+    # color = gs.cL_Set2[i]
+    color = colorsD[co_order[i]]
+    
+    # fig, ax = D2Plot_wFit(df_fg[df_fg[condCol] == co_order[i]], fig = fig, ax = ax, 
+    #                 XCol=XCol, YCol=YCol, condition=condCol, co_order = [],
+    #                 modelFit=True, modelType='y=ax+b', writeEqn = True, robust = True,
+    #                 figSizeFactor = 1, markersizeFactor = 0.5)
+    
+        
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = 20, color = color, edgecolor = 'k', linewidth =0.5, alpha = 0.5,
+                    zorder = 3)
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+    A, k = np.exp(b), a
+    k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    Yplot = A * Xplot**k
+    
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # R2 = results.rsquared
+    # pval = results.pvalues[1]
+    # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = a * Xplot + b
+    
+    ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 2.0, zorder = 6,
+            label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+                        f'\nA = {A:.1e}' + \
+                        f'\nk  = {k:.2f}' + r'$\pm$' + f'{k_cihw:.2f}' + \
+                        f'\n$R^2$ = {R2:.2f}' + \
+                        f'\np-val = {pval:.2f}')
+
+    ax.legend(fontsize = 6, loc = 'best', handlelength=1)
+    ax.set_xlabel('$H_{0}$ (nm)')
+    ax.set_ylabel('$E_{400}$ (kPa)')
+    ax.set_title(co_order[i])
+    if i%3 != 0:
+        ax.set_ylabel('')
+           
+# Prettify
+rD.update({'E_eff_wAvg':'E_{eff} (kPa)'})
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 2000)
+    ax.set_ylim(0.4, 300)
+
+# axes[0].set_xlabel('')
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = makeCountDf(df_f, condCol)
+# Save
+name = 'CellTypes_HE'
+ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+

@@ -213,7 +213,7 @@ def set_defense_options_jv(palette = 'Set2'):
     sns.set_palette(sns.color_palette(palette))
 
 
-def set_default_options_jv():
+def set_default_options_jv(palette = 'Set2'):
     SMALLER_SIZE = 8
     SMALL_SIZE = 12
     MEDIUM_SIZE = 16
@@ -225,9 +225,10 @@ def set_default_options_jv():
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    sns.set_palette(sns.color_palette(palette))
     
     
-def set_mediumText_options_jv():
+def set_mediumText_options_jv(palette = 'Set2'):
     SMALLER_SIZE = 8
     SMALL_SIZE = 10
     MEDIUM_SIZE = 11
@@ -239,6 +240,7 @@ def set_mediumText_options_jv():
     plt.rc('ytick', labelsize=SMALLER_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    sns.set_palette(sns.color_palette(palette))
     
 def set_manuscript_options_jv(palette = 'Set2'):
     SMALLER_SIZE = 8
@@ -268,7 +270,7 @@ def set_defense_options_jv(palette = 'Set2'):
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
     sns.set_palette(sns.color_palette(palette))
 
-def set_smallText_options_jv():
+def set_smallText_options_jv(palette = 'Set2'):
     SMALLER_SIZE = 6
     SMALL_SIZE = 8
     MEDIUM_SIZE = 10
@@ -280,6 +282,7 @@ def set_smallText_options_jv():
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    sns.set_palette(sns.color_palette(palette))
     
 def set_smallText_options_aj():
     SMALLER_SIZE = 5
@@ -296,7 +299,7 @@ def set_smallText_options_aj():
     
 
 
-def set_bigText_options_jv():
+def set_bigText_options_jv(palette = 'Set2'):
     SMALLER_SIZE = 14
     SMALL_SIZE = 18
     MEDIUM_SIZE = 20
@@ -308,6 +311,7 @@ def set_bigText_options_jv():
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALLER_SIZE)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    sns.set_palette(sns.color_palette(palette))
 
 # set_default_options_jv()    
 
@@ -351,5 +355,6 @@ cL_Set21 = cL_Set2 + cL_Set1
 # X1, Y1 = np.arange(len(cL)), np.arange(len(cL))
 # fig, ax = plt.subplots(1, 1)
 # ax.scatter(X1, Y1, c=cL, s=200)
+# ax.set_xlabel('$\\alpha$')
 
 # plt.show()

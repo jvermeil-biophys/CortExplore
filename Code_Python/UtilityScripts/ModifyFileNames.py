@@ -215,6 +215,25 @@ path0 = 'D://MagneticPincherData//Raw//'
 
 # %% Script Other renaming
 
+path = 'C:/Users/josep/Desktop/DataFromVal/ControlCells'
+s1 = '12-12-18'
+s2 = '18-12-12'
+
+findAndRename(path, s1, s2, 
+              target = 'all', test = True, recursiveAction = False, exceptStrings = [])
+
+
+path = 'C:/Users/josep/Desktop/DataFromVal/ControlCells'
+
+s1 = '30-10-18_M2_P2'
+s2 = '18-10-30_M4_P1'
+
+findAndRename(path, s1, s2, 
+              target = 'all', test = True, recursiveAction = False, exceptStrings = [])
+
+
+# %% Script Other renaming
+
 s1 = 'M6'
 s2 = 'M7'
 
@@ -223,7 +242,7 @@ sub = ''
 path = path0 + sub
 
 findAndRename(path, s1, s2, 
-              target = 'all', test = False, recursiveAction = True, exceptStrings = [])
+              target = 'all', test = True, recursiveAction = True, exceptStrings = [])
 
 
 # %% Script Other renaming

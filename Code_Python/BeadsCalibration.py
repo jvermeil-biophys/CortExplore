@@ -746,7 +746,7 @@ def computeDepthoQuality(depthoPath):
     depthoStepHD = depthoStep/HDZfactor
     depthoZFocusHD = depthoZFocus*HDZfactor
     # print(depthoHD.shape)
-    
+     
     #### 2.
     Ddz, Ddx = depthoHD.shape[0], depthoHD.shape[1]
     print(Ddz, Ddx)

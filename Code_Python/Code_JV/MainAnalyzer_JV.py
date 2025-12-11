@@ -684,10 +684,76 @@ plotSettings = {# ON/OFF switchs plot by plot
 drugTask =  '24-12-18' # Limki + Y27 + Blebbi
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs_V3', 
+res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fileName = 'MecaData_Drugs_V4', 
                                     save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+# %% Drugs 5
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 11,
+                'overlapFit' : 5,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 4000, 100)]
+plot_stressHalfWidth = 100
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':False, # NEW - Numi
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        }
+
+drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
+drugTask += ' & 22-11-23' # LatA
+drugTask += ' & 23-11-26 & 23-12-03' # LatA
+drugTask += ' & 23-03-08 & 23-03-09' # Y27
+drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
+drugTask += ' & 23-04-26 & 23-04-28' # Ck666
+drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
+drugTask += ' & 23-09-19' # JLY
+drugTask += ' & 24-03-13' # Limki + Y27
+drugTask += ' & 24-07-04' # Limki + Y27 + Blebbi
+drugTask += ' & 24-12-18' 
+
+# drugTask = '23-09-19'
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = drugTask, fileName = 'MecaData_Drugs_V5', 
+                                    save = True, PLOT = False, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
 
 # %%%% Physics
 
@@ -700,14 +766,15 @@ fitSettings = {# H0
                             '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
-                'doVWCFit' : True,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
                 'doNPointsFits' : False,
-                'nbPtsFit' : 33,
-                'overlapFit' : 21,
+                'nbPtsFit' : 11,
+                'overlapFit' : 5,
                 # NEW - Numi
                 'doLogFits' : False,
                 # NEW - Jojo
@@ -716,24 +783,6 @@ fitSettings = {# H0
 
 plot_stressCenters = [ii for ii in range(100, 2050, 100)]
 plot_stressHalfWidth = 75
-
-# plotSettings = {# ON/OFF switchs plot by plot
-#                         'FH(t)':True,
-#                         'F(H)':True,
-#                         'F(H)_VWC':True, # NEW - Numi
-#                         'S(e)_stressRegion':False,
-#                         'K(S)_stressRegion':False,
-#                         'S(e)_stressGaussian':True,
-#                         'K(S)_stressGaussian':True,
-#                         'plotStressCenters':plot_stressCenters,
-#                         'plotStressHW':plot_stressHalfWidth,
-#                         'S(e)_nPoints':False,
-#                         'K(S)_nPoints':False,
-#                         'S(e)_strainGaussian':False, # NEW - Jojo
-#                         'K(S)_strainGaussian':False, # NEW - Jojo
-#                         'S(e)_Log':False, # NEW - Numi
-#                         'K(S)_Log':False, # NEW - Numi
-#                         }
 
 plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
@@ -755,22 +804,88 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'Plot_Ratio':False
                         }
 
-phyTask = '21-07-08_M1-2 & 21-07-08_M2 & 21-07-08_M4' # Bead size
-phyTask += ' & 21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12' # Bead size
-# phyTask += '22-06-10 & 22-06-16 & 22-07-06 & 22-07-06 & 22-07-12 & 22-07-12' # Pattern sizes DB 1/2
+
+
+phyTask = '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
+phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
+phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
+phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4
+phyTask += ' & 24-12-11' # Long series
+# phyTask += ' & 21-07-08_M1-2 & 21-07-08_M2 & 21-07-08_M4' # Bead size
+# phyTask += ' & 21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12' # Bead size
+# phyTask += ' & 22-06-10 & 22-06-16 & 22-07-06 & 22-07-06 & 22-07-12 & 22-07-12' # Pattern sizes DB 1/2
 # phyTask += ' & 22-07-22 & 22-07-29 & 22-08-24 & 22-08-24 & 22-08-24 & 22-08-24' # Pattern sizes DB 2/2
 # phyTask += ' & 23-03-09' # Pattern sizes JV
 # phyTask += ' & 23-07-06_M1 & 23-07-06_M2 & 23-07-06_M3 & 23-07-06_M4 & 23-07-06_M5' # Repeats
-# phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
-# phyTask += ' & 23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
-# phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
-# phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
-# phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4
+phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
 
-res = takaM.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_BeadSize', 
-                                    save = True, PLOT = True, source = 'Python', 
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V3', 
+                                    save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+# %%%% Bead Sizes
+
+
+
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : True,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 11,
+                'overlapFit' : 5,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 2050, 100)]
+plot_stressHalfWidth = 75
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':True, # NEW - Numi
+                        'Plots_Manuscript':True,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        'Plot_Ratio':False
+                        }
+
+
+
+sizeTask = '21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12'
+
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = sizeTask, fileName = 'MecaData_Physics_BeadSizes_V2', 
+                                    save = True, PLOT = False, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+
 
 # %%%% Cell Types
 
@@ -783,21 +898,23 @@ fitSettings = {# H0
                             '%f_5', '%f_10', '%f_15'],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
                 'doStressRegionFits' : False,
                 'doStressGaussianFits' : True,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
-                'doNPointsFits' : True,
+                'doNPointsFits' : False,
                 'nbPtsFit' : 11,
                 'overlapFit' : 5,
                 # NEW - Numi
                 'doLogFits' : False,
                 # NEW - Jojo
                 'doStrainGaussianFits' : False,
-                }
+                } 
 
-plot_stressCenters = [ii for ii in range(100, 4000, 100)]
-plot_stressHalfWidth = 100
+plot_stressCenters = [ii for ii in range(100, 2050, 100)]
+plot_stressHalfWidth = 75
 
 plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
@@ -816,22 +933,57 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'K(S)_Log':False, # NEW - Numi
                         }
 
-cellTask = '20-09 & 20-10' # Dictys
-cellTask += ' & 18-08 & 18-09 & 18-10 & 18-12' # DC
-cellTask += ' & 22-05-03 & 22-05-04 & 22-05-05' # HoxB8
-cellTask += ' & 22-02-09'
-cellTask += ' & 21-12-08_M2 & 21-12-16_M1' # 3t3 aSFL 1/2
-cellTask += ' & 22-07-15_M4 & 22-07-20_M2' # 3t3 aSFL 2/2
-cellTask += ' & 23-07-17_M6 & 23-07-17_M4 & 23-03-09_M4 & 23-02-23_M1 & 24-02-26 & 24-02-28' # 3t3 ATCC (WT & LaGFP)
 
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = cellTask, fileName = 'MecaData_CellTypes', 
+# cellTask = '20-09 & 20-10' # Dictys
+# cellTask += ' & 18-08 & 18-09 & 18-10 & 18-12' # DC
+# cellTask += ' & 22-05-03 & 22-05-04 & 22-05-05' # HoxB8
+# cellTask += ' & 22-02-09'
+# cellTask += ' & 21-12-08_M2 & 21-12-16_M1' # 3t3 aSFL 1/2
+# cellTask += ' & 22-07-15_M4 & 22-07-20_M2' # 3t3 aSFL 2/2
+# cellTask += ' & 23-07-17_M6 & 23-07-17_M4 & 23-03-09_M4 & 23-02-23_M1 & 24-02-26 & 24-02-28' # 3t3 ATCC (WT & LaGFP)
+# cellTask += ' & 24-02-27 & 24-05-22 & 24-05-30' # MDCK cells from Hugo
+# cellTask += ' & 24-05-23 & 24-06-04 & 24-06-12' # HeLa Fucci from Eloise
+
+# cellTask = '18-10 & 18-12' # Update with more DC
+
+res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = cellTask, fileName = 'MecaData_CellTypes_V2', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 
+# %%%% Change file format
+
+srcDir = cp.DirDataTimeseries
+listFiles = os.listdir(srcDir)
+dates = ['24-02-27', '24-05-22', '24-05-30']
+listTargetPaths = []
+
+for f in listFiles:
+    for d in dates:
+        if f.startswith(d) and f.endswith('.csv'):
+            listTargetPaths.append(os.path.join(srcDir, f))
+            
+for p in listTargetPaths[:]:
+    df = pd.read_csv(p, sep=';')
+    nLoops = np.max(df.idxLoop)
+    for iL in range(1, nLoops+1):
+        j0 = ufun.findFirst(iL, df['idxLoop'].values)
+        df_iL = df[df['idxLoop']==iL]
+        array_idxAnalysis = df_iL['idxAnalysis'].values
+        j1 = ufun.findLast(iL, array_idxAnalysis)
+        j2 = ufun.findLast(-iL, array_idxAnalysis)
+        # subArray = array_idxAnalysis[j1+1:j2+1]
+        # print(subArray)
+        if j1 < j2:
+            subArray = df.loc[j0+j1+1:j0+j2+0, 'idxAnalysis'].values
+            df.loc[j0+j1+1:j0+j2+0, 'idxAnalysis'] = np.absolute(subArray)
+    # df.to_csv(p, sep=';', index=False)
+        
+
+
 # %%%% Remove empty rows
 
-path = "D:/MagneticPincherData/Data_Analysis/MecaData_CellTypes.csv"
+path = cp.DirDataAnalysis + "/MecaData_CellTypes_V2.csv"
 df = pd.read_csv(path, sep = ';')
 
 # df2 = df.dropna(subset='date')
@@ -855,7 +1007,7 @@ fitSettings = {# H0
                 'halfWidths_StressFits' : stressHalfWidths,
                 'doNPointsFits' : True,
                 'nbPtsFit' : 33,
-                'overlapFit' : 21,
+                'overlapFit' : 21, 
                 # NEW - Numi
                 'doLogFits' : False,
                 # NEW - Jojo
@@ -1188,19 +1340,19 @@ plotSettings = {# ON/OFF switchs plot by plot
                         }
 
 
-# drugTask  = '22-03-28 & 22-03-30' # Blebbi & LatA
-# drugTask += ' & 22-11-23 & 23-11-26 & 23-12-03' # LatA
-# drugTask += ' & 23-03-08 & 23-03-09' # Y27
-# drugTask += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
-# drugTask += ' & 23-04-26 & 23-04-28' # Ck666
-# drugTask += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
-# drugTask += ' & 23-09-19' # JLY
-# drugTask = '24-03-13' # JLY
-task = '24-12-11_M1_P1_C3' # JLY
+# task  = '22-03-28 & 22-03-30' # Blebbi & LatA
+# task += ' & 22-11-23 & 23-11-26 & 23-12-03' # LatA
+# task += ' & 23-03-08 & 23-03-09' # Y27
+# task += ' & 23-02-16 & 23-02-23 & 23-03-16 & 23-03-17 & 23-04-20' # PNB & Blebbistatin
+# task += ' & 23-04-26 & 23-04-28' # Ck666
+# task += ' & 23-07-17_M1 & 23-07-17_M2 & 23-07-17_M3 & 23-07-20 & 23-09-06' # CalA
+# task += ' & 23-09-19' # JLY
+# task = '24-03-13' # JLY
+task = '24-12-11' # Long series
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'test_aaa', 
-                                    save = True, PLOT = True, source = 'Python', 
+res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = task, fileName = 'MecaData_Physics_V3', 
+                                    save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 

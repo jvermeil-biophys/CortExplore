@@ -187,12 +187,13 @@ class PincherTimeLapse:
         logDf.loc[logDf['Status'] == 'Passive', 'idx_inNUp'] = np.array([1 + i%Nuplet for i in range(NPassive)]).astype(int)
         logDf.loc[logDf['Status'] == 'Passive', 'idx_NUp'] = np.array([1 + i//Nuplet for i in range(NPassive)])
         
-        #Calculating difference in Z of the 1st and 3rd plance w.r.t the mid plane
-        idx_z1, idx_z2, idx_z3 = logDf['idx_inNUp'] == 1, logDf['idx_inNUp'] == 2, logDf['idx_inNUp'] == 3
+        #### Numi's modifs
+        # Calculating difference in Z of the 1st and 3rd plance w.r.t the mid plane
+        # idx_z1, idx_z2, idx_z3 = logDf['idx_inNUp'] == 1, logDf['idx_inNUp'] == 2, logDf['idx_inNUp'] == 3
         
-        logDf.loc[idx_z1, 'Z_diff'] = np.round((metaDf.loc[idx_z1, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
-        logDf.loc[idx_z3, 'Z_diff'] = np.round((metaDf.loc[idx_z3, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
-        logDf.loc[idx_z2, 'Z_diff'] = np.round(0, 3)
+        # logDf.loc[idx_z1, 'Z_diff'] = np.round((metaDf.loc[idx_z1, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
+        # logDf.loc[idx_z3, 'Z_diff'] = np.round((metaDf.loc[idx_z3, 'Z_piezo'].values - metaDf.loc[idx_z2, 'Z_piezo'].values), 3)
+        # logDf.loc[idx_z2, 'Z_diff'] = np.round(0, 3)
     
     
         # Fluo Part
@@ -210,7 +211,8 @@ class PincherTimeLapse:
             i_startOfCompression = ufun.findFirst(logDf.loc[index_iL, 'Status'].values, 'Action_main') + index_iL[0]
             i_endOfCompression = ufun.findLast(logDf.loc[index_iL, 'Status'].values, 'Action') + index_iL[0]
             #
-            logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
+            if i_startOfPrecompression < i_startOfCompression-1:
+                logDf.loc[i_startOfPrecompression:i_startOfCompression-1, 'idxAnalysis'] *= (-1)
         
         # idxAnalysis for loops with repeated compressions
         previous_idx = 0
@@ -1886,7 +1888,7 @@ def mainTracker_V4(dates, manips, wells, cells, depthoName, expDf, NB = 2,
                 
             # Columns from the field file
             fieldDf = pd.read_csv(fieldPath, sep='\t', names=['B_meas', 'T_raw', 'B_set', 'Z_piezo'])
-            metaDf = fieldDf[['T_raw', 'B_set']]
+            metaDf = fieldDf[['T_raw', 'B_set', 'Z_piezo']]
             
             # 'iL' column
             N = len(metaDf)

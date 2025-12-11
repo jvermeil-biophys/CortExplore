@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 import os
 import time
+import random
 import pyautogui
 import matplotlib
 
@@ -30,6 +31,8 @@ from scipy.optimize import linear_sum_assignment
 import GraphicStyles as gs
 import UtilityFunctions as ufun
 
+import sys
+import CortexPaths as cp
 
 # %% (1) Classes
 
@@ -81,7 +84,8 @@ class Depthograph:
         
         self.XX = XX - len(XX)//2
         self.ZZ = (ZZ - ZZ[int(self.ZFocus_raw)])*self.step_raw 
-        self.ZZ_HD = (ZZ_HD - ZZ_HD[int(self.ZFocus_hd)])*self.step_raw
+        self.ZZ_HD = (ZZ_HD - ZZ_HD[int(self.ZFocus_hd_gb)])*self.step_raw # self.step_hd
+        #### HERE IMPORTANT DEFINITION
         
         # print(self.XX)
         # print(self.ZZ)
@@ -257,7 +261,7 @@ class Depthograph:
         
         return(Z2)
     
-    
+
     
     def absoluteErrorCurve(self, Deptho2, Zmin, Zmax, N, dZ):
         Z = np.arange(Zmin, Zmax, 10)
@@ -276,26 +280,31 @@ class Depthograph:
         ax.plot(Z, arrayErr)
         
         
-    def averageErrorCurve(self, listDepthos, Zmin, Zmax, N, dZ):
+    def averageErrorCurve(self, listDepthos, Zmin, Zmax, N, dZ,
+                          PLOT = False, PlotId = ''):
         gs.set_mediumText_options_jv()
-        Z = np.arange(Zmin, Zmax, 50)
+        Z = np.arange(Zmin, Zmax, 25)
         nZ = len(Z)
         nD = len(listDepthos)
         matErr = np.zeros((nD, nZ))
         for iD in range(nD):
+            print(iD)
             Deptho2 = listDepthos[iD]
             for iZ in range(nZ):
                 z = Z[iZ]
-                PLOT = False
+                PLOT2 = False
                 # if z==-500:
                 #     PLOT = True
-                errZ = z - self.locate(Deptho2, z, N, dZ, PLOT)
+                errZ = z - self.locate(Deptho2, z, N, dZ, PLOT2)
                 matErr[iD, iZ] = errZ
         
         avgErr = np.mean(np.abs(matErr), axis=0)
+        medErr = np.median(np.abs(matErr), axis=0)
         Q3 = np.percentile(matErr, 75)
+        Q2 = np.percentile(matErr, 50)
         Q1 = np.percentile(matErr, 25)
-        print(Q1, Q3, Q3-Q1)
+        quartiles = (Q1, Q2, Q3)
+        # print(Q1, Q3, Q3-Q1)
         
         # fig0, axes0 = plt.subplots(1, nD, figsize=(20, 4), sharey=True)
         # for iD in range(nD):
@@ -303,22 +312,25 @@ class Depthograph:
         #     ax.plot(Z, matErr[iD, :])
         #     plt.show()
         
-        fig, ax = plt.subplots(1, 1, figsize=(8/gs.cm_in, 6/gs.cm_in))
-        ax.plot(Z, avgErr, ls='-', c='cyan')
-        # ax.axhline(Q1, ls='--')
-        # ax.axhline(Q3, ls='--', label = f'interquatile - {Q3-Q1:.1f}')
-        # ax.legend()
-        ax.set_ylim([0, 60])
-        ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
-        tickloc = matplotlib.ticker.MultipleLocator(500)
-        ax.xaxis.set_major_locator(tickloc)
-        ax.set_ylabel('Absolute error on $Z$ (nm)')
-        ax.grid(visible=True, which='major', axis='y')
-        fig.tight_layout()
-        # ufun.archiveFig(fig, name = 'Z_AbsErr', ext = '.pdf', dpi = 150,
-        #                figDir = 'D:/MagneticPincherData/Figures/PhysicsDataset/', 
-        #                figSubDir = 'Zprecision', cloudSave = 'flexible')
-        plt.show()
+        if PLOT:
+            fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+            ax.plot(Z, avgErr, ls='-', c='cyan')
+            # ax.axhline(Q1, ls='--')
+            # ax.axhline(Q3, ls='--', label = f'interquatile - {Q3-Q1:.1f}')
+            # ax.legend()
+            ax.set_ylim([0, 100])
+            ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+            tickloc = matplotlib.ticker.MultipleLocator(500)
+            ax.xaxis.set_major_locator(tickloc)
+            ax.set_ylabel('Absolute error on $Z$ (nm)')
+            ax.grid(visible=True, which='major', axis='y')
+            fig.tight_layout()
+            ufun.archiveFig(fig, name = 'Z_AbsErr_' + PlotId, ext = '.pdf', dpi = 150,
+                            figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                            cloudSave = 'flexible')
+            plt.show()
+        
+        return(avgErr, medErr, matErr, quartiles, Z)
         
         
     
@@ -342,8 +354,7 @@ class Depthograph:
         ax.set_ylabel('$Z_2$ (nm)')
         # fig.tight_layout()
         # ufun.archiveFig(fig, name = 'Z_RelErr', ext = '.pdf', dpi = 150,
-        #                figDir = 'D:/MagneticPincherData/Figures/PhysicsDataset/', 
-        #                figSubDir = 'Zprecision', cloudSave = 'flexible')
+        #                figDir = cp.DirDataFig, figSubDir = 'Zprecision', cloudSave = 'flexible')
         plt.show()
         
 
@@ -495,9 +506,587 @@ class ZScan:
 
             # except:
             #     print('Error for the file: ' + self.fileName)
+            
+# %% Testing functions
+
+def Test_locate(path_d1, path_d2, scale = 15.8):
+    D1 = Depthograph(path_d1, scale)
+    D2 = Depthograph(path_d2, scale)
+    Z1 = +500
+    N = 1
+    dZ = 500
+    Z2 = D1.locate(D2, Z1, N, dZ, PLOT = True)
+    print(Z1, Z2, np.abs(Z1-Z2))
+    
+# %% Tests
+
+# %%% Depthograph object
+
+path_d1 = os.path.join(cp.DirDataRawDeptho, "24.12.18_M1_M450_step20_100X_Deptho.tif")
+D1 = Depthograph(path_d1, scale = 15.8)
+
+
+# %%% Locate
+
+path_d1 = os.path.join(cp.DirDataRawDeptho, "24.12.18_M1_M450_step20_100X_Deptho.tif")
+path_d2 = os.path.join(cp.DirDataRawDepthoInter, '24.12.18_M2_M450_step20_100X_step20/d_deptho.tif')
+
+Test_locate(path_d1, path_d2, scale = 15.8)
+ 
+# %% Compute precision in triplet case
+
+# %%% Get median dx dy dz
+
+list_files = os.listdir(cp.DirDataTimeseries)
+list_tsF  = [f for f in list_files if f.endswith('_PY.csv')]
+N = len(list_tsF)
+M = N//5
+
+random_list_tsF  = random.sample(list_tsF, M)
+random_list_tsDf = [pd.read_csv(os.path.join(cp.DirDataTimeseries, f), sep=';') for f in random_list_tsF]
+random_list_tsDf_small = [df[df['idxAnalysis']==0][['dx','dy','dz']] for df in random_list_tsDf]
+giantTable = pd.concat(random_list_tsDf_small)
+
+medDX = np.median(np.abs(giantTable['dx']))
+medDY = np.median(np.abs(giantTable['dy']))
+medDZ = np.median(np.abs(giantTable['dz']))
+
+q3DX = np.percentile(np.abs(giantTable['dx']), 75)
+q3DY = np.percentile(np.abs(giantTable['dy']), 75)
+q3DZ = np.percentile(np.abs(giantTable['dz']), 75)
+
+# %%% Set errors
+
+# %%% Formula
+
+errXY = 2
+errX = errXY / 2**0.5
+errY = errXY / 2**0.5
+errZ = 40 # ->>> Compute exact value
+medDX = 4634
+medDY = 587
+medDZ = 501
+
+#### Data from my set
+# medDX = 4634
+# medDY = 587
+# medDZ = 501
+
+
+#### Data from Valentin's thesis
+# errZ = 45
+# medDX = 4554
+# medDY = 709
+# medDZ = 482
+
+# Important factors : 
+# - Ratio between medDZ and medDX
+# - errXY
+# - errZ
+
+errD3 = (2**0.5) * (((medDX**2)*(errX**2) + (medDY**2)*(errY**2) + (medDZ**2)*((errZ**2)/2))/(medDX**2 + medDY**2 + medDZ**2))*0.5
+
+
+# %%% Add bead diameter in the calculation
+
+# Table of beads diameters
+# Tag              / Coating / Avg  / Std 
+# M450-2023        / BSA     / 4477 / 18
+# M450-Strept-2023 / PLL-Peg / 4506 / 23
+# M450-2025        / BSA     / 4495 / 23
+# M450-2025        / Fibro   / 4493 / 29
+
+errBeads = 18
+
+errH = (errD3**2 + errBeads**2)**0.5
+
+print(errH)
+
+
+
+# %% Compute precision in singlet case
+
+# %%% Get median dx dy dz
+
+list_files = os.listdir(cp.DirDataTimeseries)
+list_tsF  = [f for f in list_files if f.endswith('_PY.csv')]
+N = len(list_tsF)
+M = N
+
+random_list_tsF  = random.sample(list_tsF, M)
+random_list_tsDf = [pd.read_csv(os.path.join(cp.DirDataTimeseries, f), sep=';') for f in random_list_tsF]
+random_list_tsDf_small = [df[df['idxAnalysis']>0][['dx','dy','dz']] for df in random_list_tsDf]
+giantTable = pd.concat(random_list_tsDf_small)
+
+medDX = np.median(np.abs(giantTable['dx']))
+medDY = np.median(np.abs(giantTable['dy']))
+medDZ = np.median(np.abs(giantTable['dz']))
+
+meanDX = np.mean(np.abs(giantTable['dx']))
+meanDY = np.mean(np.abs(giantTable['dy']))
+meanDZ = np.mean(np.abs(giantTable['dz']))
+
+# q3DX = np.percentile(np.abs(giantTable['dx']), 75)
+# q3DY = np.percentile(np.abs(giantTable['dy']), 75)
+# q3DZ = np.percentile(np.abs(giantTable['dz']), 75)
+
+q1DX = np.percentile(np.abs(giantTable['dx']), 25)
+q1DY = np.percentile(np.abs(giantTable['dy']), 25)
+q1DZ = np.percentile(np.abs(giantTable['dz']), 25)
+
+# %%% Set errors
+
+# %%% Formula
+
+errXY = 2
+errX = errXY / 2**0.5
+errY = errXY / 2**0.5
+errZ = 40 # ->>> Compute exact value
+medDX = 4634
+medDY = 587
+medDZ = 501
+
+#### Data from my set
+# medDX = 4610
+# medDY = 530
+# medDZ = 493
+# meanDX = 4624
+# meanDY = 661
+# meanDZ = 531
+# q1DX = 4531
+# q1DY = 211
+# q1DZ = 182
+
+
+
+#### Data from Valentin's thesis
+# errZ = 45
+# medDX = 4554
+# medDY = 709
+# medDZ = 482
+
+# Important factors : 
+# - Ratio between medDZ and medDX
+# - errXY
+# - errZ
+
+errD3 = (2**0.5) * (((medDX**2)*(errX**2) + (medDY**2)*(errY**2) + (medDZ**2)*((errZ**2)/2))/(medDX**2 + medDY**2 + medDZ**2))*0.5
+
+
+# %%% Add bead diameter in the calculation
+
+# Table of beads diameters
+# Tag              / Coating / Avg  / Std 
+# M450-2023        / BSA     / 4477 / 18
+# M450-Strept-2023 / PLL-Peg / 4506 / 23
+# M450-2025        / BSA     / 4495 / 23
+# M450-2025        / Fibro   / 4493 / 29
+
+errBeads = 18
+
+errH = (errD3**2 + errBeads**2)**0.5
+
+print(errH)
+
+
         
-        
-# %% TESTS
+# %% Run deptho functions
+
+# %%% Deptho - 24.04.11 - avgDeptho to beadDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '24.04.11'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'medErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList[:]:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list_paths = []
+    subdirs = [sd for sd in os.listdir(cp.DirDataRawDepthoInter) if sd.startswith(date)]
+
+    for sd in subdirs:
+        if sd.startswith(date) and not sd.startswith(mainDepthoName):
+            subdir_path = os.path.join(cp.DirDataRawDepthoInter, sd)
+            subfiles = os.listdir(subdir_path)
+            deptho_files = [sf for sf in subfiles if sf.endswith('deptho.tif')]
+            D2_list_paths += [os.path.join(subdir_path, df) for df in deptho_files]
+    
+    D2_list = [Depthograph(d2, scale) for d2 in D2_list_paths]
+    print('go ' + mainDepthoName)
+    avgErr, medErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 3, 500,
+                                                        PLOT = True, PlotId = mainDepthoName + '_sB')
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['medErr'].append(medErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    print('done for ' + mainDepthoName)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+
+ErrGlobal = medErrGlobal
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, avgErr, ls='-', c='coral')
+ax.axhline(Q1, ls='--', lw=0.5, label = f'Q1 - {Q1:.1f}')
+ax.axhline(Q2, ls='--', lw=0.5, label = f'Q2 - {Q2:.1f}')
+ax.axhline(Q3, ls='--', lw=0.5, label = f'Q3 - {Q3:.1f}')
+ax.axhline(Moy, ls='--', lw=0.5, label = f'Mean - {Moy:.1f}')
+ax.legend(fontsize = 8, ncols = 2)
+ax.set_ylim([0, 60])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErr_sB_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
+
+#### Triplet result
+# print(np.mean(ErrGlobal))
+# np.mean(ErrGlobal) = 59.33
+
+# %%% NEED DATA !! Deptho - 23.04.20 - avgDeptho to beadDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '23.04.20'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'medErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList[:]:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list_paths = []
+    subdirs = [sd for sd in os.listdir(cp.DirDataRawDepthoInter) if sd.startswith(date)]
+    for sd in subdirs:
+        if not sd.startswith(mainDepthoName):
+            subdir_path = os.path.join(cp.DirDataRawDepthoInter, sd)
+            subfiles = os.listdir(subdir_path)
+            deptho_files = [sf for sf in subfiles if sf.endswith('deptho.tif')]
+            D2_list_paths += [os.path.join(subdir_path, df) for df in deptho_files]
+    print(D1.fileName.split('/')[-1])
+    print(deptho_files)
+    
+    D2_list = [Depthograph(d2, scale) for d2 in D2_list_paths]
+    avgErr, medErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 3, 500,
+                                                        PLOT = True, PlotId = mainDepthoName + '_sB')
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['medErr'].append(medErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+
+ErrGlobal = medErrGlobal
+Q1, Q2, Q3 = np.percentile(ErrGlobal, (25, 50, 75))
+Moy = np.mean(ErrGlobal)
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, ErrGlobal, ls='-', c='coral')
+ax.axhline(Q1, ls='--', lw=0.5, label = f'Q1 - {Q1:.1f}')
+ax.axhline(Q2, ls='--', lw=0.5, label = f'Q2 - {Q2:.1f}')
+ax.axhline(Q3, ls='--', lw=0.5, label = f'Q3 - {Q3:.1f}')
+ax.axhline(Moy, ls='--', lw=0.5, label = f'Mean - {Moy:.1f}')
+ax.legend(fontsize = 8, ncols = 2)
+ax.set_ylim([0, 100])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErr_sB_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
+
+#### Triplet result
+print(np.mean(ErrGlobal))
+# np.mean(ErrGlobal) = 30.77
+
+# %%% Deptho - 24.12.18 - avgDeptho to beadDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '24.12.18'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'medErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList[:]:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list_paths = []
+    subdirs = [sd for sd in os.listdir(cp.DirDataRawDepthoInter) if sd.startswith(date)]
+    for sd in subdirs:
+        if not sd.startswith(mainDepthoName):
+            subdir_path = os.path.join(cp.DirDataRawDepthoInter, sd)
+            subfiles = os.listdir(subdir_path)
+            deptho_files = [sf for sf in subfiles if sf.endswith('deptho.tif')]
+            D2_list_paths += [os.path.join(subdir_path, df) for df in deptho_files]
+    print(D1.fileName.split('/')[-1])
+    print(deptho_files)
+    
+    D2_list = [Depthograph(d2, scale) for d2 in D2_list_paths]
+    avgErr, medErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 3, 500,
+                                                        PLOT = True, PlotId = mainDepthoName + '_sB')
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['medErr'].append(medErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+
+ErrGlobal = medErrGlobal
+Q1, Q2, Q3 = np.percentile(ErrGlobal, (25, 50, 75))
+Moy = np.mean(ErrGlobal)
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, ErrGlobal, ls='-', c='coral')
+ax.axhline(Q1, ls='--', lw=0.5, label = f'Q1 - {Q1:.1f}')
+ax.axhline(Q2, ls='--', lw=0.5, label = f'Q2 - {Q2:.1f}')
+ax.axhline(Q3, ls='--', lw=0.5, label = f'Q3 - {Q3:.1f}')
+ax.axhline(Moy, ls='--', lw=0.5, label = f'Mean - {Moy:.1f}')
+ax.legend(fontsize = 8, ncols = 2)
+ax.set_ylim([0, 100])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErr_sB_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
+
+#### Triplet result
+# print(np.mean(ErrGlobal))
+# np.mean(ErrGlobal) = 30.77
+
+
+# %%% Deptho SINGLET - 24.04.11 - avgDeptho to beadDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '24.04.11'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'medErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList[:]:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list_paths = []
+    subdirs = [sd for sd in os.listdir(cp.DirDataRawDepthoInter) if sd.startswith(date)]
+
+    for sd in subdirs:
+        if sd.startswith(date) and not sd.startswith(mainDepthoName):
+            subdir_path = os.path.join(cp.DirDataRawDepthoInter, sd)
+            subfiles = os.listdir(subdir_path)
+            deptho_files = [sf for sf in subfiles if sf.endswith('deptho.tif')]
+            D2_list_paths += [os.path.join(subdir_path, df) for df in deptho_files]
+    
+    D2_list = [Depthograph(d2, scale) for d2 in D2_list_paths]
+    print('go ' + mainDepthoName)
+    avgErr, medErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 1, 500,
+                                                        PLOT = True, PlotId = mainDepthoName + '_sB')
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['medErr'].append(medErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    print('done for ' + mainDepthoName)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+
+ErrGlobal = medErrGlobal
+Q1, Q2, Q3 = np.percentile(ErrGlobal, (25, 50, 75))
+Moy = np.mean(ErrGlobal)
+
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, avgErr, ls='-', c='coral')
+ax.axhline(Q1, ls='--', lw=0.5, label = f'Q1 - {Q1:.1f}')
+ax.axhline(Q2, ls='--', lw=0.5, label = f'Q2 - {Q2:.1f}')
+ax.axhline(Q3, ls='--', lw=0.5, label = f'Q3 - {Q3:.1f}')
+ax.axhline(Moy, ls='--', lw=0.5, label = f'Mean - {Moy:.1f}')
+ax.legend(fontsize = 8, ncols = 2)
+ax.set_ylim([0, 100])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErrSINGLET_sB_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
+
+#### Triplet result
+print(np.mean(ErrGlobal))
+# np.mean(ErrGlobal) = 60.8
+
+# %%% Deptho SINGLET - 24.12.18 - avgDeptho to beadDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '24.12.18'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'medErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList[:]:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list_paths = []
+    subdirs = [sd for sd in os.listdir(cp.DirDataRawDepthoInter) if sd.startswith(date)]
+    for sd in subdirs:
+        if not sd.startswith(mainDepthoName):
+            subdir_path = os.path.join(cp.DirDataRawDepthoInter, sd)
+            subfiles = os.listdir(subdir_path)
+            deptho_files = [sf for sf in subfiles if sf.endswith('deptho.tif')]
+            D2_list_paths += [os.path.join(subdir_path, df) for df in deptho_files]
+    print(D1.fileName.split('/')[-1])
+    print(deptho_files)
+    
+    D2_list = [Depthograph(d2, scale) for d2 in D2_list_paths]
+    avgErr, medErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 1, 500,
+                                                        PLOT = True, PlotId = mainDepthoName + '_sB')
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['medErr'].append(medErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+
+ErrGlobal = medErrGlobal
+Q1, Q2, Q3 = np.percentile(ErrGlobal, (25, 50, 75))
+Moy = np.mean(ErrGlobal)
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, ErrGlobal, ls='-', c='coral')
+ax.axhline(Q1, ls='--', lw=0.5, label = f'Q1 - {Q1:.1f}')
+ax.axhline(Q2, ls='--', lw=0.5, label = f'Q2 - {Q2:.1f}')
+ax.axhline(Q3, ls='--', lw=0.5, label = f'Q3 - {Q3:.1f}')
+ax.axhline(Moy, ls='--', lw=0.5, label = f'Mean - {Moy:.1f}')
+ax.legend(fontsize = 8, ncols = 2)
+ax.set_ylim([0, 100])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErrSINGLET_sB_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
+
+#### Singlet result
+print(np.mean(ErrGlobal))
+# np.mean(ErrGlobal) = 28.28
+
+# %%% ------
+
+# %%% Deptho - 24.12.18 - avgDeptho to avgDeptho
+scale = 15.8
+depthoLibrary = cp.DirDataRawDeptho
+date = '24.12.18'
+fileList = os.listdir(depthoLibrary)
+mainList = [f for f in fileList if (f.startswith(date) and f.endswith('.tif'))]
+resDict = {'depthoId':[],
+           'avgErr':[],
+           'matErr':[],
+           'quartiles':[],
+           }
+
+for d in mainList:
+    mainDepthoPath = os.path.join(depthoLibrary, d)
+    mainDepthoName = d[:-11]
+    D1 = Depthograph(mainDepthoPath, scale)
+    D2_list = [Depthograph(depthoLibrary + '/' + d2, scale) for d2 in mainList if d2 != d]
+    avgErr, matErr, quartiles, Z = D1.averageErrorCurve(D2_list, -1500, +1500, 3, 500,
+                                                        PLOT = True, PlotId = mainDepthoName)
+    resDict['depthoId'].append(mainDepthoName)
+    resDict['avgErr'].append(avgErr)
+    resDict['matErr'].append(matErr)
+    resDict['quartiles'].append(quartiles)
+    
+matErrConcat = np.concat([M for M in resDict['matErr']])
+# avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
+avgErrGlobal = np.median(np.abs(matErrConcat), axis=0)
+Q1, Q2, Q3 = np.percentile(avgErrGlobal, (25, 50, 75))
+
+gs.set_defense_options_jv()
+fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
+ax.plot(Z, avgErr, ls='-', c='coral')
+# ax.axhline(Q1, ls='--')
+# ax.axhline(Q3, ls='--', label = f'interquatile - {Q3-Q1:.1f}')
+# ax.legend()
+ax.set_ylim([0, 60])
+ax.set_xlabel('$Z$ [position in the depthograph] (nm)')
+tickloc = matplotlib.ticker.MultipleLocator(500)
+ax.xaxis.set_major_locator(tickloc)
+ax.set_ylabel('Absolute error on $Z$ (nm)')
+ax.grid(visible=True, which='major', axis='y')
+fig.tight_layout()
+ufun.archiveFig(fig, name = 'Z_AbsErr_' + date + '_Avg', ext = '.pdf', dpi = 150,
+                figDir = cp.DirDataFig, figSubDir = 'Zprecision', 
+                cloudSave = 'flexible')
+plt.show()
 
 # %%% Deptho - 23.09.06
 scale = 15.8
