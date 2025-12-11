@@ -50,6 +50,14 @@ elif COMPUTERNAME == 'PROCYON-PC':
     # DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     CloudSaving = ''
     
+elif COMPUTERNAME == 'DESKTOP-9J5NPMO':
+    suffix = '_JV'
+    DirRepo = "C://Users//Joseph//Desktop//CortExplore"
+    DirData = "C://Users//Joseph//Desktop//MagneticPincherData"
+    DirTempPlots = "C://Users//josep//Desktop//TempPlots"
+    # DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
+    CloudSaving = ''
+    
     
 elif COMPUTERNAME == 'LARISA':
     suffix = '_JV'
