@@ -42,14 +42,14 @@ import traceback
 # import cv2
 
 # import scipy
-from scipy import interpolate
-from scipy import signal
-from scipy import odr
+from scipy import odr, signal, interpolate
+from scipy.signal import find_peaks, savgol_filter
+from scipy.optimize import linear_sum_assignment, least_squares
+
+import scipy.stats as st
 
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
-from scipy.signal import find_peaks, savgol_filter
-from scipy.optimize import linear_sum_assignment, least_squares
 from matplotlib.gridspec import GridSpec
 from datetime import date, datetime
 from PyQt5 import QtWidgets as Qtw
@@ -1580,6 +1580,14 @@ def sortMatrixByCol(A, col=0, direction = 1):
     return(A[A[:, col].argsort()[::direction]])
 
 
+class fitResults:
+    def __init__(self, params, params_sd, params_ciw, pvalues):
+        self.params = params
+        self.params_sd = params_sd
+        self.params_ciw = params_ciw
+        self.pvalues = pvalues
+
+
 
 def fitLine(X, Y):
     """
@@ -1646,19 +1654,36 @@ def fitLineHuber(X, Y, with_wlm_results = False):
     return(out)
 
 
-def fitLineTLS(X, Y):
+def fitLineTLS(X, Y, wd=1, we=1):
     """
 
     """
     def linearFun(B, X):
         return(B[0]*X + B[1])
     linear = odr.Model(linearFun)
-    data = odr.Data(X, Y, wd=1, we=1)
-    fit = odr.ODR(mydata, linear, beta0=[0, 0])
+    data = odr.Data(X, Y, wd=wd, we=we)
+    fit = odr.ODR(data, linear, beta0=[0, 0])
     output = fit.run()
+    # output.pprint()
+    
     a, b = output.beta
+    sd_params = [k for k in output.sd_beta]
+    perc, dof, = 0.975, len(Y)-2
+    q = st.t.ppf(perc, dof)
+    ciw = [sd * q for sd in output.sd_beta]
+    
+    beta_0 = 0  # test if slope is significantly different from zero
+    t_stat = [(output.beta[j] - beta_0) / output.sd_beta[j] for j in range(len(output.beta))]  # t statistic for the slope parameter
+    pvalues = [st.t.sf(np.abs(ts), dof) * 2 for ts in t_stat]
+    
+    # R2 = get_R2(Y, a*X+b)
+    # R2 doesn't make sense in ODR
+    
 
-    out = ((a, b), output)
+    results = fitResults([a, b], sd_params, ciw, pvalues)
+    # results = ([a, b], sd_params, ciw, pvalues, R2)
+
+    out = ([a, b], results)
     
     return(out)
 
@@ -1957,32 +1982,72 @@ def lighten_color(color, amount=0.5):
 
 # Atrue = +1
 # Btrue = 0
-# XVarTrue = 1.0
-# YVarTrue = 5.0
+# XVarTrue = 30.0
+# YVarTrue = 30.0
 
 # # Adimension by data spanning? Adimension the variance
 
-# Xtrue = np.arange(start = -10, stop = 11, step = 0.2)
+# Xtrue = np.arange(start = -10, stop = 11, step = 0.05)
 # Ytrue = Atrue*Xtrue + Btrue
 
 # Xr = Xtrue + np.random.normal(loc=0.0, scale=XVarTrue**0.5, size=len(Xtrue))
 # Yr = Ytrue + np.random.normal(loc=0.0, scale=YVarTrue**0.5, size=len(Ytrue))
 
+# # #### Test
+# Xplot = np.linspace(-10, 10, num = 100)
+
+# # OLS - X vs Y
+# [b_xy, a_xy], results_xy = fitLine(Xr, Yr)
+# Yplot_xy = a_xy * Xplot + b_xy
+# print(get_R2(Yr, a_xy * Xr + b_xy))
+# print(results_xy.rsquared)
+
+# # OLS - X vs Y
+# [B_yx, A_yx], results_yx = fitLine(Yr, Xr)
+# a_yx, b_yx = 1/A_yx, -B_yx/A_yx
+# Yplot_yx = a_yx * Xplot + b_yx
+# print(get_R2(Xr, A_yx * Yr + B_yx))
+# print(results_yx.rsquared)
+
+# # ODR - True variances
+# [a_odr1, b_odr1], results_odr1 = fitLineTLS(Xr, Yr, wd=1/XVarTrue, we=1/YVarTrue)
+# Yplot_odr1 = a_odr1 * Xplot + b_odr1
+# print(get_R2(Yr, a_odr1 * Xr + b_odr1))
+# print(results_odr1.rsquared)
+
+# # # ODR - Estimated variances
+# # [b_odr2, a_odr2], results_odr2 = fitLineTLS(Xr, Yr, wd=1, we=1)
+# # Yplot_odr2 = a_odr2 * Xplot + b_odr2
+
+# # # ODR - Force to XvY equivalent ----> Works as intended !
+# # [b_odr3, a_odr3], results_odr3 = fitLineTLS(Xr, Yr, wd=1, we=0.000001)
+# # Yplot_odr3 = a_odr3 * Xplot + b_odr3
+
+# fig, ax = plt.subplots(1, 1)
+# ax.plot(Xr, Yr, 'ko')
+# ax.plot(Xplot, Yplot_xy,   'b--', label=f'XvY | a={a_xy:.2f}')
+# ax.plot(Xplot, Yplot_yx,   'r--', label=f'YvX | a={a_yx:.2f}')
+# ax.plot(Xplot, Yplot_odr1, 'g-',  label=f'TLS true | a={a_odr1:.2f}')
+# # ax.plot(Xplot, Yplot_odr2, 'k-',  label=f'TLS est | a={a_odr2:.2f}')
+# # ax.plot(Xplot, Yplot_odr3, 'c-',  label=f'TLS all y | a={a_odr3:.2f}')
+# ax.grid()
+# ax.legend(fontsize = 11)
+
 # %%% Function
 
-def fitLineTLS(X, Y, wd=1, we=1):
-    """
+# def fitLineTLS(X, Y, wd=1, we=1):
+#     """
 
-    """
-    def linearFun(B, X):
-        return(B[0]*X + B[1])
-    linear = odr.Model(linearFun)
-    data = odr.Data(X, Y, wd=wd, we=we)
-    fit = odr.ODR(data, linear, beta0=[0, 0])
-    output = fit.run()
-    a, b = output.beta
-    out = ((b, a), output)
-    return(out)
+#     """
+#     def linearFun(B, X):
+#         return(B[0]*X + B[1])
+#     linear = odr.Model(linearFun)
+#     data = odr.Data(X, Y, wd=wd, we=we)
+#     fit = odr.ODR(data, linear, beta0=[0, 0])
+#     output = fit.run()
+#     a, b = output.beta
+#     out = ((b, a), output)
+#     return(out)
 
 
 # #### Test

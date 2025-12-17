@@ -29,6 +29,7 @@ import pandas as pd
 import seaborn as sns
 import scipy.stats as st
 import statsmodels.api as sm
+import matplotlib.colors as mc
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -39,6 +40,7 @@ import time
 import random
 import numbers
 import warnings
+import colorsys
 import itertools
 import matplotlib
 
@@ -285,137 +287,6 @@ def setGraphicOptions(mode = 'screen', palette = 'Set2', colorList = cL_Set21):
 
 
 
-# %%% 1.4 Declare Dictionnaries
-
-# %%%% 1.4.1 Rename dict 
-
-renameDict = {# Variables
-               'SurroundingThickness': 'Median Thickness (nm)',
-               'surroundingThickness': 'Median Thickness (nm)',
-               'ctFieldThickness': 'Median Thickness (nm)',
-               'ctFieldFluctuAmpli' : 'Thickness Fluctuations; $D_9$-$D_1$ (nm)',
-               'EChadwick': 'E Chadwick (Pa)',
-               'medianThickness': 'Median Thickness (nm)',               
-               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
-               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)', 
-               'fit_K' : 'Tangeantial Modulus (Pa)',
-               'bestH0' : 'Fitted $H_0$ (nm)',
-               'E_f_<_400' : 'Elastic modulus (Pa)\nfor F < 400pN',
-               'E_f_<_400_kPa' : 'Elastic modulus (kPa)\nfor F < 400pN',
-               # Drugs
-               'none':'Control',
-               'dmso':'DMSO',
-               'blebbistatin':'Blebbi',
-               'latrunculinA':'LatA',
-               'Y27':'Y27',
-               }
-
-renameDict.update({'none & 0.0' : 'No drug',
-              'Y27 & 10.0' : 'Y27 10 µM', 
-              'Y27 & 50.0' : 'Y27 50 µM', 
-              'Y27 & 100.0' : 'Y27 100 µM', 
-              'dmso & 0.0' : 'DMSO',
-              'blebbistatin & 10.0' : 'Blebbi 10 µM', 
-              'blebbistatin & 50.0' : 'Blebbi 50 µM', 
-              'blebbistatin & 100.0' : 'Blebbi 100 µM',
-              'blebbistatin & 250.0' : 'Blebbi 250 µM', 
-              'LIMKi & 10.0' : 'LIMKi3 10 µM', 
-              'LIMKi & 20.0' : 'LIMKi3 20 µM', 
-              'latrunculinA & 0.1' : 'LatA 0.1 µM', 
-              'latrunculinA & 0.5' : 'LatA 0.5 µM', 
-              'latrunculinA & 2.5' : 'LatA 2.5 µM', 
-              'ck666 & 50.0' : 'CK666 50 µM', 
-              'ck666 & 100.0' : 'CK666 100 µM', 
-              'calyculinA & 0.25' : 'CalA 0.25µM',
-              'calyculinA & 0.5' : 'CalA 0.5µM',
-              'calyculinA & 1.0' : 'CalA 1.0µM',
-              'calyculinA & 2.0' : 'CalA 2.0µM',
-              })
-
-
-# %%%% 1.4.2 Style dict 
-
-styleDict =  {# Drugs
-               'none':{'color': plt.cm.Greys(0.2),'marker':'o'},
-               'none & 0.0':{'color': plt.cm.Greys(0.2),'marker':'o'},
-               #
-               'dmso':{'color': plt.cm.Greys(0.5),'marker':'o'},
-               'dmso & 0.0':{'color': plt.cm.Greys(0.5),'marker':'o'},
-               #
-               'blebbistatin':{'color': plt.cm.RdPu(0.5),'marker':'o'},
-               'blebbistatin & 10.0':{'color':plt.cm.RdPu(0.4), 'marker':'o'},
-               'blebbistatin & 50.0':{'color': plt.cm.RdPu(0.65),'marker':'o'},
-               'blebbistatin & 100.0':{'color': plt.cm.RdPu(0.9),'marker':'o'},
-               'blebbistatin & 250.0':{'color': plt.cm.RdPu(1.0),'marker':'o'},
-               #
-               'PNB & 50.0':{'color': colorList40[25],'marker':'o'},
-               'PNB & 250.0':{'color': colorList40[35],'marker':'o'},
-               #
-               'latrunculinA':{'color': plt.cm.RdYlBu_r(0.75),'marker':'o'},
-               'latrunculinA & 0.1':{'color': plt.cm.RdYlBu_r(0.25),'marker':'s'},
-               'latrunculinA & 0.5':{'color': plt.cm.RdYlBu_r(0.75),'marker':'s'},
-               'latrunculinA & 2.5':{'color': plt.cm.RdYlBu_r(0.95),'marker':'s'},
-               #
-               'calyculinA':{'color': plt.cm.viridis_r(0.55),'marker':'o'},
-               'calyculinA & 0.25':{'color': plt.cm.viridis_r(0.05),'marker':'o'},
-               'calyculinA & 0.5':{'color': plt.cm.viridis_r(0.15),'marker':'o'},
-               'calyculinA & 1.0':{'color': plt.cm.viridis_r(0.4),'marker':'o'},
-               'calyculinA & 2.0':{'color': plt.cm.viridis_r(0.75),'marker':'o'},
-               #
-               'Y27':{'color': plt.cm.GnBu(0.3),'marker':'o'},
-               'Y27 & 10.0':{'color': plt.cm.GnBu(0.4),'marker':'^'},
-               'Y27 & 50.0':{'color': plt.cm.GnBu(0.7),'marker':'^'},
-               'Y27 & 100.0':{'color': plt.cm.GnBu(0.9),'marker':'^'},
-               #
-               'LIMKi':{'color': plt.cm.OrRd(0.5),'marker':'o'},
-               'LIMKi & 10.0':{'color': plt.cm.OrRd(0.45),'marker':'o'},
-               'LIMKi & 20.0':{'color': plt.cm.OrRd(0.9),'marker':'o'},
-               #
-               'JLY':{'color': colorList40[23],'marker':'o'},
-               'JLY & 8-5-10':{'color': colorList40[23],'marker':'o'},
-               #
-               'ck666':{'color': colorList40[25],'marker':'o'},
-               'ck666 & 50.0':{'color': colorList40[15],'marker':'o'},
-               'ck666 & 100.0':{'color': colorList40[38],'marker':'o'},
-               
-               # Cell types
-               '3T3':{'color': colorList40[30],'marker':'o'},
-               'HoxB8-Macro':{'color': colorList40[32],'marker':'o'},
-               'DC':{'color': colorList40[33],'marker':'o'},
-               # Cell subtypes
-               'aSFL':{'color': colorList40[12],'marker':'o'},
-               'Atcc-2023':{'color': colorList40[10],'marker':'o'},
-               'optoRhoA':{'color': colorList40[13],'marker':'o'},
-               
-               # Drugs + cell types
-               'aSFL-LG+++ & dmso':{'color': colorList40[19],'marker':'o'},
-               'aSFL-LG+++ & blebbistatin':{'color': colorList40[32],'marker':'o'},
-               'Atcc-2023 & dmso':{'color': colorList40[19],'marker':'o'},
-               'Atcc-2023 & blebbistatin':{'color': colorList40[22],'marker':'o'},
-               #
-               'Atcc-2023 & none':{'color': colorList40[0],'marker':'o'},
-               'Atcc-2023 & none & 0.0':{'color': colorList40[0],'marker':'o'},
-               'Atcc-2023 & Y27': {'color': colorList40[17],'marker':'o'},
-               'Atcc-2023 & Y27 & 10.0': {'color': colorList40[17],'marker':'o'},
-               #
-               'optoRhoA & none':{'color': colorList40[13],'marker':'o'},
-               'optoRhoA & none & 0.0':{'color': colorList40[13],'marker':'o'},
-               'optoRhoA & Y27': {'color': colorList40[27],'marker':'o'},
-               'optoRhoA & Y27 & 10.0': {'color': colorList40[27],'marker':'o'},
-               #
-               'Atcc-2023 & dmso':{'color': colorList40[9],'marker':'o'},
-               'Atcc-2023 & dmso & 0.0':{'color': colorList40[9],'marker':'o'},
-               'Atcc-2023 & blebbistatin':{'color': colorList40[12],'marker':'o'},
-               'Atcc-2023 & blebbistatin & 10.0':{'color': colorList40[2],'marker':'o'},
-               'Atcc-2023 & blebbistatin & 50.0':{'color': colorList40[12],'marker':'o'},
-               #
-               'optoRhoA & dmso':{'color': colorList40[29],'marker':'o'},
-               'optoRhoA & dmso & 0.0':{'color': colorList40[29],'marker':'o'},
-               'optoRhoA & blebbistatin':{'color': colorList40[32],'marker':'o'},
-               'optoRhoA & blebbistatin & 10.0':{'color': colorList40[22],'marker':'o'},
-               'optoRhoA & blebbistatin & 50.0':{'color': colorList40[32],'marker':'o'},
-               }
-
 
 # %% 2. Data subfunctions
 
@@ -547,11 +418,15 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
 
 
 def makeCountDf(df, condition):   
-    cols_count_df = ['compNum', 'cellID', 'manipID', 'date', condition]
+    cols_count_df = ['compNum', 'cellID', 'manipID', 'date']
+    if not condition in cols_count_df:
+        cols_count_df.append(condition)
     count_df = df[cols_count_df]
     groupByCell = count_df.groupby('cellID')
     d_agg = {'compNum':'count', condition:'first', 'date':'first', 'manipID':'first'}
-    df_CountByCell = groupByCell.agg(d_agg).rename(columns={'compNum':'compCount'})
+
+    df_CountByCell = groupByCell.agg(d_agg)
+    df_CountByCell = df_CountByCell.rename(columns={'compNum':'compCount'})
 
     groupByCond = df_CountByCell.reset_index().groupby(condition)
     d_agg = {'cellID': 'count', 'compCount': 'sum', 
@@ -577,6 +452,27 @@ def pval2text(p, n_digits = 2, space=True):
     return(text)
 
 # %% 3. Graphic subfunctions
+
+def lightenColor(color, factor=1.0):
+    """
+    Source : https://gist.github.com/ihincks/6a420b599f43fcd7dbd79d56798c4e5a
+    and : https://stackoverflow.com/questions/37765197/darken-or-lighten-a-color-in-matplotlib
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Examples:
+    >> lighten_color('g', 0.3)
+    >> lighten_color('#F034A3', 0.6)
+    >> lighten_color((.3,.55,.1), 0.5)
+    """
+    
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    new_c = colorsys.hls_to_rgb(c[0], max(0, min(1, factor * c[1])), c[2])
+    return(new_c)
 
 def getSnsPalette(conditions, styleDict):
     colors = []
@@ -1414,4 +1310,200 @@ def computeNLMetrics_V2(GlobalTable, th_NLI = np.log10(2), ref_strain = 0.2):
 
 
     return(data_main)
+
+
+# %% 6 Declare Dictionnaries
+
+# %%% 6.1 Rename dict 
+
+renameDict = {# Variables
+               'SurroundingThickness': 'Median Thickness (nm)',
+               'surroundingThickness': 'Median Thickness (nm)',
+               'ctFieldThickness': 'Median Thickness (nm)',
+               'ctFieldFluctuAmpli' : 'Thickness Fluctuations; $D_9$-$D_1$ (nm)',
+               'EChadwick': 'E Chadwick (Pa)',
+               'medianThickness': 'Median Thickness (nm)',               
+               'fluctuAmpli': 'Fluctuations Amplitude (nm)',               
+               'meanFluoPeakAmplitude' : 'Fluo Intensity (a.u.)', 
+               'fit_K' : 'Tangeantial Modulus (Pa)',
+               'bestH0' : 'Fitted $H_0$ (nm)',
+               'E_f_<_400' : 'Elastic modulus (Pa)\nfor F < 400pN',
+               'E_f_<_400_kPa' : 'Elastic modulus (kPa)\nfor F < 400pN',
+               # Drugs
+               'none':'Control',
+               'dmso':'DMSO',
+               'blebbistatin':'Blebbi',
+               'latrunculinA':'LatA',
+               'Y27':'Y27',
+               }
+
+renameDict.update({'none & 0.0' : 'No drug',
+              'Y27 & 10.0' : 'Y27 10 µM', 
+              'Y27 & 50.0' : 'Y27 50 µM', 
+              'Y27 & 100.0' : 'Y27 100 µM', 
+              'dmso & 0.0' : 'DMSO',
+              'blebbistatin & 10.0' : 'Blebbi 10 µM', 
+              'blebbistatin & 50.0' : 'Blebbi 50 µM', 
+              'blebbistatin & 100.0' : 'Blebbi 100 µM',
+              'blebbistatin & 250.0' : 'Blebbi 250 µM', 
+              'LIMKi & 10.0' : 'LIMKi3 10 µM', 
+              'LIMKi & 20.0' : 'LIMKi3 20 µM', 
+              'latrunculinA & 0.1' : 'LatA 0.1 µM', 
+              'latrunculinA & 0.5' : 'LatA 0.5 µM', 
+              'latrunculinA & 2.5' : 'LatA 2.5 µM', 
+              'ck666 & 50.0' : 'CK666 50 µM', 
+              'ck666 & 100.0' : 'CK666 100 µM', 
+              'calyculinA & 0.25' : 'CalA 0.25µM',
+              'calyculinA & 0.5' : 'CalA 0.5µM',
+              'calyculinA & 1.0' : 'CalA 1.0µM',
+              'calyculinA & 2.0' : 'CalA 2.0µM',
+              })
+
+
+# %%% 6.2 Style dict 
+
+styleDict =  {# Drugs
+               'none':{'color': plt.cm.Greys(0.2),'marker':'o'},
+               'none & 0.0':{'color': plt.cm.Greys(0.2),'marker':'o'},
+               #
+               'dmso':{'color': plt.cm.Greys(0.5),'marker':'o'},
+               'dmso & 0.0':{'color': plt.cm.Greys(0.5),'marker':'o'},
+               #
+               'blebbistatin':{'color': plt.cm.RdPu(0.5),'marker':'o'},
+               'blebbistatin & 10.0':{'color':plt.cm.RdPu(0.4), 'marker':'o'},
+               'blebbistatin & 50.0':{'color': plt.cm.RdPu(0.65),'marker':'o'},
+               'blebbistatin & 100.0':{'color': plt.cm.RdPu(0.9),'marker':'o'},
+               'blebbistatin & 250.0':{'color': plt.cm.RdPu(1.0),'marker':'o'},
+               #
+               'PNB & 50.0':{'color': colorList40[25],'marker':'o'},
+               'PNB & 250.0':{'color': colorList40[35],'marker':'o'},
+               #
+               'latrunculinA':{'color': plt.cm.RdYlBu_r(0.75),'marker':'o'},
+               'latrunculinA & 0.1':{'color': plt.cm.RdYlBu_r(0.25),'marker':'s'},
+               'latrunculinA & 0.5':{'color': plt.cm.RdYlBu_r(0.75),'marker':'s'},
+               'latrunculinA & 2.5':{'color': plt.cm.RdYlBu_r(0.95),'marker':'s'},
+               #
+               'calyculinA':{'color': plt.cm.viridis_r(0.55),'marker':'o'},
+               'calyculinA & 0.25':{'color': plt.cm.viridis_r(0.05),'marker':'o'},
+               'calyculinA & 0.5':{'color': plt.cm.viridis_r(0.15),'marker':'o'},
+               'calyculinA & 1.0':{'color': plt.cm.viridis_r(0.4),'marker':'o'},
+               'calyculinA & 2.0':{'color': plt.cm.viridis_r(0.75),'marker':'o'},
+               #
+               'Y27':{'color': plt.cm.GnBu(0.3),'marker':'o'},
+               'Y27 & 10.0':{'color': plt.cm.GnBu(0.4),'marker':'^'},
+               'Y27 & 50.0':{'color': plt.cm.GnBu(0.7),'marker':'^'},
+               'Y27 & 100.0':{'color': plt.cm.GnBu(0.9),'marker':'^'},
+               #
+               'LIMKi':{'color': plt.cm.OrRd(0.5),'marker':'o'},
+               'LIMKi & 10.0':{'color': plt.cm.OrRd(0.45),'marker':'o'},
+               'LIMKi & 20.0':{'color': plt.cm.OrRd(0.9),'marker':'o'},
+               #
+               'JLY':{'color': colorList40[23],'marker':'o'},
+               'JLY & 8-5-10':{'color': colorList40[23],'marker':'o'},
+               #
+               'ck666':{'color': colorList40[25],'marker':'o'},
+               'ck666 & 50.0':{'color': colorList40[15],'marker':'o'},
+               'ck666 & 100.0':{'color': colorList40[38],'marker':'o'},
+               
+               # Cell types
+               '3T3':{'color': colorList40[30],'marker':'o'},
+               'HoxB8-Macro':{'color': colorList40[32],'marker':'o'},
+               'DC':{'color': colorList40[33],'marker':'o'},
+               # Cell subtypes
+               'aSFL':{'color': colorList40[12],'marker':'o'},
+               'Atcc-2023':{'color': colorList40[10],'marker':'o'},
+               'optoRhoA':{'color': colorList40[13],'marker':'o'},
+               
+               # Drugs + cell types
+               'aSFL-LG+++ & dmso':{'color': colorList40[19],'marker':'o'},
+               'aSFL-LG+++ & blebbistatin':{'color': colorList40[32],'marker':'o'},
+               'Atcc-2023 & dmso':{'color': colorList40[19],'marker':'o'},
+               'Atcc-2023 & blebbistatin':{'color': colorList40[22],'marker':'o'},
+               #
+               'Atcc-2023 & none':{'color': colorList40[0],'marker':'o'},
+               'Atcc-2023 & none & 0.0':{'color': colorList40[0],'marker':'o'},
+               'Atcc-2023 & Y27': {'color': colorList40[17],'marker':'o'},
+               'Atcc-2023 & Y27 & 10.0': {'color': colorList40[17],'marker':'o'},
+               #
+               'optoRhoA & none':{'color': colorList40[13],'marker':'o'},
+               'optoRhoA & none & 0.0':{'color': colorList40[13],'marker':'o'},
+               'optoRhoA & Y27': {'color': colorList40[27],'marker':'o'},
+               'optoRhoA & Y27 & 10.0': {'color': colorList40[27],'marker':'o'},
+               #
+               'Atcc-2023 & dmso':{'color': colorList40[9],'marker':'o'},
+               'Atcc-2023 & dmso & 0.0':{'color': colorList40[9],'marker':'o'},
+               'Atcc-2023 & blebbistatin':{'color': colorList40[12],'marker':'o'},
+               'Atcc-2023 & blebbistatin & 10.0':{'color': colorList40[2],'marker':'o'},
+               'Atcc-2023 & blebbistatin & 50.0':{'color': colorList40[12],'marker':'o'},
+               #
+               'optoRhoA & dmso':{'color': colorList40[29],'marker':'o'},
+               'optoRhoA & dmso & 0.0':{'color': colorList40[29],'marker':'o'},
+               'optoRhoA & blebbistatin':{'color': colorList40[32],'marker':'o'},
+               'optoRhoA & blebbistatin & 10.0':{'color': colorList40[22],'marker':'o'},
+               'optoRhoA & blebbistatin & 50.0':{'color': colorList40[32],'marker':'o'},
+               }
+
+# %%% 6.3 Style dict V2
+
+# cY27 = '#00B3FF'
+# cLIMKi = '#CC00FF'
+# cLatA = '#FF4D00'
+# cCk666 = '#33FF00'
+
+# cY27 = '#03FCC6'
+# cLIMKi = '#0339FC'
+# cLatA = '#FC0339'
+# cCk666 = '#FCC603'
+
+cY27 = '#00FFEE'
+cLIMKi = '#0011FF'
+cLatA = '#FF0011'
+cCk666 = '#FFEE00'
+
+
+[cY27, cLIMKi, cLatA, cCk666] = cL_Set1[1:5]
+
+styleDict_V2 =  {# Drugs
+               'none':{'color': plt.cm.Greys(0.2),'marker':'o'},
+               'none & 0.0':{'color': plt.cm.Greys(0.2),'marker':'o'},
+               #
+               'dmso':{'color': plt.cm.Greys(0.5),'marker':'o'},
+               'dmso & 0.0':{'color': plt.cm.Greys(0.5),'marker':'o'},
+               #
+               # 'blebbistatin':{'color': plt.cm.RdPu(0.5),'marker':'o'},
+               # 'blebbistatin & 10.0':{'color':plt.cm.RdPu(0.4), 'marker':'o'},
+               # 'blebbistatin & 50.0':{'color': plt.cm.RdPu(0.65),'marker':'o'},
+               # 'blebbistatin & 100.0':{'color': plt.cm.RdPu(0.9),'marker':'o'},
+               # 'blebbistatin & 250.0':{'color': plt.cm.RdPu(1.0),'marker':'o'},
+               #
+               # 'PNB & 50.0':{'color': colorList40[25],'marker':'o'},
+               # 'PNB & 250.0':{'color': colorList40[35],'marker':'o'},
+               #
+               'latrunculinA':{'color': cLatA,'marker':'o'},
+               'latrunculinA & 0.1':{'color': lightenColor(cLatA, 1.2),'marker':'o'},
+               'latrunculinA & 0.5':{'color': lightenColor(cLatA, 1.0),'marker':'o'},
+               'latrunculinA & 2.5':{'color': lightenColor(cLatA, 0.8),'marker':'o'},
+               #
+               # 'calyculinA':{'color': plt.cm.viridis_r(0.55),'marker':'o'},
+               # 'calyculinA & 0.25':{'color': plt.cm.viridis_r(0.05),'marker':'o'},
+               # 'calyculinA & 0.5':{'color': plt.cm.viridis_r(0.15),'marker':'o'},
+               # 'calyculinA & 1.0':{'color': plt.cm.viridis_r(0.4),'marker':'o'},
+               # 'calyculinA & 2.0':{'color': plt.cm.viridis_r(0.75),'marker':'o'},
+               #
+               'Y27':{'color': cY27,'marker':'o'},
+               'Y27 & 10.0':{'color': lightenColor(cY27, 1.2),'marker':'o'},
+               'Y27 & 50.0':{'color': lightenColor(cY27, 1.0),'marker':'o'},
+               'Y27 & 100.0':{'color': lightenColor(cY27, 0.8),'marker':'o'},
+               #
+               'LIMKi':{'color': cLIMKi,'marker':'o'},
+               'LIMKi & 10.0':{'color': lightenColor(cLIMKi, 1.0),'marker':'o'},
+               'LIMKi & 20.0':{'color': lightenColor(cLIMKi, 0.8),'marker':'o'},
+               #
+               # 'JLY':{'color': colorList40[23],'marker':'o'},
+               # 'JLY & 8-5-10':{'color': colorList40[23],'marker':'o'},
+               #
+               'ck666':{'color': cCk666,'marker':'o'},
+               'ck666 & 50.0':{'color': lightenColor(cCk666, 1.0),'marker':'o'},
+               'ck666 & 100.0':{'color': lightenColor(cCk666, 0.8),'marker':'o'},
+               }
 

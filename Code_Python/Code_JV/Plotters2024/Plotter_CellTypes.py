@@ -2820,11 +2820,11 @@ plt.show()
 CountByCond, CountByCell = makeCountDf(df_f, condCol)
 # Save
 name = 'CellTypes_H0-E400'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# ufun.archiveFig(fig, name = name, ext = '.png', dpi = 100,
+#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%%% 3. Eeff
 
