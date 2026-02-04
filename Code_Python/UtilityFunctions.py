@@ -855,7 +855,7 @@ def copyFile(DirSrc, DirDst, filename):
     """
     PathSrc = os.path.join(DirSrc, filename)
     PathDst = os.path.join(DirDst, filename)
-    print(PathDst)
+    # print(PathDst)
     shutil.copyfile(PathSrc, PathDst)
     
 def copyFolder(DirSrc, DirDst, folderName):
@@ -1667,10 +1667,11 @@ def fitLineTLS(X, Y, wd=1, we=1):
     # output.pprint()
     
     a, b = output.beta
-    sd_params = [k for k in output.sd_beta]
+    # sd_params = [output.sd_beta[k] for k in range(len(output.beta))]
+    sd_params = [output.cov_beta[k, k]**0.5 for k in range(len(output.beta))]
     perc, dof, = 0.975, len(Y)-2
     q = st.t.ppf(perc, dof)
-    ciw = [sd * q for sd in output.sd_beta]
+    ciw = [2 * sd * q for sd in sd_params]
     
     beta_0 = 0  # test if slope is significantly different from zero
     t_stat = [(output.beta[j] - beta_0) / output.sd_beta[j] for j in range(len(output.beta))]  # t statistic for the slope parameter
