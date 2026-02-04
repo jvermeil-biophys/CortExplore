@@ -689,7 +689,7 @@ res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fi
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 
-# %% Drugs 5
+# %%% Drugs 5
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
@@ -1304,13 +1304,17 @@ fitSettings = {# H0
                 'methods_H0':['Chadwick'],
                 'zones_H0':['pts_15',
                             '%f_5', '%f_10', '%f_15'],
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full'] + ['f_<_' + str(F) for F in range(200, 1050, 50)],
+                'doDimitriadisFit' : False,
+                'DimitriadisFitMethods' : ['Full'] + ['f_<_' + str(F) for F in range(200, 600, 100)],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
                 'doStressRegionFits' : False,
-                'doStressGaussianFits' : True,
+                'doStressGaussianFits' : False,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
-                'doNPointsFits' : True,
+                'doNPointsFits' : False,
                 'nbPtsFit' : 33,
                 'overlapFit' : 21,
                 # NEW - Numi
@@ -1327,8 +1331,8 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'F(H)':True,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
-                        'S(e)_stressGaussian':True,
-                        'K(S)_stressGaussian':True,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
                         'plotStressCenters':plot_stressCenters,
                         'plotStressHW':plot_stressHalfWidth,
                         'S(e)_nPoints':False,
@@ -1351,7 +1355,7 @@ plotSettings = {# ON/OFF switchs plot by plot
 task = '24-12-11' # Long series
 
 # drugTask = '23-09-19'
-res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = task, fileName = 'MecaData_Physics_V3', 
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'MecaData_Tests_for_Paper_X2', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
