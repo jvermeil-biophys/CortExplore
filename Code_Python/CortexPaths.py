@@ -67,6 +67,15 @@ elif COMPUTERNAME == 'LARISA':
     DirTempPlots = 'C://Users//Joseph//Desktop//TempPlots'
     CloudSaving = 'OwnCloud'
     
+        
+elif COMPUTERNAME == 'MINC05':
+    suffix = '_JV'
+    DirRepo = "C:/Users/Utilisateur/Desktop/Python Code/CortExplore"
+    DirData = "E:/MagneticPincherData"
+    DirCloud = "C://Users//Joseph//ownCloud//MagneticPincherData" + suffix
+    DirTempPlots = 'C:/Users/Utilisateur/Desktop/TempPlots'
+    CloudSaving = 'OwnCloud'
+    
     
 elif COMPUTERNAME == 'DESKTOP-K9KOJR2':
     suffix = '_AJ'
