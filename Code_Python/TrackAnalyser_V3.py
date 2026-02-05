@@ -2392,6 +2392,7 @@ class CellCompression:
                             results['valid_'+ m2][i] = IC.dictFitFH_VWC[m]['valid']
                             results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
                         except:
+                            print("VWC Error")
                             print(IC.dictFitFH_VWC)
                             
                 if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
@@ -2407,7 +2408,8 @@ class CellCompression:
                             results['valid_'+ m][i] = IC.dictFitFH_Chadwick[m]['valid']
                             results['issue_'+ m][i] = IC.dictFitFH_Chadwick[m]['issue']
                         except:
-                            print(IC.dictFitFH_Chadwick)
+                            print("Chadwick Error")
+                            # print(IC.dictFitFH_Chadwick)
                             
                 if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
                     try:
@@ -2422,7 +2424,8 @@ class CellCompression:
                         results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
                         results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
                     except:
-                        print(IC.dictFitFH_Dimitriadis)
+                        print("Dimitriadis Error")
+                        # print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults
@@ -4960,7 +4963,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                             IC.fitFH_Chadwick(fitValidationSettings, method = m, mask = mask)
                             # except:
                             #     pass
-                        
+            
+            #### 3.8 Fit with Van Wyk model of the force-thickness curve
             if fitSettings['doVWCFit']:
                 
                 for m in fitSettings['VWCFitMethods']:
@@ -4973,25 +4977,38 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                             IC.fitFH_VWC(fitValidationSettings, method = m, mask = mask)
                             # except:
                             #     pass
+                        
+            #### 3.9 Fit with Dimitiradis model of the force-thickness curve            
+            if fitSettings['doDimitriadisFit']:
+                for m in fitSettings['DimitriadisFitMethods']:
+                    if m == 'Full':
+                        IC.fitFH_Dimitriadis(fitValidationSettings, method = m)
+                    else:
+                        if m.startswith('f'):
+                            # try:
+                            mask = ufun.strToMask(IC.fCompr, m)
+                            IC.fitFH_Dimitriadis(fitValidationSettings, method = m, mask = mask)
+                            # except:
+                            #     pass
             
-            #### 3.8 Find the best H0
+            #### 3.10 Find the best H0
             IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
             
             IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
 
-            #### 3.9 Compute stress and strain based on the best H0
+            #### 3.11 Compute stress and strain based on the best H0
             
             IC.computeStressStrain(method = 'Chadwick')
             
-            #### 3.9.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
+            #### 3.11.1 Compute the contact radius and the 'Chadwick Ratio' = a/h
             IC.computeContactRadius(method = 'Chadwick')
             
 
-            #### 3.9.2 IN DEV : Re-Compute the best H0 
+            #### 3.11.2 IN DEV : Re-Compute the best H0 
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
             # IC.computeH0(method = 'Chadwick', zone = 'ratio_2-3')
 
-            #### 3.9.2 Re-Compute the best H0
+            #### 3.11.2 Re-Compute the best H0
             # try:
             #     IC.computeH0(method = 'Chadwick', zone = 'ratio_2-2.5')
             # except:
@@ -5002,9 +5019,9 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             #     pass
 
             
-            #### 3.10 Local fits of stress-strain curves
+            #### 3.12 Local fits of stress-strain curves
             
-            #### 3.10.1 Local fits based on stress regions
+            #### 3.12.1 Local fits based on stress regions
             if fitSettings['doStressRegionFits']:
                 for jj in range(len(halfWidths_StressFits)):
                     for ii in range(len(centers_StressFits)):
@@ -5013,7 +5030,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                         if validRange:
                             IC.fitSS_stressRegion(C, HW, fitValidationSettings)
            
-            #### 3.10.2 Local fits based on sliding gaussian weights based on stress values
+            #### 3.12.2 Local fits based on sliding gaussian weights based on stress values
             if fitSettings['doStressGaussianFits']:
                 for jj in range(len(halfWidths_StressFits)):
                     for ii in range(len(centers_StressFits)):
@@ -5022,7 +5039,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                         if validRange:
                             IC.fitSS_stressGaussian(C, HW, fitValidationSettings)
             
-            #### 3.10.3 Local fits based on fixed number of points
+            #### 3.12.3 Local fits based on fixed number of points
             if fitSettings['doNPointsFits']:
                 nbPtsTotal = len(IC.stressCompr)
                 iStart = 0
@@ -5035,7 +5052,7 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                     iStart = iStop - overlapFit
                     iStop = iStart + nbPtsFit
             
-            #### 3.10.3 Local fits based on fixed number of points
+            #### 3.12.3 Local fits based on fixed number of points
             if fitSettings['doLogFits']:
                 nbPtsTotal = len(IC.stressCompr)
                 iStart = 0
@@ -5048,8 +5065,8 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                     iStart = iStop - overlapFitLog
                     iStop = iStart + nbPtsFitLog
             
-            #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
-            #### 3.10.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
+            #### 3.12.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            #### 3.12.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
             if fitSettings['doStrainGaussianFits']:
                 for jj in range(len(halfWidths_StrainFits)):
                     for ii in range(len(centers_StrainFits)):
@@ -5058,16 +5075,16 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                         if validRange:
                             IC.fitSS_strainGaussian(C, HW, fitValidationSettings)
                             
-            #### 3.10.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
-            #### 3.10.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
+            #### 3.12.4 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            #### 3.12.4 NEW TEST Local fits based on sliding gaussian weights based on strain values
             if fitSettings['do3partsFits']:
                 IC.fitSS_3parts(fitValidationSettings)
                     
-            #### 3.10.5 Convert all dictFits into DataFrame that can be concatenated and exported after.
+            #### 3.12.5 Convert all dictFits into DataFrame that can be concatenated and exported after.
             IC.dictFits_To_DataFrame(fitSettings)
             
             
-            #### 3.11 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain 
+            #### 3.13 IN DEVELOPMENT - Trying to get a smoothed representation of the stress-strain 
            
             # IC.fitSS_polynomial()
             # IC.fitSS_smooth()
