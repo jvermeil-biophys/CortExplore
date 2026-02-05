@@ -14,7 +14,7 @@ import scipy.stats as st
 
 from matplotlib import ticker
 import matplotlib
-matplotlib.use("Qt5Cairo")
+# matplotlib.use("Qt5Cairo")
 
 import os
 import re

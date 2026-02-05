@@ -141,7 +141,9 @@ print('')
 
 # %% -------
 
-# %% Get some data for Julien
+# %% Diverse tasks
+
+# %%% Get some data for Julien
 
 df = MecaData_Phy
 cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
@@ -197,6 +199,130 @@ for f in list_files_to_copy:
     continue
     
 
+    
+# %%% Sort data in t2 or t4
+
+#### Get dataset
+
+df = MecaData_Phy
+# cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+# drugs = ['dmso'] #['none', 'dmso']
+# substrate = '20um fibronectin discs'
+# parameter = 'bestH0'
+# df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+# excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# # figname = 'bestH0' + drugSuffix
+# XCol = 'bestH0'
+# YCol = 'E_f_<_500'
+
+# # Filter
+# Filters = [
+#            (df['substrate'] == substrate),
+#            (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+#            (df['drug'].apply(lambda x : x in drugs)),
+#            (df['date'].apply(lambda x : x not in excluded_dates)),
+#            (df['normal field'] == 5),
+#            ]
+            
+#             # (df['validatedThickness'] == True), 
+#            # (df[XCol] < 1000)
+#            # (df[YCol] <= 1e5)
+#            # (df['valid' + YCol[1:]] == True)
+
+# df_f = apm.filterDf(df, Filters)
+df_f = df
+
+
+def powerLine(ax, point, slope, **kwargs):
+    k = slope
+    x1, y1 = point
+    A = y1/(x1**k)
+    limX = ax.get_xlim()
+    limY = ax.get_ylim()
+    plotX = np.array([0.9*limX[0], 1.1*limX[1]])
+    plotY = A*(plotX**k)
+    ax.plot(plotX, plotY, **kwargs)
+    ax.set_xlim(limX)
+    ax.set_ylim(limY)
+    
+
+#### Look at tsDf
+
+# Option 1. Take the CellIds from one table
+# list_Cid = df_f['cellID'].unique()
+# dict_Cid2File = {}
+
+# srcDir = cp.DirDataTimeseries
+
+# list_tsF = os.listdir(srcDir)
+# for f in list_tsF:
+#     Cid = '_'.join(f.split('_')[:4])
+#     if Cid in list_Cid:
+#         dict_Cid2File[Cid] = f
+
+# dict_Bt_Exponent = {
+#     'CellID'  : list(dict_Cid2File.keys()),
+#     'TsFile'  : list(dict_Cid2File.values()),
+#     'Exponent': np.ones(len(dict_Cid2File)),
+#     }
+# list_files_to_check = dict_Bt_Exponent['TsFile']
+
+# Option 2. Take the filenames from the folder
+list_tsF = os.listdir(srcDir)
+dict_Cid2File = {}
+for f in list_tsF:
+    Cid = '_'.join(f.split('_')[:4])
+    if not Cid in dict_Cid2File.keys():
+        dict_Cid2File[Cid] = f
+
+dict_Bt_Exponent = {
+    'CellID'  : list(dict_Cid2File.keys()),
+    'TsFile'  : list(dict_Cid2File.values()),
+    'Exponent': np.ones(len(dict_Cid2File)),
+    }
+list_files_to_check = dict_Bt_Exponent['TsFile']
+    
+for i in range(len(list_files_to_check)):
+    try:
+        f = list_files_to_check[i]
+        path = os.path.join(srcDir, f)
+        tsDf = pd.read_csv(path, sep=';')
+        T = tsDf[tsDf['idxAnalysis']==1]['T'].values
+        B = tsDf[tsDf['idxAnalysis']==1]['B'].values
+        i_Bmax = np.argmax(B)
+        Bmax = B[i_Bmax]
+        T = T[:i_Bmax]
+        B = B[:i_Bmax]
+        Tn = (T - np.min(T))/(np.max(T) - np.min(T))
+        Bn = (B - np.min(B))/(np.max(B) - np.min(B))
+        fitTn = np.log(Tn[10:])
+        fitBn = np.log(Bn[10:])
+        parms, results = ufun.fitLine(fitTn, fitBn)
+        k = parms[1]
+        k_round = int(np.round(k, decimals=0))
+        dict_Bt_Exponent['Exponent'][i] = k_round
+        # T1, B1 = Tn[30], Bn[30]
+        # fig, ax = plt.subplots(1, 1)
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+        # ax.plot(Tn[10:], Bn[10:])
+        # powerLine(ax, (T1, B1), 2)
+        # powerLine(ax, (T1, B1), 4)
+    except:
+        dict_Bt_Exponent['Exponent'][i] = -1 
+
+df_Bt_Exponent = pd.DataFrame(dict_Bt_Exponent)
+
+# T4
+# 22-02-09_M2
+# 22-02-09_M3
+# 22-03-28
+# 22-03-30
+# 22-05-03
+# 22-05-05
+# 22-08-26
+# 22-10-05
+# 22-10-06
 
 # %% -------
 
@@ -990,7 +1116,7 @@ if SAVE:
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
     
     
-# %%% 2e essai
+# %%% 3e essai
 
 # Save
 SAVE = False
@@ -1151,3 +1277,6 @@ if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+
