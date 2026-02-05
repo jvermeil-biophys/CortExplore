@@ -562,7 +562,7 @@ q3DZ = np.percentile(np.abs(giantTable['dz']), 75)
 errXY = 2
 errX = errXY / 2**0.5
 errY = errXY / 2**0.5
-errZ = 40 # ->>> Compute exact value
+errZ = 50 # ->>> Compute exact value
 medDX = 4634
 medDY = 587
 medDZ = 501
@@ -596,12 +596,24 @@ errD3 = (2**0.5) * (((medDX**2)*(errX**2) + (medDY**2)*(errY**2) + (medDZ**2)*((
 # M450-2025        / BSA     / 4495 / 23
 # M450-2025        / Fibro   / 4493 / 29
 
-errBeads = 18
+errBeads = 25
 
 errH = (errD3**2 + errBeads**2)**0.5
 
 print(errH)
 
+# %%% Error on F
+
+# F = k2R6/d4
+
+errR = 25
+R = 4500
+errD = 12
+D = 4700
+errk = 0.025
+k = 1
+
+errF = (2*(errk/k)**2 + 4*(errD/D)**2 + 6*(errR/R)**2)**0.5
 
 
 # %% Compute precision in singlet case
@@ -735,6 +747,8 @@ avgErrGlobal = np.mean(np.abs(matErrConcat), axis=0)
 medErrGlobal = np.median(np.abs(matErrConcat), axis=0)
 
 ErrGlobal = medErrGlobal
+Q1, Q2, Q3 = np.percentile(ErrGlobal, (25, 50, 75))
+Moy = np.mean(ErrGlobal)
 
 gs.set_defense_options_jv()
 fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 8/gs.cm_in))
