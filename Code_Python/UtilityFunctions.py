@@ -26,6 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # 1. Imports
 import numpy as np
 import pandas as pd
+import scipy.stats as st
 import scipy.ndimage as ndi
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
@@ -45,8 +46,6 @@ import traceback
 from scipy import odr, signal, interpolate
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment, least_squares
-
-import scipy.stats as st
 
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
@@ -910,6 +909,15 @@ def get_Chi2(Ymeas, Ymodel, dof, err):
         Chi2_dof = Chi2/dof
     return(Chi2_dof)
 
+def getLogNDistributionDescriptors(A):
+    logA = np.log(A)
+    logmean = np.mean(logA)
+    logstd = np.std(logA)
+    valLow = np.exp((logmean-logstd))
+    valMid = np.exp((logmean))
+    valHigh = np.exp((logmean+logstd))
+    return(valMid, valLow, valHigh)
+
 # %%% Image processing
 
 def getDepthoCleanSize(D, scale):
@@ -1581,11 +1589,12 @@ def sortMatrixByCol(A, col=0, direction = 1):
 
 
 class fitResults:
-    def __init__(self, params, params_sd, params_ciw, pvalues):
+    def __init__(self, params, params_sd, params_ciw, pvalues, pvalue_pearson):
         self.params = params
         self.params_sd = params_sd
         self.params_ciw = params_ciw
         self.pvalues = pvalues
+        self.pvalue_pearson = pvalue_pearson
 
 
 
@@ -1673,15 +1682,21 @@ def fitLineTLS(X, Y, wd=1, we=1):
     q = st.t.ppf(perc, dof)
     ciw = [2 * sd * q for sd in sd_params]
     
+    # Test p-value
     beta_0 = 0  # test if slope is significantly different from zero
     t_stat = [(output.beta[j] - beta_0) / output.sd_beta[j] for j in range(len(output.beta))]  # t statistic for the slope parameter
     pvalues = [st.t.sf(np.abs(ts), dof) * 2 for ts in t_stat]
+    # Pearson p-value
+    pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+    pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+    
+    # print('Self-made method : ' + str(pvalues[0]))
+    # print('Pearson method : ' + str(pearson_pval))
     
     # R2 = get_R2(Y, a*X+b)
     # R2 doesn't make sense in ODR
     
-
-    results = fitResults([a, b], sd_params, ciw, pvalues)
+    results = fitResults([a, b], sd_params, ciw, pvalues, pearson_pval)
     # results = ([a, b], sd_params, ciw, pvalues, R2)
 
     out = ([a, b], results)

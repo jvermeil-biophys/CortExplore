@@ -723,7 +723,7 @@ def plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_400',
                     crit_pvalFit = 0.4,
                     crit_thickCV = 0.025,
                     activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'],
-                    dstDir = '', figNameRoot = ''):
+                    dstDir = '', figNameRoot = '', modeFit = 'OLS'):
     
     df, condCol = apm.makeCompositeCol(df, cols=['date'])
     CountByCond, CountByCell = apm.makeCountDf(df, condCol)
@@ -746,7 +746,8 @@ def plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_400',
                             crit_NcompsMin = crit_NcompsMin,
                             crit_pvalFit = crit_pvalFit,
                             crit_thickCV = crit_thickCV,
-                            activeCrits = activeCrits)
+                            activeCrits = activeCrits,
+                            modeFit = modeFit)
     df_res = df_res.set_index(['cellID'])
     
     # dictFit = {'cellID':[], 'A'+codeXY:[], 'alpha'+codeXY:[], 'pval'+codeXY:[], 'R2'+codeXY:[], 
@@ -1135,14 +1136,14 @@ res_df, df_plot = compute_Eh_Exponent(df, XCol = 'bestH0', YCol = 'E_f_<_500',
                         crit_NcompsMin = 10,
                         crit_pvalFit = 0.4,
                         crit_thickCV = 0.025,
-                        activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'])
+                        activeCrits = ['NcompsMin', 'thickCV'], modeFit = 'ODR')
 
 plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_500',
                     crit_NcompsMin = 10,
                     crit_pvalFit = 0.4,
                     crit_thickCV = 0.02,
                     activeCrits = ['NcompsMin', 'thickCV'],
-                    dstDir = 'E-h_perDate', figNameRoot = '24-12-11_E500vH0')
+                    dstDir = 'E-h_perDate', figNameRoot = '24-12-11_E500vH0', modeFit = 'ODR')
 
 # plotEh_fitVals(df, XCol = 'bestH0', YCol = 'E_f_<_400',
 #                     crit_NcompsMin = 10,

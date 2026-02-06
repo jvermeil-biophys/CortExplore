@@ -233,7 +233,7 @@ df = MecaData_Phy
 df_f = df
 
 
-def powerLine(ax, point, slope, **kwargs):
+def drawPowerLine(ax, point, slope, **kwargs):
     k = slope
     x1, y1 = point
     A = y1/(x1**k)
@@ -306,8 +306,8 @@ for i in range(len(list_files_to_check)):
         # ax.set_xscale('log')
         # ax.set_yscale('log')
         # ax.plot(Tn[10:], Bn[10:])
-        # powerLine(ax, (T1, B1), 2)
-        # powerLine(ax, (T1, B1), 4)
+        # drawPowerLine(ax, (T1, B1), 2)
+        # drawPowerLine(ax, (T1, B1), 4)
     except:
         dict_Bt_Exponent['Exponent'][i] = -1 
 
@@ -323,6 +323,7 @@ df_Bt_Exponent = pd.DataFrame(dict_Bt_Exponent)
 # 22-08-26
 # 22-10-05
 # 22-10-06
+
 
 # %% -------
 
@@ -388,15 +389,19 @@ sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000,
                 marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
 Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
 
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+[k_ciw, b_ciw] = results.params_ciw
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
         label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}' + '\n' + text_pval)
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
 
 ax.legend().set_visible(False)
 # ax.legend(fontsize = 9, loc = 'lower left')
@@ -407,7 +412,15 @@ ax.grid(visible=True, which='major', axis='both')
 ax.set_xlim([50, 1100])
 ax.set_ylim([0.5, 500])
 # ax.tick_params(axis='both', direction='in', which='both')
-    
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
     
 #### Inset
 ax = ax_in
@@ -422,12 +435,12 @@ Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
 
 # ax.legend(fontsize = 9, loc = 'lower left')
@@ -440,6 +453,15 @@ ax.set_ylim([0.5, 50])
 ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
 # ax.set_xticklabels(fontsize=9)
 # ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
 
 # Show
 plt.tight_layout()
@@ -513,15 +535,19 @@ sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000,
                 marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
 Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
 
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+[k_ciw, b_ciw] = results.params_ciw
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
         label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}' + '\n' + text_pval)
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
 
 # ax.legend().set_visible(False)
 ax.legend(fontsize = 9, loc = 'lower left')
@@ -532,7 +558,15 @@ ax.grid(visible=True, which='major', axis='both')
 ax.set_xlim([50, 1100])
 ax.set_ylim([0.5, 500])
 # ax.tick_params(axis='both', direction='in', which='both')
-    
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
     
 #### Inset
 ax = ax_in
@@ -547,12 +581,12 @@ Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
 
 # ax.legend(fontsize = 9, loc = 'lower left')
@@ -565,6 +599,15 @@ ax.set_ylim([0.5, 50])
 ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
 # ax.set_xticklabels(fontsize=9)
 # ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
 
 # Show
 plt.tight_layout()
@@ -652,6 +695,156 @@ plt.show()
 
 # %%%% 2.1 small
 
+# Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'E500_vs_h500_small'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
+win, hin = 0.35, 0.35*(11/12)
+xin, yin = 0.95-win, 0.93-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin])
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000, 
+                marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
+Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+# ax.legend().set_visible(False)
+ax.legend(fontsize = 9, loc = 'lower left')
+# ax.set_title('Average per cell')
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$H_{500}$ (nm)')
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1100])
+ax.set_ylim([0.5, 500])
+# ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+#### Inset
+ax = ax_in
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+color = apm.cL_Set2[0]
+
+sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                marker = 'o', s = 20, color = apm.cL_Set2[0], alpha = 0.6)
+Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
+
+# ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title('Average per cell', fontsize=10)
+ax.grid()
+# ax.set_ylabel('$E_{500}$ (kPa)')
+# ax.set_xlabel('$H_0$ (nm)')
+ax.set_xlim([80, 1100])
+ax.set_ylim([0.5, 50])
+ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
+# ax.set_xticklabels(fontsize=9)
+# ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+    
+
 # %%%% 2.2 big
 
 # Save
@@ -696,7 +889,7 @@ df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [con
                                       valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
 df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 
-# Plot
+#### Plot
 fig, ax = plt.subplots(1, 1, figsize=(17/cm_in, 12/cm_in))
 win, hin = 0.35, 0.35*(12/17)+0.05
 xin, yin = 0.95-win, 0.93-hin 
@@ -715,14 +908,14 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
-CIW = results.params_ciw
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
         label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}' + '\n' + text_pval)
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
 
 # ax.legend().set_visible(False)
 ax.legend(fontsize = 9, loc = 'lower left')
@@ -733,6 +926,15 @@ ax.grid(visible=True, which='major', axis='both')
 ax.set_xlim([50, 1100])
 ax.set_ylim([0.5, 500])
 # ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
     
     
 #### Inset
@@ -751,12 +953,12 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
 
 # ax.legend(fontsize = 9, loc = 'lower left')
@@ -769,6 +971,15 @@ ax.set_ylim([0.5, 50])
 ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
 # ax.set_xticklabels(fontsize=9)
 # ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
 
 # Show
 plt.tight_layout()
@@ -853,6 +1064,8 @@ for j, XCol in enumerate(XCols):
                                               valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
         df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
         
+        
+        
         # Plot
         # fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
         ax = axes[i, j]
@@ -876,13 +1089,13 @@ for j, XCol in enumerate(XCols):
         [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
         
         A, k = np.exp(b), a
-        pval = results.pvalues[0]
+        pval = results.pvalue_pearson
         Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         Yplot = A * Xplot**k
         text_pval = apm.pval2text(pval, n_digits = 4, space = True)
         ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
                 label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                        f'\nk  = {k:.2f}' + '\n' + text_pval)
+                        f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
         
         ax.legend()#.set_visible(False)
         # ax.legend(fontsize = 9, loc = 'lower left')
@@ -914,12 +1127,12 @@ for j, XCol in enumerate(XCols):
         
         # [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
         # A, k = np.exp(b), a
-        # pval = results.pvalues[0]
+        # pval = results.pvalue_pearson
         # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         # Yplot = A * Xplot**k
-        # text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+        # text_pval = apm.pval2text(pval, n_digits = 3, space = True)
         # ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
         
         # # ax.legend(fontsize = 9, loc = 'lower left')
@@ -1039,14 +1252,14 @@ for j, XCol in enumerate(XCols):
         [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
         
         A, k = np.exp(b), a
-        pval = results.pvalues[0]
+        pval = results.pvalue_pearson
         Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         Yplot = A * Xplot**k
         text_pval = apm.pval2text(pval, n_digits = 4, space = True)
         ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 2.0,
                 label = text_pval)
                 # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                #         f'\nk  = {k:.2f}' + '\n' + text_pval)
+                #         f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
         
         ax.legend()#.set_visible(False)
         # ax.legend(fontsize = 9, loc = 'lower left')
@@ -1078,12 +1291,12 @@ for j, XCol in enumerate(XCols):
         
         # [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
         # A, k = np.exp(b), a
-        # pval = results.pvalues[0]
+        # pval = results.pvalue_pearson
         # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         # Yplot = A * Xplot**k
-        # text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+        # text_pval = apm.pval2text(pval, n_digits = 3, space = True)
         # ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
         
         # # ax.legend(fontsize = 9, loc = 'lower left')
@@ -1180,7 +1393,7 @@ for j, XCol in enumerate(XCols):
                                               valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
         df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
         
-        # Plot
+        #### Plot
         # fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
         ax = axes[i, j]
         
@@ -1202,14 +1415,16 @@ for j, XCol in enumerate(XCols):
         [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
         
         A, k = np.exp(b), a
-        pval = results.pvalues[0]
-        Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
-        Yplot = A * Xplot**k
+        pval = results.pvalue_pearson
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
         text_pval = apm.pval2text(pval, n_digits = 4, space = True)
-        ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 2.0,
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 2.0,
+        #         label = text_pval)
+        apm.drawPowerLine(ax, (1, A), k, ls = '--', c = 'dimgray', lw = 2.0,
                 label = text_pval)
                 # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                #         f'\nk  = {k:.2f}' + '\n' + text_pval)
+                #         f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
         
         ax.legend()#.set_visible(False)
         # ax.legend(fontsize = 9, loc = 'lower left')
@@ -1226,7 +1441,16 @@ for j, XCol in enumerate(XCols):
         ax.set_xlim([50, 1100])
         ax.set_ylim([0.5, 500])
         # ax.tick_params(axis='both', direction='in', which='both')
-            
+        
+        
+        hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+        EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+        print(f'For {XCol} vs {YCol}')
+        print(f'By compression, N = {len(df_f):.0f}')
+        print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+        print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+        print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+        print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
             
         # #### Inset
         # ax = ax_in
@@ -1241,12 +1465,12 @@ for j, XCol in enumerate(XCols):
         
         # [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
         # A, k = np.exp(b), a
-        # pval = results.pvalues[0]
+        # pval = results.pvalue_pearson
         # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         # Yplot = A * Xplot**k
-        # text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+        # text_pval = apm.pval2text(pval, n_digits = 3, space = True)
         # ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
-        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}' + \
+        #         # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
         #         #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
         
         # # ax.legend(fontsize = 9, loc = 'lower left')

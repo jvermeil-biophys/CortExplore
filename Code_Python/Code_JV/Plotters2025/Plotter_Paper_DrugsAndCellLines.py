@@ -342,7 +342,7 @@ for i, cond in enumerate(conds):
     Yplot = A * Xplot**k
     
     parms, results = ufun.fitLine(Xfit, Yfit)
-    pval = results.pvalues[1]
+    pval = results.pvalue_pearsons[1]
     
     ax.plot(Xplot, Yplot, ls = '--', c = color, lw = 3.0, zorder=4, alpha = 0.6,
             label = apm.renameDict[cond] + '\n' + f'$R^2$={R2:.2f}' + ', ' + apm.pval2text(pval, n_digits = 2, space=False) + '\n')
@@ -370,7 +370,7 @@ for i, cond in enumerate(conds):
     Yplot = A * Xplot**k
     
     parms, results = ufun.fitLine(Xfit, Yfit)
-    pval = results.pvalues[1]
+    pval = results.pvalue_pearsons[1]
     
     ax.plot(Xplot, Yplot, ls = '-', c = color, lw = 3.0, zorder=6,
             label = apm.renameDict[cond] + '\n' + f'$R^2$={R2:.2f}' + ', ' + apm.pval2text(pval, n_digits = 2, space=False) + '\n')
@@ -479,7 +479,7 @@ for i, cond in enumerate(conds[:]):
     Yplot = b + Xplot*a
     
     parms, results = ufun.fitLine(Xfit, Yfit)
-    pval = results.pvalues[1]
+    pval = results.pvalue_pearsons[1]
     
     ax.plot(Xplot, Yplot, ls = '-', c = color, lw = 2.0,
             label = apm.renameDict[cond] + ' - ' + f'$R^2$={R2:.2f}' + f' p-val={pval:.2f}')
@@ -798,22 +798,22 @@ for i in range(len(axes)):
     
     [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=4, we=1)
     A, k = np.exp(b), a
-    pval = results.pvalues[0]
+    pval = results.pvalue_pearson
     Xplot = np.exp(np.linspace(1, 9, 50))
     Yplot = A * Xplot**k
-    text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+    text_pval = apm.pval2text(pval, n_digits = 3, space = True)
         
     # [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
     # A, k = np.exp(b), a
     # k_cihw = (results.conf_int(0.05)[1, 1] - results.conf_int(0.05)[1, 0])/2
     # R2 = w_results.rsquared
-    # pval = results.pvalues[1]
+    # pval = results.pvalue_pearsons[1]
     # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
     # Yplot = A * Xplot**k
     
     # [b, a], results = ufun.fitLine(Xfit, Yfit)
     # R2 = results.rsquared
-    # pval = results.pvalues[1]
+    # pval = results.pvalue_pearsons[1]
     # Xplot = (np.linspace(min(Xfit), max(Xfit), 50))
     # Yplot = a * Xplot + b
     
@@ -868,14 +868,15 @@ if SAVE:
 # Save
 SAVE = True
 figSubDir = 'E-h'
-name = 'E500_vs_h0_4celltypes'
+name = 'E500_vs_h500_4celltypes'
 
 df = MecaData_CellTypes
 
 df, condCol = apm.makeCompositeCol(df, cols=['cell type', 'cell subtype'])
 
 # XCol = 'ctFieldThickness'
-XCol = 'bestH0'
+# XCol = 'bestH0'
+XCol = 'H0_f_<_500'
 YCol = 'E_f_<_500'
 
 # Define
@@ -960,20 +961,24 @@ df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 fig, axes = plt.subplots(2, 2, figsize=(17/cm_in, 17/cm_in), sharex=True, sharey=True)
 axes = axes.flatten('C')
 
-
-YCol += '_wAvg'
+df_plot = df_f
+# YCol += '_wAvg'
 df_plot[YCol] /= 1000
 
 df_ctrl = df_plot[df_plot[condCol] == '3T3 & Atcc-2023']
 Xctrl, Yctrl = df_ctrl[XCol].values, df_ctrl[YCol].values
 Xctrl_fit, Yctrl_fit = np.log(Xctrl), np.log(Yctrl)
 
-[a, b], results = ufun.fitLineTLS(Xctrl_fit, Yctrl_fit, wd=4, we=1)
+wd=1/(np.std(Xctrl_fit)) # **2
+we=1/(np.std(Yctrl_fit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xctrl_fit, Yctrl_fit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalues[0]
+pval = results.pvalue_pearson
 Xctrl_plot = np.exp(np.linspace(1, 9, 50))
-Yctrl_plot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+Yctrl_plot = A * Xctrl_plot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+print('expo ctrl', k, results.params_ciw[1]/2)
 # ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.8), lw = 1.5, zorder = 6,
 #         label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
 #                 f'\nk  = {k:.2f}' + '\n' + text_pval)
@@ -983,21 +988,23 @@ for i in range(len(axes)):
     ax.set_xscale('log')
     ax.set_yscale('log')
     
-    color = sD[cond]['color']
-    marker = sD[cond]['marker']
+    # color = sD[cond]['color']
+    # marker = sD[cond]['marker']
+    # color = colorsD[cond]
+    # marker = 'o'
     
     sns.scatterplot(ax = ax, x=df_ctrl[XCol].values, y=df_ctrl[YCol].values, 
-                    marker = 'o', s = 25, color = 'dimgray', alpha = 0.2,
+                    marker = 'o', s = 25, color = 'dimgray', alpha = 0.1,
                     zorder = 3)
     ax.plot(Xctrl_plot, Yctrl_plot, ls = '--', color = 'dimgray', 
-            lw = 2.0, zorder = 6, alpha = 0.4)
+            lw = 2.0, zorder = 6, alpha = 0.6)
             # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
             #         f'\nk  = {k:.2f}' + '\n' + text_pval)
 
     
     df_fc = df_plot[df_plot[condCol] == co_order[i]]
-    print(co_order[i], len(df_fc))
     color = colorsD[co_order[i]]
+    
     
     medianX = np.median(df_fc[XCol].values)
     medianY = np.median(df_fc[YCol].values)
@@ -1009,26 +1016,44 @@ for i in range(len(axes)):
                     marker = 'o', s = s, color = color, edgecolor = 'k', linewidth=0.5, alpha = alpha,
                     zorder = 3) # , label = 'Median $H_0$ = ' + f'{medianX:.0f} nm'\
                                   #      f'\nMedian $E$ = ' + f'{medianY:.1f} kPa')
+                                  
+
     Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
-    
-    [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=4, we=1)
+    # print(np.std(Xfit), np.std(Yfit), np.std(Xfit)/np.std(Yfit))
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+
+    [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
     A, k = np.exp(b), a
-    pval = results.pvalues[0]
+    pval = results.pvalue_pearson
+    [k_ciw, b_ciw] = results.params_ciw
+    
     Xplot = np.exp(np.linspace(1, 9, 50))
     Yplot = A * Xplot**k
-    text_pval = apm.pval2text(pval, n_digits = 2, space = True)
+    text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 
         
     ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.75), lw = 2.0, zorder = 6,
             label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                    f'\nk  = {k:.2f}' + '\n' + text_pval)
+                    f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
 
-    ax.legend(fontsize = 9, loc = 'best', handlelength=1)
-    ax.set_xlabel('$H_{0}$ (nm)')
+    ax.legend(fontsize = 11, loc = 'best', handlelength=1)
+    ax.set_xlabel('$H_{500}$ (nm)')
     ax.set_ylabel('$E_{500}$ (kPa)')
     ax.set_title(co_order[i])
     if i%2 != 0:
         ax.set_ylabel('')
+        
+    
+    hM, hL, hH = ufun.getLogNDistributionDescriptors(df_fc[XCol].values)
+    EM, EL, EH = ufun.getLogNDistributionDescriptors(df_fc[YCol].values)
+    print(f'Cell type {co_order[i]}, N = {len(df_fc):.0f}')
+    print(f'For {co_order[i]}, {XCol} vs {YCol}')
+    print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+    print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+    print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+    print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
            
 # Prettify
 rD.update({'E_eff_wAvg':'E_{eff} (kPa)'})

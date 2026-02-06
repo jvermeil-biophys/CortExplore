@@ -474,6 +474,18 @@ def lightenColor(color, factor=1.0):
     new_c = colorsys.hls_to_rgb(c[0], max(0, min(1, factor * c[1])), c[2])
     return(new_c)
 
+def drawPowerLine(ax, point, slope, **kwargs):
+    k = slope
+    x1, y1 = point
+    A = y1/(x1**k)
+    limX = ax.get_xlim()
+    limY = ax.get_ylim()
+    plotX = np.array([0.1*limX[0], 10*limX[1]])
+    plotY = A*(plotX**k)
+    ax.plot(plotX, plotY, **kwargs)
+    ax.set_xlim(limX)
+    ax.set_ylim(limY)
+
 def getSnsPalette(conditions, styleDict):
     colors = []
     try:
@@ -810,6 +822,7 @@ def D2Plot_wFit(data, fig = None, ax = None,
     ax.legend()
     
     return(fig, ax)
+
 
 
 

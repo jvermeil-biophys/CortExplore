@@ -689,7 +689,7 @@ res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = drugTask, fi
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 
-# %%% Drugs 5
+# %%%% Drugs 5
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
@@ -1302,11 +1302,12 @@ stressHalfWidths = [50, 75, 100]
 
 fitSettings = {# H0
                 'methods_H0':['Chadwick'],
-                'zones_H0':['pts_15',
-                            '%f_5', '%f_10', '%f_15'],
+                # 'zones_H0':['pts_15',
+                #             '%f_5', '%f_10', '%f_15'],
+                'zones_H0':['%f_15'],
                 'doChadwickFit' : True,
-                'ChadwickFitMethods' : ['Full'] + ['f_<_' + str(F) for F in range(200, 1050, 50)],
-                'doDimitriadisFit' : False,
+                'ChadwickFitMethods' : ['Full'] + ['f_<_' + str(F) for F in range(200, 1100, 100)],
+                'doDimitriadisFit' : True,
                 'DimitriadisFitMethods' : ['Full'] + ['f_<_' + str(F) for F in range(200, 600, 100)],
                 'method_bestH0':'Chadwick', # Chadwick
                 'zone_bestH0':'%f_15',
@@ -1327,8 +1328,11 @@ plot_stressCenters = [ii for ii in range(100, 2000, 100)]
 plot_stressHalfWidth = 100
 
 plotSettings = {# ON/OFF switchs plot by plot
-                        'FH(t)':True,
-                        'F(H)':True,
+                        'FH(t)':False,
+                        'F(H)':False,
+                        'F(H)_VWC':False,
+                        'F(H)_Dimitriadis':False,
+                        'F(H)_ChadAndDimi':True,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
                         'S(e)_stressGaussian':False,
@@ -1356,7 +1360,7 @@ task = '24-12-11' # Long series
 
 # drugTask = '23-09-19'
 res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'MecaData_Tests_for_Paper_X2', 
-                                    save = True, PLOT = False, source = 'Python', 
+                                    save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 

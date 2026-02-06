@@ -54,7 +54,7 @@ import UtilityFunctions as ufun
 #### Errors for chi2
 
 err_chi2_H = 7 # nm
-err_chi2_F = 100 # pN
+err_chi2_F = 10 # pN
 err_chi2_Stress = 100 # Pa
 err_chi2_Strain = 0.01 # %
 
@@ -1820,6 +1820,65 @@ class CellCompression:
         return(fig, axes)
     
     
+    def plot_FH_Dimitriadis(self, plotSettings, plotH0 = True, plotFit = True):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 # figsize = (3, 4))
+                                figsize = (4*nColsSubplot, 4*nRowsSubplot))
+        figTitle = 'Thickness-Force of indentations\n'
+        if plotH0:
+            figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        if plotFit:
+            figTitle += 'with fit (Dimitriadis)'
+        
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_FH_Dimitriadis(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
+            
+        fig.tight_layout()
+        return(fig, axes)
+    
+
+
+    def plot_FH_ChadAndDimi(self, plotSettings, plotH0 = True, plotFit = True):
+        nColsSubplot = 5
+        nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 # figsize = (3, 4))
+                                figsize = (4*nColsSubplot, 4*nRowsSubplot))
+        figTitle = 'Thickness-Force of indentations\n'
+        if plotH0:
+            figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        if plotFit:
+            figTitle += 'with fit (Chad & Dimi)'
+        
+        fig.suptitle(figTitle)
+        
+        for i in range(self.Ncomp):
+            colSp = (i) % nColsSubplot
+            rowSp = (i) // nColsSubplot
+            if nRowsSubplot == 1:
+                ax = axes[colSp]
+            elif nRowsSubplot >= 1:
+                ax = axes[rowSp,colSp]
+                
+            IC = self.listIndent[i]
+            IC.plot_FH_ChadAndDimi(fig, ax, plotSettings, plotH0 = plotH0, plotFit = plotFit)
+            
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
     def plot_FH(self, plotSettings, plotH0 = True, plotFit = True):
         nColsSubplot = 5
         nRowsSubplot = ((self.Ncomp-1) // nColsSubplot) + 1
@@ -1984,6 +2043,26 @@ class CellCompression:
             ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
             # except:
             #     pass
+        
+        if plotSettings['F(H)_Dimitriadis']:
+            
+            # try:
+                
+            name = self.cellID + '_Dimitriadis_F(h)'
+            fig, ax = self.plot_FH_Dimitriadis(plotSettings)
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass 
+        
+        if plotSettings['F(H)_ChadAndDimi']:
+            
+            # try:
+                
+            name = self.cellID + '_ChadAndDimi_F(h)'
+            fig, ax = self.plot_FH_ChadAndDimi(plotSettings)
+            ufun.archiveFig(fig, name = name, figSubDir = figSubDir, dpi = dpi)
+            # except:
+            #     pass 
         
         if plotSettings['F(H)_VWC']:
             
@@ -2269,18 +2348,19 @@ class CellCompression:
                 dictColumnsMeca = {**dictColumnsMeca, **d}
             
         if fitSettings['doDimitriadisFit']:
-            method = 'Dimitriadis'
-            d = {'error_'+ method : True,
-                 'nbPts_'+ method : np.nan, 
-                 'E_'+ method : np.nan, 
-                 'ciwE_'+ method : np.nan, 
-                 'H0_'+ method : np.nan, 
-                 'R2_'+ method : np.nan,
-                 'Chi2_'+ m : np.nan,
-                 'valid_'+ method: False,
-                 'issue_' + m: '',
-                 }
-            dictColumnsMeca = {**dictColumnsMeca, **d}   
+            for m in fitSettings['DimitriadisFitMethods']:
+                m2 = 'Dimi_' + m
+                d = {'error_'+ m2 : True,
+                     'nbPts_'+ m2 : np.nan, 
+                     'E_'+ m2 : np.nan, 
+                     'ciwE_'+ m2 : np.nan, 
+                     'H0_'+ m2 : np.nan, 
+                     'R2_'+ m2 : np.nan,
+                     'Chi2_'+ m2 : np.nan,
+                     'valid_'+ m2: False,
+                     'issue_' + m2: '',
+                     }
+                dictColumnsMeca = {**dictColumnsMeca, **d}   
         
         
         N = self.Ncomp
@@ -2393,7 +2473,7 @@ class CellCompression:
                             results['issue_'+ m2][i] = IC.dictFitFH_VWC[m]['issue']
                         except:
                             print("VWC Error")
-                            print(IC.dictFitFH_VWC)
+                            # print(IC.dictFitFH_VWC)
                             
                 if fitSettings['doChadwickFit'] and IC.isValidForAnalysis:
                     for m in fitSettings['ChadwickFitMethods']:
@@ -2412,20 +2492,21 @@ class CellCompression:
                             # print(IC.dictFitFH_Chadwick)
                             
                 if fitSettings['doDimitriadisFit'] and IC.isValidForAnalysis:
-                    try:
-                        method = 'Dimitriadis'
-                        results['error_'+ method][i] = IC.dictFitFH_Dimitriadis['error']
-                        results['nbPts_'+ method][i] = IC.dictFitFH_Dimitriadis['nbPts']
-                        results['E_'+ method][i] = IC.dictFitFH_Dimitriadis['E']
-                        results['ciwE_'+ method][i] = IC.dictFitFH_Dimitriadis['ciwE']
-                        results['H0_'+ method][i] = IC.dictFitFH_Dimitriadis['H0']
-                        results['R2_'+ method][i] = IC.dictFitFH_Dimitriadis['R2']
-                        results['Chi2_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
-                        results['valid_'+ method][i] = IC.dictFitFH_Dimitriadis['valid']
-                        results['issue_'+ m][i] = IC.dictFitFH_Dimitriadis[m]['issue']
-                    except:
-                        print("Dimitriadis Error")
-                        # print(IC.dictFitFH_Dimitriadis)
+                    for m in fitSettings['DimitriadisFitMethods']:
+                        # try:
+                        m2 = 'Dimi_' + m
+                        results['error_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['error']
+                        results['nbPts_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['nbPts']
+                        results['E_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['E']
+                        results['ciwE_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['ciwE']
+                        results['H0_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['H0']
+                        results['R2_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['R2']
+                        results['Chi2_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['Chi2']
+                        results['valid_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['valid']
+                        results['issue_'+ m2][i] = IC.dictFitFH_Dimitriadis[m]['issue']
+                        # except:
+                        #     print("Dimitriadis Error")
+                        #     print(IC.dictFitFH_Dimitriadis)
         
         df_mainResults = pd.DataFrame(results)
         self.df_mainResults = df_mainResults
@@ -3277,10 +3358,10 @@ class IndentCompression:
         #### err_Chi2 for force (pN)
         err_chi2 = err_chi2_F
         dictFit = makeDictFit_hf(params, ses, error, 
-                           x, y, yPredict, 
-                           err_chi2, fitValidationSettings)
+                                   x, y, yPredict, 
+                                   err_chi2, fitValidationSettings)
         
-        self.dictFitFH_Dimitriadis['method'] = dictFit
+        self.dictFitFH_Dimitriadis[method] = dictFit
                 
     
     def fitSS_stressRegion(self, center, halfWidth, fitValidationSettings):
@@ -3655,6 +3736,325 @@ class IndentCompression:
             #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
             #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
             #     ax_r.set_ylim([0,10])
+            
+    def plot_FH_ChadAndDimi(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotH0 : TYPE, optional
+            DESCRIPTION. The default is True.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('f (pN)')
+    
+            if plotFit:
+                
+                #### Dimitriadis
+                try:
+                    method = 'Full'
+                    # dictFit = self.dictFitFH_Dimitriadis[method]
+                    dictFit = self.dictFitFH_Dimitriadis[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fPredict = dictFit['yPredict']
+                        hFit = dictFit['x']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hFit, fPredict, ls=':', color = 'darkgreen', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                    # else:
+                    #     titleText += '\nFIT ERROR'
+                except:
+                    pass
+                
+                try:
+                    method = 'f_<_300'
+                    # dictFit = self.dictFitFH_Dimitriadis[method]
+                    dictFit = self.dictFitFH_Dimitriadis[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fPredict = dictFit['yPredict']
+                        hFit = dictFit['x']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hFit, fPredict, ls=':', color = 'yellowgreen', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                    # else:
+                    #     titleText += '\nFIT ERROR'
+                except:
+                    pass
+                
+                #### Chadwick
+                try:
+                    method = 'Full'
+                    # dictFit = self.dictFitFH_Chadwick[method]
+                    dictFit = self.dictFitFH_Chadwick[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fFit = dictFit['x']
+                        hPredict = dictFit['yPredict']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hPredict, fFit, ls='--', color = 'darkred', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                    # else:
+                    #     titleText += '\nFIT ERROR'
+                except:
+                    pass
+                    
+                try:
+                    method = 'f_<_500'
+                    # dictFit = self.dictFitFH_Chadwick[method]
+                    dictFit = self.dictFitFH_Chadwick[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fFit = dictFit['x']
+                        hPredict = dictFit['yPredict']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hPredict, fFit, ls='--', color = 'darkorange', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                except:
+                    pass
+ 
+                
+                    
+            if plotH0:
+                bestH0 = self.bestH0
+                method = self.method_bestH0
+                zone = self.zone_bestH0
+                str_m_z = method + '_' + zone
+                E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+                
+                if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, bestH0, 20)
+                    if self.method_bestH0 == 'Dimitriadis':
+                        low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    elif self.method_bestH0 == 'Chadwick':
+                        # chadwickModel(h, E, H0, DIAMETER)
+                        low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    else:
+                        low_f = np.ones_like(high_h) * bestH0
+                    
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
+                            label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+
+                    
+                # if 'H0_Dimitriadis_' + 'ratio_2-2.5' in self.dictH0.keys():
+                #     H0_ratio = self.dictH0['H0_Dimitriadis_ratio_2-2.5']
+                #     E_ratio = self.dictH0['E_Dimitriadis_ratio_2-2.5']
+                #     str_m_z = 'Dimitriadis_ratio_2-2.5'
+                #     max_h = np.max(self.hCompr)
+                #     high_h = np.linspace(max_h, H0_ratio, 20)
+                #     low_f = DimitriadisModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+
+                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                #             # label = legendText)
+                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    
+
+                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.title.set_text(titleText)
+
+                
+                
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.title.set_text(titleText)
+            
+                    
+            # if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+            #     ax_r = ax.twinx()
+            #     ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+            #     ax_r.set_ylabel('a/h0')
+            #     ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+            #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+            #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+            #     ax_r.set_ylim([0,10])
+    
+    def plot_FH_Dimitriadis(self, fig, ax, plotSettings, plotH0 = True, plotFit = True):
+        """
+        
+
+        Parameters
+        ----------
+        fig : TYPE
+            DESCRIPTION.
+        ax : TYPE
+            DESCRIPTION.
+        plotSettings : TYPE
+            DESCRIPTION.
+        plotH0 : TYPE, optional
+            DESCRIPTION. The default is True.
+        plotFit : TYPE, optional
+            DESCRIPTION. The default is True.
+
+        Returns
+        -------
+        None.
+
+        """
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr,'b-', linewidth = 0.8)
+            ax.plot(self.hRelax, self.fRelax,'r-', linewidth = 0.8)
+            titleText = self.cellID + '__c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('f (pN)')
+    
+            if plotFit:
+                method = 'Full'
+                # dictFit = self.dictFitFH_Dimitriadis[method]
+                dictFit = self.dictFitFH_Dimitriadis[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fPredict = dictFit['yPredict']
+                    hFit = dictFit['x']
+                    
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hFit, fPredict, ls='--', color = 'black', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
+                    
+                method = 'f_<_200'
+                # dictFit = self.dictFitFH_Dimitriadis[method]
+                dictFit = self.dictFitFH_Dimitriadis[method]
+                fitError = dictFit['error']
+                    
+                if not fitError:
+                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                    fPredict = dictFit['yPredict']
+                    hFit = dictFit['x']
+                    
+                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                    ax.plot(hFit, fPredict, ls='--', color = 'green', linewidth = 0.8, 
+                            label = legendText, zorder = 2)
+                # else:
+                #     titleText += '\nFIT ERROR'
+                
+                try:
+                    method = 'f_<_400'
+                    # dictFit = self.dictFitFH_Dimitriadis[method]
+                    dictFit = self.dictFitFH_Dimitriadis[method]
+                    fitError = dictFit['error']
+                        
+                    if not fitError:
+                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                        fPredict = dictFit['yPredict']
+                        hFit = dictFit['x']
+                        
+                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                        ax.plot(hFit, fPredict, ls='--', color = 'darkorange', linewidth = 0.8, 
+                                label = legendText, zorder = 2)
+                    # else:
+                    #     titleText += '\nFIT ERROR'
+                except:
+                    pass
+                    
+            if plotH0:
+                bestH0 = self.bestH0
+                method = self.method_bestH0
+                zone = self.zone_bestH0
+                str_m_z = method + '_' + zone
+                E_bestH0 = self.dictH0['E_' + method + '_' + zone]
+                
+                if (not self.error_bestH0) and (method not in ['NaiveMax']):
+                    max_h = np.max(self.hCompr)
+                    high_h = np.linspace(max_h, bestH0, 20)
+                    if self.method_bestH0 == 'Dimitriadis':
+                        low_f = dimitriadisModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    elif self.method_bestH0 == 'Chadwick':
+                        # chadwickModel(h, E, H0, DIAMETER)
+                        low_f = chadwickModel(high_h/1000, E_bestH0, bestH0/1000, self.DIAMETER/1000)
+                    else:
+                        low_f = np.ones_like(high_h) * bestH0
+                    
+                    legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                    plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                    plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                    ax.plot([bestH0], [0], ls = '', marker = 'o', color = 'skyblue', markersize = 5, 
+                            label = legendText)
+                    ax.plot(plot_startH, plot_startF, ls = '--', color = 'skyblue', linewidth = 1.2, zorder = 4)
+
+                    
+                # if 'H0_Dimitriadis_' + 'ratio_2-2.5' in self.dictH0.keys():
+                #     H0_ratio = self.dictH0['H0_Dimitriadis_ratio_2-2.5']
+                #     E_ratio = self.dictH0['E_Dimitriadis_ratio_2-2.5']
+                #     str_m_z = 'Dimitriadis_ratio_2-2.5'
+                #     max_h = np.max(self.hCompr)
+                #     high_h = np.linspace(max_h, H0_ratio, 20)
+                #     low_f = DimitriadisModel(high_h/1000, E_ratio, H0_ratio/1000, self.DIAMETER/1000)
+
+                #     # legendText = 'bestH0 = {:.2f}nm'.format(bestH0) + '\n' + str_m_z
+                #     plot_startH = np.concatenate((self.dictH0['hArray_' + str_m_z][::-1], high_h))
+                #     plot_startF = np.concatenate((self.dictH0['fArray_' + str_m_z][::-1], low_f))
+
+                #     ax.plot([H0_ratio], [0], ls = '', marker = 'o', color = 'darkslateblue', markersize = 5, zorder = 3)
+                #             # label = legendText)
+                #     ax.plot(plot_startH, plot_startF, ls = '--', color = 'darkslateblue', linewidth = 1.2, zorder = 3)
+                    
+
+                ax.legend(loc = 'upper right', prop={'size': 6})
+                ax.title.set_text(titleText)
+
+                
+                
+            ax = ufun.setAllTextFontSize(ax, size = 9)
+            ax.legend(loc = 'upper right', prop={'size': 6})
+            ax.title.set_text(titleText)
+            
+                    
+            # if plotSettings['Plot_Ratio'] and (not self.error_bestH0):
+            #     ax_r = ax.twinx()
+            #     ax_r.plot(self.hCompr, self.ChadwickRatio, color='gold', marker='o', markersize=1, lw=0, zorder = 1)
+            #     ax_r.set_ylabel('a/h0')
+            #     ax_r = ufun.setAllTextFontSize(ax_r, size = 9)
+            #     ax_r.axhline(1, ls='--', lw=0.5, color = 'skyblue')
+            #     ax_r.axhline(2, ls='--', lw=0.5, color = 'orange')
+            #     ax_r.set_ylim([0,10])
+    
     
     
     
@@ -3705,7 +4105,7 @@ class IndentCompression:
                 # else:
                 #     titleText += '\nFIT ERROR'
                     
-                method = 'f_<_400'
+                method = 'f_<_500'
                 # dictFit = self.dictFitFH_Chadwick[method]
                 dictFit = self.dictFitFH_Chadwick[method]
                 fitError = dictFit['error']
@@ -4792,6 +5192,8 @@ DEFAULT_plot_strainHalfWidth = 0.0125
 DEFAULT_plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
+                        'F(H)_Dimitriadis':True,
+                        'F(H)_ChadAndDimi':True,
                         'F(H)_VWC':True,
                         'S(e)_stressRegion':True,
                         'K(S)_stressRegion':True,
