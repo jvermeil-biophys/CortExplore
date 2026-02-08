@@ -45,7 +45,7 @@ import itertools
 import matplotlib
 
 from cycler import cycler
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, shapiro
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
 

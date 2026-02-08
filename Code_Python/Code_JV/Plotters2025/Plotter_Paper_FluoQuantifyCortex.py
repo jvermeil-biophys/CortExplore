@@ -15,6 +15,7 @@ import pandas as pd
 import skimage as skm
 import scipy.stats as st
 import scipy.ndimage as ndi
+import statsmodels.api as sm
 
 import seaborn as sns
 import matplotlib
@@ -27,6 +28,7 @@ from PIL import Image
 from PIL.TiffTags import TAGS
 
 from scipy import interpolate, signal, optimize
+from scipy.stats import mannwhitneyu, shapiro
 # from scipy.interpolate import Akima1DInterpolator # CubicSpline, PchipInterpolator
 
 import shapely
@@ -42,14 +44,22 @@ import sys
 sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python')
 sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python/Code_JV')
 
-import GraphicStyles as gs
+import ArticlePlotMaker as apm
+# import GraphicStyles as gs
 import CortexPaths as cp
 import UtilityFunctions as ufun
 from Chameleon_BeadTracker import smallTracker
 
-gs.set_mediumText_options_jv()
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/NewFigs'
+
+#### Graphic options
 
 SCALE_100X_ZEN = 7.4588
+cm_in = 2.52
+apm.setGraphicOptions(mode = 'screen', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
 
 
 def dateFormat(d):
@@ -1218,12 +1228,11 @@ for t in range(nT):#(nT):
             figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
             if beforeContactSlice:
                 #### First M plot
-                gs.set_manuscript_options_jv()
                 Ibf = skm.io.imread(bfPath)
                 Ibf_zt = Ibf[i_zt]
                 
                 
-                figC, axes = plt.subplots(1, 3, figsize = (17/gs.cm_in, 5.5/gs.cm_in))
+                figC, axes = plt.subplots(1, 3, figsize = (17/cm_in, 5.5/cm_in))
                 
                 ax = axes[0]
                 vmin, vmax = np.percentile(Ibf_zt, (1, 99))
@@ -1265,8 +1274,7 @@ for t in range(nT):#(nT):
                 
                 
                 #### Second M plot
-                gs.set_manuscript_options_jv()
-                figV2 = plt.figure(figsize = (17/gs.cm_in, 14/gs.cm_in))#, layout="constrained")
+                figV2 = plt.figure(figsize = (17/cm_in, 14/cm_in))#, layout="constrained")
                 spec = figV2.add_gridspec(3, 4)
                 
                 inBorder = Rc0 - inPix
@@ -1489,7 +1497,7 @@ for t in range(nT):#(nT):
         
     if PLOTS_MANUSCRIPT:
         figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-        fig, ax = plt.subplots(1, 1, figsize = (17/gs.cm_in, 3/gs.cm_in))
+        fig, ax = plt.subplots(1, 1, figsize = (17/cm_in, 3/cm_in))
         im = ax.imshow(intensityMap_t, cmap = 'viridis', vmin=0, origin='lower')
         # figM.colorbar(im, ax=ax, orientation='horizontal', fraction=.1, aspect=80)
         divider = make_axes_locatable(ax)
@@ -2323,10 +2331,9 @@ def plotActinQuantity(cellId, t, profileMatrix, dfContact,
     # plt.show()
     
     ### Manuscript Plot
-    gs.set_manuscript_options_jv()
-    figM = plt.figure(figsize = (10/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
+    figM = plt.figure(figsize = (10/cm_in, 8/cm_in))#, layout="constrained")
     spec = figM.add_gridspec(2, 3)
-    # figM, axM = plt.subplots(1, 3, figsize=(17/gs.cm_in, 6/gs.cm_in))
+    # figM, axM = plt.subplots(1, 3, figsize=(17/cm_in, 6/cm_in))
     
     Ac = pM.shape[1]//2
     profile = pM[izr-1, Ac, :]  
@@ -2598,7 +2605,7 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
     
     #### Manuscript Plot
     # if PLOT_M:
-    #     figM, axM = plt.subplots(1, 3, figsize=(17/gs.cm_in, 5.5/gs.cm_in))
+    #     figM, axM = plt.subplots(1, 3, figsize=(17/cm_in, 5.5/cm_in))
     #     Ac = pM.shape[1]//2
     #     profile = pM[izr + iiz, Ac + iia, :]  
     #     eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
@@ -3167,13 +3174,13 @@ figSubDir = 'Test_Paper'
 
 # %%% Plot quantity - per comp
 
-gs.set_manuscript_options_jv()
+SAVE = False
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -3339,9 +3346,8 @@ ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
 
 #### Plot 3 - log only
 
-gs.set_defense_options_jv(palette = 'Set2')
 
-fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+fig, ax = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))#, layout="constrained")
 
 ax.set_xscale('log')
 ax.set_yscale('log')
@@ -3406,21 +3412,22 @@ plt.show()
 
 
 #### Save
-figSubDir = 'Manuscript_E-h_fluo'
-name = 'Qactin_GF_vs_h5mT_DEFENSE'
-# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+if SAVE:
+    figSubDir = 'Manuscript_E-h_fluo'
+    name = 'Qactin_GF_vs_h5mT_DEFENSE'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 # %%% Plot quantity - per cell
 
-gs.set_manuscript_options_jv()
+SAVE = False
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -3593,18 +3600,18 @@ for ax in axes:
 
 
 #### Save
-figSubDir = 'Manuscript_E-h_fluo'
-name = 'Qactin_GF_vs_h5mT'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+if SAVE:
+    figSubDir = 'Manuscript_E-h_fluo'
+    name = 'Qactin_GF_vs_h5mT'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
 #### Plot 3 - log only
 
-gs.set_defense_options_jv(palette = 'Set2')
 
-fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+fig, ax = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))#, layout="constrained")
 
 ax.set_xscale('log')
 ax.set_yscale('log')
@@ -3669,22 +3676,22 @@ plt.show()
 
 
 #### Save
-figSubDir = 'Manuscript_E-h_fluo'
-name = 'Qactin_GF_vs_h5mT_DEFENSE'
-# ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-#                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+if SAVE:
+    figSubDir = 'Manuscript_E-h_fluo'
+    name = 'Qactin_GF_vs_h5mT_DEFENSE'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Plot quantity - One cell !
 
-# gs.set_manuscript_options_jv()
-gs.set_defense_options_jv()
+# 
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-# fig, ax = plt.subplots(1, 1, figsize = (6/gs.cm_in, 8/gs.cm_in))#, layout="constrained")
-fig, ax = plt.subplots(1, 1, figsize = (7.5/gs.cm_in, 7.5/gs.cm_in))#, layout="constrained")
+# fig, ax = plt.subplots(1, 1, figsize = (6/cm_in, 8/cm_in))#, layout="constrained")
+fig, ax = plt.subplots(1, 1, figsize = (7.5/cm_in, 7.5/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -3778,6 +3785,56 @@ name = 'Qactin_GF_vs_h5mT_'
 # ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
 #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
+# %%% Log-normality for quantity
+
+
+#### Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'h & Q log-normality'
+
+#### Plots
+metric = 'Q_gf'
+X = df_f['h3'].values
+Y = df_f[metric].values
+
+fig, axes = plt.subplots(1, 2, figsize=(17/cm_in, 12/cm_in), sharex=True, sharey='row')
+
+for k, data in enumerate([X, Y]): # +'_wAvg'
+    
+    data_lin = data
+    data_log = np.log(data)
+    
+    ax = axes[k]
+    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    
+    data=data_lin
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], 
+              markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Normal dist.: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
+    
+    data=data_log
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], 
+              markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Log-normal dist.: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
+    
+    ax.set_aspect('equal')
+    ax.set_xlim([-2.2,2.2])
+    ax.set_ylim([-2.2,2.2])
+    ax.legend(fontsize=8, title_fontsize=8, title = 'Shapiro–Wilk p-value', loc='lower right')
+    ax.grid()
+    
+axes[0].set_title('Q-Q plots for $H_{5mT}$')
+axes[1].set_title('Q-Q plots for $Q_{actin}$')
+fig.tight_layout()
+plt.show()
+
+
+
 # %%% Plot all cells for one date
 
 #### NEW HERE !!
@@ -3812,7 +3869,7 @@ res_dict = {'cellID':[],
 ## Initialize
 ncols = 5
 nrows = 1 + (Ncells-1)//ncols
-fig, axes = plt.subplots(nrows, ncols, figsize=(35/gs.cm_in, nrows*6/gs.cm_in), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
 axes_f = axes.flatten()
 
 ## Make the plot
@@ -3862,9 +3919,9 @@ for i in range(Ncells):
     ax.set_yscale('log')
     valid = True
     if valid:
-        color = gs.cL_Set2[0]
+        color = apm.cL_Set2[0]
     else:
-        color = gs.cL_Set2[1]
+        color = apm.cL_Set2[1]
         
     Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
     Yplot = A * Xplot**alpha
@@ -3907,13 +3964,14 @@ plt.show()
 
 # %%% Plot density - per comp
 
-gs.set_manuscript_options_jv()
+SAVE = False
+
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -4128,9 +4186,9 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 #### Plot 3 - log only
 
-gs.set_defense_options_jv(palette = 'Set2')
 
-fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+
+fig, ax = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))#, layout="constrained")
 
 
 ax = ax
@@ -4230,25 +4288,697 @@ ax.grid(which = 'both', alpha = 0.4)
 # ax.legend().set_visible(False)
 
 
-#### Save
-figSubDir = 'Manuscript_E-h_fluo'
-name = 'Dactin_GF_vs_h5mT_DEFENSE_V2'
-ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
+
+
+# %%% For the paper ! Quantity and density
+
+SAVE = True
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = 1 # cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+# print('pearson_coef, pearson_pval')
+# print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left', fontsize = 12)
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 plt.tight_layout()
 plt.show()
 
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left', fontsize = 12)
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'All data points, N = {Nc:.0f}')
+fig.tight_layout()
+
+#### Save
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    name = 'Q-rho_vs_h5mT_allpoints_multiFits'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+plt.show()
+
+# %%% For the paper ! Quantity and density MEAN PER CELL
+
+SAVE = True
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+df_f = dataGroup(df_f, groupCol = 'cellID', 
+                 idCols = ['date', 'manipID', 'manipNum'], 
+                 numCols = ['h3', metric_Q, metric_D], 
+                 aggFun = 'mean').reset_index()
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = 1 # cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left', fontsize = 12)
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.tight_layout()
+plt.show()
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', 
+            markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left', fontsize = 12)
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'Mean values per cell, N = {Nc:.0f}')
+fig.tight_layout()
+
+#### Save
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    name = 'Q-rho_vs_h5mT_cellmean_multiFits'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+plt.show()
+
+# %%% For the paper ! Quantity and density MEDIAN PER CELL
+
+SAVE = True
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+df_f = dataGroup(df_f, groupCol = 'cellID', 
+                 idCols = ['date', 'manipID', 'manipNum'], 
+                 numCols = ['h3', metric_Q, metric_D], 
+                 aggFun = 'median').reset_index()
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = 1 # cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+# print('pearson_coef, pearson_pval')
+# print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left', fontsize = 12)
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.tight_layout()
+plt.show()
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pvalue_pearson
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left', fontsize = 12)
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'Median values per cell, N = {Nc:.0f}')
+fig.tight_layout()
+
+#### Save
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    name = 'Q-rho_vs_h5mT_cellmedian_multiFits'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+plt.show()
+
 # %%% Plot density - per cell
 
-gs.set_manuscript_options_jv()
+
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -4479,9 +5209,9 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 #### Plot 3 - log only
 
-gs.set_defense_options_jv(palette = 'Set2')
 
-fig, ax = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))#, layout="constrained")
+
+fig, ax = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))#, layout="constrained")
 
 
 ax = ax
@@ -4596,7 +5326,7 @@ plt.show()
 
 # %%%% 1.
 
-fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+fig, axes = plt.subplots(2, 1, figsize=(17/cm_in, 17/cm_in))
 # gs.set_manuscript_options_jv(palette = 'Set2')
 
 # Filter global_df
@@ -4692,7 +5422,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%%% 2.
 
-fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+fig, axes = plt.subplots(2, 1, figsize=(17/cm_in, 17/cm_in))
 # gs.set_manuscript_options_jv(palette = 'Set2')
 
 # Filter global_df
@@ -4787,7 +5517,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%%% 3.
 
-fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 17/gs.cm_in))
+fig, axes = plt.subplots(2, 1, figsize=(17/cm_in, 17/cm_in))
 # gs.set_manuscript_options_jv(palette = 'Set2')
 
 # Filter global_df
@@ -4886,7 +5616,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 # %%%% 3. V2
 
 
-fig, ax = plt.subplots(1, 1, figsize=(12/gs.cm_in, 7/gs.cm_in))
+fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 7/cm_in))
 # gs.set_manuscript_options_jv(palette = 'Set2')
 
 # Filter global_df
@@ -4989,8 +5719,7 @@ CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 # %%%% 4. Quantity
 
 
-fig, ax = plt.subplots(1, 1, figsize=(16/gs.cm_in, 10/gs.cm_in))
-gs.set_default_options_jv(palette = 'Set2')
+fig, ax = plt.subplots(1, 1, figsize=(16/cm_in, 10/cm_in))
 
 # Filter global_df
  
@@ -5109,13 +5838,13 @@ global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
 
 # %%% Plot quantity - per cell
 
-gs.set_manuscript_options_jv()
+
 
 Set2 = matplotlib.colormaps['Set2'].colors
 cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
 cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
 
-fig, axes = plt.subplots(2, 1, figsize = (17/gs.cm_in, 17/gs.cm_in))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
 
 # style = 'date'
 # hue = 'cell'
@@ -5147,7 +5876,7 @@ df_f.columns = ["_".join(a) for a in df_f.columns.to_flat_index()]
 df_f['h3_CV'] = df_f['h3_std']/df_f['h3_mean']
 df_f[metric + '_CV'] = df_f[metric + '_std']/df_f[metric + '_mean']
 
-figCV, axCV = plt.subplots(1, 1, figsize = (12/gs.cm_in, 12/gs.cm_in))
+figCV, axCV = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))
 axCV.axline((0,0), slope=1, ls='--', color='dimgray')
 axCV.scatter(df_f['h3_CV'].values, df_f[metric + '_CV'].values, c = df_f['manipNum_first'],
              marker='o', s=20, zorder=3, cmap = cMap)
@@ -5287,8 +6016,8 @@ for ax in axes:
 
 # %%%% Plot - Lin - all dates V1
 
-gs.set_manuscript_options_jv()
-# fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+
+# fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
 # spec = fig.add_gridspec(4, 1)
 # ax0 = fig.add_subplot(spec[0])
 # ax1 = fig.add_subplot(spec[1])
@@ -5296,7 +6025,7 @@ gs.set_manuscript_options_jv()
 # ax3 = fig.add_subplot(spec[3])
 # ax4 = fig.add_subplot(spec[2,1])
 
-fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
 
 # axes = [ax1, ax2, ax3] #, ax4]
 
@@ -5352,8 +6081,8 @@ ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V1', ext = '.pdf', dpi = 100,
 
 # %%%% Plot - Lin - all dates V2
 
-gs.set_manuscript_options_jv()
-fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+
+fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
 spec = fig.add_gridspec(3, 2)
 ax0 = fig.add_subplot(spec[0,:])
 ax1 = fig.add_subplot(spec[1,0])
@@ -5361,7 +6090,7 @@ ax2 = fig.add_subplot(spec[1,1])
 ax3 = fig.add_subplot(spec[2,0])
 ax4 = fig.add_subplot(spec[2,1])
 
-# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
 
 axes = [ax1, ax2, ax3, ax4]
 
@@ -5441,8 +6170,8 @@ ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V2', ext = '.pdf', dpi = 100,
 
 # %%%% Plot - Lin - all dates V3
 
-gs.set_manuscript_options_jv()
-fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+
+fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
 spec = fig.add_gridspec(3, 2)
 ax0 = fig.add_subplot(spec[0,:])
 ax1 = fig.add_subplot(spec[1,0])
@@ -5450,7 +6179,7 @@ ax2 = fig.add_subplot(spec[1,1])
 ax3 = fig.add_subplot(spec[2,0])
 ax4 = fig.add_subplot(spec[2,1])
 
-# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
 
 axes = [ax1, ax2, ax3, ax4]
 
@@ -5533,8 +6262,8 @@ ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V3', ext = '.pdf', dpi = 100,
 
 # %%%% Plot - Log - all dates V3
 
-gs.set_manuscript_options_jv()
-fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+
+fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
 spec = fig.add_gridspec(3, 2)
 ax0 = fig.add_subplot(spec[0,:])
 ax1 = fig.add_subplot(spec[1,0])
@@ -5542,7 +6271,7 @@ ax2 = fig.add_subplot(spec[1,1])
 ax3 = fig.add_subplot(spec[2,0])
 ax4 = fig.add_subplot(spec[2,1])
 
-# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
 
 axes = [ax1, ax2, ax3, ax4]
 
@@ -5628,8 +6357,8 @@ ufun.archiveFig(fig, name = 'Log_AllDates_GF_V3', ext = '.pdf', dpi = 100,
 
 # %%%% Plot - Log Density - all dates V3
 
-gs.set_manuscript_options_jv()
-fig = plt.figure(figsize = (17/gs.cm_in, 20/gs.cm_in))#, layout="constrained")
+
+fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
 spec = fig.add_gridspec(3, 2)
 ax0 = fig.add_subplot(spec[0,:])
 ax1 = fig.add_subplot(spec[1,0])
@@ -5637,7 +6366,7 @@ ax2 = fig.add_subplot(spec[1,1])
 ax3 = fig.add_subplot(spec[2,0])
 ax4 = fig.add_subplot(spec[2,1])
 
-# fig, axes = plt.subplots(4, 1, figsize = (17/gs.cm_in, 20/gs.cm_in), sharex = True)
+# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
 
 axes = [ax1, ax2, ax3, ax4]
 
@@ -5736,7 +6465,7 @@ figSubDir = '24-07-19'
 
 # %%%% Plot - Lin - all dates V1
 
-gs.set_manuscript_options_jv()
+
 fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 # style = 'date'
 # hue = 'cell'
@@ -6615,7 +7344,7 @@ style = None
 s = 25
 alpha = 0.8
 zo = 5
-pal = sns.color_palette(gs.cL_Set21, len(fluo_df_fg))
+pal = sns.color_palette(apm.cL_Set21, len(fluo_df_fg))
 
 ax = axes[0, 0]
 sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, palette = pal,
@@ -6716,7 +7445,7 @@ style = None
 s = 25
 alpha = 0.8
 zo = 5
-pal = sns.color_palette(gs.cL_Set21, len(fluo_df_fg))
+pal = sns.color_palette(apm.cL_Set21, len(fluo_df_fg))
 
 ax = axes[0, 0]
 sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s= s, palette = pal,
@@ -6820,7 +7549,7 @@ style = None
 s = 25
 alpha = 0.8
 zo = 5
-pal = sns.color_palette(gs.cL_Set21, len(meca_df_fg))
+pal = sns.color_palette(apm.cL_Set21, len(meca_df_fg))
 
 ax = ax
 sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
@@ -6877,7 +7606,7 @@ s = 60
 alpha = 1
 zo = 5
 ec = 'k'
-pal = sns.color_palette(gs.cL_Set21, len(merged_df))
+pal = sns.color_palette(apm.cL_Set21, len(merged_df))
 
 ax = axes[0, 0]
 x = 'Density_Q_fbL'
@@ -7150,7 +7879,7 @@ s = 60
 alpha = 1
 zo = 5
 ec = 'k'
-pal = sns.color_palette(gs.cL_Set21, len(merged_df['cellID_2'].unique()))
+pal = sns.color_palette(apm.cL_Set21, len(merged_df['cellID_2'].unique()))
 
 ax = axes[0, 0]
 x = 'D1_fbL'
@@ -7221,7 +7950,7 @@ s = 60
 alpha = 1
 zo = 5
 ec = 'k'
-pal = sns.color_palette(gs.cL_Set21, len(merged_df['cellID_2'].unique()))
+pal = sns.color_palette(apm.cL_Set21, len(merged_df['cellID_2'].unique()))
 
 ax = axes[0, 0]
 x = 'D2_fbL'

@@ -1501,7 +1501,7 @@ def getDimitriadisCoefs(v, order):
     if order >= 0:
         k0 = 1
         ks.append(k0)
-        
+
         if order >= 1:
             k1 = - 2*a0/np.pi
             ks.append(k1)

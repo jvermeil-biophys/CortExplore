@@ -28,7 +28,7 @@ import itertools
 import matplotlib
 
 from cycler import cycler
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, shapiro
 from scipy import odr
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
@@ -690,6 +690,88 @@ for ax in axes.flatten():
     ax.grid()
 
 
+plt.show()
+
+# %%%% Log normality
+
+#### Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'h500 & E500 log-normality'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+
+#### Plots
+
+# df_qq = df_f
+df_qq = df_plot
+fig, axes = plt.subplots(1, 2, figsize=(17/cm_in, 12/cm_in), sharex=True, sharey='row')
+
+for k, Col in enumerate([XCol, YCol+'_wAvg']): # +'_wAvg'
+    
+    data_lin = df_qq[Col].values
+    data_log = np.log(df_qq[Col].values)
+    
+    ax = axes[k]
+    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    
+    data=data_lin
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Normal distribution: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=4)
+    
+    data=data_log
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Log-normal distribution: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=4)
+    
+    ax.set_aspect('equal')
+    ax.set_xlim([-3.5,3.5])
+    ax.set_ylim([-3.5,3.5])
+    ax.legend(fontsize=7, title_fontsize=7, title = 'Shapiro–Wilk p-value', loc='lower right')
+    ax.grid()
+    
+axes[0].set_title('Q-Q plots for $H_0$')
+axes[1].set_title('Q-Q plots for $E_{500}$')
+fig.tight_layout()
 plt.show()
 
 
