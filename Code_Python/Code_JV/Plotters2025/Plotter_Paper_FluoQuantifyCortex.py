@@ -3785,55 +3785,6 @@ name = 'Qactin_GF_vs_h5mT_'
 # ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
 #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
-# %%% Log-normality for quantity
-
-
-#### Save
-SAVE = False
-figSubDir = 'E-h'
-name = 'h & Q log-normality'
-
-#### Plots
-metric = 'Q_gf'
-X = df_f['h3'].values
-Y = df_f[metric].values
-
-fig, axes = plt.subplots(1, 2, figsize=(17/cm_in, 12/cm_in), sharex=True, sharey='row')
-
-for k, data in enumerate([X, Y]): # +'_wAvg'
-    
-    data_lin = data
-    data_log = np.log(data)
-    
-    ax = axes[k]
-    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
-    
-    data=data_lin
-    shap_stat, shap_pval = shapiro(data)
-    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], 
-              markeredgecolor = 'None', markersize=6)
-    ax.plot([], [], label=f'Normal dist.: {shap_pval:.2f}', ls='', marker='o', 
-            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
-    
-    data=data_log
-    shap_stat, shap_pval = shapiro(data)
-    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], 
-              markeredgecolor = 'None', markersize=6)
-    ax.plot([], [], label=f'Log-normal dist.: {shap_pval:.2f}', ls='', marker='o', 
-            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
-    
-    ax.set_aspect('equal')
-    ax.set_xlim([-2.2,2.2])
-    ax.set_ylim([-2.2,2.2])
-    ax.legend(fontsize=8, title_fontsize=8, title = 'Shapiro–Wilk p-value', loc='lower right')
-    ax.grid()
-    
-axes[0].set_title('Q-Q plots for $H_{5mT}$')
-axes[1].set_title('Q-Q plots for $Q_{actin}$')
-fig.tight_layout()
-plt.show()
-
-
 
 # %%% Plot all cells for one date
 
@@ -4508,10 +4459,76 @@ if SAVE:
     name = 'Q-rho_vs_h5mT_allpoints_multiFits'
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
 plt.show()
+
+# %%% For the paper ! Log-normality for quantity
+
+
+#### Save
+SAVE = True
+figSubDir = 'E-h'
+name = 'h & Q log-normality'
+
+#### Plots
+metric = 'Q_gf'
+X = df_f['h3'].values
+Y = df_f[metric].values
+
+ri = 1.5 # cm_in
+fig, axes = plt.subplots(1, 2, figsize=(17/ri, 12/ri), sharex=True, sharey='row')
+
+for k, data in enumerate([X, Y]): # +'_wAvg'
+    
+    data_lin = data
+    data_log = np.log(data)
+    
+    ax = axes[k]
+    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    
+    data=data_lin
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], 
+              markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Normal dist.: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
+    
+    data=data_log
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], 
+              markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Log-normal dist.: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
+    
+    ax.set_aspect('equal')
+    ax.set_xlim([-2.2,2.2])
+    ax.set_ylim([-2.2,2.2])
+    ax.legend(fontsize=12, title_fontsize=12, title = 'Shapiro–Wilk p-value', loc='lower right')
+    ax.grid()
+    
+axes[0].set_title('Q-Q plots for $H_{5mT}$')
+axes[1].set_title('Q-Q plots for $Q_{actin}$')
+fig.tight_layout()
+plt.show()
+
+
+#### Save
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+plt.show()
+
+
+
+
+
 
 # %%% For the paper ! Quantity and density MEAN PER CELL
 
@@ -4740,6 +4757,8 @@ if SAVE:
     name = 'Q-rho_vs_h5mT_cellmean_multiFits'
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 plt.show()
@@ -4967,8 +4986,12 @@ if SAVE:
     name = 'Q-rho_vs_h5mT_cellmedian_multiFits'
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 plt.show()
+
+
 
 # %%% Plot density - per cell
 

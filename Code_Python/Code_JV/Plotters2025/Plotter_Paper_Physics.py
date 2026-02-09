@@ -778,7 +778,7 @@ plt.show()
 # %%%% 2.1 small
 
 # Save
-SAVE = False
+SAVE = True
 figSubDir = 'E-h'
 name = 'E500_vs_h500_small'
 
@@ -930,7 +930,7 @@ if SAVE:
 # %%%% 2.2 big
 
 # Save
-SAVE = False
+SAVE = True
 figSubDir = 'E-h'
 name = 'E500_vs_h500_big'
 
