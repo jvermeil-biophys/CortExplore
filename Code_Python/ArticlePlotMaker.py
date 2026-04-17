@@ -269,10 +269,10 @@ def setGraphicOptions(mode = 'screen', palette = 'Set2', colorList = cL_Set21):
         MEDIUM_SIZE = 16
         BIGGER_SIZE = 20
     elif mode == 'print':
-        SMALLER_SIZE = 8
-        SMALL_SIZE = 10
-        MEDIUM_SIZE = 11
-        BIGGER_SIZE = 12
+        SMALLER_SIZE = 6
+        SMALL_SIZE = 8
+        MEDIUM_SIZE = 9
+        BIGGER_SIZE = 11
         
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
     plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
@@ -1148,6 +1148,31 @@ def plotPopKS_V2(data, fig = None, ax = None,
 #     out = fig, axes    
     
 #     return(out)
+
+
+def plot_loghist(ax, x, bins=10, color = 'gray', normalized = False):
+    # hist, bins = np.histogram(x, bins=bins)
+    # logbins = np.logspace(np.log10(bins[0]), np.log10(bins[-1]), len(bins))
+    # ax.hist(x, bins=logbins, color = color)
+    logbins = np.logspace(np.log10(min(x)), np.log10(max(x)), bins, endpoint=False)
+    # hist, bins = np.histogram(x, bins=logbins)
+    if normalized:
+        x = x / len(x)
+    histo, bins, patches = ax.hist(x, bins=logbins, color = color)
+    ax.set_xscale('log')
+    return(ax, histo, logbins)
+
+def plot_logstairs(ax, x, bins=10, logbins = [], normalized = False, 
+                   fill = False, color = 'gray', label = ''):
+    if len(logbins) == 0:
+        logbins = np.logspace(np.log10(min(x)), np.log10(max(x)), bins, endpoint=False)
+    histo, bins = np.histogram(x, bins=logbins)
+    if normalized:
+        histo = histo / np.sum(histo)
+    ax.stairs(histo, edges=logbins, color = color, label = label, fill = fill, lw = 1.5)
+    ax.set_xscale('log')
+    return(ax, histo, logbins)
+
 
 # %% 5. Anumita's awesome plots
 

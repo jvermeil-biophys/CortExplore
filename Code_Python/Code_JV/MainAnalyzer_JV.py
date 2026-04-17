@@ -769,7 +769,7 @@ fitSettings = {# H0
                 'doChadwickFit' : True,
                 'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
                 'doStressRegionFits' : False,
-                'doStressGaussianFits' : True,
+                'doStressGaussianFits' : False,
                 'centers_StressFits' : plot_stressCenters,
                 'halfWidths_StressFits' : stressHalfWidths,
                 'doNPointsFits' : False,
@@ -787,7 +787,7 @@ plot_stressHalfWidth = 75
 plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
-                        'F(H)_VWC':True, # NEW - Numi
+                        'F(H)_VWC':False, # NEW - Numi
                         'Plots_Manuscript':True,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
@@ -815,11 +815,11 @@ phyTask += ' & 24-12-11' # Long series
 # phyTask += ' & 21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12' # Bead size
 # phyTask += ' & 22-06-10 & 22-06-16 & 22-07-06 & 22-07-06 & 22-07-12 & 22-07-12' # Pattern sizes DB 1/2
 # phyTask += ' & 22-07-22 & 22-07-29 & 22-08-24 & 22-08-24 & 22-08-24 & 22-08-24' # Pattern sizes DB 2/2
-# phyTask += ' & 23-03-09' # Pattern sizes JV
+phyTask += ' & 23-03-09' # Pattern sizes JV
 # phyTask += ' & 23-07-06_M1 & 23-07-06_M2 & 23-07-06_M3 & 23-07-06_M4 & 23-07-06_M5' # Repeats
 phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
 
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V3', 
+res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = phyTask, fileName = 'MecaData_Physics_V3', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'

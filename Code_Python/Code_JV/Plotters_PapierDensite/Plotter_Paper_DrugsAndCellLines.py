@@ -674,7 +674,7 @@ if SAVE:
 # %%%% Other good one - 2 bis improved
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'E-h'
 name = 'E500_vs_h0_drugs_wFitPerCell'
 
@@ -895,7 +895,7 @@ if SAVE:
 # %%%% Other good one - 2 bis improved All comps
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'E-h'
 name = 'E500_vs_h0_drugs_wFitPerComp'
 
@@ -1863,3 +1863,175 @@ if SAVE:
 
 
 # %% --------------------------
+
+# %% --------------------------
+
+# %% Main Fig 2
+
+# Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'E500_vs_h0_drugs'
+
+df = MecaData_Drug
+df_ctrl = MecaData_Phy
+
+drugs = ['dmso', 'blebbistatin', 'none', 'Y27', 'ck666', 'latrunculinA', 'LIMKi']
+substrate = '20um fibronectin discs'
+subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+
+# XCol = 'ctFieldThickness'
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df, condCol = apm.makeCompositeCol(df, cols=['drug', 'concentration'])
+df_ctrl, condCol = apm.makeCompositeCol(df_ctrl, cols=['drug', 'concentration'])
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['cell subtype'].apply(lambda x : x in subtypes)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           # (df[XCol] > 50),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+Filters_ctrl = [(df_ctrl['validatedThickness'] == True), 
+               (df_ctrl['substrate'] == substrate),
+               (df_ctrl['drug'].apply(lambda x : x in drugs)),
+               (df_ctrl['cell subtype'].apply(lambda x : x in subtypes)),
+               (df_ctrl['date'].apply(lambda x : x not in excluded_dates)),
+               (df_ctrl[XCol] < 1000),
+               (df_ctrl['normal field'] == 5),
+               (df_ctrl[YCol] <= 1e5),
+               (df_ctrl['valid' + YCol[1:]] == True), 
+               ]
+
+df_f = apm.filterDf(df, Filters)
+df_ctrl_f = apm.filterDf(df_ctrl, Filters_ctrl)
+
+
+def prepTableForDrugPlot(df_f, XCol, YCol, condCol):
+    logMean = lambda x : np.exp(np.mean(np.log(x)))
+
+    # Group By Step 1
+    df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+    df_fg = df_fg[[XCol]]
+    df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                          valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+    df_gC = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+    
+    # Group By Step 2
+    df_fg_1 = apm.dataGroup(df_gC, groupCol = condCol, idCols = [], numCols = [XCol],
+                       aggFun = logMean) #.drop(columns=['cellID']).reset_index()
+    df_fg_2 = apm.dataGroup(df_gC, groupCol = condCol, idCols = [], numCols = [XCol],
+                       aggFun = 'std') #.drop(columns=['cellID']).reset_index()
+    df_fg_3 = apm.dataGroup(df_gC, groupCol = condCol, idCols = [], numCols = [XCol],
+                       aggFun = 'count') #.drop(columns=['cellID']).reset_index()
+    df_fg_1 = df_fg_1[[XCol]].rename(columns={XCol: "H0_mean"})
+    df_fg_2 = df_fg_2[[XCol]].rename(columns={XCol: "H0_std"})
+    df_fg_3 = df_fg_3[[XCol]].rename(columns={XCol: "count"})
+    df_fg2_1 = apm.dataGroup(df_gC, groupCol = condCol, idCols = [], numCols = [YCol + '_wAvg'],
+                       aggFun = logMean)
+    df_fg2_2 = apm.dataGroup(df_gC, groupCol = condCol, idCols = [], numCols = [YCol + '_wAvg'],
+                       aggFun = 'std')
+    df_fg2_1 = df_fg2_1.rename(columns={YCol + '_wAvg': "E_mean"})
+    df_fg2_2 = df_fg2_2[[YCol + '_wAvg']].rename(columns={YCol + '_wAvg': "E_std"})
+    df_gD = pd.merge(left=df_fg_3, right=df_fg_1, on=condCol, how='inner')
+    df_gD = pd.merge(left=df_gD, right=df_fg_2, on=condCol, how='inner')
+    df_gD = pd.merge(left=df_gD, right=df_fg2_1, on=condCol, how='inner')
+    df_gD = pd.merge(left=df_gD, right=df_fg2_2, on=condCol, how='inner')
+    df_gD['H0_sem'] = df_gD['H0_std']/np.power(df_gD['count'], 0.5)
+    df_gD['E_sem'] = df_gD['E_std']/np.power(df_gD['count'], 0.5)
+    
+    return(df_gC, df_gD)
+
+#### Plot
+
+sD = apm.styleDict_V2
+rD = apm.renameDict
+
+fig, ax = plt.subplots(1, 1, figsize = (17/cm_in, 12/cm_in))
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+#### Controls
+
+conds = ['dmso & 0.0']
+df_gC, df_gD = prepTableForDrugPlot(df_ctrl_f, XCol, YCol, condCol)
+
+for i, cond in enumerate(conds):
+    color = sD[cond]['color']
+    marker = sD[cond]['marker']
+    
+    df_c = df_gC[df_gC[condCol] == cond]
+    X, Y = df_c[XCol].values, df_c[YCol + '_wAvg'].values/1000
+    
+    ax.plot(X, Y,
+            marker = marker, color = color, ls='',
+            ms=6, alpha = 0.3, zorder=3)
+    ax.errorbar(df_gD.loc[cond, 'H0_mean'], df_gD.loc[cond, 'E_mean']/1e3, 
+                xerr=df_gD.loc[cond, 'H0_sem'], yerr=df_gD.loc[cond, 'E_sem']/1e3, 
+                ls = '', marker = 'o', ms=1, color=color, 
+                elinewidth = 3, capsize = 5, capthick = 3, zorder=5)
+    ax.plot(df_gD.loc[cond, 'H0_mean'], df_gD.loc[cond, 'E_mean']/1e3,
+            marker = marker, color = color, ls='',
+            ms=10, mec='k', label = rD[cond], lw=0.5, zorder=6)
+
+#### Drugs
+
+conds = ['Y27 & 50.0', 'ck666 & 50.0', 'latrunculinA & 0.5', 'LIMKi & 20.0']
+df_gC, df_gD = prepTableForDrugPlot(df_f, XCol, YCol, condCol)
+
+for i, cond in enumerate(conds):
+    color = sD[cond]['color']
+    marker = sD[cond]['marker']
+    
+    df_c = df_gC[df_gC[condCol] == cond]
+    X, Y = df_c[XCol].values, df_c[YCol + '_wAvg'].values/1000
+    
+    ax.plot(X, Y,
+            marker = marker, color = color, ls='',
+            ms=6, mec='w', mew=0.5, zorder=4)
+    ax.errorbar(df_gD.loc[cond, 'H0_mean'], df_gD.loc[cond, 'E_mean']/1e3, 
+                xerr=df_gD.loc[cond, 'H0_sem'], yerr=df_gD.loc[cond, 'E_sem']/1e3, 
+                ls = '', marker = 'o', ms=1, color=apm.lightenColor(color, 0.8), 
+                elinewidth = 3, capsize = 5, capthick = 3, zorder=5)
+    ax.plot(df_gD.loc[cond, 'H0_mean'], df_gD.loc[cond, 'E_mean']/1e3,
+            marker = marker, color = apm.lightenColor(color, 0.8), ls='',
+            ms=10, mec='k', label = rD[cond], lw=0.5, zorder=6)
+    
+    
+
+ax.grid()
+# ax.set_xlim([0, 600])
+ax.set_xlim([50, 2000])
+ax.set_xlabel('$H_0$ (nm)')
+# ax.set_ylim([0, 30])
+ax.set_ylim([0.2, 150])
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.legend(fontsize = 12) # loc='center left', bbox_to_anchor=(1, 0.5), 
+fig.tight_layout()
+
+plt.show()
+
+# Count
+# CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %% Main Fig 4
+
+# %% --------------------------
+
+# %% Supp Fig 2
