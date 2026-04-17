@@ -1598,7 +1598,7 @@ class fitResults:
 
 
 
-def fitLine(X, Y):
+def fitLine(X, Y, with_intercept = True):
     """
     returns: results.params, results \n
     Y=a*X+b ; params[0] = b,  params[1] = a
@@ -1619,7 +1619,9 @@ def fitLine(X, Y):
         upper = params + q * bse \n
     """
     
-    X = sm.add_constant(X)
+    if with_intercept:
+        X = sm.add_constant(X)
+        
     model = sm.OLS(Y, X)
     results = model.fit()
     params = results.params 
@@ -1627,7 +1629,7 @@ def fitLine(X, Y):
     return(results.params, results)
 
 
-def fitLineHuber(X, Y, with_wlm_results = False):
+def fitLineHuber(X, Y, with_wlm_results = False, with_intercept = True):
     """
     returns: results.params, results \n
     Y=a*X+b ; params[0] = b,  params[1] = a
@@ -1647,8 +1649,9 @@ def fitLineHuber(X, Y, with_wlm_results = False):
         lower = params - q * bse \n
         upper = params + q * bse \n
     """
+    if with_intercept:
+        X = sm.add_constant(X)
     
-    X = sm.add_constant(X)
     model = sm.RLM(Y, X, M=sm.robust.norms.HuberT())
     results = model.fit()
     params = results.params
@@ -1993,6 +1996,25 @@ def lighten_color(color, amount=0.5):
     return(colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2]))
 
 # %% Test
+
+# %%% Fit with // without intercept
+
+# X = np.arange(0, 20, 1)
+# Y = 2*X + 2
+
+# parms, results = fitLineHuber(X, Y, with_intercept=True)
+# [b, a] = parms
+
+# parms2, results2 = fitLineHuber(X, Y, with_intercept=False)
+# [a2] = parms2
+
+# fig, ax = plt.subplots(1, 1)
+# ax.plot(X, Y, 'k.')
+# ax.plot(X, a*X + b, 'r-', lw=1)
+# ax.plot(X, a2*X, 'g-', lw=1)
+
+# plt.show()
+
 
 # %%% Dataset
 
