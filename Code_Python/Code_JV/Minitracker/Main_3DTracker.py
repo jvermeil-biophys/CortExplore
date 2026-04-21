@@ -496,10 +496,10 @@ for f in listFiles:
 
 # Define paths
 
-dictPaths = {'sourceDirPath' : 'D:/MagneticPincherData/Raw/Control_InIn_OutOut',
+dictPaths = {'sourceDirPath' : 'C:/Users/josep/Documents/MagneticPincherData/Raw/Control_InIn_OutOut',
              'imageFileName' : '',
              'resultsFileName' : '',
-             'depthoDir':'D:/MagneticPincherData/Raw/DepthoLibrary',
+             'depthoDir':'C:/Users/josep/Documents/MagneticPincherData/Raw/DepthoLibrary',
              'depthoName':'',
              'resultDirPath' : '',
              }
@@ -578,7 +578,7 @@ for f in listFiles:
 
 # smallTracker(dictPaths, metaDf, dictConstants, NB = 2, **dictOptions)
 
-# %% In-only Analysis
+# %% In-In Analysis
 
 # %%% Set dicts
 

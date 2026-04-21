@@ -105,7 +105,7 @@ output = mainTracker_V4(dates, manips, wells, cells, depthoName, expDf,
                         metaDataFormatting = 'statusFile', redoAllSteps = False, trackAll = False)
 
 
-# %% NANO-INDENTER
+# %% Nano-Indenter
 
 # %%% 24-04-18 - One cell 
 

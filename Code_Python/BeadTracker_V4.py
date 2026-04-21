@@ -101,7 +101,7 @@ class PincherTimeLapse:
         self.MagCorrFactor = manipDict['magnetic field correction']
         self.Nuplet = manipDict['normal field multi images']
         self.Zstep = manipDict['multi image Z step']
-        self.BeadsZDelta = manipDict['beads bright spot delta']
+        # self.BeadsZDelta = manipDict['beads bright spot delta']
         
         try:
             self.insideBeadType = str(manipDict['inside bead type'])
@@ -1972,7 +1972,7 @@ def smallTracker(dictPaths, metaDf, dictConstants,
     resultsPath = os.path.join(dictPaths['sourceDirPath'], dictPaths['resultsFileName'])
     logFilePath = os.path.join(dictPaths['sourceDirPath'], f + '_LogPY.txt')
     fluoDirPath = os.path.join(dictPaths['sourceDirPath'], 'FluoImages')
-    fielFilePath = os.path.join(dictPaths['sourceDirPath'], dictPaths['fieldFileName'])
+    # fieldFilePath = os.path.join(dictPaths['sourceDirPath'], dictPaths['fieldFileName'])
 
     cellID = ufun.findInfosInFileName(f, 'cellID')
 

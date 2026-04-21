@@ -127,7 +127,8 @@ depthoMaker(DirDataRawDate_Deptho, DirDataRawDepthoLibrary,
 
 # %% Depthos 24.07.04 - Pincher with drugs
 
-DirDataRaw = 'D://MagneticPincherData//Raw'
+# DirDataRaw = 'D://MagneticPincherData//Raw'
+DirDataRaw = 'C:/Users/josep/Documents/MagneticPincherData/Raw'
 date = '24.07.04'
 
 step = 20

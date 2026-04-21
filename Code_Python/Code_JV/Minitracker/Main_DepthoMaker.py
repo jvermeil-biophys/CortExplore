@@ -42,6 +42,7 @@ dictPaths = {'PathZStacks' : './Example_Data_2024/01_ZScans/M1',
              'NameDeptho'  : '24-04-11_Deptho_M1.tif',
              }
 
+
 # =============================================================================
 # DESCRIPTION
 # 'PathZStacks' : the path to the folder containing your raw data, meaning your Z-stacks 
