@@ -3174,6 +3174,313 @@ merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
 merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
 
 
+
+
+# %%% Plot exponents for all cells LIN
+
+figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+figSubDir = 'Test_Paper'
+
+# '24-02-27', '24-05-24', '24-06-14'
+# date = '24-06-14'
+XCol = 'h3'
+YCol = 'Q_gf'
+
+Filters = [(global_df[XCol] < 1.1),
+           (global_df[YCol] < 40),
+           # (global_df['date'] == date),
+           ]
+condCol = 'date'
+
+df_f = filterDf(global_df, Filters)
+CID = df_f.reset_index()['cellID'].unique()
+Ncells = len(CID)
+
+res_dict = {'cellID':[],
+            'DH':[],
+            'CvH':[],
+            'expo':[],
+            'expo_ciw':[],
+            }
+
+#### Plot 1
+## Initialize
+# ncols = 5
+# nrows = 1 + (Ncells-1)//ncols
+# fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
+# axes_f = axes.flatten()
+
+Palette = sns.color_palette("husl", Ncells)
+
+## Make the plot
+for i in range(Ncells):
+    ### Data
+    cid = CID[i]        
+    df_cell = df_f[df_f['cellID'] == cid]
+    
+    DH = np.max(df_cell[XCol].values) - np.min(df_cell[XCol].values)
+    CvH = np.std(np.log(df_cell[XCol].values)) / np.mean(np.log(df_cell[XCol].values))
+    res_dict['cellID'].append(cid)
+    res_dict['DH'].append(DH)
+    res_dict['CvH'].append(CvH)
+    
+    Xfit, Yfit = (df_cell[XCol].values), (df_cell[YCol].values)
+    
+    # OLS
+    perc, dof, = 0.975, len(Yfit)-2
+    q = st.t.ppf(perc, dof)
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
+                                                   with_wlm_results = True)
+    A, alpha = np.exp(b), a
+    CI = results.conf_int(alpha=0.2)[1]
+    alpha_ciw = np.abs(CI[1] - CI[0])
+    pval = results.pvalues[1]
+    if pval < 0.05:
+        textCo = apm.GREEN
+    elif pval < 0.1:
+        textCo = apm.YELLOW
+    elif pval < 0.2:
+        textCo = apm.BRIGHTRED
+    else:
+        textCo = apm.RED
+       
+    delta = 30
+    se = results.bse[1]
+    # Test 1: beta > -delta
+    t1 = (alpha + delta) / se
+    # Test 2: beta < +delta
+    t2 = (alpha - delta) / se
+        
+    df = results.df_resid
+    p1 = 1 - st.t.cdf(t1, df)
+    p2 = st.t.cdf(t2, df)
+    # TOST p-value is max of the two
+    p_tost = max(p1, p2)
+    
+    test_ci = (np.abs(alpha) <= alpha_ciw/2)
+    test_tost = (p_tost < 0.2)
+    test = test_tost
+    if test_tost:
+        textCo2 = apm.PURPLE
+    else:
+        textCo2 = apm.BRIGHTBLUE
+    if test_tost:
+        Palette[i] = 'grey'
+
+    
+    print(cid)
+    print(f'{alpha:.2f}', 
+          textCo2 + f'{alpha_ciw/2:.2f}' + apm.NORMAL, 
+          textCo + f'{pval:.4f}' + apm.NORMAL,
+          p_tost)
+    
+    # Standard p-value
+    R2 = w_results.rsquared
+    
+    # Pearson p-value
+    results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+    R2_p, pval_p = results_pearson.statistic**2, results_pearson.pvalue
+    
+    # print(R2_p, pval_p)
+    
+    res_dict['expo'].append(alpha)
+    res_dict['expo_ciw'].append(alpha_ciw)
+    
+    #### Plot 1
+    # ax = axes_f[i]
+    # ax.set_xscale('log')
+    # ax.set_yscale('log')
+    # valid = True
+    # if valid:
+    #     color = apm.cL_Set2[0]
+    # else:
+    #     color = apm.cL_Set2[1]
+        
+    # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = A * Xplot**alpha
+        
+    # sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
+    #                 marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
+    # ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
+    #         label = \
+    #                 # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    #                 # f'\nA = {A:.1e}' + \
+    #                 f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}\n' + \
+    #                 f'$R^2$  = {R2:.2f}'
+    #                 )
+        
+    #### Format - Plot 1
+    # ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
+    # # ax.set_ylabel(dict_axisLabels[YCol])
+    # # ax.set_xlabel(dict_axisLabels[XCol])
+    # ax.grid(visible=True, which='major', axis='both')
+    # # ax.set_xlim([50, 1100])
+    # ax.set_title(cid, fontsize = 10)
+    
+df_res = pd.DataFrame(res_dict)
+fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), 
+                       sharex=True, sharey=True)
+sns.boxplot(data = df_res, ax = ax, y='expo', 
+            width=0.7, color='.9', showfliers = False,
+            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            )
+sns.swarmplot(data = df_res, ax = ax, y='expo',
+              size = 10, hue = 'cellID', palette=Palette,
+              legend=False)
+
+### Format
+ax.grid(axis='y')
+ax.set_ylabel('Slope of the Q-h fit')
+
+plt.show()
+
+
+
+# %%% Plot exponents for all cells LOG
+
+figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+figSubDir = 'Test_Paper'
+
+# '24-02-27', '24-05-24', '24-06-14'
+# date = '24-06-14'
+XCol = 'h3'
+YCol = 'Q_gf'
+
+Filters = [(global_df[XCol] < 1.1),
+           (global_df[YCol] < 40),
+           # (global_df['date'] == date),
+           ]
+condCol = 'date'
+
+df_f = filterDf(global_df, Filters)
+CID = df_f.reset_index()['cellID'].unique()
+Ncells = len(CID)
+
+res_dict = {'cellID':[],
+            'DH':[],
+            'CvH':[],
+            'expo':[],
+            'expo_ciw':[],
+            }
+
+#### Plot 1
+## Initialize
+# ncols = 5
+# nrows = 1 + (Ncells-1)//ncols
+# fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
+# axes_f = axes.flatten()
+
+## Make the plot
+for i in range(Ncells):
+    ### Data
+    cid = CID[i]        
+    df_cell = df_f[df_f['cellID'] == cid]
+    
+    DH = np.max(df_cell[XCol].values) - np.min(df_cell[XCol].values)
+    CvH = np.std(np.log(df_cell[XCol].values)) / np.mean(np.log(df_cell[XCol].values))
+    res_dict['cellID'].append(cid)
+    res_dict['DH'].append(DH)
+    res_dict['CvH'].append(CvH)
+    
+    Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values)
+    
+    # OLS
+    perc, dof, = 0.975, len(Yfit)-2
+    q = st.t.ppf(perc, dof)
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
+                                                   with_wlm_results = True)
+    A, alpha = np.exp(b), a
+    alpha_ciw = np.abs(results.conf_int()[1][1] - results.conf_int()[1][0])
+    
+    print(cid)
+    print(alpha, alpha_ciw)
+    # Standard p-value
+    R2 = w_results.rsquared
+    pval = results.pvalues[1]
+    # print(R2, pval)
+    
+    # Pearson p-value
+    results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+    R2_p, pval_p = results_pearson.statistic**2, results_pearson.pvalue
+    
+    # print(R2_p, pval_p)
+    
+    # ODR
+    # def funFit(B, X):
+    #     return(B[0]*X + B[1])
+    # linear = odr.Model(funFit)
+    # mydata = odr.Data(Xfit, Yfit, wd=1, we=1)
+    # myodr = odr.ODR(mydata, linear, beta0=[-1.5, 2.])
+    # myoutput = myodr.run()
+    # a, b = myoutput.beta
+    # A, alpha = np.exp(b), a
+    # perc, dof, = 0.975, len(Yfit)-2
+    # q = st.t.ppf(perc, dof)
+    # alpha_ciw = myoutput.sd_beta[0] * q
+    # R2 = 1
+    # pval = 0
+    
+    res_dict['expo'].append(alpha)
+    res_dict['expo_ciw'].append(alpha_ciw)
+    
+    ### Plot
+    # ax = axes_f[i]
+    # ax.set_xscale('log')
+    # ax.set_yscale('log')
+    # valid = True
+    # if valid:
+    #     color = apm.cL_Set2[0]
+    # else:
+    #     color = apm.cL_Set2[1]
+        
+    # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = A * Xplot**alpha
+        
+    # sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
+    #                 marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
+    # ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
+    #         label = \
+    #                 # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    #                 # f'\nA = {A:.1e}' + \
+    #                 f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}\n' + \
+    #                 f'$R^2$  = {R2:.2f}'
+    #                 )
+        
+    # ### Format
+    # ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
+    # # ax.set_ylabel(dict_axisLabels[YCol])
+    # # ax.set_xlabel(dict_axisLabels[XCol])
+    # ax.grid(visible=True, which='major', axis='both')
+    # # ax.set_xlim([50, 1100])
+    # ax.set_title(cid, fontsize = 10)
+    
+df_res = pd.DataFrame(res_dict)
+fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), 
+                       sharex=True, sharey=True)
+sns.boxplot(data = df_res, ax = ax, y='expo', 
+            width=0.7, color='.9', showfliers = False,
+            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            )
+sns.swarmplot(data = df_res, ax = ax, y='expo',
+              size = 10, hue = 'cellID', legend=False)
+
+### Format
+ax.grid(axis='y')
+ax.set_ylabel('Exponent of the Q-h fit')
+
+
+plt.show()
+
+
+
 # %%% For the paper ! Quantity and density
 
 apm.setGraphicOptions(mode = 'print', 
@@ -4668,20 +4975,17 @@ name = 'Qactin_GF_vs_h5mT_'
 
 # %%% Plot all cells for one date
 
-#### NEW HERE !!
-
-
 figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
 figSubDir = 'Test_Paper'
 
 # '24-02-27', '24-05-24', '24-06-14'
-date = '24-06-14'
+# date = '24-06-14'
 XCol = 'h3'
 YCol = 'Q_gf'
 
 Filters = [(global_df[XCol] < 1.1),
            (global_df[YCol] < 40),
-           (global_df['date'] == date),
+           # (global_df['date'] == date),
            ]
 condCol = 'date'
 
@@ -4698,10 +5002,10 @@ res_dict = {'cellID':[],
 
 #### Plot 1
 ## Initialize
-ncols = 5
-nrows = 1 + (Ncells-1)//ncols
-fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
-axes_f = axes.flatten()
+# ncols = 5
+# nrows = 1 + (Ncells-1)//ncols
+# fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
+# axes_f = axes.flatten()
 
 ## Make the plot
 for i in range(Ncells):
@@ -4720,11 +5024,24 @@ for i in range(Ncells):
     # OLS
     perc, dof, = 0.975, len(Yfit)-2
     q = st.t.ppf(perc, dof)
-    [b, a], results = ufun.fitLine(Xfit, Yfit)
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
+                                                   with_wlm_results = True)
     A, alpha = np.exp(b), a
-    alphaCiw = results.HC3_se[1] * q
-    R2 = results.rsquared
+    alpha_ciw = np.abs(results.conf_int()[1][1] - results.conf_int()[1][0])
+    
+    print(cid)
+    print(alpha, alpha_ciw)
+    # Standard p-value
+    R2 = w_results.rsquared
     pval = results.pvalues[1]
+    # print(R2, pval)
+    
+    # Pearson p-value
+    results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+    R2_p, pval_p = results_pearson.statistic**2, results_pearson.pvalue
+    
+    # print(R2_p, pval_p)
     
     # ODR
     # def funFit(B, X):
@@ -4737,47 +5054,49 @@ for i in range(Ncells):
     # A, alpha = np.exp(b), a
     # perc, dof, = 0.975, len(Yfit)-2
     # q = st.t.ppf(perc, dof)
-    # alphaCiw = myoutput.sd_beta[0] * q
+    # alpha_ciw = myoutput.sd_beta[0] * q
     # R2 = 1
     # pval = 0
     
     res_dict['expo'].append(alpha)
-    res_dict['expo_ciw'].append(alphaCiw)
+    res_dict['expo_ciw'].append(alpha_ciw)
     
     ### Plot
-    ax = axes_f[i]
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    valid = True
-    if valid:
-        color = apm.cL_Set2[0]
-    else:
-        color = apm.cL_Set2[1]
+    # ax = axes_f[i]
+    # ax.set_xscale('log')
+    # ax.set_yscale('log')
+    # valid = True
+    # if valid:
+    #     color = apm.cL_Set2[0]
+    # else:
+    #     color = apm.cL_Set2[1]
         
-    Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
-    Yplot = A * Xplot**alpha
+    # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+    # Yplot = A * Xplot**alpha
         
-    sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
-                    marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
-    ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
-            label = \
-                    # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
-                    # f'\nA = {A:.1e}' + \
-                    f'$\\alpha$  = {alpha:.2f} $\\pm $ {alphaCiw:.2f}' # + \
-                    )
+    # sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
+    #                 marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
+    # ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
+    #         label = \
+    #                 # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    #                 # f'\nA = {A:.1e}' + \
+    #                 f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}\n' + \
+    #                 f'$R^2$  = {R2:.2f}'
+    #                 )
         
-    ### Format
-    ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
-    # ax.set_ylabel(dict_axisLabels[YCol])
-    # ax.set_xlabel(dict_axisLabels[XCol])
-    ax.grid(visible=True, which='major', axis='both')
-    # ax.set_xlim([50, 1100])
-    ax.set_title(cid, fontsize = 10)
+    # ### Format
+    # ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
+    # # ax.set_ylabel(dict_axisLabels[YCol])
+    # # ax.set_xlabel(dict_axisLabels[XCol])
+    # ax.grid(visible=True, which='major', axis='both')
+    # # ax.set_xlim([50, 1100])
+    # ax.set_title(cid, fontsize = 10)
     
 df_res = pd.DataFrame(res_dict)
-fig, ax = plt.subplots(1, 1, figsize=(10, 10), sharex=True, sharey=True)
+fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), 
+                       sharex=True, sharey=True)
 sns.boxplot(data = df_res, ax = ax, y='expo', 
-            width=0.4, color='.9', showfliers = False,
+            width=0.7, color='.9', showfliers = False,
             boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
             medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
             whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},

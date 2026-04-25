@@ -216,6 +216,7 @@ PURPLE = '\033[1;35m' # purple
 GREY = '\033[1;30m'
 DARKGREEN = '\033[0;32m' # green
 BRIGHTRED = '\033[1;31m' # red
+BRIGHTBLUE = '\033[1;34;11m' # blue
 BRIGHTORANGE = '\033[1;33m' # orange
 DARKPURPLE = '\033[1;35m' # purple
 
@@ -235,6 +236,7 @@ def consoleTextTester_01():
     print(DARKGREEN + 'nothing rhyme with dark green' + NORMAL)
     print(BRIGHTRED + 'nothing rhyme with bright red' + NORMAL)
     print(BRIGHTORANGE + 'nothing rhyme with bright orange' + NORMAL)
+    print(BRIGHTBLUE + 'nothing rhyme with bright blue' + NORMAL)
     print(DARKPURPLE + 'nothing rhyme with dark purple' + NORMAL)
     print('\n')
 
@@ -255,7 +257,7 @@ def consoleTextTester_02():
     print("\033[1;37;40m White          \033[0m 1;37;40m            \033[0;37;40m Light Grey \033[0m 0;37;40m               \033[0;37;48m Black      \033[0m 0;37;48m")
     print("\n")
     
-# consoleTextTester_01()
+consoleTextTester_01()
 # consoleTextTester_02()
     
     

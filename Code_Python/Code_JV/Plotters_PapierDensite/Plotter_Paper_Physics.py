@@ -1436,7 +1436,7 @@ df_res = pd.DataFrame({'date':dates, 'medianCompNum':medians})
 # 16  24-12-11	 20
 
 # %%% ~~~ Test 
-# !! Goog !!
+# !!! 
 
 N = 100
 X = np.arange(N)

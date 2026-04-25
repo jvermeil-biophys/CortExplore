@@ -1666,7 +1666,9 @@ def fitLine(X, Y, with_intercept = True):
     return(results.params, results)
 
 
-def fitLineHuber(X, Y, with_wlm_results = False, with_intercept = True):
+def fitLineHuber(X, Y, 
+                 with_wlm_results = False, 
+                 with_intercept = True):
     """
     returns: results.params, results \n
     Y=a*X+b ; params[0] = b,  params[1] = a
@@ -1692,14 +1694,14 @@ def fitLineHuber(X, Y, with_wlm_results = False, with_intercept = True):
     model = sm.RLM(Y, X, M=sm.robust.norms.HuberT())
     results = model.fit()
     params = results.params
+    out = (params, results)
     
-    if not with_wlm_results:
-        out = (results.params, results)
-    else:
+    if with_wlm_results:
         weights = results.weights
         w_model = sm.WLS(Y, X, weights)
         w_results = w_model.fit()
-        out = (results.params, results, w_results)
+        out += (w_results,)
+    
     return(out)
 
 
