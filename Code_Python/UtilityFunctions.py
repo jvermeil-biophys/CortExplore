@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 import os
 import re
 import time
+import json
 import shutil
 import random
 import numbers
@@ -46,6 +47,8 @@ import traceback
 from scipy import odr, signal, interpolate
 from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import linear_sum_assignment, least_squares
+
+from odrpack import odr_fit
 
 # import skimage
 from skimage import io, filters, exposure, measure, transform, util, color
@@ -846,6 +849,40 @@ def flattenPandasIndex(pandasIndex):
     return(new_pandasIndex)
 
 
+def list2json(L, dirPath, fileName):
+    L = list(L)
+    with open(os.path.join(dirPath, fileName + '.json'), 'w') as fp:
+        json.dump(L, fp, indent=4)
+        
+def json2list(dirPath, fileName):
+    with open(os.path.join(dirPath, fileName + '.json'), 'r') as fp:
+        L = json.load(fp)
+    L = list(L)
+    return(L)
+    
+def dict2json(d, dirPath, fileName):
+    for k in d.keys():
+        obj = d[k]
+        if isinstance(obj, np.ndarray):
+            d[k] = d[k].tolist()
+        else:
+            pass
+    with open(os.path.join(dirPath, fileName + '.json'), 'w') as fp:
+        json.dump(d, fp, indent=4)
+        
+        
+def json2dict(dirPath, fileName):
+    with open(os.path.join(dirPath, fileName + '.json'), 'r') as fp:
+        d = json.load(fp)
+    for k in d.keys():
+        obj = d[k]
+        if isinstance(obj, list):
+            d[k] = np.array(d[k])
+        else:
+            pass
+    return(d)
+
+
 # %%% File manipulation
 
 def copyFile(DirSrc, DirDst, filename):
@@ -1589,12 +1626,12 @@ def sortMatrixByCol(A, col=0, direction = 1):
 
 
 class fitResults:
-    def __init__(self, params, params_sd, params_ciw, pvalues, pvalue_pearson):
-        self.params = params
-        self.params_sd = params_sd
-        self.params_ciw = params_ciw
-        self.pvalues = pvalues
-        self.pvalue_pearson = pvalue_pearson
+    def __init__(self, params, params_sd, params_ciw, pval, R2):
+        self.params = np.array(params).astype(float)
+        self.params_sd = np.array(params_sd).astype(float)
+        self.params_ciw = np.array(params_ciw).astype(float)
+        self.pval = np.array(pval).astype(float)
+        self.R2 = R2
 
 
 
@@ -1668,7 +1705,7 @@ def fitLineHuber(X, Y, with_wlm_results = False, with_intercept = True):
 
 def fitLineTLS(X, Y, wd=1, we=1):
     """
-
+    
     """
     def linearFun(B, X):
         return(B[0]*X + B[1])
@@ -1679,30 +1716,36 @@ def fitLineTLS(X, Y, wd=1, we=1):
     # output.pprint()
     
     a, b = output.beta
-    # sd_params = [output.sd_beta[k] for k in range(len(output.beta))]
-    sd_params = [output.cov_beta[k, k]**0.5 for k in range(len(output.beta))]
+    a, b = float(a), float(b)
+    # params_sd = [output.sd_beta[k] for k in range(len(output.beta))]
+    params_sd = [output.cov_beta[k, k]**0.5 for k in range(len(output.beta))]
     perc, dof, = 0.975, len(Y)-2
     q = st.t.ppf(perc, dof)
-    ciw = [2 * sd * q for sd in sd_params]
+    params_ciw = [sd * q for sd in params_sd]
     
-    # Test p-value
-    beta_0 = 0  # test if slope is significantly different from zero
-    t_stat = [(output.beta[j] - beta_0) / output.sd_beta[j] for j in range(len(output.beta))]  # t statistic for the slope parameter
-    pvalues = [st.t.sf(np.abs(ts), dof) * 2 for ts in t_stat]
     # Pearson p-value
-    pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
-    pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
-    
-    # print('Self-made method : ' + str(pvalues[0]))
-    # print('Pearson method : ' + str(pearson_pval))
+    results_pearson = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+    R2, pval = results_pearson.statistic**2, results_pearson.pvalue
     
     # R2 = get_R2(Y, a*X+b)
     # R2 doesn't make sense in ODR
     
-    results = fitResults([a, b], sd_params, ciw, pvalues, pearson_pval)
-    # results = ([a, b], sd_params, ciw, pvalues, R2)
-
+    results = fitResults([a, b], params_sd, params_ciw, pval, R2)
     out = ([a, b], results)
+    
+    return(out)
+
+
+def fitLineTLS_V2(X, Y, wx=1, wy=1):
+    """
+    
+    """
+    def linearFun(X, B):
+        return(B[0]*X + B[1])
+    
+    sol = odr_fit(linearFun, X, Y, beta0 = (0, 0),
+              weight_x=wx, weight_y=wy)
+    out = (sol)
     
     return(out)
 

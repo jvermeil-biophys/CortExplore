@@ -45,12 +45,14 @@ sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python')
 sys.path.append('C:/Users/JosephVermeil/Desktop/CortExplore/Code_Python/Code_JV')
 
 import ArticlePlotMaker as apm
-# import GraphicStyles as gs
 import CortexPaths as cp
 import UtilityFunctions as ufun
 from Chameleon_BeadTracker import smallTracker
 
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/NewFigs'
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
+Set2 = apm.cL_Set2
+cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cM_f3 = matplotlib.colors.ListedColormap(cL_f3, name='from_list')
 
 #### Graphic options
 
@@ -59,8 +61,6 @@ cm_in = 2.52
 apm.setGraphicOptions(mode = 'screen', 
                       palette = 'Set2', 
                       colorList = apm.cL_Set21)
-
-
 
 def dateFormat(d):
     d2 = d[0:2]+'.'+d[3:5]+'.'+d[6:8]
@@ -811,7 +811,7 @@ B_set = 5 * np.ones(NFrames)
 # B_set = 5 * (np.ones(NFrames).reshape(nup, NFrames//nup) * np.arange(1, NFrames//nup + 1)).flatten('F')
 # B_set[B_set == 25] = 20 # ONLY FOR 24-05-24_C11
 
-loopStructure = [{'Status':'Passive',     'NFrames':NFrames}]  # Only one constant field phase
+loopStructure = [{'Status':'Passive', 'NFrames':NFrames}]  # Only one constant field phase
                 
 metaDf = makeMetaData(BF_T, B_set, loopStructure)
 
@@ -888,7 +888,7 @@ I = skm.io.imread(fluoPath)
 [nC, nT, nZ] = CTZ_tz.shape[:3]
 
 Angles = np.arange(0, 360, 1)
-previousCircleXYR = (50,50,50)
+previousCircleXYR = (50, 50, 50)
 
 tsdf = pd.read_csv(resBfPath, sep=None, engine='python')
 
@@ -3110,6 +3110,883 @@ global_df.to_csv(os.path.join(resCrossDir, f'{date}_global_DfMerged.csv'), sep='
 
 
 
+# %% F3 - Paper
+
+# %%% Settings & Dataset
+
+Set2 = apm.cL_Set2
+cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cM_f3 = matplotlib.colors.ListedColormap(cL_f3, name='from_list')
+
+#### Standard
+global_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/All_global_DfMerged.csv"), sep=None, engine='python')
+global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
+global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
+# global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
+
+# figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
+# figSubDir = '24-07-21'
+
+global_df['D_fbL'] = global_df['Q_fbL']/global_df['h3']
+global_df['D_fbN'] = global_df['Q_fbN']/global_df['h3']
+global_df['D_vb'] = global_df['Q_vb']/global_df['h3']
+global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
+
+excludedCells = ['24-05-24_M2_P1_C4', '24-05-24_M2_P1_C13',
+                 '24-06-14_M1_P1_C3', '24-06-14_M1_P1_C5', 
+                 '24-06-14_M1_P1_C10', '24-06-14_M1_P1_C12', 
+                 '24-06-14_M1_P1_C17', ] # '24-06-14_M3_P1_C4'
+
+Filters = [(global_df['cellID'].apply(lambda x : x not in excludedCells)),
+           ]
+
+global_df = filterDf(global_df, Filters)
+
+#### Wtih compressions
+Filters = [(global_df['date'] == '24-06-14'),
+           (global_df['manip'].apply(lambda x : x in ['M2', 'M3'])),
+           (global_df['cellID'].apply(lambda x : x not in ['24-06-14_M2_P1_C1'])),
+           ]
+fluo_df_f = filterDf(global_df, Filters)
+fluo_df_f = fluo_df_f.dropna(subset = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf'])
+fluo_df_f['D1_fbN'] = fluo_df_f['Q_fbN']/fluo_df_f['h3']
+fluo_df_f['D1_fbL'] = fluo_df_f['Q_fbL']/fluo_df_f['h3']
+fluo_df_f['D1_vb'] = fluo_df_f['Q_vb']/fluo_df_f['h3']
+fluo_df_f['D1_gf'] = fluo_df_f['Q_gf']/fluo_df_f['h3']
+
+fluo_df_fg = dataGroup(fluo_df_f, groupCol = 'cellID', idCols = ['date', 'manip', 'cell'], 
+                       numCols = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h3', 'D1_fbN', 'D1_fbL', 'D1_vb', 'D1_gf'],
+                       aggFun = 'median')
+
+meca_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/MecaData_Chameleon_CompFluo.csv"), sep=None, engine='python')
+meca_df['cellID_2'] = meca_df['cellID'].apply(lambda x : '-'.join(x.split('-')[:-1]))
+Filters = [(meca_df['date'] == '24-06-14'),
+           (meca_df['surroundingThickness'] <= 900),
+           ]
+
+meca_df_f = filterDf(meca_df, Filters)
+
+merged_df = fluo_df_fg.merge(meca_df_f, left_on = 'cellID', right_on = 'cellID_2', how = 'inner')
+
+merged_df['D2_fbN'] = 1000*merged_df['Q_fbN']/merged_df['surroundingThickness']
+merged_df['D2_fbL'] = 1000*merged_df['Q_fbL']/merged_df['surroundingThickness']
+merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
+merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
+
+
+# %%% For the paper ! Quantity and density
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'QDH'
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = results_pearson.statistic**2, results_pearson.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+
+# Xfit, Yfit = np.log(X), np.log(Y)
+# wd=1/(np.std(Xfit)) # **2
+# we=1/(np.std(Yfit)) # **2
+# [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+# A, k = np.exp(b), a
+# pval = results.pval
+# [k_ciw, b_ciw] = results.params_ciw
+# Xplot = np.exp(np.linspace(4, 8, 50))
+# Yplot = A * Xplot**k
+# text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left')
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.tight_layout()
+plt.show()
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = results_pearson.statistic**2, results_pearson.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+    
+# wd=1/(np.std(Xfit)) # **2
+# we=1/(np.std(Yfit)) # **2
+# [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+# A, k = np.exp(b), a
+# pval = results.pval
+# [k_ciw, b_ciw] = results.params_ciw
+# Xplot = np.exp(np.linspace(4, 8, 50))
+# Yplot = A * Xplot**k
+# text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left')
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'All data points, N = {Nc:.0f}')
+fig.tight_layout()
+
+# #### Save
+# if SAVE:
+#     figSubDir = 'Q-rho-h_fluo'
+#     name = 'Q-rho_vs_h5mT_allpoints_multiFits'
+#     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+#                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+#     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+#                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+# Count
+# CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.show()
+
+
+
+
+# %%% For the paper ! Quantity and density MEAN PER CELL
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = False
+figSubDir = 'F3'
+name = 'QDH_medCell'
+
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+df_f = dataGroup(df_f, groupCol = 'cellID', 
+                 idCols = ['date', 'manipID', 'manipNum'], 
+                 numCols = ['h3', metric_Q, metric_D], 
+                 aggFun = 'mean').reset_index()
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+#                 '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left')#, fontsize = 12)
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.tight_layout()
+plt.show()
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', 
+            markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+#                 '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left')#, fontsize = 12)
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'Mean values per cell, N = {Nc:.0f}')
+fig.tight_layout()
+
+#### Save
+
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    name = 'Q-rho_vs_h5mT_cellmedian_multiFits'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+plt.show()
+
+
+
+
+# %%% For the paper ! Quantity and density MEDIAN PER CELL
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'QDH_medCell'
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+df_f = dataGroup(df_f, groupCol = 'cellID', 
+                 idCols = ['date', 'manipID', 'manipNum'], 
+                 numCols = ['h3', metric_Q, metric_D], 
+                 aggFun = 'median').reset_index()
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+
+#### Plot
+
+rp = cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_Q, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_Q, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+# print('pearson_coef, pearson_pval')
+# print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+ax.legend(loc = 'upper left')
+
+ax.set_ylabel('Actin Quantity (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.tight_layout()
+plt.show()
+
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cM_f3) # , style='cellNum'
+
+Xg = df_fg['h3', 'median'].values
+Yg = df_fg[metric_D, 'median'].values
+# Xerr = df_fg['h3', 'median'].values
+Ygerr = df_fg[metric_D, 'std'].values
+
+ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+            lw = 1.5, ls = '-',
+            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+            label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend(loc = 'lower left')
+    
+ax.set_ylabel('Actin Density (a.u.)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.suptitle(f'Median values per cell, N = {Nc:.0f}')
+fig.tight_layout()
+
+
+#### Save
+
+if SAVE:
+    figSubDir = 'Q-rho-h_fluo'
+    name = 'Q-rho_vs_h5mT_cellmedian_multiFits'
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+plt.show()
+
+
+
+
+# %%% S3 --- Log-normality for quantity
+
+
+#### Save
+SAVE = True
+figSubDir = 'S3'
+name = 'hAndQ_log-normality'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+#### Plots
+metric = 'Q_gf'
+X = df_f['h3'].values
+Y = df_f[metric].values
+titles = ['$H_{5mT}$ Q-Q plot', '$Q_{actin}$ Q-Q plot']
+
+ri = cm_in
+fig, axes = plt.subplots(1, 2, figsize=(0.666*17/ri, 0.333*17/ri), sharex=True, sharey='row')
+
+
+for k, data in enumerate([X, Y]): # +'_wAvg'
+    
+    data_lin = data
+    data_log = np.log(data)
+    
+    ax = axes[k]
+    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    
+    data=data_lin
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[1], 
+              markeredgecolor = 'None', markersize=4, alpha=0.75)
+    ax.plot([], [], label=f'N: {shap_pval:.2e}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[1], markeredgecolor = 'None', markersize=5)
+    
+    data=data_log
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], 
+              markeredgecolor = 'None', markersize=4, alpha=0.75)
+    ax.plot([], [], label=f'LogN: {shap_pval:.2e}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=5)
+    
+    ax.legend(title_fontsize=6, title = 'Shapiro–Wilk\np-values', loc='lower right')
+    
+    ax.grid()
+    ax.set_aspect('equal')
+    ax.set_xlim([-3.5,3.5])
+    ax.set_ylim([-3.5,3.5])
+    ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
+    ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
+    ax.text(-3.2, 3.2, titles[k], va='top', ha='left', 
+            fontsize=9.0, backgroundcolor='w')
+    
+fig.tight_layout()
+plt.show()
+
+
+#### Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+plt.show()
+
+
+
+
+
+
+
+
 # %% Plots -- Manuscript
 
 # %%% Dataset
@@ -3171,6 +4048,9 @@ merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
 
 figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
 figSubDir = 'Test_Paper'
+
+
+
 
 # %%% Plot quantity - per comp
 
@@ -4240,756 +5120,6 @@ ax.grid(which = 'both', alpha = 0.4)
 
 
 
-
-
-# %%% For the paper ! Quantity and density
-
-SAVE = True
-
-#### Data
-
-hue = 'manipID'
-style = 'cell'
-metric_Q = 'Q_gf'
-metric_D = 'D_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 1.1),
-           (global_df['Q_gf'] < 40),
-           (global_df['date'] != '24-02-27'),
-           # (global_df['manipID'] == '24-06-14_M1'),
-           ]
-
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric_Q)
-df_f['h3'] *= 1000
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-md = {manipes[i]:i for i in range(len(manipes))}
-df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
-
-Nc = len(df_f)
-
-bins = np.linspace(0, 1000, 10, endpoint=False)
-df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
-df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
-df_fg['h3_upper'] = df_fg.index*50
-df_fg = df_fg.dropna()
-
-#### Plot
-
-rp = 1 # cm_in
-fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
-
-
-
-
-#### Plot 1 - QvH loglog
-
-ax = axes[0]
-
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_Q].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_Q, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_Q, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-
-Xfit, Yfit = np.log(X), np.log(Y)
-pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
-pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
-# print('pearson_coef, pearson_pval')
-# print(pearson_coef, pearson_pval)
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
-
-# n = np.log10(200)
-# m = np.log10(10)
-# expo = +1
-# A = (10**(m-n*expo))
-# # A = 0.1
-# Xplot = np.logspace(2, 3.1, 50)
-# Yplot = A*(Xplot**expo)
-# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
-#         label =  r'$\bf{Line\ y\ =\ Ax}$')
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([4, 60])
-ax.legend(loc = 'upper left', fontsize = 12)
-
-ax.set_ylabel('Actin Quantity (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# def makeCountDf_Fluo(df):
-#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
-#     count_df = df[cols_count_df]
-#     groupByCell = count_df.groupby('cellID')
-#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
-#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
-
-#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
-#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
-#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
-#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
-#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
-    
-#     return(df_CountByCond, df_CountByCell)
-
-# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
-# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
-
-plt.tight_layout()
-plt.show()
-
-#### Plot 2 - RhovH loglog
-
-ax = axes[1]
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_D].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_D, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_D, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-    
-    
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
-    
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([7, 110])
-ax.legend(loc = 'lower left', fontsize = 12)
-    
-ax.set_ylabel('Actin Density (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# ax.legend().set_visible(False)
-fig.suptitle(f'All data points, N = {Nc:.0f}')
-fig.tight_layout()
-
-#### Save
-if SAVE:
-    figSubDir = 'Q-rho-h_fluo'
-    name = 'Q-rho_vs_h5mT_allpoints_multiFits'
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-plt.show()
-
-# %%% For the paper ! Log-normality for quantity
-
-
-#### Save
-SAVE = True
-figSubDir = 'E-h'
-name = 'h & Q log-normality'
-
-#### Plots
-metric = 'Q_gf'
-X = df_f['h3'].values
-Y = df_f[metric].values
-
-ri = 1.5 # cm_in
-fig, axes = plt.subplots(1, 2, figsize=(17/ri, 12/ri), sharex=True, sharey='row')
-
-for k, data in enumerate([X, Y]): # +'_wAvg'
-    
-    data_lin = data
-    data_log = np.log(data)
-    
-    ax = axes[k]
-    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
-    
-    data=data_lin
-    shap_stat, shap_pval = shapiro(data)
-    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], 
-              markeredgecolor = 'None', markersize=6)
-    ax.plot([], [], label=f'Normal dist.: {shap_pval:.2f}', ls='', marker='o', 
-            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
-    
-    data=data_log
-    shap_stat, shap_pval = shapiro(data)
-    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], 
-              markeredgecolor = 'None', markersize=6)
-    ax.plot([], [], label=f'Log-normal dist.: {shap_pval:.2f}', ls='', marker='o', 
-            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
-    
-    ax.set_aspect('equal')
-    ax.set_xlim([-2.2,2.2])
-    ax.set_ylim([-2.2,2.2])
-    ax.legend(fontsize=12, title_fontsize=12, title = 'Shapiro–Wilk p-value', loc='lower right')
-    ax.grid()
-    
-axes[0].set_title('Q-Q plots for $H_{5mT}$')
-axes[1].set_title('Q-Q plots for $Q_{actin}$')
-fig.tight_layout()
-plt.show()
-
-
-#### Save
-if SAVE:
-    figSubDir = 'Q-rho-h_fluo'
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-plt.show()
-
-
-
-
-
-
-# %%% For the paper ! Quantity and density MEAN PER CELL
-
-SAVE = True
-
-#### Data
-
-hue = 'manipID'
-style = 'cell'
-metric_Q = 'Q_gf'
-metric_D = 'D_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 1.1),
-           (global_df['Q_gf'] < 40),
-           (global_df['date'] != '24-02-27'),
-           # (global_df['manipID'] == '24-06-14_M1'),
-           ]
-
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric_Q)
-df_f['h3'] *= 1000
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-md = {manipes[i]:i for i in range(len(manipes))}
-df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
-
-df_f = dataGroup(df_f, groupCol = 'cellID', 
-                 idCols = ['date', 'manipID', 'manipNum'], 
-                 numCols = ['h3', metric_Q, metric_D], 
-                 aggFun = 'mean').reset_index()
-
-Nc = len(df_f)
-
-bins = np.linspace(0, 1000, 10, endpoint=False)
-df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
-df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
-df_fg['h3_upper'] = df_fg.index*50
-df_fg = df_fg.dropna()
-
-#### Plot
-
-rp = 1 # cm_in
-fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
-
-
-
-
-#### Plot 1 - QvH loglog
-
-ax = axes[0]
-
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_Q].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_Q, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_Q, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-
-Xfit, Yfit = np.log(X), np.log(Y)
-pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
-pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
-print('pearson_coef, pearson_pval')
-print(pearson_coef, pearson_pval)
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                '\n' + text_pval + f' ({pval:.2e})')
-
-# n = np.log10(200)
-# m = np.log10(10)
-# expo = +1
-# A = (10**(m-n*expo))
-# # A = 0.1
-# Xplot = np.logspace(2, 3.1, 50)
-# Yplot = A*(Xplot**expo)
-# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
-#         label =  r'$\bf{Line\ y\ =\ Ax}$')
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([4, 60])
-ax.legend(loc = 'upper left', fontsize = 12)
-
-ax.set_ylabel('Actin Quantity (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# def makeCountDf_Fluo(df):
-#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
-#     count_df = df[cols_count_df]
-#     groupByCell = count_df.groupby('cellID')
-#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
-#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
-
-#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
-#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
-#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
-#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
-#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
-    
-#     return(df_CountByCond, df_CountByCell)
-
-# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
-# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
-
-plt.tight_layout()
-plt.show()
-
-#### Plot 2 - RhovH loglog
-
-ax = axes[1]
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_D].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_D, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_D, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', 
-            markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-    
-    
-    
-    
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                '\n' + text_pval + f' ({pval:.2e})')
-    
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([7, 110])
-ax.legend(loc = 'lower left', fontsize = 12)
-    
-ax.set_ylabel('Actin Density (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# ax.legend().set_visible(False)
-fig.suptitle(f'Mean values per cell, N = {Nc:.0f}')
-fig.tight_layout()
-
-#### Save
-if SAVE:
-    figSubDir = 'Q-rho-h_fluo'
-    name = 'Q-rho_vs_h5mT_cellmean_multiFits'
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-plt.show()
-
-# %%% For the paper ! Quantity and density MEDIAN PER CELL
-
-SAVE = True
-
-#### Data
-
-hue = 'manipID'
-style = 'cell'
-metric_Q = 'Q_gf'
-metric_D = 'D_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 1.1),
-           (global_df['Q_gf'] < 40),
-           (global_df['date'] != '24-02-27'),
-           # (global_df['manipID'] == '24-06-14_M1'),
-           ]
-
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric_Q)
-df_f['h3'] *= 1000
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-md = {manipes[i]:i for i in range(len(manipes))}
-df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
-
-df_f = dataGroup(df_f, groupCol = 'cellID', 
-                 idCols = ['date', 'manipID', 'manipNum'], 
-                 numCols = ['h3', metric_Q, metric_D], 
-                 aggFun = 'median').reset_index()
-
-Nc = len(df_f)
-
-bins = np.linspace(0, 1000, 10, endpoint=False)
-df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
-df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
-df_fg['h3_upper'] = df_fg.index*50
-df_fg = df_fg.dropna()
-
-#### Plot
-
-rp = 1 # cm_in
-fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
-
-
-
-
-#### Plot 1 - QvH loglog
-
-ax = axes[0]
-
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_Q].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_Q, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_Q, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-    
-    
-Xfit, Yfit = np.log(X), np.log(Y)
-pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
-pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
-# print('pearson_coef, pearson_pval')
-# print(pearson_coef, pearson_pval)
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
-
-# n = np.log10(200)
-# m = np.log10(10)
-# expo = +1
-# A = (10**(m-n*expo))
-# # A = 0.1
-# Xplot = np.logspace(2, 3.1, 50)
-# Yplot = A*(Xplot**expo)
-# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
-#         label =  r'$\bf{Line\ y\ =\ Ax}$')
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([4, 60])
-ax.legend(loc = 'upper left', fontsize = 12)
-
-ax.set_ylabel('Actin Quantity (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# def makeCountDf_Fluo(df):
-#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
-#     count_df = df[cols_count_df]
-#     groupByCell = count_df.groupby('cellID')
-#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
-#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
-
-#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
-#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
-#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
-#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
-#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
-    
-#     return(df_CountByCond, df_CountByCell)
-
-# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
-# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
-
-plt.tight_layout()
-plt.show()
-
-#### Plot 2 - RhovH loglog
-
-ax = axes[1]
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3'].values
-Y = df_f[metric_D].values
-C = df_f['manipNum'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=30, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_D, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_D, 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xfit, Yfit = np.log(X), np.log(Y)
-[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-A, k = np.exp(b), a
-R2 = w_results.rsquared
-pval = results.pvalues[1]
-k_ci = results.conf_int()[0]
-k_ciw = np.abs(k_ci[0]-k_ci[1])
-
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-
-ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
-        label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
-    
-    
-wd=1/(np.std(Xfit)) # **2
-we=1/(np.std(Yfit)) # **2
-[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
-A, k = np.exp(b), a
-pval = results.pvalue_pearson
-[k_ciw, b_ciw] = results.params_ciw
-Xplot = np.exp(np.linspace(4, 8, 50))
-Yplot = A * Xplot**k
-text_pval = apm.pval2text(pval, n_digits = 3, space = True)
-ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
-        label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
-                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
-    
-
-ax.set_xlim([100, 1200])
-ax.set_ylim([7, 110])
-ax.legend(loc = 'lower left', fontsize = 12)
-    
-ax.set_ylabel('Actin Density (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
-ax.grid(which = 'both', alpha = 0.4)
-
-# ax.legend().set_visible(False)
-fig.suptitle(f'Median values per cell, N = {Nc:.0f}')
-fig.tight_layout()
-
-#### Save
-if SAVE:
-    figSubDir = 'Q-rho-h_fluo'
-    name = 'Q-rho_vs_h5mT_cellmedian_multiFits'
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-plt.show()
 
 
 
