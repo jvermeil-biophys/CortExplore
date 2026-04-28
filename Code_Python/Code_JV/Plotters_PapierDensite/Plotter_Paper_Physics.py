@@ -34,7 +34,7 @@ from scipy.stats import mannwhitneyu, shapiro
 from scipy import odr
 from statannotations.Annotator import Annotator
 from statannotations.stats.StatTest import StatTest
-# from matplotlib.gridspec import GridSpec
+from matplotlib.gridspec import GridSpec
 from scipy.optimize import curve_fit
 
 #### Local Imports
@@ -1057,7 +1057,7 @@ if SAVE:
 
 # %% Main Figure 1
 
-# %%% h(t) and F(t)
+# %%% Fig 1D & 1E - h(t) and F(t)
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
@@ -1130,12 +1130,16 @@ res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName 
                                     plotSettings = plotSettings) # task = 'updateExisting'
 
 
-# %%% Distribution H et E
+# %%% Fif 1F & 1H - Distribution H et E
 
 # Source : Plotter_AtccPhysics - Figure NC1.1 - V4 - Thickness & Stiffness LOG SMALL
 
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F1'
 name = 'F1_Distrib_H&E500'
 
@@ -1178,15 +1182,15 @@ df_fgw2[YCol + '_wAvg'] /= 1000
 df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 
 #### Init fig
-fig, axes = plt.subplots(1, 2, figsize=(12/cm_in, 6/cm_in), sharey=True)
+fig, axes = plt.subplots(1, 2, figsize=(9/cm_in, 5/cm_in), sharey=True, layout='compressed')
 color = apm.cL_Set2[0]
 
 #### 01 - Best H0
 ax = axes[0]
 
 ax.set_title('Thickness')
-ax.set_xlabel('Fitted $H_0$ (nm)')
-ax.set_ylabel('Count (cells)')
+ax.set_xlabel('Fitted $H_{500}$ (nm)', labelpad=0.5)
+ax.set_ylabel('Count (cells)', labelpad=0.5)
 
 ax, histo, logbins = apm.plot_logstairs(ax, df_fg[XCol].values, bins=12, logbins = [], 
                                     normalized = False, fill = True, color = color, label = '')
@@ -1206,7 +1210,7 @@ print(10**(np.std(np.log10(df_fg[XCol].values))))
 ax = axes[1]
 
 ax.set_title('Stiffness')
-ax.set_xlabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$E_{500}$ (kPa)', labelpad=0.5)
 ax, histo, logbins = apm.plot_logstairs(ax, df_fgw2[YCol + '_wAvg'].values, bins=12, logbins = [], 
                                     normalized = False, fill = True, color = color, label = '')
 ax.set_xlim([0, ax.get_xlim()[1]])
@@ -1238,7 +1242,7 @@ for ax in axes[:]:
     
     
 # Show
-plt.tight_layout()
+# plt.tight_layout()
 plt.show()
 
 # Save
@@ -1254,10 +1258,10 @@ if SAVE:
 
 # %% Main Figure 2
 
-# %%% 2A
+# %%% Fig 2A
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F2'
 name = 'F2A_E500-vs-h500'
 
@@ -2011,7 +2015,7 @@ def plotEh_fitVals(df, XCol = 'bestH0', YCol = 'E_f_<_400',
     
     plt.show()
 
-# %%% 4A
+# %%% 4A - One day of expts, Inset upper right
 
 #### 1. Settings
 
@@ -2228,7 +2232,7 @@ ax.set_ylabel('Each cell exponent $\\alpha $', fontsize=6)
 plt.show()
 
 # Count
-CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+CountByCond, CountByCell = apm.makeCountDf(df_f2, condCol)
 # Save
 if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
@@ -2237,7 +2241,7 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
     
-# %%% 4A --- Alt
+# %%% 4A - Alt : Many expts, Inset upper right
 
 #### 1. Settings
 
@@ -2336,6 +2340,12 @@ ax.add_patch(plt.Rectangle(coords[0]-border, w, h, fc="white",
 
 ax.set_xscale('log')
 ax.set_yscale('log')
+
+## Consider only validated cells
+CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
+df_f2 = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
+df_res2 = df_res[df_res['valid_global'+codeXY] == True]
+Ncells_valid = len(CID_validCells)
 
 ## Subplot 2.1
 ax = ax
@@ -2467,7 +2477,7 @@ if SAVE:
     
 
   
-# %%% 4A --- Alt2
+# %%% Fig 4A - Alt2 : Many expts, Inset lower left
 
 #### 1. Settings
 
@@ -2552,20 +2562,27 @@ df_res = df_res[df_res['valid_global'+codeXY] == True]
 # Initialize
 fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), layout='compressed')
 win, hin = 0.275, 0.325
-xin, yin = 0.025, 0.025
+xin, yin = 0.125, 0.025
 ax_in = ax.inset_axes([xin, yin, win, hin], zorder = 11)
 coords = ax.transAxes.inverted().transform(ax_in.get_tightbbox())
-coords[0][0] -= 0.0225
-coords[0][1] += 0.035
+# coords[0][0] -= 0.0225
+coords[0][0] -= 0.1
+coords[0][1] -= 0.1
 coords[1][1] += 0.05
-# coords[1][0] -= 0.01
+coords[1][0] += 0.01
 border = 0.00
 w, h = coords[1] - coords[0] + 2*border
 ax.add_patch(plt.Rectangle(coords[0]-border, w, h, fc="white", 
-                           transform=ax.transAxes, zorder=2))
+                           transform=ax.transAxes, zorder=2, alpha=0.75))
 
 ax.set_xscale('log')
 ax.set_yscale('log')
+
+## Consider only validated cells
+CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
+df_f2 = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
+df_res2 = df_res[df_res['valid_global'+codeXY] == True]
+Ncells_valid = len(CID_validCells)
 
 ## Subplot 2.1
 ax = ax
@@ -2616,7 +2633,7 @@ for i in range(Ncells_valid):
     if i in index_color:
         s, alpha, zorder = 40, 0.9, 8
         ax.plot(Xplot, Yplot, ls = '-', c = apm.lightenColor(c, 0.75), 
-                lw = 2.0, alpha = alpha*0.8, zorder = zorder-1)
+                lw = 2.0, alpha = alpha*0.9, zorder = zorder-1)
     else:
         s, alpha, zorder = 20, 0.55, 5
         
@@ -2654,12 +2671,12 @@ ax.plot(Xplot, Yplot, ls = '-.', c = 'dimgray', lw = 1.5, zorder=6,
         #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
     
 # Format
-ax.legend(loc = 'upper right', handlelength=3)#.set_visible(False)
+ax.legend(loc = 'upper right', handlelength=3.5)#.set_visible(False)
 ax.set_ylabel(dict_axisLabels[YCol], labelpad=0.5)
 ax.set_xlabel(dict_axisLabels[XCol], labelpad=0.5)
 ax.grid(visible=True, which='major', axis='both')
-ax.set_xlim([40, 1200])
-ax.set_ylim([0.5, 60])
+ax.set_xlim([30, 1100])
+ax.set_ylim([0.4, 50])
 
 
 #### 4. Subplot Inset
@@ -2679,7 +2696,7 @@ ax.tick_params(length=3)
 ### Format
 ax.grid(axis='y')
 ax.set_ylabel('')
-ax.yaxis.tick_right()
+# ax.yaxis.tick_right()
 ax.set_title('Each cell exponent $\\alpha $', fontsize=6, loc='left')
 
 fig.get_layout_engine().set(w_pad=2e-2, h_pad=2e-2, 
@@ -2688,7 +2705,7 @@ fig.get_layout_engine().set(w_pad=2e-2, h_pad=2e-2,
 plt.show()
 
 # Count
-CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+CountByCond, CountByCell = apm.makeCountDf(df_f2, condCol)
 # Save
 if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
@@ -2697,6 +2714,7 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+# %%% ------
 
 # %%% Use the functions for 24-12-11 - E(h) long series
 
@@ -2909,7 +2927,7 @@ concat_res = plotEh_compareDates(df, XCol = 'bestH0', YCol = 'E_f_<_500',
 
 # %% --------
 
-# %% Supp Figure 1
+# %% Supp Figure 1 & 1bis
 
 # %%% Normal Distribution
 
@@ -4208,9 +4226,9 @@ if SAVE:
 
 
 
-# %% Supp Figure 2
+# %% Supp Figure 2 & 2bis
 
-# %%% 3e essai
+# %%% Fig S2A - 4 x 4 with many metrics
 
 # Save
 SAVE = True

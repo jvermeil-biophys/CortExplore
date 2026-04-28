@@ -3029,7 +3029,7 @@ Filters = [(df['validatedThickness'] == True),
            ]
 
 Filters_ctrl = [(df_ctrl['validatedThickness'] == True), 
-               (df_ctrl['substrate'] == substrate),
+               (df_ctrl['substrate'] == '20um fibronectin discs'),
                (df_ctrl['drug'].apply(lambda x : x in ['dmso'])),
                (df_ctrl['cell subtype'].apply(lambda x : x in ['Atcc-2023', 'Atcc-2023-LaGFP'])),
                (df_ctrl['date'].apply(lambda x : x not in excluded_dates)),
@@ -3348,12 +3348,15 @@ Filters_ctrl = [(df_ctrl['validatedThickness'] == True),
 df_f = apm.filterDf(df, Filters)
 df_ctrl_f = apm.filterDf(df_ctrl, Filters_ctrl)
 
+
 df_f.loc[df_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
 df_ctrl_f.loc[df_ctrl_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
 
 df_f, condCol = apm.makeCompositeCol(df_f, cols=['cell type', 'cell subtype'])
 df_ctrl_f, condCol = apm.makeCompositeCol(df_ctrl_f, cols=['cell type', 'cell subtype'])
-CountByCond2, CountByCell2 = apm.makeCountDf(df_f, condCol)
+
+CountByCond_ctrl, CountByCell_ctrl = apm.makeCountDf(df_ctrl_f, condCol)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 
 
 # Filter 2
@@ -3594,7 +3597,7 @@ fig.get_layout_engine().set(w_pad=2e-2, h_pad=2e-2,
 plt.show()
 
 # Count
-CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 # Save
 if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
@@ -5029,6 +5032,312 @@ if SAVE:
 
 # %% Supp Fig 4
 
+
+# %%% FS4C - Four cell types - all cells 
+
+# Save
+SAVE = True
+figSubDir = 'S4'
+name = 'S4_E500_vs_h500_4celltypes_perComp'
+
+df = MecaData_CellTypes
+df_ctrl = MecaData_Phy
+
+df, condCol = apm.makeCompositeCol(df, cols=['cell type', 'cell subtype'])
+df_ctrl, condCol = apm.makeCompositeCol(df_ctrl, cols=['cell type', 'cell subtype'])
+
+# XCol = 'ctFieldThickness'
+# XCol = 'bestH0'
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+ctrl_cond = '3T3 & Atcc-2023' 
+
+# Define
+excluded_subtypes = ['tko']
+drugs = ['dmso', 'none']
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# substrates = ['BSA coated glass', '20um fibronectin discs']
+
+CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+dfDC = df[df['cell type'] == 'DC']
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           # (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x not in excluded_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           # (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+Filters_ctrl = [(df_ctrl['validatedThickness'] == True), 
+               (df_ctrl['substrate'] == '20um fibronectin discs'),
+               (df_ctrl['drug'].apply(lambda x : x in ['dmso'])),
+               (df_ctrl['cell subtype'].apply(lambda x : x in ['Atcc-2023', 'Atcc-2023-LaGFP'])),
+               (df_ctrl['date'].apply(lambda x : x not in excluded_dates)),
+               (df_ctrl[XCol] < 1000),
+               (df_ctrl['normal field'] == 5),
+               (df_ctrl[YCol] <= 1e5),
+               (df_ctrl['valid' + YCol[1:]] == True), 
+               ]
+
+df_f = apm.filterDf(df, Filters)
+df_ctrl_f = apm.filterDf(df_ctrl, Filters_ctrl)
+
+df_f.loc[df_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
+df_ctrl_f.loc[df_ctrl_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
+
+df_f, condCol = apm.makeCompositeCol(df_f, cols=['cell type', 'cell subtype'])
+df_ctrl_f, condCol = apm.makeCompositeCol(df_ctrl_f, cols=['cell type', 'cell subtype'])
+CountByCond2, CountByCell2 = apm.makeCountDf(df_f, condCol)
+
+
+# Filter 2
+Case_A1 = (df_f['cell type'].apply(lambda x : x in ['HoxB8-Macro']))
+Case_A2 = (df_f['substrate'] == 'bare glass')
+Case_B1 = (df_f['cell type'].apply(lambda x : x in ['DC', 'Dicty']))
+Case_B2 = (df_f['substrate'] == 'BSA coated glass')
+Case_C1 = (df_f['cell type'].apply(lambda x : x in ['3T3', 'MDCK', 'HeLa']))
+Case_C2 = (df_f['substrate'] == '20um fibronectin discs')
+Case_D1 = (df_f['cell type'].apply(lambda x : x in ['3T3', 'MDCK', 'DC']))
+Case_D2 = (df_f['normal field'] == 5)
+Filters = [((Case_A1 & Case_A2) | (Case_B1 & Case_B2) | (Case_C1 & Case_C2)),
+           (Case_D1 | Case_D2),
+           ]
+df_f = apm.filterDf(df_f, Filters)
+
+
+# Order
+co_order = [
+            # '3T3 & Atcc-2023', 
+            'HeLa & fucci', 
+            'MDCK & WT',
+            'DC & mouse-primary', 
+            # 'HoxB8-Macro & ctrl', 
+            'Dicty & DictyBase-WT', 
+            ]
+
+colorsD = {
+          '3T3 & Atcc-2023'     : 'dimgray', 
+          'HeLa & fucci'         : apm.cL_Set2[1],  
+          'DC & mouse-primary'   : apm.cL_Set2[2],  
+          'Dicty & DictyBase-WT' : apm.cL_Set2[3],  
+          # 'HoxB8-Macro & ctrl'   : apm.cL_Set2[4],  
+          'MDCK & WT'            : apm.cL_Set2[5],
+          }
+
+rD = {
+      '3T3 & Atcc-2023'      :  '3T3 ATCC', 
+      'HeLa & fucci'         :  'HeLa FUCCI',  
+      'DC & mouse-primary'   :  'Primary DC',  
+      'Dicty & DictyBase-WT' :  'Dictys Ax3',  
+      # 'HoxB8-Macro & ctrl'   :  'HoxB8 Macro',  
+      'MDCK & WT'            :  'MDCK',
+      }
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw' + YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+
+df_ctrl_fg = apm.dataGroup(df_ctrl_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_ctrl_fg = df_ctrl_fg[[XCol]]
+df_ctrl_fgw2 = apm.dataGroup_weightedAverage(df_ctrl_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw' + YCol, weight_method = 'ciw^2')
+df_ctrl_plot = pd.merge(left=df_ctrl_fg, right=df_ctrl_fgw2, on='cellID', how='inner')
+
+
+
+#### Plot
+fig, axes = plt.subplots(2, 2, figsize=(17/cm_in, 12/cm_in), 
+                         sharex=True, sharey=True, layout='constrained')
+axes = axes.flatten('C')
+dLabels = {}
+
+# Per cell / per comp
+# df_plot = df_f
+# df_ctrl_plot = df_ctrl_f
+# YCol += '_wAvg'
+# df_plot[YCol] /= 1000
+df_f[YCol] /= 1000
+# df_ctrl_plot[YCol] /= 1000
+
+
+# Fit for the controls
+
+Xctrl, Yctrl = df_ctrl_f[XCol].values, df_ctrl_f[YCol].values/1000
+Xctrl_fit, Yctrl_fit = np.log(Xctrl), np.log(Yctrl)
+wd=1/(np.std(Xctrl_fit)) # **2
+we=1/(np.std(Yctrl_fit)) # **2
+[a, b], results = ufun.fitLineTLS(Xctrl_fit, Yctrl_fit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xctrl_plot = np.exp(np.linspace(1, 9, 50))
+Yctrl_plot = A * Xctrl_plot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+print('expo ctrl', k, results.params_ciw[1]/2)
+
+dLabels[ctrl_cond] = f'{rD[ctrl_cond]}' + \
+               '\n' + f'k  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+               '\n' + text_pval
+
+
+
+for i in range(len(axes)):
+    ax = axes[i]
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    
+    # color = sD[cond]['color']
+    # marker = sD[cond]['marker']
+    # color = colorsD[cond]
+    # marker = 'o'
+    
+    #### Controls
+    # sns.scatterplot(ax = ax, x=df_ctrl_plot[XCol].values, y=df_ctrl_plot[YCol].values, 
+    #                 marker = 'o', s = 25, color = 'dimgray', alpha = 0.3,
+    #                 zorder = 3)
+    ax.plot(Xctrl_plot, Yctrl_plot, ls = '--', color = 'dimgray', 
+            lw = 2.0, zorder = 1, alpha = 0.9)
+            # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            #         f'\nk  = {k:.2f}' + '\n' + text_pval)
+            
+    # if i == 0:
+    #     hM, hL, hH = ufun.getLogNDistributionDescriptors(df_ctrl_plot[XCol].values)
+    #     EM, EL, EH = ufun.getLogNDistributionDescriptors(df_ctrl_plot[YCol].values)
+    #     print(f'Cell type 3T3 ATCC, N = {len(df_ctrl_plot):.0f}')
+    #     print(f'For {XCol} vs {YCol}')
+    #     print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+    #     print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+    #     print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+    #     print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+        
+
+    #### Cell type i
+    # df_fc = df_plot[df_plot[condCol] == co_order[i]]
+    df_fc = df_f[df_f[condCol] == co_order[i]]
+    color = colorsD[co_order[i]]
+
+    medianX = np.median(df_fc[XCol].values)
+    medianY = np.median(df_fc[YCol].values)
+    
+    alpha = 0.5
+    s = 30
+    
+    sns.scatterplot(ax = ax, x=df_fc[XCol].values, y=df_fc[YCol].values, 
+                    marker = 'o', s = s, color = color, edgecolor = 'k', linewidth=0.5, alpha = alpha,
+                    zorder = 3) # , label = 'Median $H_0$ = ' + f'{medianX:.0f} nm'\
+                                  #      f'\nMedian $E$ = ' + f'{medianY:.1f} kPa')
+                                  
+    Xfit, Yfit = np.log(df_fc[XCol].values), np.log(df_fc[YCol].values)
+    # print(np.std(Xfit), np.std(Yfit), np.std(Xfit)/np.std(Yfit))
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+
+    [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+    A, k = np.exp(b), a
+    pval = results.pval
+    [k_ciw, b_ciw] = results.params_ciw
+    
+    Xplot = np.exp(np.linspace(1, 9, 50))
+    Yplot = A * Xplot**k
+    text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+    dLabels[co_order[i]] = f'{rD[co_order[i]]}' + \
+                            '\n' + f'k  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+                            '\n' + text_pval
+        
+    ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.75), 
+            lw = 2.0, zorder = 6,)
+            # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+            #         f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+    # ax.legend(fontsize = 9, loc = 'best', handlelength=1)
+    ax.set_xlabel('$H_{500}$ (nm)')
+    ax.set_ylabel('$E_{500}$ (kPa)')
+    # ax.set_title(co_order[i])
+    if i%2 != 0:
+        ax.set_ylabel('')
+    
+    ax.text(820, 110, f'{rD[co_order[i]]}', va='center', ha='center',  weight = 'bold',
+            color=apm.lightenColor(colorsD[co_order[i]], 0.75), fontsize=10.0, backgroundcolor='w', zorder=2)
+    # ax.text(400, 80, f'{rD[ctrl_cond]}', va='center', ha='left', 
+    #         color=colorsD[ctrl_cond], fontsize=6.0, backgroundcolor='w', zorder=2)
+    
+    hM, hL, hH = ufun.getLogNDistributionDescriptors(df_fc[XCol].values)
+    EM, EL, EH = ufun.getLogNDistributionDescriptors(df_fc[YCol].values)
+    print(f'Cell type {co_order[i]}, N = {len(df_fc):.0f}')
+    print(f'For {co_order[i]}, {XCol} vs {YCol}')
+    print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+    print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+    print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+    print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+#### Legend
+conds = ['3T3 & Atcc-2023'] + co_order
+# conds = co_order
+CommonLegendMarks = []
+for i, cond in enumerate(conds):
+    ax = axes[1]
+    color = colorsD[cond]
+    
+    label = dLabels[cond]
+    LegendMark = matplotlib.lines.Line2D([], [], color=color, ls='--', lw = 2.5,
+                                         label = label)
+        
+    # k, k_ciw  = dLabels[cond]['k'], dLabels[cond]['k_ciw'], 
+    # pval, text_pval = dLabels[cond]['pval'], dLabels[cond]['text_pval']
+    # if pval < 0.05:
+    #     LegendMark = matplotlib.lines.Line2D([], [], color=color, ls='--', lw = 2.5,
+    #                                          label = f'{rD[cond]}' + \
+    #                                                  f'\nk  = {k:.2f}  ' + \
+    #                                                  r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+    #                                                  '\n' + text_pval)
+    # else:
+    #     LegendMark = matplotlib.lines.Line2D([], [], color=color, ls='--', lw = 2.5,
+    #                                          label = label)
+    #     dLabels[cond] = f'{rD[cond]}' + \
+    #                     '\n' + 'NS fit' + \
+    #                     '\n' + text_pval
+    
+    
+    CommonLegendMarks.append(LegendMark)
+    
+plt.figlegend(handles=CommonLegendMarks, fontsize = 8, 
+              loc='outside right center',
+              title = 'Power-law fits', title_fontproperties = {'weight':'bold'},
+              labelspacing = 1.15, handletextpad=0.4, handlelength = 1)
+    
+#### Format
+rD.update({'E_eff_wAvg':'E_{eff} (kPa)'})
+
+for ax in axes:
+    ax.grid(visible=True, which='major', axis='both', zorder=0)
+    apm.renameAxes(ax, rD, format_xticks = False)
+    # renameAxes(ax, renameDict, format_xticks = False)
+    # renameLegend(ax, rD)
+    ax.set_xlim(50, 2000)
+    ax.set_ylim(0.4, 300)
+
+# Show
+# plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 

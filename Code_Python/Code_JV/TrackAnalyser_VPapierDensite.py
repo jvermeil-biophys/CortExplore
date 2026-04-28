@@ -23,6 +23,8 @@ import scipy.interpolate as si
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.gridspec import GridSpec
 
 import re
 import os
@@ -48,6 +50,7 @@ import CortexPaths as cp
 sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
+import ArticlePlotMaker as apm
 import UtilityFunctions as ufun
 
 
@@ -1319,18 +1322,21 @@ class CellCompression:
         
         
     
-    def Pplot_TimeseriesZoom(self, plotSettings):
-        fig, axes = plt.subplots(2, 1, figsize=(17/gs.cm_in, 12/gs.cm_in))
-        gs.set_manuscript_options_jv()
+    def Pplot_Timeseries(self, plotSettings):
+        
+        fig, axes = plt.subplots(1, 1, figsize=(17/gs.cm_in, 7/gs.cm_in), layout='compressed')
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
         
         #### First Plot
-        ax = axes[0]
+        ax = axes
         # Distance axis
         color = gs.colorList40[30] # 'skyblue'# 'blue'
-        ax.set_xlabel('Time (s)', fontsize=10)
-        ax.set_ylabel('Thickness (nm)', color=color, fontsize=10)
-        ax.tick_params(axis='x', labelsize=8)
-        ax.tick_params(axis='y', labelcolor=color, labelsize=8)
+        ax.set_xlabel('Time (s)', labelpad=1)
+        ax.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+        ax.tick_params(axis='x')#, labelsize=8)
+        ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
         ax.scatter(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
                 color = color, zorder = 5, s = 3)
         # ax.scatter(self.tsDf['T'].values[idx], self.tsDf['D3'].values[idx]-self.DIAMETER, 
@@ -1357,13 +1363,11 @@ class CellCompression:
         (axm, axM) = ax.get_ylim()
         ax.set_ylim([min(-0,axm), axM])
         ax.set_xlim([0, min(185, ax.get_xlim()[-1])])
-        # ax.axhline(0, color=color, )
         ax.grid(axis='y', zorder=0)
-        # if (max(self.tsDf['D3'].values-self.DIAMETER) > 200):
-        #     ax.set_yticks(np.arange(0, max(self.tsDf['D3'].values-self.DIAMETER), 100))
+        ax.tick_params(axis='y', labelcolor = color)
+
         
         # Force axis
-        ax.tick_params(axis='y', labelcolor = color)
         ax1bis = ax.twinx()
         color = 'firebrick'
         # ax1bis.set_ylabel('Force (pN)', color=color)
@@ -1378,75 +1382,116 @@ class CellCompression:
         # ax1bis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
         ax1bis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values/1e3))])
         
-        #### Second Plot
-        ax = axes[1]
-        ki, kf = 4, 5
-        indexLoops = self.tsDf[self.tsDf['idxLoop'].apply(lambda x : ((x >= ki) and (x <= kf)))].index
+        # all_axes = [axes[0], ax1bis, axes[1], ax2bis]
+        # fig.tight_layout()
+        return(fig, axes)
+    
+    
+    def Pplot_Timeseries_V2(self, plotSettings):
         
-        # Distance axis
-        color = gs.colorList40[30] # 'skyblue'# 'blue'
-        ax.set_xlabel('Time (s)', fontsize=10)
-        ax.set_ylabel('Thickness (nm)', color=color, fontsize=10)
-        ax.tick_params(axis='x', labelsize = 8)
-        ax.tick_params(axis='y', labelcolor=color, labelsize = 8)
-        ax.scatter(self.tsDf.loc[indexLoops, 'T'].values, self.tsDf.loc[indexLoops, 'D3'].values-self.DIAMETER, 
-                color = color, zorder = 5, s = 3)
-        # ax.scatter(self.tsDf['T'].values[idx], self.tsDf['D3'].values[idx]-self.DIAMETER, 
-        #         color = color, ls = '--', linewidth = 1, zorder = 1, s = 4)
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
         
-        for ii in range(ki-1, kf): # (nLoops): #
-            IC = self.listIndent[ii]
-            compValid = IC.isValidForAnalysis
-            if compValid:
-                fitError = IC.dictFitFH_Chadwick['Full']['error']
+        fig = plt.figure(figsize=(17/gs.cm_in, 6/gs.cm_in))
+        spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
+        ax1 = fig.add_subplot(spec[:4])
+        ax2 = fig.add_subplot(spec[4:])
+        
+        #### Distance Plot
+        ax = ax1
+        color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+        ax1.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+        ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
+        ax.scatter(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
+                   color = color, edgecolors = None, linewidths = 0,
+                   zorder = 5, s = 2, alpha = 0.9)        
+        # for ii in range(self.Ncomp): 
+        #     IC = self.listIndent[ii]
+        #     compValid = IC.isValidForAnalysis
+        #     if compValid:
+        #         fitError = IC.dictFitFH_Chadwick['Full']['error']
 
-                if (not fitError):                
-                    ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-                            color = 'chartreuse', zorder = 6)
-                    # if not IC.error_bestH0:
-                    #     ax.plot(IC.Df['T'].values[0], IC.bestH0, 
-                    #             color = '#b29600', marker = '*', markersize = 4, zorder = 3)  
-                else:
-                    ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-                            color = 'crimson', zorder = 6)
-            else:
-                ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-                        color = 'crimson', zorder = 6)
-        (axm, axM) = ax.get_ylim()
-        ax.set_ylim([min(-0,axm), axM])
-        # ax.set_xlim([0, min(185, ax.get_xlim()[-1])])
-        # ax.axhline(0, color=color, )
-        ax.grid(axis='y', zorder=0)
-        # if (max(self.tsDf['D3'].values-self.DIAMETER) > 200):
-        #     ax.set_yticks(np.arange(0, max(self.tsDf['D3'].values-self.DIAMETER), 100))
-        
-        # Force axis
+        #         if (not fitError):                
+        #             ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
+        #                     color = 'chartreuse', zorder = 6)
+        #         else:
+        #             ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
+        #                     color = 'crimson', zorder = 6)
+        #     else:
+        #         ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
+        #                 color = 'crimson', zorder = 6)
+        (ax_ym, ax_yM) = ax.get_ylim()
+        ax.set_ylim([min(-0,ax_ym), ax_yM])
+        ax.set_ylim([0, 600])
         ax.tick_params(axis='y', labelcolor = color)
-        ax2bis = ax.twinx()
-        color = 'firebrick'
-        # ax2bis.set_ylabel('Force (pN)', color=color)
-        ax2bis.set_ylabel('Force (nN)', color=color)
-        # ax2bis.plot(self.tsDf['T'].values[idx], self. tsDf['F'].values[idx], color=color)
-        ax2bis.plot(self.tsDf.loc[indexLoops, 'T'].values, self. tsDf.loc[indexLoops, 'F'].values/1e3, color=color, lw=1.5)
-        ax2bis.tick_params(axis='y', labelcolor=color)
-        ax2bis.set_yticks([0, 0.5, 1.0, 1.5])
-        minh = np.min(self.tsDf['D3'].values - self.DIAMETER)
-        ratio = min(1/abs(minh/axM), 5)
-        (axmbis, axMbis) = ax2bis.get_ylim()
-        # ax2bis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values))])
-        ax2bis.set_ylim([0, max(axMbis*ratio, 3*max(self.tsDf['F'].values/1e3))])
+        ax.grid(axis='y', zorder=0)
         
-        all_axes = [axes[0], ax1bis, axes[1], ax2bis]
+        # Force plot
+        ax = ax2
+        color = 'firebrick'
+        ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+        ax.plot(self.tsDf['T'].values, self. tsDf['F'].values/1e3, color=color, lw=1.5)
+        ax.tick_params(axis='y', labelcolor=color)
+        ax.set_yticks([0, 0.5, 1.0, 1.5])
+        ax.grid(axis='y', zorder=0)
+        (ax_ym, ax_yM) = ax.get_ylim()
+        # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
+        ax.set_ylim([0, 1.1])
+        
+        #### Shades
+        for i in range(1, len(self.listIndent)+1):
+            df = self.tsDf[self.tsDf['idxLoop'] == (i)]
+            # print(df.idxAnalysis)
+            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
+            t2 = df['T'].values[ufun.findFirst(i, df.idxAnalysis)]
+            t3 = df['T'].values[ufun.findLast(i, df.idxAnalysis)]
+            t4 = df['T'].values[ufun.findLast(-i, df.idxAnalysis)]
+            for ax in [ax1, ax2]:
+                ax.axvspan(t1, t2, color='grey', alpha=0.15, zorder = 0, ec=None)
+                ax.axvspan(t2, t3, color='grey', alpha=0.3, zorder = 0, ec=None)
+        
+        LM0 = mpatches.Rectangle((0, 0), 0, 0, facecolor='w', 
+                                 edgecolor='k', linewidth=0.2,
+                                 label='Constant field')
+        LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
+                                   label='Force release')
+        LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
+                                   label='Compression and relaxation')
+        LegendHandles = [LM0, LM1, LM2]
+        
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.15, zorder = 0, ec=None,
+        #            label = 'Release of the force')
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.3, zorder = 0, ec=None,
+        #            label = 'Compression and relaxation')
+        
+        #### shared formatting 
+        (ax_xm, ax_xM) = ax.get_xlim()
+        
+        ax1.set_xlim([0, ax_xM])
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
+        ax1.legend(handles=LegendHandles, loc='upper right', 
+                   handlelength = 1.5, handleheight = 1, 
+                   framealpha=1, fontsize=5, labelspacing=0.25)
+
+        ax2.set_xlim([0, ax_xM])
+        ax2.set_xlabel('Time (s)', labelpad=1)
+        ax2.legend().set_visible(False)
+        
         fig.tight_layout()
+        axes = [ax1, ax2]
         return(fig, axes)
     
     
     def Pplot_FH500(self, plotSettings):
-        gs.set_smallText_options_jv()
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
         nColsSubplot = 1
         nRowsSubplot = 5
         fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
-                                 figsize = (9/gs.cm_in, 25.7/gs.cm_in))
+                                 figsize = (8/gs.cm_in, 25/gs.cm_in))
         # figTitle = 'Thickness-Force of indentations\n'
         # if plotH0:
         #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
@@ -1859,8 +1904,18 @@ class CellCompression:
             figSubDir_Papier = 'F1'
             
             try:
-                name = self.cellID + '_F1C_h(t)'
-                fig, ax = self.Pplot_TimeseriesZoom(plotSettings)
+                name = self.cellID + '_F1C_hF(t)'
+                fig, ax = self.Pplot_Timeseries(plotSettings)
+                ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+                ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            except:
+                pass
+            
+            try:
+                name = self.cellID + '_F1C_hF(t)_V2'
+                fig, ax = self.Pplot_Timeseries_V2(plotSettings)
                 ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
                                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
                 ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
@@ -3334,6 +3389,11 @@ class IndentCompression:
 
 
     def Pplot_FH500(self, fig, ax, plotSettings):
+        cm_in = 2.52
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
         color_base = 'lightblue'
         color_relax = 'palegreen'
         # color_VW   = 'red'
@@ -3367,7 +3427,7 @@ class IndentCompression:
                 legendText += '\n$H_0$ = '     + f'{H0:.0f} nm'
                 legendText += '\n$E$ = ' + f'{E/1000:.2f} kPa'
                 legendText += '\n$R^2$ = '     + f'{R2:.3f}'
-                ax.plot(hPredict, fFit, ls='--', color = color_Chad, linewidth = 1.5, 
+                ax.plot(hPredict, fFit, ls='-', color = color_Chad, linewidth = 1.0, 
                         label = legendText, zorder = 5)
                 
             else:
@@ -3384,12 +3444,23 @@ class IndentCompression:
                 fFit = dictFit['x']
                 hPredict = dictFit['yPredict']
                 
+                F_max = np.max(fFit)
+                F_plot = np.linspace(0, F_max, 100)
+                H_plot = inversedChadwickModel(F_plot, E, H0/1000, self.DIAMETER/1000)*1000
+                
                 legendText = r'$\bf{Fit\ F < 500 pN}$'
-                legendText += '\n$H_0$ = '     + f'{H0:.0f} nm'
+                legendText += '\n$H_{500}$ = '     + f'{H0:.0f} nm'
                 legendText += '\n$E_{500}$ = ' + f'{E/1000:.2f} kPa'
                 legendText += '\n$R^2$ = '     + f'{R2:.3f}'
-                ax.plot(hPredict, fFit, ls='--', color = color_Chad400, linewidth = 1.5, 
-                        label = legendText, zorder = 6)
+                # ax.plot(hPredict, fFit, ls='--', color = color_Chad400, 
+                #         linewidth = 1.5, label = legendText, zorder = 6)
+                ax.plot(H_plot, F_plot, ls='-', color = color_Chad400, 
+                        linewidth = 1.0, label = legendText, zorder = 6)
+    
+                legendText += '$H_{500}$ = ' + f'{H0:.0f} nm' #+ '\n' + str_m_z
+                ax.plot([H0], [0], ls = '', marker = '+', color = apm.lightenColor(color_Chad400, 0.8), 
+                        markersize = 5, zorder = 8, mew=1.5)
+            
             else:
                 titleText += '\nFIT ERROR'
                 
@@ -3421,7 +3492,8 @@ class IndentCompression:
             #     ax.plot(plot_startH, plot_startF, ls = '--', color = color_H0, linewidth = 1.5, zorder = 2)
 
             # ax = ufun.setAllTextFontSize(ax, size = 9)
-            ax.legend(loc='upper left', bbox_to_anchor=(1, 1.01), fontsize = 6)
+            ax.legend(loc='upper left', bbox_to_anchor=(1, 1.01), 
+                      handlelength=1, fontsize = 6)
             # ax.title.set_text(titleText)
             ax.grid(axis='y')
             

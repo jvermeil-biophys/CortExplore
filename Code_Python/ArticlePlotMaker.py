@@ -257,7 +257,7 @@ def consoleTextTester_02():
     print("\033[1;37;40m White          \033[0m 1;37;40m            \033[0;37;40m Light Grey \033[0m 0;37;40m               \033[0;37;48m Black      \033[0m 0;37;48m")
     print("\n")
     
-consoleTextTester_01()
+# consoleTextTester_01()
 # consoleTextTester_02()
     
     
@@ -419,7 +419,9 @@ def dataGroup_weightedAverage(df, groupCol = 'cellID', idCols = [],
     return(data_agg)
 
 
-def makeCountDf(df, condition):   
+def makeCountDf(df, condition):
+    if not 'compNum' in df.columns:
+        df['compNum'] = np.ones(len(df))
     cols_count_df = ['compNum', 'cellID', 'manipID', 'date']
     if not condition in cols_count_df:
         cols_count_df.append(condition)

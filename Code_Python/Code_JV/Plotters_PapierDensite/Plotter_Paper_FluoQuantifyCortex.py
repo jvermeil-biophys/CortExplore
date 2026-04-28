@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as mpltPath
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
+from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
 
 from PIL import Image
 from PIL.TiffTags import TAGS
@@ -51,14 +52,14 @@ from Chameleon_BeadTracker import smallTracker
 
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
 Set2 = apm.cL_Set2
-cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5], Set2[7]]
 cM_f3 = matplotlib.colors.ListedColormap(cL_f3, name='from_list')
 
 #### Graphic options
 
 SCALE_100X_ZEN = 7.4588
 cm_in = 2.52
-apm.setGraphicOptions(mode = 'screen', 
+apm.setGraphicOptions(mode = 'print', 
                       palette = 'Set2', 
                       colorList = apm.cL_Set21)
 
@@ -936,13 +937,7 @@ for t in range(nT):#(nT):
     dfContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
     dfBeforeContact.loc[t, ['iT', 'T', 'X', 'Y', 'iZ', 'Z']] = [t, Fluo_T[t], x_contact, y_contact, iz_contact, iz_contact*dz]
     dfBeforeContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
-    # Zr = (-1) * (tsd_t['Zr_in']+tsd_t['Zr_out'])/2 # Taking the opposite cause the depthograph is upside down for these experiments
-    # izmid = (nZ-1)//2 # If 11 points in Z, izmid = 5
-    # zz = dz * np.arange(-izmid, +izmid, 1) # If 11 points in Z, zz = [-5, -4, ..., 4, 5] * dz
-    # zzf = zz + Zr # Coordinates zz of bf images with respect to Zf, the Z of the focal point of the deptho
-    # zzeq = zz + Zr + DZo - DZb # Coordinates zz of fluo images with respect to Zeq, the Z of the equatorial plane of the bead
-    
-    # zi_contact = Akima1DInterpolator(zzeq, np.arange(len(zzeq)))(0)
+
     
     A_contact_map = 0
     foundContact = False
@@ -997,47 +992,7 @@ for t in range(nT):#(nT):
             edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
             edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
             arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-        
-        # fig, ax = plt.subplots(1, 1)
-        # ax.imshow(I_zt, cmap='gray', aspect='equal')
-        # ax.plot(edge_viterbi_unwarped[0], edge_viterbi_unwarped[1], c='g', ls = '--')
-        # ax.plot(Xc, Yc, 'go')
-        # CC = circleContour_V2((Yc, Xc), Rc)
-        # [yy_circle, xx_circle] = CC.T
-        # ax.plot(xx_circle, yy_circle, 'b--')
-        # ax.set_title('Detected contours')
-        # fig.tight_layout()
-        # plt.show()
-
-        # #### 3.0 Locate cell
-        # (Xc, Yc), Rc = fitCircle(np.array([edge_viterbi_unwarped[1], edge_viterbi_unwarped[0]]).T, loss = 'huber')
-        # previousCircleXYR = (Xc, Yc, Rc)
-        # Yc0, Xc0, Rc0 = round(Yc), round(Xc), round(Rc)
-        
-        # #### 3.1 Warp
-        # warped = skm.transform.warp_polar(I_zt, center=(Yc, Xc), radius=warp_radius, #Rc*1.4, 
-        #                                   output_shape=None, scaling='linear', channel_axis=None)
-        # warped = skm.util.img_as_uint(warped)
-        # w_ny, w_nx = warped.shape
-        # Angles = np.arange(0, 360, 1)
-        # max_values = np.max(warped[:,Rc0-inPix_set:Rc0+outPix_set+1], axis=1)
-        
-        # # #### 3.2 Interp in X
-        # # warped_interp = ufun.resize_2Dinterp(warped, fx=interp_factor_x, fy=1)
-        # # warped = warped_interp
-        # # w_nx, Rc0 = w_nx * interp_factor_x, Rc0 * interp_factor_x
-        # # inPix, outPix = inPix_set * interp_factor_x, outPix_set * interp_factor_x
-        # # R_contact *= interp_factor_x
-        # # blur_parm *= interp_factor_x
-        
-        # inPix, outPix = inPix_set, outPix_set
-        
-        # #### 3.3 Viterbi Smoothing
-        # edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
-        # # edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi)/interp_factor_x, Angles, Xc, Yc)
-        # edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
-        # arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-        
+           
         
         R_contact, A_contact = warpXY(x_contact*SCALE_100X_ZEN, y_contact*SCALE_100X_ZEN, Xc, Yc)
         if (z == np.round(iz_contact)) or (not foundContact and z == nZ-1):
@@ -1684,15 +1639,7 @@ def doFluoAnalysis(date, cell,
         
         dfContact.loc[t, ['iT', 'T', 'X', 'Y', 'iZ', 'Z']] = [t, Fluo_T[t], x_contact, y_contact, iz_contact, iz_contact*dz]
         dfContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
-    
-        
-        # Zr = (-1) * (tsd_t['Zr_in']+tsd_t['Zr_out'])/2 # Taking the opposite cause the depthograph is upside down for these experiments
-        # izmid = (nZ-1)//2 # If 11 points in Z, izmid = 5
-        # zz = dz * np.arange(-izmid, +izmid, 1) # If 11 points in Z, zz = [-5, -4, ..., 4, 5] * dz
-        # zzf = zz + Zr # Coordinates zz of bf images with respect to Zf, the Z of the focal point of the deptho
-        # zzeq = zz + Zr + DZo - DZb # Coordinates zz of fluo images with respect to Zeq, the Z of the equatorial plane of the bead
-        
-        # zi_contact = Akima1DInterpolator(zzeq, np.arange(len(zzeq)))(0)
+
         
         A_contact_map = 0
         foundContact = False
@@ -1745,47 +1692,7 @@ def doFluoAnalysis(date, cell,
                 edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
                 edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
                 arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-            
-            # fig, ax = plt.subplots(1, 1)
-            # ax.imshow(I_zt, cmap='gray', aspect='equal')
-            # ax.plot(edge_viterbi_unwarped[0], edge_viterbi_unwarped[1], c='g', ls = '--')
-            # ax.plot(Xc, Yc, 'go')
-            # CC = circleContour_V2((Yc, Xc), Rc)
-            # [yy_circle, xx_circle] = CC.T
-            # ax.plot(xx_circle, yy_circle, 'b--')
-            # ax.set_title('Detected contours')
-            # fig.tight_layout()
-            # plt.show()
-    
-            # #### 3.0 Locate cell
-            # (Xc, Yc), Rc = fitCircle(np.array([edge_viterbi_unwarped[1], edge_viterbi_unwarped[0]]).T, loss = 'huber')
-            # previousCircleXYR = (Xc, Yc, Rc)
-            # Yc0, Xc0, Rc0 = round(Yc), round(Xc), round(Rc)
-            
-            # #### 3.1 Warp
-            # warped = skm.transform.warp_polar(I_zt, center=(Yc, Xc), radius=warp_radius, #Rc*1.4, 
-            #                                   output_shape=None, scaling='linear', channel_axis=None)
-            # warped = skm.util.img_as_uint(warped)
-            # w_ny, w_nx = warped.shape
-            # Angles = np.arange(0, 360, 1)
-            # max_values = np.max(warped[:,Rc0-inPix_set:Rc0+outPix_set+1], axis=1)
-            
-            # # #### 3.2 Interp in X
-            # # warped_interp = ufun.resize_2Dinterp(warped, fx=interp_factor_x, fy=1)
-            # # warped = warped_interp
-            # # w_nx, Rc0 = w_nx * interp_factor_x, Rc0 * interp_factor_x
-            # # inPix, outPix = inPix_set * interp_factor_x, outPix_set * interp_factor_x
-            # # R_contact *= interp_factor_x
-            # # blur_parm *= interp_factor_x
-            
-            # inPix, outPix = inPix_set, outPix_set
-            
-            # #### 3.3 Viterbi Smoothing
-            # edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
-            # # edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi)/interp_factor_x, Angles, Xc, Yc)
-            # edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
-            # arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-            
+                        
             
             R_contact, A_contact = warpXY(x_contact*SCALE_100X_ZEN, y_contact*SCALE_100X_ZEN, Xc, Yc)
             if (z == np.round(iz_contact)) or (not foundContact and z == nZ-1):
@@ -2126,7 +2033,7 @@ def doFluoAnalysis(date, cell,
     print(f'Done for {cellId} :D')
     
 
-#### Call the function
+# %%%% Call the function 24-02-27 C6
 
 # date = '24-02-27'
 
@@ -2141,7 +2048,7 @@ def doFluoAnalysis(date, cell,
 #                    SAVE_RESULTS = True,
 #                    PLOT_WARP = True, PLOT_MAP = True, PLOT_NORMAL = True)
 
-#### Call the function
+# %%%% Call the function 24-06-14
 
 # date = '24-06-14'
 
@@ -2374,7 +2281,8 @@ def plotActinQuantity(cellId, t, profileMatrix, dfContact,
         return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
     
     try:                
-        popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
+        popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], 
+                                        p0=[eR, Q_vb, (rf-ri)],
                                         bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
         m_gf, Q_gf, s_gf = popt
         xfit = np.linspace(eR-20, eR+20, 200)
@@ -2408,14 +2316,15 @@ def plotActinQuantity(cellId, t, profileMatrix, dfContact,
     # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
     # 3
     if not fitError:
-        ax.plot(xfit/7.4588, yfit, c='brown', ls='--', lw = 1, label=f'Gaussian fit:\nQ={Q_gf:.1f}')
+        ax.plot(xfit/7.4588, yfit, c='brown', ls='--', lw = 1, 
+                label=f'Gaussian fit:\nQ={Q_gf:.1f}', handlelength=1)
     
     ax.legend(fontsize=7)
     # ax.set_title('Actin quantification')
-    ax.set_ylabel(f'Normalized intensity', fontsize = 8)
-    ax.set_xlabel(f'r (µm)', fontsize = 8)
+    ax.set_ylabel(f'Normalized intensity', labelpad=0.5) #, fontsize = 8)
+    ax.set_xlabel(f'r (µm)', labelpad=0.5) #, fontsize = 8)
     ax.set_xlim([0, 12.3])
-    ax.tick_params(axis='both', which='major', labelsize=6)
+    ax.tick_params(axis='both', which='major') #, labelsize=6)
     ax.grid(axis = 'y')
     # if z==nZ_scan-1:
     #     ax.set_title(f'a = {iia:.0f} (°)')
@@ -2443,9 +2352,9 @@ def plotActinQuantity(cellId, t, profileMatrix, dfContact,
     
     return(dfContact)
 
-plotActinQuantity(cellId, 1, profileMatrix, dfContact,
-                  fluoCell, fluoCyto, fluoBack, fluoBeadIn,
-                  figSavePath)
+# plotActinQuantity(cellId, 1, profileMatrix, dfContact,
+#                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
+#                   figSavePath)
 
 # plotActinQuantity(cellId, t, profileMatrix, dfContact,
 #                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
@@ -2469,7 +2378,9 @@ plotActinQuantity(cellId, 1, profileMatrix, dfContact,
 
 def actinQuantity(cellId, t, profileMatrix, dfContact,
                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
-                  figSavePath, comparePlot = False, PLOT_M = False):
+                  figSavePath, comparePlot = False, 
+                  PLOT = False, PLOT_M = False):
+    
     pM = profileMatrix[t]
     approxR = round(dfContact.loc[dfContact['iT']==t, 'R'].values[0])
     iz = dfContact.loc[dfContact['iT']==t, 'iZ'].values[0]
@@ -2487,7 +2398,15 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
     nA_scan = 5
     nZ_scan = 3
     nZ_scanCount = 0
-    fig, axes = plt.subplots(nZ_scan, nA_scan, figsize=(3*nA_scan, 2.5*nZ_scan), sharex='col', sharey='row')
+    
+    if PLOT:
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        fig, axes = plt.subplots(nZ_scan, nA_scan, layout='compressed',
+                                 figsize=(3*nA_scan/apm.cm_in, 2.5*nZ_scan/apm.cm_in), 
+                                 sharex='col', sharey='row')
     
     
     
@@ -2575,114 +2494,125 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
                 except:
                     fitError = True
                 
-                ax = axes[nZ_scan-z-1, a]            
-                ax.plot(np.arange(Np), profile_n)
-                ax.axvline(eR, c='r', ls='--')
-                # 1
-                ax.axvline(eR-n_in, c='cyan', ls='--', lw=1)
-                ax.axvline(eR+n_out+1, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
-                # 2
-                ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
-                ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
-                # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
-                ax.axvline(ri, c='orange', ls='--', lw=1)
-                ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
-                # 3
-                if not fitError:
-                    ax.plot(xfit, yfit, c='gold', label=f'Gaussian fit: Q={Q_gf:.1f}\nR2={r_squared:.2f}')
-                
-                ax.legend(fontsize=8, loc='lower left')
-                
-                if a==0:
-                    ax.set_ylabel(f'z={izr + iiz:.0f}; zr={iiz:.0f} (steps)')
-                if z==nZ_scan-1:
-                    ax.set_title(f'a = {iia:.0f} (°)')
-    
-    fig.suptitle(f'{cellId} - t={t+1:.0f}')
-    fig.tight_layout()
-    ufun.simpleSaveFig(fig, f'ProfileMetrics_t{t+1:.0f}', figSavePath, '.png', 150)
-    plt.show()
+                if PLOT:
+                    ax = axes[nZ_scan-z-1, a]            
+                    ax.plot(np.arange(Np), profile_n)
+                    ax.axvline(eR, c='r', ls='--')
+                    # 1
+                    # ax.axvline(eR-n_in, c='cyan', ls='--', lw=1)
+                    # ax.axvline(eR+n_out+1, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
+                    # 2
+                    # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
+                    # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
+                    # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
+                    # ax.axvline(ri, c='orange', ls='--', lw=1)
+                    # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
+                    # 3
+                    if not fitError:
+                        ax.plot(xfit, yfit, c='gold', 
+                                label=f'Q={Q_gf:.1f}')
+                                # label=f'Gaussian fit:\nQ={Q_gf:.1f}\nR2={r_squared:.2f}')
+                    ax.legend(loc='upper left', handlelength=0.5)
+                    if a==0:
+                        ax.set_ylabel(f'z={izr + iiz:.0f} | zr={iiz:.0f}',
+                                      labelpad=0.5)
+                    if z==nZ_scan-1:
+                        ax.set_title(f'$\\theta$ = {iia:.0f} (°)')
+                        
+    if PLOT:
+        # fig.suptitle(f'{cellId} - t={t+1:.0f}')
+        # fig.tight_layout()
+        # ufun.simpleSaveFig(fig, f'ProfileMetrics_t{t+1:.0f}', figSavePath, '.png', 150)
+        figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
+        ufun.archiveFig(fig, name = f'15ProfileMetrics_t{t+1:.0f}', ext = '.pdf', dpi = 300,
+                        figDir = figDir, figSubDir = 'S3', cloudSave = 'flexible')
+        plt.show()
     
     #### Manuscript Plot
-    # if PLOT_M:
-    #     figM, axM = plt.subplots(1, 3, figsize=(17/cm_in, 5.5/cm_in))
-    #     Ac = pM.shape[1]//2
-    #     profile = pM[izr + iiz, Ac + iia, :]  
-    #     eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
-    #     Np = len(profile)
+    if PLOT_M:
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
         
-    #     Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
-    #     Ibeadin = fluoBeadIn[t, izr + iiz]
+        figM, axM = plt.subplots(1, 3, figsize=(13.5/cm_in, 4.5/cm_in), layout='compressed')
+        Ac = pM.shape[1]//2
+        profile = pM[izr + iiz, Ac + iia, :]  
+        eR = (approxR - 5) + np.argmax(profile[approxR-5:approxR+20])
+        Np = len(profile)
         
-    #     def normalize_Icell(x):
-    #         return((x - Iback)/(Icell - Iback))
-    #     profile_n = normalize_Icell(profile)
+        Icell, Icyto, Iback = fluoCell[t, izr + iiz], fluoCyto[t, izr + iiz], fluoBack[t, izr + iiz]
+        Ibeadin = fluoBeadIn[t, izr + iiz]
+        
+        def normalize_Icell(x):
+            return((x - Iback)/(Icell - Iback))
+        profile_n = normalize_Icell(profile)
 
-    #     eV = profile_n[eR]
+        eV = profile_n[eR]
         
-    #     bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
-    #     bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
-    #     ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
-    #     rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
+        bead_in_level = normalize_Icell(Ibeadin) * 0.8 + eV * 0.2
+        bead_out_level = 0.5*eV + 0.5*np.median(profile_n[-5:])
+        ri = eR - ufun.findFirst(True, profile_n[:eR][::-1]<bead_in_level)
+        rf = eR + ufun.findFirst(True, profile_n[eR:]<bead_out_level)
 
-    #     # Calculation 1
-    #     n_in, n_out = 10, 5
-    #     Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
+        # Calculation 1
+        n_in, n_out = 10, 5
+        Q_fbL = np.sum(profile_n[eR-n_in:eR+n_out+1])
         
-    #     # Calculation 1
-    #     n_inN, n_outN = 5, 3
-    #     Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
+        # Calculation 1
+        n_inN, n_outN = 5, 3
+        Q_fbN = np.sum(profile_n[eR-n_inN:eR+n_outN+1])
         
-    #     # Calculation 2
-    #     Q_vb = np.sum(profile_n[ri:rf+1])
+        # Calculation 2
+        Q_vb = np.sum(profile_n[ri:rf+1])
 
-    #     # Calculation 3
-    #     ### bead_in_level = 0.9
-    #     ### bead_out_level = 0.95
-    #     ###(2*bead_in_level+eV)/3)
-    #     def Gfit(x, m, Q, s):
-    #         # m = eR
-    #         return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
+        # Calculation 3
+        ### bead_in_level = 0.9
+        ### bead_out_level = 0.95
+        ###(2*bead_in_level+eV)/3)
+        def Gfit(x, m, Q, s):
+            # m = eR
+            return((Q/(s*(2*np.pi)**0.5)) * np.exp(-(x-m)**2/(2*s**2)))
         
-    #     try:                
-    #         popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
-    #                                         bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
-    #         m_gf, Q_gf, s_gf = popt
-    #         xfit = np.linspace(eR-20, eR+20, 200)
-    #         yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
-    #         list_Q_gf.append(Q_gf)
-    #         list_S_gf.append(s_gf)
-    #         fitError = False
-    #     except:
-    #         fitError = True
+        try:                
+            popt, pcov = optimize.curve_fit(Gfit, np.arange(ri, rf), profile_n[ri:rf], p0=[eR, Q_vb, (rf-ri)],
+                                            bounds = ([ri, 0, 0], [rf, 2*Q_vb, 4*(rf-ri)]))
+            m_gf, Q_gf, s_gf = popt
+            xfit = np.linspace(eR-20, eR+20, 200)
+            yfit = Gfit(xfit, m_gf, Q_gf, s_gf)
+            list_Q_gf.append(Q_gf)
+            list_S_gf.append(s_gf)
+            fitError = False
+        except:
+            fitError = True
         
-    #     ax = axM[2]            
-    #     ax.plot(np.arange(Np)/7.4588, profile_n)
-    #     ax.axvline(eR/7.4588, c='r', ls='-', lw=0.75)
-    #     # 1
-    #     # ax.axvline(eR-n_in/7.4588, c='cyan', ls='--', lw=1)
-    #     # ax.axvline((eR+n_out+1)/7.4588, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
-    #     # 2
-    #     # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
-    #     # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
-    #     # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
-    #     # ax.axvline(ri, c='orange', ls='--', lw=1)
-    #     # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
-    #     # 3
-    #     if not fitError:
-    #         ax.plot(xfit/7.4588, yfit, c='gold', ls='--', lw = 1, label=f'Gaussian fit:\nQ={Q_gf:.1f}')
+        ax = axM[2]            
+        ax.plot(np.arange(Np)/7.4588, profile_n)
+        ax.axvline(eR/7.4588, c='r', ls='--', lw=0.75)
+        # 1
+        # ax.axvline(eR-n_in/7.4588, c='cyan', ls='--', lw=1)
+        # ax.axvline((eR+n_out+1)/7.4588, c='cyan', ls='--', lw=1, label=f'Fixed boundaries: Q={Q_fbL:.1f}')
+        # 2
+        # ax.axhline(bead_in_level, c='green', ls='-.', lw=1)
+        # ax.axhline(bead_out_level, c='green', ls='-.', lw=1)
+        # ax.axhline(normalize_Icell(Ibeadin), c='orange', ls='-.', lw=0.8)
+        # ax.axvline(ri, c='orange', ls='--', lw=1)
+        # ax.axvline(rf, c='orange', ls='--', lw=1, label=f'Variable boundaries: Q={Q_vb:.1f}') #, label='Gaussian boundaries')
+        # 3
+        if not fitError:
+            ax.plot(xfit/7.4588, yfit, c='gold', ls='-', lw = 1, 
+                    label=f'Gaussian fit:\nQ={Q_gf:.1f}')
         
-    #     ax.legend(fontsize=6, loc='upper left')
-    #     ax.set_title('Actin quantification')
-    #     ax.set_ylabel(f'Normalized intensity', fontsize = 8)
-    #     ax.set_xlabel(f'r (µm)', fontsize = 8)
-    #     ax.tick_params(axis='both', which='major', labelsize=6)
-    #     ax.grid(axis = 'y')
-    #     # if z==nZ_scan-1:
-    #     #     ax.set_title(f'a = {iia:.0f} (°)')
-    #     figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-    #     ufun.archiveFig(figM, name = f'ProfileMetrics_t{t+1:.0f}', ext = '.pdf', dpi = 100,
-    #                     figDir = figDir, figSubDir = 'E-h-Fluo', cloudSave = 'flexible')
+        ax.legend(loc='upper left', handlelength=1, fontsize=5)
+        ax.set_title('Actin quantification')
+        ax.set_ylabel(f'Normalized intensity', labelpad=0.5)
+        ax.set_xlabel(f'r (µm)', labelpad=0.5)
+        ax.tick_params(axis='both', which='major')
+        ax.grid(axis = 'y')
+        # if z==nZ_scan-1:
+        #     ax.set_title(f'a = {iia:.0f} (°)')
+        figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
+        ufun.archiveFig(figM, name = f'ProfileMetrics_t{t+1:.0f}', ext = '.pdf', dpi = 300,
+                        figDir = figDir, figSubDir = 'S3', cloudSave = 'flexible')
             
             
     avg_Q_fbL = np.mean(np.sort(list_Q_fbL)[2:-3])
@@ -2726,14 +2656,11 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
 
 
 
-
-
 # for t in range(nT):
 #     dfContact = actinQuantity(t, profileMatrix, dfContact,
 #                               fluoCell, fluoCyto, fluoBack, fluoBeadIn,
 #                               figSavePath)
 # dfContact.to_csv(os.path.join(dstDir, f'{cellId}_dfContact.csv'), sep=';', index=False)
-
 
 
 
@@ -2745,9 +2672,12 @@ def actinQuantity(cellId, t, profileMatrix, dfContact,
 #                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
 #                   figSavePath, comparePlot = False)
 
+
+
 # %%%% As a function
 
 def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
+    
     date2 = dateFormat(date)
 
     cellId = f'{date}_{cell}'
@@ -2768,7 +2698,8 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
     resFluoDir =  dstDir
     figSavePath = dstDir
 
-    dfContact = pd.read_csv(os.path.join(resFluoDir, f'{cellId}_DfContact.csv'), sep=None, engine='python')
+    dfContact = pd.read_csv(os.path.join(resFluoDir, f'{cellId}_DfContact.csv'), 
+                            sep=None, engine='python')
     fluoCyto = np.loadtxt(os.path.join(resFluoDir, f'{cellId}_fluoCyto.txt'))
     fluoBack = np.loadtxt(os.path.join(resFluoDir, f'{cellId}_fluoBack.txt'))
     # fluoCytoStd = np.loadtxt(os.path.join(resFluoDir, f'{cellId}_fluoCytoStd.txt'))
@@ -2780,13 +2711,14 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
     for t in range(nT):
         dfContact = actinQuantity(cellId, t, profileMatrix, dfContact,
                                   fluoCell, fluoCyto, fluoBack, fluoBeadIn,
-                                  figSavePath)
+                                  figSavePath, comparePlot = False, 
+                                  PLOT = True, PLOT_M = True)
 
     dfContact.to_csv(os.path.join(dstDir, f'{cellId}_dfContact.csv'), sep=';', index=False)
     
 #### Call the function - 24-02-27
 
-# date = '24-02-27'
+date = '24-02-27'
 
 # specif = '_off3-5um'
 # specifFolder = ''
@@ -2802,6 +2734,12 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
 #     actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
 #     plt.close('all')
 
+specif = '_off4um'
+specifFolder = ''
+cells = ['C11'] # 
+for cell in cells:
+    actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
+    plt.close('all')
 
 # date = '24-02-27'
 # specif = '_off4um'
@@ -2835,18 +2773,18 @@ def actinQuantity_multiCells(date, cell, specif = '', specifFolder = ''):
 
 #### Call the function - 24-06-14
 
-date = '24-06-14'
+# date = '24-06-14'
 
-specif = ''
-specifFolder = 'M1/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
-cells = ['C' + str(i) for i in range(1, 9)]
-for cell in cells:
-    # if cell != 'C10':
-    try:
-        actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
-        plt.close('all')
-    except:
-        continue
+# specif = ''
+# specifFolder = 'M1/' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
+# cells = ['C' + str(i) for i in range(1, 9)]
+# for cell in cells:
+#     # if cell != 'C10':
+#     try:
+#         actinQuantity_multiCells(date, cell, specif = specif, specifFolder = specifFolder)
+#         plt.close('all')
+#     except:
+#         continue
 
 # %%%% Cross results - '24-06-14'
 
@@ -2922,8 +2860,8 @@ date = '24-02-27'
 specif = '_off4um' #'_off4um'
 specifFolder = '' # 'M2-20um/B5mT/' # 'M2-20um/Bstairs/' # 'M2-20um/B5mT/'
 date2 = dateFormat(date)
-cells = ['C2'] + ['C' + str(i) for i in range(5, 13)]
-# cells = ['C11']
+# cells = ['C2'] + ['C' + str(i) for i in range(5, 13)]
+cells = ['C11']
 Dmoy = 4.4995
 
 list_df = []
@@ -3115,11 +3053,12 @@ global_df.to_csv(os.path.join(resCrossDir, f'{date}_global_DfMerged.csv'), sep='
 # %%% Settings & Dataset
 
 Set2 = apm.cL_Set2
-cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cL_f3 = [Set2[0], Set2[1], Set2[4], Set2[5], Set2[7]]
 cM_f3 = matplotlib.colors.ListedColormap(cL_f3, name='from_list')
 
 #### Standard
-global_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/All_global_DfMerged.csv"), sep=None, engine='python')
+global_df = pd.read_csv(os.path.join(cp.DirDataAnalysis, "FluoQuantifs/All_global_DfMerged.csv"), 
+                        sep=None, engine='python')
 global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
 global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
 # global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
@@ -3137,12 +3076,22 @@ excludedCells = ['24-05-24_M2_P1_C4', '24-05-24_M2_P1_C13',
                  '24-06-14_M1_P1_C10', '24-06-14_M1_P1_C12', 
                  '24-06-14_M1_P1_C17', ] # '24-06-14_M3_P1_C4'
 
-Filters = [(global_df['cellID'].apply(lambda x : x not in excludedCells)),
+CountByCond, CountByCell = apm.makeCountDf(global_df, 'date')
+global_df_count = CountByCell[['compCount']].rename(columns={'compCount':'c'})
+CID_longSeries = global_df_count[global_df_count['c'] >= 7].index
+
+Filters = [
+           (global_df['cellID'].apply(lambda x : x not in excludedCells)),
+           (global_df['cellID'].apply(lambda x : x in CID_longSeries)),
            ]
 
+global_df_NoFilters = global_df
 global_df = filterDf(global_df, Filters)
 
-#### Wtih compressions
+
+
+
+#### With compressions
 Filters = [(global_df['date'] == '24-06-14'),
            (global_df['manip'].apply(lambda x : x in ['M2', 'M3'])),
            (global_df['cellID'].apply(lambda x : x not in ['24-06-14_M2_P1_C1'])),
@@ -3174,21 +3123,166 @@ merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
 merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
 
 
+# %%% F3D - Plot quantity - Few cells !
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'Q-H_exampleCells_2'
+
+# 
+df = global_df_NoFilters
+
+Set2 = matplotlib.colormaps['Set2'].colors
+cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
+cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
+
+# fig, ax = plt.subplots(1, 1, figsize = (6/cm_in, 8/cm_in))#, layout="constrained")
+fig, ax = plt.subplots(1, 1, figsize = (3.5/cm_in, 5/cm_in), layout='compressed')#, layout="constrained")
+
+# style = 'date'
+# hue = 'cell'
+
+hue = 'manipID'
+style = 'cell'
+metric = 'Q_gf'
 
 
-# %%% Plot exponents for all cells LIN
+cid_list = [
+            '24-06-14_M1_P1_C2',
+            '24-06-14_M1_P1_C4',
+            '24-06-14_M2_P1_C7',
+            # '24-02-27_M1_P1_C5',
+            '24-02-27_M1_P1_C7',
+           ]
 
-figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
-figSubDir = 'Test_Paper'
 
-# '24-02-27', '24-05-24', '24-06-14'
-# date = '24-06-14'
+# Filter global_df
+
+Filters = [
+           #  (global_df['h3'] < 1.1),
+           # (global_df['Q_gf'] < 40),
+            # (df['date'] == '24-06-14'),
+            (df['cellID'].apply(lambda x : x in cid_list)),
+           ]
+
+df_f = filterDf(df, Filters)
+df_f = df_f.dropna(subset=metric)
+df_f['h3'] *= 1000
+
+
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot 1 - Lin scale
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+# dict_fits = {'cellID':[],
+#              'alpha':[],
+#              'alpha_ciw':[],
+#              # 'Xplot':[],
+#              # 'Yplot':[],
+#              'pval':[],}
+
+for i, cid in enumerate(cid_list):
+    df_cid = df_f[df_f['cellID'] == cid]
+    
+    X = df_cid['h3'].values
+    Y = df_cid[metric].values
+
+    sns.scatterplot(ax=ax, data=df_cid, x='h3', y=metric, 
+                    c = apm.cL_Set2[i],
+                    marker='o', s=15, zorder=3, 
+                    ec='k', linewidth=0.5, alpha=0.8) # , style='cellNum'
+    
+    Xfit, Yfit = np.log(X), np.log(Y)
+    [b, a], results = ufun.fitLineHuber(Xfit, Yfit)
+    # [b, a], results,  = ufun.fitLine(Xfit, Yfit)
+    A, alpha = np.exp(b), a
+    CI = results.conf_int(alpha=0.2)[1]
+    alpha_ciw = np.abs(CI[1] - CI[0])
+    pval = results.pvalues[1]
+       
+    delta = 0.5
+    se = results.bse[1]        
+    df_resid = results.df_resid   
+    t_stat = (alpha - delta) / se
+    p_ost = st.t.cdf(t_stat, df=df_resid) # one-sided p-value for H1: slope < c
+    
+    Xplot = np.exp(np.linspace(min(Xfit)*0.925, max(Xfit)*1.075, 10))
+    Yplot = A * Xplot**alpha
+    
+    ax.plot(Xplot, Yplot, ls='-', lw=1.5, c=apm.lightenColor(apm.cL_Set2[i], 0.7),
+            label = {f'{alpha:.2f}$\pm${alpha_ciw/2:.2f}'})
+    
+    # dict_fits['cellID'].append(cid)
+    # dict_fits['alpha'].append(alpha)
+    # dict_fits['Xplot'].append(Xplot)
+    # dict_fits['Yplot'].append(Yplot)
+    # dict_fits['alpha_ciw'].append(alpha_ciw)
+    # dict_fits['pval'].append(p_ost)
+    
+
+ax.set_xlim([100, 1000])
+ax.set_ylim([1, 22])
+# xticklocator = matplotlib.ticker.LogLocator(base=10, subs='all')
+# ax.xaxis.set_major_locator(xticklocator)
+# ax.set_xticklabels(xtl, rotation=30)
+ax.tick_params(axis='both', which = 'both', length=2, direction='in', labelrotation=45)
+ax.tick_params(axis='both', which = 'major', length=4, direction='inout')
+ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
+ax.grid(which = 'both', alpha = 0.4)
+ax.legend(loc = 'lower center', 
+          title = 'Exponent $\\alpha$', title_fontsize = 7, 
+          handlelength = 0.8, labelspacing = 0.3)
+    
+plt.show()
+
+#### Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%% F3E - Plot exponents for all cells LIN/LOG
+
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'ExpoDist_2'
+
+
 XCol = 'h3'
 YCol = 'Q_gf'
 
+
 Filters = [(global_df[XCol] < 1.1),
            (global_df[YCol] < 40),
-           # (global_df['date'] == date),
            ]
 condCol = 'date'
 
@@ -3197,6 +3291,7 @@ CID = df_f.reset_index()['cellID'].unique()
 Ncells = len(CID)
 
 res_dict = {'cellID':[],
+            'manipID':[],
             'DH':[],
             'CvH':[],
             'expo':[],
@@ -3204,31 +3299,33 @@ res_dict = {'cellID':[],
             }
 
 #### Plot 1
-## Initialize
-# ncols = 5
-# nrows = 1 + (Ncells-1)//ncols
-# fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
-# axes_f = axes.flatten()
+fig, ax = plt.subplots(1, 1, figsize=(3.5/cm_in, 6/cm_in), 
+                       layout='compressed')#, layout='compressed')
 
 Palette = sns.color_palette("husl", Ncells)
+Score = np.ones(Ncells)
 
 ## Make the plot
 for i in range(Ncells):
     ### Data
-    cid = CID[i]        
+    cid = CID[i]
+    manipID = '_'.join(cid.split('_')[:2])
     df_cell = df_f[df_f['cellID'] == cid]
     
-    DH = np.max(df_cell[XCol].values) - np.min(df_cell[XCol].values)
-    CvH = np.std(np.log(df_cell[XCol].values)) / np.mean(np.log(df_cell[XCol].values))
+    DH = np.max(df_cell[XCol].values*1000) - np.min(df_cell[XCol].values*1000)
+    CvH = np.std(np.log(df_cell[XCol].values*1000)) / np.mean(np.log(df_cell[XCol].values*1000))
+    
     res_dict['cellID'].append(cid)
+    res_dict['manipID'].append(manipID)
     res_dict['DH'].append(DH)
     res_dict['CvH'].append(CvH)
     
     Xfit, Yfit = (df_cell[XCol].values), (df_cell[YCol].values)
+    Xfit, Yfit = np.log(Xfit), np.log(Yfit)
     
-    # OLS
-    perc, dof, = 0.975, len(Yfit)-2
-    q = st.t.ppf(perc, dof)
+    # RLS
+    # perc, dof, = 0.975, len(Yfit)-2
+    # q = st.t.ppf(perc, dof)
     # [b, a], results = ufun.fitLine(Xfit, Yfit)
     [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
                                                    with_wlm_results = True)
@@ -3245,35 +3342,22 @@ for i in range(Ncells):
     else:
         textCo = apm.RED
        
-    delta = 30
-    se = results.bse[1]
-    # Test 1: beta > -delta
-    t1 = (alpha + delta) / se
-    # Test 2: beta < +delta
-    t2 = (alpha - delta) / se
-        
-    df = results.df_resid
-    p1 = 1 - st.t.cdf(t1, df)
-    p2 = st.t.cdf(t2, df)
-    # TOST p-value is max of the two
-    p_tost = max(p1, p2)
-    
+    delta = 0.5
+    se = results.bse[1]        
+    df = results.df_resid   
+    # t-statistic
+    t_stat = (alpha - delta) / se
+    # one-sided p-value for H1: slope < c
+    p_ost = st.t.cdf(t_stat, df=df)
+    test_ost = (p_ost < 0.25)    
     test_ci = (np.abs(alpha) <= alpha_ciw/2)
-    test_tost = (p_tost < 0.2)
-    test = test_tost
-    if test_tost:
-        textCo2 = apm.PURPLE
+        
+    test = test_ost
+    if test:
+        Palette[i] = 'mediumseagreen'
     else:
-        textCo2 = apm.BRIGHTBLUE
-    if test_tost:
-        Palette[i] = 'grey'
-
-    
-    print(cid)
-    print(f'{alpha:.2f}', 
-          textCo2 + f'{alpha_ciw/2:.2f}' + apm.NORMAL, 
-          textCo + f'{pval:.4f}' + apm.NORMAL,
-          p_tost)
+        Palette[i] = 'steelblue'
+        Score[i] = 0
     
     # Standard p-value
     R2 = w_results.rsquared
@@ -3287,201 +3371,64 @@ for i in range(Ncells):
     res_dict['expo'].append(alpha)
     res_dict['expo_ciw'].append(alpha_ciw)
     
-    #### Plot 1
-    # ax = axes_f[i]
-    # ax.set_xscale('log')
-    # ax.set_yscale('log')
-    # valid = True
-    # if valid:
-    #     color = apm.cL_Set2[0]
-    # else:
-    #     color = apm.cL_Set2[1]
-        
-    # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
-    # Yplot = A * Xplot**alpha
-        
-    # sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
-    #                 marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
-    # ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
-    #         label = \
-    #                 # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
-    #                 # f'\nA = {A:.1e}' + \
-    #                 f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}\n' + \
-    #                 f'$R^2$  = {R2:.2f}'
-    #                 )
-        
-    #### Format - Plot 1
-    # ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
-    # # ax.set_ylabel(dict_axisLabels[YCol])
-    # # ax.set_xlabel(dict_axisLabels[XCol])
-    # ax.grid(visible=True, which='major', axis='both')
-    # # ax.set_xlim([50, 1100])
-    # ax.set_title(cid, fontsize = 10)
-    
 df_res = pd.DataFrame(res_dict)
-fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), 
-                       sharex=True, sharey=True)
-sns.boxplot(data = df_res, ax = ax, y='expo', 
-            width=0.7, color='.9', showfliers = False,
-            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
-            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            )
+
+df_res_g = df_res.groupby('manipID').agg({'expo':['mean', 'std', 'count']})
+df_res_g.columns = ufun.flattenPandasIndex(df_res_g.columns)
+df_res_g['expo_ste'] = df_res_g['expo_std']/(df_res_g['expo_count']**0.5)
+
+# sns.boxplot(data = df_res, ax = ax, y='expo', 
+#             width=0.7, color='.9', showfliers = False,
+#             boxprops={"facecolor": (.9, .9, .9, .9), "edgecolor": 'k', "linewidth": 1.5, 
+#                       'alpha' : 0.7, 'zorder' : 2},
+#             medianprops={"color": 'darkred', "linewidth": 2.5, 'alpha' : 0.8, 'zorder' : 2},
+#             whiskerprops={"color": 'k', "linewidth": 1.5, 'alpha' : 0.7, 'zorder' : 2},
+#             capprops={"color": 'k', "linewidth": 1.5, 'alpha' : 0.7, 'zorder' : 2},
+#             )
+
+ax.axhline(np.median(df_res['expo'].values), color = 'darkred', lw=2.5, 
+           label=f"Median = {np.median(df_res['expo'].values):.2f}")
 sns.swarmplot(data = df_res, ax = ax, y='expo',
-              size = 10, hue = 'cellID', palette=Palette,
+              size = 7.5, hue = 'cellID', palette=Palette, 
+              edgecolor = None, linewidth = 0.25, alpha = 0.8,
               legend=False)
 
-### Format
-ax.grid(axis='y')
-ax.set_ylabel('Slope of the Q-h fit')
+ebarcolor = 'k' # 'darkslategray'
+ax.errorbar([-0.225, +0.075, -0.075, +0.225], df_res_g['expo_mean'].values, 
+            ls='', marker='_', markerfacecolor=(1, 1, 1, 0.0),
+            mec = ebarcolor, mew = 1.5, ms = 14,
+            xerr=None, yerr=df_res_g['expo_ste'].values,
+            ecolor = ebarcolor, elinewidth=1.5, capsize=3, zorder=10)
+ax.errorbar([], [], 
+            ls='', marker='_', markerfacecolor=(1, 1, 1, 0.0),
+            mec = ebarcolor, mew = 1.5, ms = 8,
+            xerr=None, yerr=[],
+            ecolor = ebarcolor, elinewidth=1.5, capsize=3, zorder=10,
+            label='Experiment\nMean $\\pm$ SE')
 
-plt.show()
-
-
-
-# %%% Plot exponents for all cells LOG
-
-figDir = os.path.join(cp.DirDataFig, 'FluoAnalysis')
-figSubDir = 'Test_Paper'
-
-# '24-02-27', '24-05-24', '24-06-14'
-# date = '24-06-14'
-XCol = 'h3'
-YCol = 'Q_gf'
-
-Filters = [(global_df[XCol] < 1.1),
-           (global_df[YCol] < 40),
-           # (global_df['date'] == date),
-           ]
-condCol = 'date'
-
-df_f = filterDf(global_df, Filters)
-CID = df_f.reset_index()['cellID'].unique()
-Ncells = len(CID)
-
-res_dict = {'cellID':[],
-            'DH':[],
-            'CvH':[],
-            'expo':[],
-            'expo_ciw':[],
-            }
-
-#### Plot 1
-## Initialize
-# ncols = 5
-# nrows = 1 + (Ncells-1)//ncols
-# fig, axes = plt.subplots(nrows, ncols, figsize=(35/cm_in, nrows*6/cm_in), sharex=True, sharey=True)
-# axes_f = axes.flatten()
-
-## Make the plot
-for i in range(Ncells):
-    ### Data
-    cid = CID[i]        
-    df_cell = df_f[df_f['cellID'] == cid]
-    
-    DH = np.max(df_cell[XCol].values) - np.min(df_cell[XCol].values)
-    CvH = np.std(np.log(df_cell[XCol].values)) / np.mean(np.log(df_cell[XCol].values))
-    res_dict['cellID'].append(cid)
-    res_dict['DH'].append(DH)
-    res_dict['CvH'].append(CvH)
-    
-    Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values)
-    
-    # OLS
-    perc, dof, = 0.975, len(Yfit)-2
-    q = st.t.ppf(perc, dof)
-    # [b, a], results = ufun.fitLine(Xfit, Yfit)
-    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
-                                                   with_wlm_results = True)
-    A, alpha = np.exp(b), a
-    alpha_ciw = np.abs(results.conf_int()[1][1] - results.conf_int()[1][0])
-    
-    print(cid)
-    print(alpha, alpha_ciw)
-    # Standard p-value
-    R2 = w_results.rsquared
-    pval = results.pvalues[1]
-    # print(R2, pval)
-    
-    # Pearson p-value
-    results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
-    R2_p, pval_p = results_pearson.statistic**2, results_pearson.pvalue
-    
-    # print(R2_p, pval_p)
-    
-    # ODR
-    # def funFit(B, X):
-    #     return(B[0]*X + B[1])
-    # linear = odr.Model(funFit)
-    # mydata = odr.Data(Xfit, Yfit, wd=1, we=1)
-    # myodr = odr.ODR(mydata, linear, beta0=[-1.5, 2.])
-    # myoutput = myodr.run()
-    # a, b = myoutput.beta
-    # A, alpha = np.exp(b), a
-    # perc, dof, = 0.975, len(Yfit)-2
-    # q = st.t.ppf(perc, dof)
-    # alpha_ciw = myoutput.sd_beta[0] * q
-    # R2 = 1
-    # pval = 0
-    
-    res_dict['expo'].append(alpha)
-    res_dict['expo_ciw'].append(alpha_ciw)
-    
-    ### Plot
-    # ax = axes_f[i]
-    # ax.set_xscale('log')
-    # ax.set_yscale('log')
-    # valid = True
-    # if valid:
-    #     color = apm.cL_Set2[0]
-    # else:
-    #     color = apm.cL_Set2[1]
-        
-    # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
-    # Yplot = A * Xplot**alpha
-        
-    # sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values, 
-    #                 marker = 'o', s = 40, color = color, alpha = 0.9, zorder=6)
-    # ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2.5, zorder=7,
-    #         label = \
-    #                 # r'$\bf{Fit\ y\ =\ A.x^k}$' + \
-    #                 # f'\nA = {A:.1e}' + \
-    #                 f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}\n' + \
-    #                 f'$R^2$  = {R2:.2f}'
-    #                 )
-        
-    # ### Format
-    # ax.legend(fontsize = 9, loc = 'lower left')#.set_visible(False)
-    # # ax.set_ylabel(dict_axisLabels[YCol])
-    # # ax.set_xlabel(dict_axisLabels[XCol])
-    # ax.grid(visible=True, which='major', axis='both')
-    # # ax.set_xlim([50, 1100])
-    # ax.set_title(cid, fontsize = 10)
-    
-df_res = pd.DataFrame(res_dict)
-fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in), 
-                       sharex=True, sharey=True)
-sns.boxplot(data = df_res, ax = ax, y='expo', 
-            width=0.7, color='.9', showfliers = False,
-            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
-            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
-            )
-sns.swarmplot(data = df_res, ax = ax, y='expo',
-              size = 10, hue = 'cellID', legend=False)
+print(np.mean(Score))
 
 ### Format
 ax.grid(axis='y')
-ax.set_ylabel('Exponent of the Q-h fit')
-
+ax.set_xlim([-0.5, 0.5])
+ax.set_ylim([-3.2, 2.3])
+ax.set_ylabel('Exponent of the Q-h fit', labelpad=0.5)
+ax.set_xlabel(' ', labelpad=0.5)
+ax.legend(loc='lower center', handlelength=0.75)
 
 plt.show()
 
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
-# %%% For the paper ! Quantity and density
+
+
+# %%% F3F&G - Quantity and density
 
 apm.setGraphicOptions(mode = 'print', 
                       palette = 'Set2', 
@@ -3490,7 +3437,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F3'
-name = 'QDH'
+name = 'QDH_allComps'
 
 #### Data
 
@@ -3527,7 +3474,212 @@ df_fg = df_fg.dropna()
 #### Plot
 
 rp = cm_in
-fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+fig, axes = plt.subplots(1, 2, figsize = (13.0/rp, 6.5/rp), layout="compressed")
+
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+S = df_f['manipNum'].values
+list_markers = ['o', 's', '^', 'P']
+
+ax.set_prop_cycle(color=cL_f3)
+sns.scatterplot(ax=ax, x=X, y=Y, 
+                hue=S, s=12, palette = cM_f3,
+                edgecolor='k', alpha=0.75,
+                zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
+
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.5, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.5, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.5, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.5, alpha=0.75)
+
+
+# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
+#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
+#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
+# ax.legend(handles=[LegendMark])
+# ax.scatter(X, Y, c=C, style='cellNum', s=10, zorder=3, 
+#            facecolor = 'w', edgecolor='k') #, cmap = cM_f3) # , style='cellNum'
+
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = results_pearson.statistic**2, results_pearson.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+P2, = ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25, zorder=8)
+label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
+    '\n' + text_pval
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+# ax.legend(loc = 'upper left')
+ax.legend([(p11, p12, p13, p14), P2], ['Replicates', label_fit], 
+          handler_map={tuple: HandlerTuple(ndivide=None)},
+          loc = 'upper left', handlelength = 3,
+          )
+
+ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+CountByCond, CountByCell = apm.makeCountDf(df_f, 'date')
+CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+
+ax.set_prop_cycle(color=cL_f3)
+sns.scatterplot(ax=ax, x=X, y=Y, 
+                hue=S, s=12, palette = cM_f3,
+                edgecolor='k', alpha=0.75,
+                zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
+
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.5, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.5, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.5, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.5, alpha=0.75)
+
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[1]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
+        label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+            f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+            '\n' + text_pval, zorder=8)
+    
+results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = results_pearson.statistic**2, results_pearson.pvalue
+print('pearson_coef, pearson_pval')
+print(pearson_coef, pearson_pval)
+
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+ax.legend([(p11, p12, p13, p14), P2], ['Replicates', label_fit], 
+          handler_map={tuple: HandlerTuple(ndivide=None)},
+          loc = 'lower left', handlelength = 3,
+          )
+    
+ax.set_ylabel('Actin Density (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+fig.tight_layout()
+
+
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.show()
+
+# %%% ------
+
+# %%% F3 ALT - Quantity and density
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'QDH_allComps'
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+#### Plot
+
+rp = cm_in
+fig, axes = plt.subplots(1, 2, figsize = (13.5/rp, 6.5/rp), layout="compressed")
 
 
 
@@ -3546,16 +3698,16 @@ C = df_f['manipNum'].values
 ax.set_prop_cycle(color=cL_f3)
 ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cM_f3) # , style='cellNum'
 
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_Q, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_Q, 'std'].values
+# Xg = df_fg['h3', 'median'].values
+# Yg = df_fg[metric_Q, 'median'].values
+# # Xerr = df_fg['h3', 'median'].values
+# Ygerr = df_fg[metric_Q, 'std'].values
 
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
+# ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+#             lw = 1.5, ls = '-',
+#             marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+#             elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+#             label = 'Binning & median')
 
 Xfit, Yfit = np.log(X), np.log(Y)
 [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
@@ -3578,6 +3730,9 @@ ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
         label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
             f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
                 f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+        # label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+        #     f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
 
 # Xfit, Yfit = np.log(X), np.log(Y)
 # wd=1/(np.std(Xfit)) # **2
@@ -3607,8 +3762,8 @@ ax.set_xlim([100, 1200])
 ax.set_ylim([4, 60])
 ax.legend(loc = 'upper left')
 
-ax.set_ylabel('Actin Quantity (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
 ax.grid(which = 'both', alpha = 0.4)
 
 # def makeCountDf_Fluo(df):
@@ -3645,16 +3800,16 @@ C = df_f['manipNum'].values
 ax.set_prop_cycle(color=cL_f3)
 ax.scatter(X, Y, c=C, marker='o', s=10, zorder=3, cmap = cM_f3) # , style='cellNum'
 
-Xg = df_fg['h3', 'median'].values
-Yg = df_fg[metric_D, 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric_D, 'std'].values
+# Xg = df_fg['h3', 'median'].values
+# Yg = df_fg[metric_D, 'median'].values
+# # Xerr = df_fg['h3', 'median'].values
+# Ygerr = df_fg[metric_D, 'std'].values
 
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
+# ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+#             lw = 1.5, ls = '-',
+#             marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+#             elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+#             label = 'Binning & median')
 
 Xfit, Yfit = np.log(X), np.log(Y)
 [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
@@ -3672,6 +3827,9 @@ ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25,
         label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
             f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
                 f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
+        # label =  r'$\bf{Fit\ OLS\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+        #     f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval + f' ({pval:.2e})', zorder=8)
     
 results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
 pearson_coef, pearson_pval = results_pearson.statistic**2, results_pearson.pvalue
@@ -3696,12 +3854,12 @@ ax.set_xlim([100, 1200])
 ax.set_ylim([7, 110])
 ax.legend(loc = 'lower left')
     
-ax.set_ylabel('Actin Density (a.u.)')
-ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_ylabel('Actin Density (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
 ax.grid(which = 'both', alpha = 0.4)
 
 # ax.legend().set_visible(False)
-fig.suptitle(f'All data points, N = {Nc:.0f}')
+# fig.suptitle(f'All data points, N = {Nc:.0f}')
 fig.tight_layout()
 
 # #### Save
@@ -3726,9 +3884,7 @@ if SAVE:
 plt.show()
 
 
-
-
-# %%% For the paper ! Quantity and density MEAN PER CELL
+# %%% F3 ALT - Quantity and density MEAN PER CELL
 
 apm.setGraphicOptions(mode = 'print', 
                       palette = 'Set2', 
@@ -3780,7 +3936,7 @@ df_fg = df_fg.dropna()
 #### Plot
 
 rp = cm_in
-fig, axes = plt.subplots(1, 2, figsize = (17/rp, 9/rp))#, layout="constrained")
+fig, axes = plt.subplots(1, 2, figsize = ((17-3.5)/rp, 6.5/rp), layout="compressed")
 
 
 
@@ -3955,7 +4111,7 @@ ax.grid(which = 'both', alpha = 0.4)
 
 # ax.legend().set_visible(False)
 fig.suptitle(f'Mean values per cell, N = {Nc:.0f}')
-fig.tight_layout()
+# fig.tight_layout()
 
 #### Save
 
@@ -3972,7 +4128,7 @@ plt.show()
 
 
 
-# %%% For the paper ! Quantity and density MEDIAN PER CELL
+# %%% F3 ALT - Quantity and density MEDIAN PER CELL
 
 apm.setGraphicOptions(mode = 'print', 
                       palette = 'Set2', 
@@ -4194,7 +4350,7 @@ ax.grid(which = 'both', alpha = 0.4)
 
 # ax.legend().set_visible(False)
 fig.suptitle(f'Median values per cell, N = {Nc:.0f}')
-fig.tight_layout()
+# fig.tight_layout()
 
 
 #### Save
@@ -4209,6 +4365,7 @@ if SAVE:
 
 plt.show()
 
+# %%% ------
 
 
 
@@ -4239,7 +4396,8 @@ Y = df_f[metric].values
 titles = ['$H_{5mT}$ Q-Q plot', '$Q_{actin}$ Q-Q plot']
 
 ri = cm_in
-fig, axes = plt.subplots(1, 2, figsize=(0.666*17/ri, 0.333*17/ri), sharex=True, sharey='row')
+fig, axes = plt.subplots(2, 1, figsize=(5.5/ri, 10.5/ri), 
+                         layout='compressed', sharex=True, sharey='row')
 
 
 for k, data in enumerate([X, Y]): # +'_wAvg'
@@ -4267,6 +4425,8 @@ for k, data in enumerate([X, Y]): # +'_wAvg'
     ax.legend(title_fontsize=6, title = 'Shapiro–Wilk\np-values', loc='lower right')
     
     ax.grid()
+    if k != len([X, Y])-1:
+        ax.set_xlabel('')
     ax.set_aspect('equal')
     ax.set_xlim([-3.5,3.5])
     ax.set_ylim([-3.5,3.5])
@@ -4275,7 +4435,7 @@ for k, data in enumerate([X, Y]): # +'_wAvg'
     ax.text(-3.2, 3.2, titles[k], va='top', ha='left', 
             fontsize=9.0, backgroundcolor='w')
     
-fig.tight_layout()
+
 plt.show()
 
 
@@ -4285,9 +4445,263 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+
+
+
+# %%% S3 --- Quantity and density MEDIAN PER CELL
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'S3'
+name = 'QDH_medCell'
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+df_f = dataGroup(df_f, groupCol = 'cellID', 
+                 idCols = ['date', 'manipID', 'manipNum'], 
+                 numCols = ['h3', metric_Q, metric_D], 
+                 aggFun = 'median').reset_index()
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+
+#### Plot
+
+rp = cm_in
+# fig, axes = plt.subplots(2, 1, figsize = (6/rp, 12/rp))#, layout="constrained")
+fig, axes = plt.subplots(2, 1, figsize = (10/ri, 10.5/ri), sharex=True,)#, layout="constrained")
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_Q].values
+C = df_f['manipNum'].values
+S = df_f['manipNum'].values
+list_markers = ['o', 's', '^', 'P']
+
+ax.set_prop_cycle(color=cL_f3)
+sns.scatterplot(ax=ax, x=X, y=Y, 
+                hue=S, s=30, palette = cM_f3,
+                edgecolor='k', alpha=0.75,
+                zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
+
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.5, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.5, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.5, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.5, alpha=0.75)
+
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = False)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+P2, = ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25, zorder=8)
+label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
+    '\n' + text_pval
+    
+    
+Xfit, Yfit = np.log(X), np.log(Y)
+pearson_res = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+pearson_coef, pearson_pval = pearson_res.statistic, pearson_res.pvalue
+# print('pearson_coef, pearson_pval')
+# print(pearson_coef, pearson_pval)
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+
+# n = np.log10(200)
+# m = np.log10(10)
+# expo = +1
+# A = (10**(m-n*expo))
+# # A = 0.1
+# Xplot = np.logspace(2, 3.1, 50)
+# Yplot = A*(Xplot**expo)
+# ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
+#         label =  r'$\bf{Line\ y\ =\ Ax}$')
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([4, 60])
+# ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), borderpad=0.25, labelspacing = 0.35)
+ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
+          handler_map={tuple: HandlerTuple(ndivide=None)},
+          loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
+          borderpad=0.25, labelspacing = 0.8
+          )
+
+ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
+# ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.grid(which = 'both', alpha = 0.4)
+
+# def makeCountDf_Fluo(df):
+#     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
+#     count_df = df[cols_count_df]
+#     groupByCell = count_df.groupby('cellID')
+#     d_agg = {'h3':'count', 'date':'first', 'manipID':'first'}
+#     df_CountByCell = groupByCell.agg(d_agg).rename(columns={'h3':'pointCount'})    
+
+#     groupByCond = df_CountByCell.reset_index().groupby(np.ones(len(df_CountByCell)))
+#     d_agg = {'cellID': 'count', 'pointCount': 'sum', 
+#              'date': pd.Series.nunique, 'manipID': pd.Series.nunique}
+#     d_rename = {'cellID':'cellCount', 'date':'datesCount', 'manipID':'manipsCount'}
+#     df_CountByCond = groupByCond.agg(d_agg).rename(columns=d_rename)
+    
+#     return(df_CountByCond, df_CountByCell)
+
+# CountByCond, CountByCell = makeCountDf_Fluo(df_f)
+# CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# plt.tight_layout()
+# plt.show()
+
+
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+X = df_f['h3'].values
+Y = df_f[metric_D].values
+C = df_f['manipNum'].values
+S = df_f['manipNum'].values
+list_markers = ['o', 's', '^', 'P']
+
+ax.set_prop_cycle(color=cL_f3)
+sns.scatterplot(ax=ax, x=X, y=Y, 
+                hue=S, s=30, palette = cM_f3,
+                edgecolor='k', alpha=0.75,
+                zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
+
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.5, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.5, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.5, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.5, alpha=0.75)
+
+# Xg = df_fg['h3', 'median'].values
+# Yg = df_fg[metric_D, 'median'].values
+# # Xerr = df_fg['h3', 'median'].values
+# Ygerr = df_fg[metric_D, 'std'].values
+
+# ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
+#             lw = 1.5, ls = '-',
+#             marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
+#             elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
+#             label = 'Binning & median')
+
+Xfit, Yfit = np.log(X), np.log(Y)
+[b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
+A, k = np.exp(b), a
+R2 = w_results.rsquared
+pval = results.pvalues[1]
+k_ci = results.conf_int()[0]
+k_ciw = np.abs(k_ci[0]-k_ci[1])
+
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+
+P2, = ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25, zorder=8)
+label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+    f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
+    '\n' + text_pval
+    
+    
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(4, 8, 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+# ax.plot(Xplot, Yplot, ls = ':', c = 'dimgray', lw = 1.25,
+#         label = r'$\bf{Fit\ ODR\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+#                 f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval + f' ({pval:.2e})')
+    
+
+ax.set_xlim([100, 1200])
+ax.set_ylim([7, 110])
+# ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), borderpad=0.25, labelspacing = 0.35)
+ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
+          handler_map={tuple: HandlerTuple(ndivide=None)},
+          loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
+          borderpad=0.25, labelspacing = 0.8
+          )
+    
+ax.set_ylabel('Actin Density (a.u.)', labelpad=0.5)
+ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
+ax.grid(which = 'both', alpha = 0.4)
+
+# ax.legend().set_visible(False)
+# fig.suptitle(f'Median values per cell, N = {Nc:.0f}')
+# fig.tight_layout()
+
 plt.show()
 
-
+#### Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
@@ -6289,2831 +6703,3 @@ df = df.rename(columns={'date_x':'date'})
 
 CountByCond, CountByCell = makeCountDf_Fluo(df)
 CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t') 
-
-# %% Plots -- Test Manuscript
-
-# %%% Plot -- standard
-
-global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
-global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
-global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
-# global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
-
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-07-19'
-
-global_df['D_fbL'] = global_df['Q_fbL']/global_df['h3']
-global_df['D_fbN'] = global_df['Q_fbN']/global_df['h3']
-global_df['D_vb'] = global_df['Q_vb']/global_df['h3']
-global_df['D_gf'] = global_df['Q_gf']/global_df['h3']
-
-
-# %%% Plot quantity - per cell
-
-
-
-Set2 = matplotlib.colormaps['Set2'].colors
-cL = [Set2[0], Set2[1], Set2[4], Set2[5]]
-cMap = matplotlib.colors.ListedColormap(cL, name='from_list')
-
-fig, axes = plt.subplots(2, 1, figsize = (17/cm_in, 17/cm_in))#, layout="constrained")
-
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'Q_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 1.1),
-           (global_df['Q_gf'] < 40),
-            (global_df['date'] != '24-02-27'),
-           # (global_df['date'] == '24-06-14'),
-           ]
-
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric)
-df_f['h3'] *= 1000
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-md = {manipes[i]:i for i in range(len(manipes))}
-df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
-
-agg_dict = {'manipID':'first', 'manipNum':'first', 'h3':['mean', 'std'], metric:['mean', 'std']}
-df_f = df_f[['cellID'] + list(agg_dict.keys())].groupby('cellID').agg(agg_dict)
-df_f.columns = ["_".join(a) for a in df_f.columns.to_flat_index()]
-df_f['h3_CV'] = df_f['h3_std']/df_f['h3_mean']
-df_f[metric + '_CV'] = df_f[metric + '_std']/df_f[metric + '_mean']
-
-figCV, axCV = plt.subplots(1, 1, figsize = (12/cm_in, 12/cm_in))
-axCV.axline((0,0), slope=1, ls='--', color='dimgray')
-axCV.scatter(df_f['h3_CV'].values, df_f[metric + '_CV'].values, c = df_f['manipNum_first'],
-             marker='o', s=20, zorder=3, cmap = cMap)
-axCV.set_xlim([0, 0.5])
-axCV.set_ylim([0, 0.5])
-axCV.set_xlabel('CV of the thickness')
-axCV.set_ylabel('CV of the actin quantity')
-figCV.tight_layout()
-
-
-bins = np.linspace(0, 1000, 10, endpoint=False)
-df_f['h3_bin'] = np.digitize(df_f['h3_mean'].values, bins = bins)
-df_fg = df_f[[metric + '_mean', 'h3_mean', 'h3_bin']].groupby('h3_bin').agg(['median', 'std'])
-df_fg['h3_upper'] = df_fg.index*50
-df_fg = df_fg.dropna()
-
-#### Plot 1 - Lin scale
-
-ax = axes[0]
-
-X = df_f['h3_mean'].values
-Y = df_f[metric + '_mean'].values
-C = df_f['manipNum_first'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=20, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3_mean', 'median'].values
-Yg = df_fg[metric + '_mean', 'median'].values
-# Xerr = df_fg['h3', 'median'].values
-Ygerr = df_fg[metric + '_mean', 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-# Xfit, Yfit = df_f['h3_mean'].values, df_f[metric + '_mean'].values
-# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-# R2 = w_results.rsquared
-# pval = results.pvalues[1]
-# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
-# Yplot = b + a*Xplot
-
-# ax.plot(Xplot, Yplot, ls = '--', c = 'k', zorder=4, lw = 1.0,
-#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
-#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
-    
-# xfit = df_f['h3'].values
-# yfit = df_f[metric].values
-# params, res = ufun.fitLineHuber(xfit, yfit)
-# print(params)
-# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', zorder = 4,
-#         label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
-#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-# ax.legend(handles=[LegendMark])
-
-ax.legend()
-
-ax.set_xlim([0, 1100])
-ax.set_ylim([0, 30])
-
-
-
-#### Plot 2 - Log scale
-
-ax = axes[1]
-ax.set_xscale('log')
-ax.set_yscale('log')
-
-X = df_f['h3_mean'].values
-Y = df_f[metric + '_mean'].values
-C = df_f['manipNum' + '_first'].values
-
-ax.set_prop_cycle(color=cL)
-ax.scatter(X, Y, c=C, marker='o', s=20, zorder=3, cmap = cMap) # , style='cellNum'
-
-Xg = df_fg['h3_mean', 'median'].values
-Yg = df_fg[metric + '_mean', 'median'].values
-# Xerr = df_fg['h3', 'median'].values 
-Ygerr = df_fg[metric + '_mean', 'std'].values
-
-ax.errorbar(Xg, Yg, Ygerr, color = 'dimgray', zorder=5,
-            lw = 1.5, ls = '-',
-            marker = 'o', markersize = 6, markerfacecolor = 'w', markeredgecolor = 'dimgray', markeredgewidth = 1.5,
-            elinewidth = 1, ecolor = 'dimgray', capsize = 3, capthick = 1,
-            label = 'Binning & median')
-
-Xm, Ym = np.median(X), np.median(Y)
-A = 1.1*min(Yg)/min(Xg)
-# A = 0.1
-Xplot = np.logspace(1.9, 3.1, 50)
-Yplot = A*Xplot
-ax.plot(Xplot, Yplot, ls = '-.', c = 'gray', lw = 1.0,
-        label =  r'$\bf{Line\ y\ =\ Ax}$')
-
-
-# Xfit, Yfit = df_f['h3'].values, df_f[metric].values
-# [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, with_wlm_results = True)
-# R2 = w_results.rsquared
-# pval = results.pvalues[1]
-# Xplot = np.linspace(min(Xfit), max(Xfit), 50)
-# Yplot = b + a*Xplot
-
-# ax.plot(Xplot, Yplot, ls = '--', c = 'k', lw = 2.0,
-#         label =  r'$\bf{Fit\ y\ =\ ax+b}$' + f'\n$a$ = {a:.1e}' + f'\n$b$  = {b:.2f}' + \
-#                 f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
-
-# sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
-
-# xfit = df_f['h3'].values
-# yfit = df_f[metric].values
-# params, res = ufun.fitLineHuber(xfit, yfit)
-# xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-# ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-# LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-#                             # markersize=0, markeredgecolor='w', markeredgewidth=0,
-#                             label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-# ax.legend(handles=[LegendMark])
-
-ax.set_xlim([190, 1200])
-# ax.set_ylim([5, 150])
-ax.legend()
-
-# ax.set_ylabel('Actin Quantity')
-# ax.set_xlabel('Cortex thickness (nm)')
-# ax.legend().set_visible(False)
-for ax in axes:
-    ax.grid()
-
-
-# %%%% Plot - Lin - all dates V1
-
-
-# fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
-# spec = fig.add_gridspec(4, 1)
-# ax0 = fig.add_subplot(spec[0])
-# ax1 = fig.add_subplot(spec[1])
-# ax2 = fig.add_subplot(spec[2])
-# ax3 = fig.add_subplot(spec[3])
-# ax4 = fig.add_subplot(spec[2,1])
-
-fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
-
-# axes = [ax1, ax2, ax3] #, ax4]
-
-cL = matplotlib.colormaps['Set2']
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'Q_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 0.95),
-           # (global_df['date'] != ''),
-           ]
-df_f = filterDf(global_df, Filters)
-df_f['h3'] *= 1000
-dates = df_f['date'].unique()
-
-# LegendMark = mlines.Line2D([], [], color='gray', ls='', marker='o', 
-#                            markersize=0, markeredgecolor='w', markeredgewidth=0,
-#                            label=f'Average intra-cell CV = {CV_per_cell_avg*100:.1f} %')
-# ax.legend(handles=[LegendMark])
-
-ax = axes[0]
-sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity')
-ax.set_xlabel('Cortex thickness (nm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-for i, ax in enumerate(axes[1:]):
-    date = dates[i]
-    sns.scatterplot(ax=ax, data=df_f[df_f['date']==date], x='h3', y=metric, hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-    # ax.set_xlim([0, 0.8])
-    ax.set_ylim([0, 30])
-    ax.set_ylabel('Actin Quantity')
-    ax.set_xlabel('Cortex thickness (nm)')
-    ax.legend().set_visible(False)
-    ax.grid()
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V1', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Lin - all dates V2
-
-
-fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
-spec = fig.add_gridspec(3, 2)
-ax0 = fig.add_subplot(spec[0,:])
-ax1 = fig.add_subplot(spec[1,0])
-ax2 = fig.add_subplot(spec[1,1])
-ax3 = fig.add_subplot(spec[2,0])
-ax4 = fig.add_subplot(spec[2,1])
-
-# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
-
-axes = [ax1, ax2, ax3, ax4]
-
-cL = matplotlib.colormaps['Set2'].colors
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'Q_gf'
-
-# Filter global_df
-Filters = [(global_df['h3'] < 1),
-            (global_df['date'] != '24-02-27'),
-           ]
-df_f = filterDf(global_df, Filters)
-df_f['h3'] *= 1000
-df_f = df_f.dropna(subset=metric)
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-
-
-
-
-ax = ax0
-sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
-
-xfit = df_f['h3'].values
-yfit = df_f[metric].values
-params, res = ufun.fitLineHuber(xfit, yfit)
-print(params)
-xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
-                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-ax.legend(handles=[LegendMark])
-
-ax.set_xlim([0, 1100])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity')
-ax.set_xlabel('Cortex thickness (nm)')
-# ax.legend().set_visible(False)
-ax.grid()
-
-for i, ax in enumerate(axes):
-    c = cL[i]
-    manip = manipes[i]
-    data = df_f[df_f['manipID']==manip]
-
-    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
-    
-    xfit = data['h3'].values
-    yfit = data[metric].values
-    params, res = ufun.fitLineHuber(xfit, yfit)
-    print(params)
-    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
-    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-    
-    ax.set_xlim([0, 1100])
-    ax.set_ylim([0, 30])
-    ax.set_ylabel('Actin Quantity')
-    ax.set_xlabel('Cortex thickness (nm)')
-    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
-    ax.grid()
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V2', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Lin - all dates V3
-
-
-fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
-spec = fig.add_gridspec(3, 2)
-ax0 = fig.add_subplot(spec[0,:])
-ax1 = fig.add_subplot(spec[1,0])
-ax2 = fig.add_subplot(spec[1,1])
-ax3 = fig.add_subplot(spec[2,0])
-ax4 = fig.add_subplot(spec[2,1])
-
-# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
-
-axes = [ax1, ax2, ax3, ax4]
-
-cL = matplotlib.colormaps['Set2'].colors
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'Q_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 0.6),
-           (global_df['date'] != '24-02-27'),
-           ]
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric)
-df_f['h3'] *= 1000
-
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-
-
-
-
-ax = ax0
-sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
-
-xfit = df_f['h3'].values
-yfit = df_f[metric].values
-params, res = ufun.fitLineHuber(xfit, yfit)
-print(params)
-xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
-                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-ax.legend(handles=[LegendMark])
-
-ax.set_xlim([0, 650])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity')
-ax.set_xlabel('Cortex thickness (nm)')
-# ax.legend().set_visible(False)
-ax.grid()
-
-for i, ax in enumerate(axes):
-    c = cL[i]
-    manip = manipes[i]
-    data = df_f[df_f['manipID']==manip]
-
-    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
-    
-    xfit = data['h3'].values
-    yfit = data[metric].values
-    params, res = ufun.fitLineHuber(xfit, yfit)
-    print(params)
-    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
-    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-    
-    ax.set_xlim([0, 650])
-    ax.set_ylim([0, 30])
-    ax.set_ylabel('Actin Quantity')
-    ax.set_xlabel('Cortex thickness (nm)')
-    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
-    ax.grid()
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_GF_V3', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% Plot - Log - all dates V3
-
-
-fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
-spec = fig.add_gridspec(3, 2)
-ax0 = fig.add_subplot(spec[0,:])
-ax1 = fig.add_subplot(spec[1,0])
-ax2 = fig.add_subplot(spec[1,1])
-ax3 = fig.add_subplot(spec[2,0])
-ax4 = fig.add_subplot(spec[2,1])
-
-# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
-
-axes = [ax1, ax2, ax3, ax4]
-
-for ax in ([ax0] + axes):
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-
-cL = matplotlib.colormaps['Set2'].colors
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'Q_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 0.6),
-           (global_df['date'] != '24-02-27'),
-           ]
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric)
-df_f['h3'] *= 1000
-
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-
-
-
-
-ax = ax0
-sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
-
-xfit = df_f['h3'].values
-yfit = df_f[metric].values
-params, res = ufun.fitLineHuber(xfit, yfit)
-print(params)
-xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
-                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-ax.legend(handles=[LegendMark])
-
-ax.set_xlim([180, 650])
-ax.set_ylim([6, 30])
-ax.set_ylabel('Actin Quantity')
-ax.set_xlabel('Cortex thickness (nm)')
-# ax.legend().set_visible(False)
-ax.grid()
-
-for i, ax in enumerate(axes):
-    c = cL[i]
-    manip = manipes[i]
-    data = df_f[df_f['manipID']==manip]
-
-    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
-    
-    xfit = data['h3'].values
-    yfit = data[metric].values
-    params, res = ufun.fitLineHuber(xfit, yfit)
-    print(params)
-    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
-    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-    
-    ax.set_xlim([180, 650])
-    ax.set_ylim([6, 30])
-    ax.set_ylabel('Actin Quantity')
-    ax.set_xlabel('Cortex thickness (nm)')
-    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
-    ax.grid()
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Log_AllDates_GF_V3', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Log Density - all dates V3
-
-
-fig = plt.figure(figsize = (17/cm_in, 20/cm_in))#, layout="constrained")
-spec = fig.add_gridspec(3, 2)
-ax0 = fig.add_subplot(spec[0,:])
-ax1 = fig.add_subplot(spec[1,0])
-ax2 = fig.add_subplot(spec[1,1])
-ax3 = fig.add_subplot(spec[2,0])
-ax4 = fig.add_subplot(spec[2,1])
-
-# fig, axes = plt.subplots(4, 1, figsize = (17/cm_in, 20/cm_in), sharex = True)
-
-axes = [ax1, ax2, ax3, ax4]
-
-for ax in ([ax0] + axes):
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-
-cL = matplotlib.colormaps['Set2'].colors
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-metric = 'D_gf'
-
-# Filter global_df
-
-Filters = [(global_df['h3'] < 1),
-           (global_df['date'] != '24-02-27'),
-           ]
-df_f = filterDf(global_df, Filters)
-df_f = df_f.dropna(subset=metric)
-df_f['h3'] *= 1000
-
-
-dates = df_f['date'].unique()
-manipes = df_f['manipID'].unique()
-
-
-
-
-ax = ax0
-sns.scatterplot(ax=ax, data=df_f, x='h3', y=metric, hue=hue, marker='o', s= 25, zorder=5) # , style='cellNum'
-
-xfit = df_f['h3'].values
-yfit = df_f[metric].values
-params, res = ufun.fitLineHuber(xfit, yfit)
-print(params)
-xfitplot = np.linspace(np.min(df_f['h3'].values), np.max(df_f['h3'].values), 100)
-ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-
-LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
-                            # markersize=0, markeredgecolor='w', markeredgewidth=0,
-                            label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-ax.legend(handles=[LegendMark])
-
-# ax.set_xlim([180, 650])
-# ax.set_ylim([6, 30])
-ax.set_ylabel('Actin Quantity')
-ax.set_xlabel('Cortex thickness (nm)')
-# ax.legend().set_visible(False)
-ax.grid()
-
-for i, ax in enumerate(axes):
-    c = cL[i]
-    manip = manipes[i]
-    data = df_f[df_f['manipID']==manip]
-
-    sns.scatterplot(ax=ax, data=data, x='h3', y=metric, color = c, marker='o', s= 25, zorder=5) # , style='cellNum'
-    
-    xfit = data['h3'].values
-    yfit = data[metric].values
-    params, res = ufun.fitLineHuber(xfit, yfit)
-    print(params)
-    xfitplot = np.linspace(np.min(data['h3'].values), np.max(data['h3'].values), 100)
-    ax.plot(xfitplot, params[0] + xfitplot*params[1], 'k--', label=f'Slope = {params[1]:.3f}\nIntercept = {params[0]:.1f}')
-    
-    # ax.set_xlim([180, 650])
-    # ax.set_ylim([6, 30])
-    ax.set_ylabel('Actin Quantity')
-    ax.set_xlabel('Cortex thickness (nm)')
-    ax.legend(loc = 'upper left', title = manip, title_fontsize = 8)
-    ax.grid()
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Log_AllDates_Density_GF_V3', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %% Plots
-
-# %%% Plot -- standard
-
-global_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
-global_df['manipID'] = global_df['date'] + '_' + global_df['manip']
-global_df['cellID'] = global_df['date'] + '_' + global_df['manip'] + '_P1_' + global_df['cell']
-# global_df.to_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep = ';', index = False)
-
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-07-19'
-
-# %%%% Plot - Lin - all dates V1
-
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-# style = 'date'
-# hue = 'cell'
-
-hue = 'manipID'
-style = 'cell'
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           ]
-
-df = filterDf(global_df, Filters)
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_AllMetrics_V1', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Lin - all dates V2
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-style = 'date'
-hue = 'cell'
-
-# hue = 'date'
-# style = 'cell'
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           ]
-
-df = filterDf(global_df, Filters)
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_AllMetrics_V2', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Lin - all dates - width
-
-fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-hue = 'date'
-style = 'cell'
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           ]
-
-df = filterDf(global_df, Filters)
-
-ax = axes[0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='W_vb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-# ax.set_ylim([0, 30])
-ax.set_ylabel('Width of the variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='S_gf', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-# ax.set_ylim([0, 20])
-ax.set_ylabel('Std of the gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_AllDates_WidthOfWindows', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Lin - 24-02-27
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['date'] == '24-02-27')]
-
-df = filterDf(global_df, Filters)
-
-hue = 'cell'
-style = None
-s = 75
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_24-02-27_AllMetrics', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Lin - 24-05-24
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['date'] == '24-05-24')]
-
-df = filterDf(global_df, Filters)
-
-hue = 'cell'
-style = None
-s = 50
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_24-05-24_AllMetrics', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Lin - 24-06-14
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['date'] == '24-06-14')]
-
-df = filterDf(global_df, Filters)
-
-hue = 'cell'
-style = None
-s = 50
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_24-06-14_AllMetrics', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Lin - Compression effect
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['date'] == '24-06-14')]
-
-df = filterDf(global_df, Filters)
-
-hue = 'manip'
-style = 'cell'
-s = 50
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= s, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Lin_24-06-14_effectOfcompressions', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Log
-
-def mypowerlaw(X, a, b):
-    return(np.exp(b)*X**a)
-
-# Filter global_df
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['Q_fbL'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_vb'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_gf'].apply(lambda x: not pd.isnull(x))),
-           (global_df['date'].apply(lambda x : x in ['24-05-24', '24-06-14'])),
-           ]
-
-df = filterDf(global_df, Filters)
-
-# global_df['h2'] = global_df['D2']-Dmoy
-# global_df['h3'] = global_df['D3']-Dmoy
-
-log_df = np.log(df[['D2', 'D3', 'F', 'Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h2', 'h3']])
-log_df[['cell', 'date', 'cellId']] = df[['cell', 'date', 'cellId']]
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-hue='date'
-style='cell'
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-Xfit, Yfit = log_df['h3'].values, log_df['Q_fbL'].values
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--', label='')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-Xfit, Yfit = log_df['h3'].values, log_df['Q_fbN'].values
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--', label='')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-Xfit, Yfit = log_df['h3'].values, log_df['Q_vb'].values
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--', label='')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= 75, zorder=5)
-Xfit, Yfit = log_df['h3'].values, log_df['Q_gf'].values
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--', label='')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Log_AllDates_AllMetrics', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Lin - Density
-
-# date = '24-02-27'
-# date = '24-05-24'
-date = '24-06-14'
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['date'] == date)]
-
-df = filterDf(global_df, Filters)
-
-
-def mypowerlaw(X, a, b):
-    return(np.exp(b)*X**a)
-
-
-df['Density_Q_fbL'] = df['Q_fbL']/df['h3']
-df['Density_Q_fbN'] = df['Q_fbN']/df['h3']
-df['Density_Q_vb'] = df['Q_vb']/df['h3']
-df['Density_Q_gf'] = df['Q_gf']/df['h3']
-
-hue = 'cell'
-style = 'date'
-s = 75
-
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density with a Gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = f'Lin_{date}_Density', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% Plot - Lin - Density - All dates
-
-# date = '24-02-27'
-# date = '24-05-24'
-# date = '24-06-14'
-Filters = [(global_df['h3'] < 0.9),
-          ]
-
-df = filterDf(global_df, Filters)
-
-
-def mypowerlaw(X, a, b):
-    return(np.exp(b)*X**a)
-
-
-df['Density_Q_fbL'] = df['Q_fbL']/df['h3']
-df['Density_Q_fbN'] = df['Q_fbN']/df['h3']
-df['Density_Q_vb'] = df['Q_vb']/df['h3']
-df['Density_Q_gf'] = df['Q_gf']/df['h3']
-
-style = 'cell'
-hue = 'date'
-s = 75
-
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-ax.set_ylabel('Cortex Density with a Gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = f'Lin_AllDates_Density', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% Plot - Log - Density
-
-# date = '24-02-27'
-# date = '24-05-24'
-date = '24-06-14'
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['Q_fbL'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_fbN'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_vb'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_gf'].apply(lambda x: not pd.isnull(x))),
-           (global_df['date'] == date)]
-
-df = filterDf(global_df, Filters)
-
-
-def mypowerlaw(X, a, b):
-    return(np.exp(b)*X**a)
-
-df['Density_Q_fbN'] = df['Q_fbN']/df['h3']
-df['Density_Q_fbL'] = df['Q_fbL']/df['h3']
-df['Density_Q_vb'] = df['Q_vb']/df['h3']
-df['Density_Q_gf'] = df['Q_gf']/df['h3']
-
-style = 'cell'
-hue = 'date'
-s = 75
-
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_fbL'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_fbN'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_vb'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_gf'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density with a Gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = f'Log_{date}_Density', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% Plot - Log - Density - All dates
-
-Filters = [(global_df['h3'] < 0.9),
-           (global_df['Q_fbL'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_fbN'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_vb'].apply(lambda x: not pd.isnull(x))),
-           (global_df['Q_gf'].apply(lambda x: not pd.isnull(x))),
-           ]
-
-df = filterDf(global_df, Filters)
-
-
-def mypowerlaw(X, a, b):
-    return(np.exp(b)*X**a)
-
-df['Density_Q_fbN'] = df['Q_fbN']/df['h3']
-df['Density_Q_fbL'] = df['Q_fbL']/df['h3']
-df['Density_Q_vb'] = df['Q_vb']/df['h3']
-df['Density_Q_gf'] = df['Q_gf']/df['h3']
-
-style = 'cell'
-hue = 'date'
-s = 75
-
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_fbL'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_fbN'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_vb'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, s=s, zorder=5) # , style='cellNum'
-Xfit, Yfit = np.log(df['h3'].values), np.log(df['Density_Q_gf'].values)
-params, res = ufun.fitLineHuber(Xfit, Yfit)
-Xfitplot = np.linspace(np.min(df['h3'].values), np.max(df['h3'].values), 100)
-ax.plot(Xfitplot, mypowerlaw(Xfitplot, params[1], params[0]), 'k--')
-ax.set_title(f'Fit: Y = {np.exp(params[0]):.2f}.X^{params[1]:.2f}')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_ylabel('Cortex Density with a Gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend().set_visible(False)
-ax.grid(which='both', axis='both')
-
-
-
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = f'Log_AllDates_Density', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%% Plot -- stairs
-
-stairs_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/24-05-24_stairs_DfMerged.csv", sep=None, engine='python')
-stairs_df['cellId'] = '24-05-24_' + stairs_df['cell']
-
-# %%%% Plot - Lin - both dates
-
-fig, axes = plt.subplots(1, 3, figsize=(16, 6))
-style = None
-hue = 'cell'
-
-# Filter global_df
-Filters = [(global_df['h3'] < 900),
-           ]
-
-df = filterDf(stairs_df, Filters)
-
-ax = axes[0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize=6)
-ax.grid()
-
-ax = axes[1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize=6)
-ax.grid()
-
-ax = axes[2]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= 75, zorder=5) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 50])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize=6)
-ax.grid()
-
-
-fig.tight_layout()
-plt.show()
-
-
-# %%% Plot -- with compressions V1
-
-fluo_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
-Filters = [(fluo_df['date'] == '24-06-14'),
-           (fluo_df['manip'].apply(lambda x : x in ['M2', 'M3'])),
-           (fluo_df['cellID'].apply(lambda x : x not in ['24-06-14_M2_P1_C1'])),
-           ]
-fluo_df_f = filterDf(fluo_df, Filters)
-fluo_df_f = fluo_df_f.dropna(subset = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf'])
-fluo_df_f['Density_Q_fbN'] = fluo_df_f['Q_fbN']/fluo_df_f['h3']
-fluo_df_f['Density_Q_fbL'] = fluo_df_f['Q_fbL']/fluo_df_f['h3']
-fluo_df_f['Density_Q_vb'] = fluo_df_f['Q_vb']/fluo_df_f['h3']
-fluo_df_f['Density_Q_gf'] = fluo_df_f['Q_gf']/fluo_df_f['h3']
-
-fluo_df_fg = dataGroup(fluo_df_f, groupCol = 'cellID', idCols = ['date', 'manip', 'cell'], 
-                       numCols = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h3', 'Density_Q_fbN', 'Density_Q_fbL', 'Density_Q_vb', 'Density_Q_gf'],
-                       aggFun = 'median')
-
-meca_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/MecaData_Chameleon_CompFluo.csv", sep=None, engine='python')
-meca_df['cellID_2'] = meca_df['cellID'].apply(lambda x : '-'.join(x.split('-')[:-1]))
-Filters = [(meca_df['date'] == '24-06-14'),
-           (meca_df['bestH0'] <= 1200),
-           ]
-
-meca_df_f = filterDf(meca_df, Filters)
-meca_df_fg1 = dataGroup(meca_df_f, groupCol = 'cellID_2', idCols = ['date'], 
-                        numCols = ['surroundingThickness', 'bestH0'], aggFun = 'mean')
-meca_df_fg2 = dataGroup_weightedAverage(meca_df_f, groupCol = 'cellID_2', idCols = ['date'], 
-                                        valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
-meca_df_fg = meca_df_fg1.merge(meca_df_fg2, on='cellID_2')
-
-merged_df = fluo_df_fg.merge(meca_df_fg, left_on = 'cellID', right_on = 'cellID_2', how = 'inner')
-
-
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-06-28'
-
-
-# %%%% fluo - grouped vs ungrouped - Qtt
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = fluo_df_f
-hue = 'cellID'
-style = None
-s = 25
-alpha = 0.8
-zo = 5
-pal = sns.color_palette(apm.cL_Set21, len(fluo_df_fg))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 20])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Quantity on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 20])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Quantity on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Quantity on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 30])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Quantity with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-
-
-
-df = fluo_df_fg
-hue = 'cellID'
-style = None
-s = 60
-alpha = 1.0
-zo = 6
-ec = 'k'
-
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbL', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend().set_visible(False)
-
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_fbN', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend().set_visible(False)
-
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_vb', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Q_gf', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-
-
-
-
-fig.suptitle('Quantity v thickness - with cell medians')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Qtt_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% fluo - grouped vs ungrouped - Density
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = fluo_df_f
-hue = 'cellID'
-style = None
-s = 25
-alpha = 0.8
-zo = 5
-pal = sns.color_palette(apm.cL_Set21, len(fluo_df_fg))
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Density on a large width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Density on a narrow width')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Density on a variable window')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.set_xlim([0, 0.8])
-ax.set_ylim([0, 40])
-ax.set_xlim([0, 1.4])
-ax.set_ylabel('Actin Density with a gaussian fit')
-ax.set_xlabel('Cortex thickness (µm)')
-ax.grid()
-
-
-
-
-df = fluo_df_fg
-hue = 'cellID'
-style = None
-s = 60
-alpha = 1.0
-zo = 6
-ec = 'k'
-
-
-ax = axes[0, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbL', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend().set_visible(False)
-
-
-ax = axes[0, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_fbN', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend().set_visible(False)
-
-
-ax = axes[1, 0]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_vb', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend(fontsize = 6, loc='center left', bbox_to_anchor=(1, 0.5))
-
-
-ax = axes[1, 1]
-sns.scatterplot(ax=ax, data=df, x='h3', y='Density_Q_gf', hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-
-
-
-
-fig.suptitle('Density v thickness - with cell medians')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% meca - grouped vs ungrouped
-
-fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = meca_df_f
-hue = 'cellID_2'
-x = 'surroundingThickness'
-y = 'E_f_<_400'
-style = None
-s = 25
-alpha = 0.8
-zo = 5
-pal = sns.color_palette(apm.cL_Set21, len(meca_df_fg))
-
-ax = ax
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-
-df = meca_df_fg
-hue = 'cellID_2'
-x = 'surroundingThickness'
-y = 'E_f_<_400_wAvg'
-style = None
-s = 60
-alpha = 1.0
-zo = 6
-ec = 'k'
-
-ax = ax
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, palette = pal,
-                s= s, ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-# ax.legend().set_visible(False)
-
-
-
-
-fig.suptitle('Stiffness v thickness - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% cross - stiff vs density
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'cellID_2'
-y = 'E_f_<_400_wAvg'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'k'
-pal = sns.color_palette(apm.cL_Set21, len(merged_df))
-
-ax = axes[0, 0]
-x = 'Density_Q_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'Density_Q_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'Density_Q_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'Density_Q_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% cross - stiff vs density with color
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'h3'
-y = 'E_f_<_400_wAvg'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-x = 'Density_Q_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'Density_Q_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'Density_Q_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'Density_Q_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_H3-Density-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% cross - stiff vs thick with color for density
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter
-Filters = [
-           (merged_df['cellID_2'].apply(lambda x : x not in ['24-06-14_M2_P1_C1',
-                                                             '24-06-14_M2_P1_C9',
-                                                             '24-06-14_M3_P1_C1'])),
-           ]
-df = filterDf(merged_df, Filters)
-
-x = 'surroundingThickness'
-y = 'E_f_<_400_wAvg'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-
-hue = 'Density_Q_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nLW', loc = 'upper left')
-ax.grid()
-
-ax = axes[0, 1]
-hue = 'Density_Q_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nNW', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 0]
-hue = 'Density_Q_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nVB', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 1]
-hue = 'Density_Q_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nGF', loc = 'upper left')
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density-SurrH-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-
-
-
-
-
-
-# %%% Plot -- with compressions V2
-
-fluo_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/All_global_DfMerged.csv", sep=None, engine='python')
-Filters = [(fluo_df['date'] == '24-06-14'),
-           (fluo_df['manip'].apply(lambda x : x in ['M2', 'M3'])),
-           (fluo_df['cellID'].apply(lambda x : x not in ['24-06-14_M2_P1_C1'])),
-           ]
-fluo_df_f = filterDf(fluo_df, Filters)
-fluo_df_f = fluo_df_f.dropna(subset = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf'])
-fluo_df_f['D1_fbN'] = fluo_df_f['Q_fbN']/fluo_df_f['h3']
-fluo_df_f['D1_fbL'] = fluo_df_f['Q_fbL']/fluo_df_f['h3']
-fluo_df_f['D1_vb'] = fluo_df_f['Q_vb']/fluo_df_f['h3']
-fluo_df_f['D1_gf'] = fluo_df_f['Q_gf']/fluo_df_f['h3']
-
-fluo_df_fg = dataGroup(fluo_df_f, groupCol = 'cellID', idCols = ['date', 'manip', 'cell'], 
-                       numCols = ['Q_fbL', 'Q_fbN', 'Q_vb', 'Q_gf', 'h3', 'D1_fbN', 'D1_fbL', 'D1_vb', 'D1_gf'],
-                       aggFun = 'median')
-
-meca_df = pd.read_csv("D:/MagneticPincherData/Data_Analysis/FluoQuantifs/MecaData_Chameleon_CompFluo.csv", sep=None, engine='python')
-meca_df['cellID_2'] = meca_df['cellID'].apply(lambda x : '-'.join(x.split('-')[:-1]))
-Filters = [(meca_df['date'] == '24-06-14'),
-           (meca_df['surroundingThickness'] <= 900),
-           ]
-
-meca_df_f = filterDf(meca_df, Filters)
-# meca_df_fg1 = dataGroup(meca_df_f, groupCol = 'cellID_2', idCols = ['date'], 
-#                         numCols = ['surroundingThickness', 'bestH0'], aggFun = 'mean')
-# meca_df_fg2 = dataGroup_weightedAverage(meca_df_f, groupCol = 'cellID_2', idCols = ['date'], 
-#                                         valCol = 'E_f_<_400', weightCol = 'ciwE_f_<_400', weight_method = 'ciw^2')
-# meca_df_fg = meca_df_fg1.merge(meca_df_fg2, on='cellID_2')
-
-merged_df = fluo_df_fg.merge(meca_df_f, left_on = 'cellID', right_on = 'cellID_2', how = 'inner')
-
-merged_df['D2_fbN'] = 1000*merged_df['Q_fbN']/merged_df['surroundingThickness']
-merged_df['D2_fbL'] = 1000*merged_df['Q_fbL']/merged_df['surroundingThickness']
-merged_df['D2_vb'] = 1000*merged_df['Q_vb']/merged_df['surroundingThickness']
-merged_df['D2_gf'] = 1000*merged_df['Q_gf']/merged_df['surroundingThickness']
-
-
-figDir = 'D:/MagneticPincherData/Figures/FluoAnalysis'
-figSubDir = '24-07-02_OtherCross'
-
-
-# %%%% cross - stiff vs density
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'cellID_2'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'k'
-pal = sns.color_palette(apm.cL_Set21, len(merged_df['cellID_2'].unique()))
-
-ax = axes[0, 0]
-x = 'D1_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'D1_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'D1_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'D1_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% cross - stiff vs density 2
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'cellID_2'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'k'
-pal = sns.color_palette(apm.cL_Set21, len(merged_df['cellID_2'].unique()))
-
-ax = axes[0, 0]
-x = 'D2_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'D2_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'D2_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'D2_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s, palette = pal,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density 2 - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density2-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% cross - stiff vs density with color
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'h3'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-x = 'D1_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'D1_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'D1_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'D1_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_H3-Density-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-# %%%% cross 2 - stiff vs density with color
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter global_df
-
-df = merged_df
-hue = 'surroundingThickness'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-x = 'D2_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[0, 1]
-x = 'D2_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = True) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 0]
-x = 'D2_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-ax = axes[1, 1]
-x = 'D2_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo, legend = False) # , style='cellNum'
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_xlabel('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-# ax.legend(fontsize = 8, loc='center left', bbox_to_anchor=(1, 0.5))
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density 2 - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_H3-Density2-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-# %%%% cross - stiff vs thick with color for density
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter
-Filters = [
-           (merged_df['cellID_2'].apply(lambda x : x not in ['24-06-14_M2_P1_C1',
-                                                             '24-06-14_M2_P1_C9',
-                                                             '24-06-14_M3_P1_C1'])),
-           ]
-df = filterDf(merged_df, Filters)
-
-x = 'surroundingThickness'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-
-hue = 'D1_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nLW', loc = 'upper left')
-ax.grid()
-
-ax = axes[0, 1]
-hue = 'D1_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nNW', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 0]
-hue = 'D1_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nVB', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 1]
-hue = 'D1_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nGF', loc = 'upper left')
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density-SurrH-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-# %%%% cross 2 - stiff vs thick with color for density
-
-fig, axes = plt.subplots(2, 2, figsize=(10, 6))
-# gs.set_manuscript_options_jv(palette = 'Set2')
-
-# Filter
-Filters = [
-           (merged_df['cellID_2'].apply(lambda x : x not in ['24-06-14_M2_P1_C1',
-                                                             '24-06-14_M2_P1_C9',
-                                                             '24-06-14_M3_P1_C1'])),
-           ]
-df = filterDf(merged_df, Filters)
-
-x = 'surroundingThickness'
-y = 'E_f_<_400'
-style = None
-s = 60
-alpha = 1
-zo = 5
-ec = 'None'
-
-ax = axes[0, 0]
-
-hue = 'D2_fbL'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - large window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nLW', loc = 'upper left')
-ax.grid()
-
-ax = axes[0, 1]
-hue = 'D2_fbN'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - narrow window')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nNW', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 0]
-hue = 'D2_vb'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - variable bounds')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nVB', loc = 'upper left')
-ax.grid()
-
-ax = axes[1, 1]
-hue = 'D2_gf'
-sns.scatterplot(ax=ax, data=df, x=x, y=y, hue=hue, style=style, s= s,
-                ec = ec, alpha = alpha, zorder=zo) # , style='cellNum'
-ax.set_xlabel('Cortex thickness (nm)')
-ax.set_ylabel('Cortex stiffness (Pa)')
-ax.set_title('Cortex density (au) - gaussian fit')
-ax.set_ylim([0, ax.get_ylim()[-1]])
-ax.set_xlim([0, ax.get_xlim()[-1]])
-ax.legend(fontsize = 6, title = 'Density\nGF', loc = 'upper left')
-ax.grid()
-
-
-
-fig.suptitle('Stiffness v density 2 - with cell w. avg.')
-fig.tight_layout()
-plt.show()
-
-ufun.archiveFig(fig, name = 'Comp_Density2-SurrH-Stiff_Lin', ext = '.pdf', dpi = 100,
-                figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# %% Archives
-
-
-
-
-
-#### Start
-
-plt.ioff()
-I = skm.io.imread(fluoPath)
-
-# czt_shape, czt_seq = get_CZT_fromTiff(fluoPath)
-# [nC, nZ, nT] = czt_shape
-[nC, nT, nZ] = CTZ_tz.shape[:3]
-
-Angles = np.arange(0, 360, 1)
-previousCircleXYR = (50,50,50)
-
-tsdf = pd.read_csv(resBfPath, sep=None, engine='python')
-
-colsContact = ['iT', 'T', 'X', 'Y', 'iZ', 'Z', 'R', 'A', 'Xc', 'Yc', 'Rc', 
-               'Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout', 
-               ]
-dfContact = pd.DataFrame(np.zeros((nT, len(colsContact))), columns=colsContact)
-
-fluoCell = np.zeros((nT, nZ))
-fluoCyto = np.zeros((nT, nZ))
-fluoCytoStd = np.zeros((nT, nZ))
-fluoBack = np.zeros((nT, nZ))
-fluoBeadIn = np.zeros((nT, nZ))
-
-arrayViterbiContours = np.zeros((nT, nZ, 360, 2))
-profileMatrix = np.zeros((nT, nZ, N_profilesMatrix, warp_radius))
-
-for t in range(nT):
-    intensityMap_t = []
-    tsd_t = tsdf.iloc[t,:].to_dict()
-        
-    #### 1.0 Compute position of contact point
-    x_contact = (tsd_t['X_in']+tsd_t['X_out'])/2
-    y_contact = (tsd_t['Y_in']+tsd_t['Y_out'])/2
-    
-    zr_contact = (tsd_t['Zr_in']+tsd_t['Zr_out'])/2
-    CF_mid = - zr_contact + DZo - DZb 
-    # EF = ED + DI + IF; ED = - DZb; for I=I_mid & F=F_mid, DI = - zr; and IF = DZo
-    # CF = (EinF + EoutF) / 2 [eq planes of the 2 beads]
-    # so CF = -(zrIn+zrOut)/2 - DZb + DZo = -zr_contact + DZo - DZb 
-    iz_mid = (nZ-1)//2 # If 11 points in Z, iz_mid = 5
-    iz_contact = iz_mid - (CF_mid / dz)
-    # print(iz_contact)
-    
-    x_in = tsd_t['X_in']
-    y_in = tsd_t['Y_in']
-    z_in = ((-1)*tsd_t['Zr_in']) + DZo - DZb
-    
-    x_out = tsd_t['X_out']
-    y_out = tsd_t['Y_out']
-    z_out = ((-1)*tsd_t['Zr_out']) + DZo - DZb
-    
-    dfContact.loc[t, ['iT', 'T', 'X', 'Y', 'iZ', 'Z']] = [t, Fluo_T[t], x_contact, y_contact, iz_contact, iz_contact*dz]
-    dfContact.loc[t, ['Xin', 'Yin', 'Zin', 'Xout', 'Yout', 'Zout']] = [x_in, y_in, dz*iz_mid-z_in, x_out, y_out, dz*iz_mid-z_out]
-
-    
-    # Zr = (-1) * (tsd_t['Zr_in']+tsd_t['Zr_out'])/2 # Taking the opposite cause the depthograph is upside down for these experiments
-    # izmid = (nZ-1)//2 # If 11 points in Z, izmid = 5
-    # zz = dz * np.arange(-izmid, +izmid, 1) # If 11 points in Z, zz = [-5, -4, ..., 4, 5] * dz
-    # zzf = zz + Zr # Coordinates zz of bf images with respect to Zf, the Z of the focal point of the deptho
-    # zzeq = zz + Zr + DZo - DZb # Coordinates zz of fluo images with respect to Zeq, the Z of the equatorial plane of the bead
-    
-    # zi_contact = Akima1DInterpolator(zzeq, np.arange(len(zzeq)))(0)
-    
-    A_contact_map = 0
-    foundContact = False
-    
-    for z in range(nZ):
-        contactSlice = False
-        i_zt = z + nZ*t
-        I_zt = I[i_zt]
-        
-        #### 2.0 Locate cell
-        if z >= 1:
-            (Xc, Yc, Rc) = previousCircleXYR
-        if z == 0:
-            (Yc, Xc), Rc = findCellInnerCircle(I_zt, withBeads = True, plot=False)
-            if Rc < 8*SCALE_100X_ZEN:
-                print('done that')
-                (Xc, Yc, Rc) = (I_zt.shape[1]//2, I_zt.shape[0]//2, 9.5*SCALE_100X_ZEN)
-            
-        # (Yc, Xc), Rc = findCellInnerCircle(I_zt, withBeads = True, plot=False)     
-        Yc0, Xc0, Rc0 = round(Yc), round(Xc), round(Rc)
-        
-        
-        #### 2.1 Warp
-        warped = skm.transform.warp_polar(I_zt, center=(Yc, Xc), radius=warp_radius, #Rc*1.2, 
-                                          output_shape=None, scaling='linear', channel_axis=None)
-        # max_values = np.max(warped[:,Rc0-inPix_set:Rc0+outPix_set+1], axis=1)
-            
-        #### 2.2 Viterbi Smoothing
-        edge_viterbi = ViterbiEdge(warped, Rc0, inPix_set, outPix_set, 2, relative_height_virebi)
-        edge_viterbi_unwarped = np.array(unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)) # X, Y
-
-        #### Extra iteration
-        # x.0 Locate cell
-        (Xc, Yc), Rc = fitCircle(np.array([edge_viterbi_unwarped[1], edge_viterbi_unwarped[0]]).T, loss = 'huber')        
-        Yc0, Xc0, Rc0 = round(Yc), round(Xc), round(Rc)
-        
-        # x.1 Warp
-        warped = skm.transform.warp_polar(I_zt, center=(Yc, Xc), radius=warp_radius, #Rc*1.4, 
-                                          output_shape=None, scaling='linear', channel_axis=None)
-        warped = skm.util.img_as_uint(warped)
-        w_ny, w_nx = warped.shape
-        Angles = np.arange(0, 360, 1)
-        max_values = np.max(warped[:,Rc0-inPix_set:Rc0+outPix_set+1], axis=1)
-        inPix, outPix = inPix_set, outPix_set
-        
-        # x.3 Viterbi Smoothing
-        edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
-        edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
-        arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-        
-        # fig, ax = plt.subplots(1, 1)
-        # ax.imshow(I_zt, cmap='gray', aspect='equal')
-        # ax.plot(edge_viterbi_unwarped[0], edge_viterbi_unwarped[1], c='g', ls = '--')
-        # ax.plot(Xc, Yc, 'go')
-        # CC = circleContour_V2((Yc, Xc), Rc)
-        # [yy_circle, xx_circle] = CC.T
-        # ax.plot(xx_circle, yy_circle, 'b--')
-        # ax.set_title('Detected contours')
-        # fig.tight_layout()
-        # plt.show()
-
-
-
-        #### 3.0 Locate cell
-        (Xc, Yc), Rc = fitCircle(np.array([edge_viterbi_unwarped[1], edge_viterbi_unwarped[0]]).T, loss = 'huber')
-        if z >= 1 and Rc < 7.5*SCALE_100X_ZEN:
-            print('done this')
-            (Xc, Yc, Rc) = previousCircleXYR
-        if z == 0 and Rc < 7.5*SCALE_100X_ZEN:
-            print('done that')
-            (Xc, Yc, Rc) = (I_zt.shape[1]//2, I_zt.shape[0]//2, 9.5*SCALE_100X_ZEN)
-        
-        previousCircleXYR = (Xc, Yc, Rc)
-        Yc0, Xc0, Rc0 = round(Yc), round(Xc), round(Rc)
-        
-        #### 3.1 Warp
-        warped = skm.transform.warp_polar(I_zt, center=(Yc, Xc), radius=warp_radius, #Rc*1.4, 
-                                          output_shape=None, scaling='linear', channel_axis=None)
-        warped = skm.util.img_as_uint(warped)
-        w_ny, w_nx = warped.shape
-        Angles = np.arange(0, 360, 1)
-        max_values = np.max(warped[:,Rc0-inPix_set:Rc0+outPix_set+1], axis=1)
-        
-        R_contact, A_contact = warpXY(x_contact*SCALE_100X_ZEN, y_contact*SCALE_100X_ZEN, Xc, Yc)
-                
-        if (z == np.round(iz_contact)) or (not foundContact and z == nZ-1):
-            contactSlice = True
-            foundContact = True
-            # print(z, R_contact, A_contact)
-            A_contact_map = A_contact
-            dfContact.loc[t, ['R', 'A']] = [R_contact, A_contact]
-        
-        # #### 3.2 Interp in X
-        # warped_interp = ufun.resize_2Dinterp(warped, fx=interp_factor_x, fy=1)
-        # warped = warped_interp
-        # w_nx, Rc0 = w_nx * interp_factor_x, Rc0 * interp_factor_x
-        # inPix, outPix = inPix_set * interp_factor_x, outPix_set * interp_factor_x
-        # R_contact *= interp_factor_x
-        # blur_parm *= interp_factor_x
-        
-        inPix, outPix = inPix_set, outPix_set
-        
-        #### 3.3 Viterbi Smoothing
-        edge_viterbi = ViterbiEdge(warped, Rc0, inPix, outPix, blur_parm, relative_height_virebi)
-        # edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi)/interp_factor_x, Angles, Xc, Yc)
-        edge_viterbi_unwarped = unwarpRA(np.array(edge_viterbi), Angles, Xc, Yc)
-        arrayViterbiContours[t, z, :] = np.array([edge_viterbi_unwarped[0], edge_viterbi_unwarped[1]]).T
-        
-        
-        
-        dfContact.loc[t, ['Xc', 'Yc', 'Rc']] += np.array([(Xc/SCALE_100X_ZEN)/(nZ), (Yc/SCALE_100X_ZEN)/(nZ), (Rc/SCALE_100X_ZEN)/(nZ)])
-        
-        #### 4. Append the contact profile matrix
-        # profileMatrix = np.zeros((nT, nZ, N_profilesMatrix, warp_radius))
-        halfN = N_profilesMatrix//2
-        tmpWarp = np.copy(warped)
-        A_contact_r = round(A_contact)
-        dA = A_contact_r - A_contact
-        if   A_contact_r < halfN+3:
-            tmpWarp = np.roll(tmpWarp, halfN+3, axis=0) 
-            tmp_A_contact   = A_contact   + (halfN+3)
-            tmp_A_contact_r = A_contact_r + (halfN+3)
-            print('roll forward')
-            print(A_contact_r, tmp_A_contact_r)
-        elif A_contact_r > 360 - (halfN+3):
-            tmpWarp = np.roll(tmpWarp, -(halfN+3), axis=0) 
-            tmp_A_contact   = A_contact   - (halfN+3)
-            tmp_A_contact_r = A_contact_r - (halfN+3)
-            print('roll backward')
-            print(A_contact_r, tmp_A_contact_r)
-        else:
-            tmp_A_contact   = A_contact
-            tmp_A_contact_r = A_contact_r
-    
-        
-        try:
-            smallTmpWarp = tmpWarp[tmp_A_contact_r - (halfN+3):tmp_A_contact_r + (halfN+3)+1, :]
-            tform = skm.transform.EuclideanTransform(translation=(0, dA))
-            smallTmpWarp_tformed = skm.util.img_as_uint(skm.transform.warp(smallTmpWarp, tform))
-            
-            Ltmp = len(smallTmpWarp_tformed)
-            smallWarp = smallTmpWarp_tformed[Ltmp//2 - halfN:Ltmp//2 + halfN+1, :]
-            
-            profileMatrix[t, z] = smallWarp
-            
-        except:
-            print("profileMatrix Error")
-            print(A_contact_r)
-            print(dA)
-            print(tmpWarp.shape)
-            print(smallTmpWarp.shape)
-            print(smallTmpWarp_tformed.shape)
-            print(smallWarp.shape)
-            
-        #### 6.1 Compute beads positions
-        draw_InCircle = False
-        draw_OutCircle = False
-        h_InCircle = Rbead + (z_in + dz*(z-iz_mid))
-        h_OutCircle = Rbead + (z_out + dz*(z-iz_mid))
-        
-        if h_InCircle > 0 and h_InCircle < 2*Rbead:
-            draw_InCircle = True
-            a_InCircle = (h_InCircle*(2*Rbead-h_InCircle))**0.5
-            # INbeadContour = circleContour((round(y_in*SCALE_100X_ZEN), round(x_in*SCALE_100X_ZEN)), 
-            #                                a_InCircle*SCALE_100X_ZEN, I_zt.shape)
-            INbeadContour = circleContour_V2((round(y_in*SCALE_100X_ZEN), round(x_in*SCALE_100X_ZEN)), 
-                                             a_InCircle*SCALE_100X_ZEN)
-            XINbeadContour, YINbeadContour = INbeadContour[:, 1], INbeadContour[:, 0]
-            RINbeadContour, AINbeadContour = warpXY(XINbeadContour, YINbeadContour, Xc, Yc)
-            # RINbeadContour *= interp_factor_x
-            
-        if h_OutCircle > 0 and h_OutCircle < 2*Rbead:
-            draw_OutCircle = True
-            a_OutCircle = (h_OutCircle*(2*Rbead-h_OutCircle))**0.5
-            # OUTbeadContour = circleContour((round(y_out*SCALE_100X_ZEN), round(x_out*SCALE_100X_ZEN)), 
-            #                                a_OutCircle*SCALE_100X_ZEN, I_zt.shape)
-            OUTbeadContour = circleContour_V2((round(y_out*SCALE_100X_ZEN), round(x_out*SCALE_100X_ZEN)),
-                                              a_OutCircle*SCALE_100X_ZEN)
-            XOUTbeadContour, YOUTbeadContour = OUTbeadContour[:, 1], OUTbeadContour[:, 0]
-            ROUTbeadContour, AOUTbeadContour = warpXY(XOUTbeadContour, YOUTbeadContour, Xc, Yc)
-            # ROUTbeadContour *= interp_factor_x
-            
-        
-        #### 5. Analyse fluo cyto & background
-        path_edge = mpltPath.Path(np.array(edge_viterbi_unwarped).T)
-        xx, yy = np.meshgrid(np.arange(I_zt.shape[1]), np.arange(I_zt.shape[0]))
-        pp = np.array([[x, y] for x, y in zip(xx.flatten(), yy.flatten())]) # .reshape(I_zt.shape[1], I_zt.shape[0], 2)
-        inside = path_edge.contains_points(pp).reshape(I_zt.shape[0], I_zt.shape[1])
-        
-
-        
-        # Inside
-        cyto_margin = 10
-        inside_eroded = ndi.binary_erosion(inside, iterations = cyto_margin)
-        data_cyto = I_zt.flatten()[inside_eroded.flatten()]
-        threshold_cyto = skm.filters.threshold_li(data_cyto)
-        # threshold_cell = skm.filters.threshold_triangle(data_cyto) #[0.9*skm.filters.threshold_triangle(data_cell)]
-        mask_cyto = (I_zt > 0.9*threshold_cyto).astype(bool)
-        I_cyto = np.median(I_zt[mask_cyto & inside_eroded])
-        Std_cyto = np.std(I_zt[mask_cyto & inside_eroded])
-        
-        # Outside
-        background_margin = 140
-        outside = ~ndi.binary_dilation(inside, iterations = background_margin)
-        data = I_zt.flatten()[outside.flatten()]
-        I_back = np.percentile(I_zt[outside], 30)
-        
-        # Whole cell
-        cell_margin = 3
-        cell_dilated = ndi.binary_dilation(inside, iterations = cell_margin)
-
-        mask_removed_from_cyto = inside & (~mask_cyto)
-        cell_filtered = cell_dilated & (~mask_removed_from_cyto)
-        
-        nb_pix = np.sum(cell_filtered.astype(int))
-        total_val = np.sum(I_zt.flatten()[cell_filtered.flatten()])
-        I_cell = total_val/nb_pix
-        
-        # Bead
-        I_bead = np.nan
-        if draw_InCircle:
-            xx, yy = np.meshgrid(np.arange(I_zt.shape[1]), np.arange(I_zt.shape[0]))
-            xc, yc = round(x_in*SCALE_100X_ZEN), round(y_in*SCALE_100X_ZEN)
-            rc = a_InCircle*SCALE_100X_ZEN*0.9
-            maskBead = ((xx-xc)**2 + (yy-yc)**2)**0.5 < rc
-            I_bead = np.median(I_zt[maskBead])
-        
-        
-        # Store
-        fluoCyto[t, z] = I_cyto
-        fluoCytoStd[t, z] = Std_cyto
-        fluoBack[t, z] = I_back
-        fluoCell[t, z] = I_cell
-        fluoBeadIn[t, z] = I_bead
-        
-        #### 5. Define normalization functions
-        def normalize_Icyto(x):
-            return((x - I_back)/(I_cyto - I_back))
-    
-        def normalize_Icell(x):
-            return((x - I_back)/(I_cell - I_back))
-        
-        def normalize_Icell2(x):
-            return((x - I_cyto)/(I_cell - I_back))
-        
-        
-        
-        #### 5. Read values
-        VEW=5
-        max_values = normalize_Icell(max_values)
-        viterbi_Npix_values = [np.sum(warped[Angles[i], edge_viterbi[i]-VEW//2:edge_viterbi[i] + (VEW//2 + 1)])/VEW for i in range(len(edge_viterbi))]
-        viterbi_Npix_values = normalize_Icell(viterbi_Npix_values)
-        intensityMap_t.append(viterbi_Npix_values)
