@@ -1406,21 +1406,7 @@ class CellCompression:
         ax.scatter(self.tsDf['T'].values, self.tsDf['D3'].values-self.DIAMETER, 
                    color = color, edgecolors = None, linewidths = 0,
                    zorder = 5, s = 2, alpha = 0.9)        
-        # for ii in range(self.Ncomp): 
-        #     IC = self.listIndent[ii]
-        #     compValid = IC.isValidForAnalysis
-        #     if compValid:
-        #         fitError = IC.dictFitFH_Chadwick['Full']['error']
 
-        #         if (not fitError):                
-        #             ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-        #                     color = 'chartreuse', zorder = 6)
-        #         else:
-        #             ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-        #                     color = 'crimson', zorder = 6)
-        #     else:
-        #         ax.scatter(IC.Df['T'].values, IC.Df['D3'].values-self.DIAMETER, s = 3,
-        #                 color = 'crimson', zorder = 6)
         (ax_ym, ax_yM) = ax.get_ylim()
         ax.set_ylim([min(-0,ax_ym), ax_yM])
         ax.set_ylim([0, 600])
@@ -1484,7 +1470,212 @@ class CellCompression:
         return(fig, axes)
     
     
+    def Pplot_Timeseries_V2bis(self, plotSettings):
+        
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        fig = plt.figure(figsize=(11/gs.cm_in, 6/gs.cm_in))
+        spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
+        ax1 = fig.add_subplot(spec[:4])
+        ax2 = fig.add_subplot(spec[4:])
+        
+        Ni = 3
+        LI = self.listIndent[:Ni]
+        tsDf = self.tsDf[self.tsDf['idxLoop'] <= Ni]
+        
+        time_ticks = np.array([5.5, 10.167, 11.667, 13, 19] + [19*k for k in range(2, Ni+1)])
+        time_ticklabels = np.array([5.5, 10, 11.5, 13, 19] + [19*k for k in range(2, Ni+1)])
+        
+        #### Distance Plot
+        ax = ax1
+        color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+        ax1.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+        ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
+        ax.scatter(tsDf['T'].values, tsDf['D3'].values-self.DIAMETER, 
+                   color = color, edgecolors = None, linewidths = 0,
+                   zorder = 5, s = 2, alpha = 0.9)        
+
+        (ax_ym, ax_yM) = ax.get_ylim()
+        ax.set_ylim([min(-0,ax_ym), ax_yM])
+        ax.set_ylim([0, 600])
+        ax.tick_params(axis='y', labelcolor = color)
+        ax.grid(axis='y', zorder=0)
+        
+        # Force plot
+        ax = ax2
+        color = 'firebrick'
+        ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+        ax.plot(tsDf['T'].values, tsDf['F'].values/1e3, color=color, lw=1.5)
+        ax.tick_params(axis='y', labelcolor=color)
+        ax.set_yticks([0, 0.5, 1.0, 1.5])
+        ax.grid(axis='y', zorder=0)
+        (ax_ym, ax_yM) = ax.get_ylim()
+        # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
+        ax.set_ylim([0, 1.1])
+        
+        #### Shades
+        for i in range(1, Ni+1):
+            df = tsDf[tsDf['idxLoop'] == (i)]
+            # print(df.idxAnalysis)
+            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
+            t2 = df['T'].values[ufun.findFirst(i, df.idxAnalysis)]
+            t3 = df['T'].values[ufun.findLast(i, df.idxAnalysis)]
+            t4 = df['T'].values[ufun.findLast(-i, df.idxAnalysis)]
+            for ax in [ax1, ax2]:
+                ax.axvspan(t1, t2, color='grey', alpha=0.15, zorder = 0, ec=None)
+                ax.axvspan(t2, t3, color='grey', alpha=0.3, zorder = 0, ec=None)
+        
+        LM0 = mpatches.Rectangle((0, 0), 0, 0, facecolor='w', 
+                                 edgecolor='k', linewidth=0.2,
+                                 label='Constant field')
+        LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
+                                   label='Force release')
+        LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
+                                   label='Compression and relaxation')
+        LegendHandles = [LM0, LM1, LM2]
+        
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.15, zorder = 0, ec=None,
+        #            label = 'Release of the force')
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.3, zorder = 0, ec=None,
+        #            label = 'Compression and relaxation')
+        
+        #### shared formatting 
+        (ax_xm, ax_xM) = ax.get_xlim()
+        
+        ax1.set_xlim([0, ax_xM])
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
+        ax1.legend(handles=LegendHandles, loc='upper right', 
+                   handlelength = 1.5, handleheight = 1, 
+                   framealpha=1, fontsize=5, labelspacing=0.25)
+
+        ax2.set_xlim([0, ax_xM])
+        ax2.set_xlabel('Time (s)', labelpad=1)
+        ax2.set_xticks(time_ticks)
+        ax2.set_xticklabels(time_ticklabels, rotation = 30)
+        ax2.legend().set_visible(False)
+        
+        fig.tight_layout()
+        axes = [ax1, ax2]
+        return(fig, axes)
+    
+    
     def Pplot_Timeseries_V3(self, plotSettings):
+        
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        LI = self.listIndent
+        NI = len(LI)
+        Np = 3
+        
+        fig = plt.figure(figsize=(7/gs.cm_in, 5/gs.cm_in), layout="constrained")
+        spec = fig.add_gridspec(6, min(Np, NI), hspace=0.15, 
+                                top = 0.975, bottom=0.125, 
+                                left = 0.065, right = 0.99)
+        axes1, axes2 = [], []
+        b1, b2 = [1000, 0], [1.5, 0]
+        
+        for i in range(1, min(Np+1, NI+1)):
+            ax1 = fig.add_subplot(spec[:4, i-1])
+            ax2 = fig.add_subplot(spec[4:, i-1])
+            axes1.append(ax1)
+            axes2.append(ax2)
+            
+            #### Bounds
+            # ii = i + 3
+            ii = i + 0
+            df = self.tsDf[self.tsDf['idxLoop'] == ii]
+            i1 = ufun.findFirst(ii, df.idxAnalysis)
+            i2 = ufun.findLast(ii, df.idxAnalysis)
+            Ti = df['T'].values[i1:i2]
+            Hi = df['D3'].values[i1:i2]-self.DIAMETER
+            Fi = df['F'].values[i1:i2]/1e3
+            
+            i_Hmin = np.argmin(Hi)
+            t_Hmin = Ti[i_Hmin]
+            i_Fmax = np.argmax(Fi)
+            t_Fmax = Ti[i_Fmax]
+            Dt = t_Fmax - t_Hmin
+            
+            #### Distance Plot
+            ax = ax1
+            color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+            # ax.scatter(Ti, Hi, color = color, edgecolors = None, 
+            #            linewidths = 0, zorder = 5, s = 2, alpha = 0.9)
+            ax.plot(Ti, Hi, color=color, lw=0.75) 
+            ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
+            ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
+            
+            ax.grid(axis='y', zorder=0)
+            ax.set_title(f'$\\delta T$ = {Dt:.2f} s', fontsize=6, pad=3)
+            
+            b = ax.get_ylim()
+            if b[0]<b1[0]:
+                b1[0]=b[0]
+            if b[1]>b1[1]:
+                b1[1]=b[1]
+            
+            if i == 1:
+                ax.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+                ax.tick_params(axis='y', labelcolor = color)
+            else:
+                ax.set_yticklabels([])
+                ax.set_ylabel('')
+                
+            
+            
+            #### Force plot
+            ax = ax2
+            color = 'firebrick'
+            
+            ax.plot(Ti, Fi, color=color, lw=0.75)
+            ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
+            ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
+            
+            ax.grid(axis='y', zorder=0)
+            
+            b = ax.get_ylim()
+            if b[0]<b2[0]:
+                b2[0]=b[0]
+            if b[1]>b2[1]:
+                b2[1]=b[1]
+            
+            if i == 1:
+                ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+                ax.tick_params(axis='y', labelcolor=color)
+                ax.set_yticks([0, 0.5, 1.0, 1.5])
+            else:
+                ax.set_yticklabels([])
+                ax.set_ylabel('')
+                    
+            #### shared formatting 
+            # (ax_xm, ax_xM) = ax.get_xlim()
+            # ax1.set_xlim([0, ax_xM])
+            ax1.set_xticks([])
+            ax1.set_xticklabels([])
+    
+            # ax2.set_xlim([0, ax_xM])
+            ax2.set_xlabel('Time (s)', labelpad=1)
+            ax2.legend().set_visible(False)
+            
+        # Set common boundaries
+        for i in range(1, min(Np+1, NI+1)):
+            ax1 = axes1[i-1]
+            ax2 = axes2[i-1]
+            ax1.set_ylim(b1)
+            ax2.set_ylim(b2)
+        
+        # fig.tight_layout()
+        axes = np.array([axes1, axes2])
+        return(fig, axes)
+    
+    
+    
+    def Pplot_FH500_V3(self, plotSettings):
         
         apm.setGraphicOptions(mode = 'print', 
                               palette = 'Set2', 
@@ -1977,29 +2168,21 @@ class CellCompression:
             figDir_Papier = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
             figSubDir_Papier = 'F1'
             
-            try:
-                name = self.cellID + '_F1C_hF(t)'
-                fig, ax = self.Pplot_Timeseries(plotSettings)
-                ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-                ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            except:
-                pass
-            
-            try:
-                name = self.cellID + '_F1C_hF(t)_V2'
-                fig, ax = self.Pplot_Timeseries_V2(plotSettings)
-                ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-                ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                                figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            except:
-                pass
+            # ------
+            #### hF(t) plots
+            # try:
+            # name = self.cellID + '_F1C_hF(t)'
+            # fig, ax = self.Pplot_Timeseries(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
             
             # try:
-            name = self.cellID + '_F1D_F(h)_E500'
-            fig, ax = self.Pplot_FH500(plotSettings)
+            name = self.cellID + '_F1C_hF(t)_V2'
+            fig, ax = self.Pplot_Timeseries_V2(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
             ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
@@ -2007,6 +2190,38 @@ class CellCompression:
             # except:
             #     pass
         
+            # try:
+            name = self.cellID + '_F1C_hF(t)_V2bis'
+            fig, ax = self.Pplot_Timeseries_V2bis(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
+            
+            # try:
+            name = self.cellID + '_SF1D_hF(t)_V3'
+            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
+            
+            
+            # ------
+            #### F(h) plots
+            # try:
+            # name = self.cellID + '_F1D_F(h)_E500'
+            # fig, ax = self.Pplot_FH500(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
         
             # try:
             name = self.cellID + '_F1D_F(h)_E500_V2'
@@ -2019,8 +2234,8 @@ class CellCompression:
             #     pass
         
             # try:
-            name = self.cellID + '_SF1D_hF(t)_V3'
-            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            name = self.cellID + '_F1D_F(h)_E500_V3'
+            fig, ax = self.Pplot_FH500_V3(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
             ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
@@ -2028,8 +2243,7 @@ class CellCompression:
             # except:
             #     pass
         
-            
-            
+        
         
         # 1.
         if plotSettings['FH(t)']:
@@ -2295,6 +2509,7 @@ class CellCompression:
                            'surroundingDz':np.nan,
                            'validatedThickness':False, 
                            'jumpD3':np.nan,
+                           'peakDelay':np.nan,
                            'minForce':np.nan, 
                            'maxForce':np.nan, 
                            'ctFieldForce':np.nan,
@@ -2458,6 +2673,7 @@ class CellCompression:
                 results['ctFieldVarThickness'][i] = ctFieldVarThickness
                 results['ctFieldFluctuAmpli'][i] = ctFieldFluctuAmpli
                 results['jumpD3'][i] = self.listJumpsD3[i]
+                results['peakDelay'][i] = IC.peakDelay
                 
                 results['initialThickness'][i] = np.mean(IC.hCompr[0:3])
                 results['minThickness'][i] = np.min(IC.hCompr)
@@ -2695,7 +2911,12 @@ class IndentCompression:
         self.TCompr = (self.rawDf['T'].values[:self.jMax+1])
         self.TRelax = (self.rawDf['T'].values[self.jMax+1:])
         self.BCompr = (self.rawDf.B.values[:self.jMax+1])
-        self.BRelax = (self.rawDf.B.values[self.jMax+1:])   
+        self.BRelax = (self.rawDf.B.values[self.jMax+1:])
+        
+        # New
+        i_minD = np.argmin(self.rawDf.D3.values)
+        i_maxF = np.argmax(self.rawDf.F.values)
+        self.peakDelay = self.rawDf['T'].values[i_maxF] - self.rawDf['T'].values[i_minD]
 
         
         self.Df = self.rawDf

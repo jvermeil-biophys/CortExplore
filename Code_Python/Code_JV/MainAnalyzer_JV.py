@@ -821,7 +821,7 @@ phyTask += ' & 23-03-09' # Pattern sizes JV
 phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
 
 
-res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V4', 
+res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V4bis', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'

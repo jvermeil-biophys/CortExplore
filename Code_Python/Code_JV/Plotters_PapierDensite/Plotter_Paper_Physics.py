@@ -77,7 +77,7 @@ figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
 # MecaData_Phy = taka3.getMergedTable('MecaData_Physics')
 # MecaData_Phy2 = taka3.getMergedTable('MecaData_Physics_V2')
 MecaData_Phy3 = takaP.getMergedTable('MecaData_Physics_V3')
-MecaData_Phy4 = takaP.getMergedTable('MecaData_Physics_V4')
+MecaData_Phy4 = takaP.getMergedTable('MecaData_Physics_V4bis')
 
 # MecaData_Phy2 = MecaData_Phy2.dropna(axis=0, subset='date')
 MecaData_Phy3 = MecaData_Phy3.dropna(axis=0, subset='date')
@@ -132,7 +132,7 @@ for s in full_comp_id_L4:
     if s not in full_comp_id_L3:
         print(s)
 
-# %%% Compare 2
+# %%% Compare content 2
 
 df = MecaData_Phy3
 cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
@@ -289,8 +289,8 @@ for s in full_comp_id_L4:
         
 print(len(L3), len(L4))
 
-# path = 'C:/Users/josep/Documents/MagneticPincherData/Data_Analysis/MecaData_Physics_V4.csv'
-# MecaData_Phy4.to_csv(path, sep=';', index=False)
+path = 'C:/Users/josep/Documents/MagneticPincherData/Data_Analysis/MecaData_Physics_V4bis.csv'
+MecaData_Phy4.to_csv(path, sep=';', index=False)
 
 
 # %% -------
@@ -1304,8 +1304,8 @@ plotSettings = {# ON/OFF switchs plot by plot
 # =============================================================================
 
 task = '24-04-11_M3_P1_C1'
+# task = '23-03-09_M4_P1_C5' # -> for Pplot_Timeseries_V3()
 
-# task = '24-12-11_M1_P1_C2 & 24-12-11_M1_P1_C3 & 24-12-11_M1_P1_C4' # Test
 
 res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'test', 
                                     save = True, PLOT = True, source = 'Python', 
@@ -4556,7 +4556,7 @@ if SAVE:
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
-# %%% DH - Precompression
+# %%% E500 vs Eprecomp - Precompression
 
 # Save
 SAVE = True
@@ -4631,7 +4631,77 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
+# %%% Peak Delay
 
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'Peak_delay' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.hist(df_f['peakDelay'].values, bins=40, color='dimgray', zorder=3)
+
+median = np.median(df_f['peakDelay'].values)
+ax.axvline(median, color='darkorange', ls='--', lw=1,
+           label=f'Median = {median:.2f} s', zorder=3)
+ax.legend(handlelength = 1.25, loc='upper left')
+ax.grid(zorder=1)
+ax.set_xlabel(r'$\delta T$ (s)')
+ax.set_ylabel('# compressions')
+ax.set_title(r'Time delay between max force and min thickness')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
 
