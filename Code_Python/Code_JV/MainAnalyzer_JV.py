@@ -43,6 +43,7 @@ import TrackAnalyser as taka
 import TrackAnalyser_V2 as taka2
 import TrackAnalyser_V3 as taka3
 import TrackAnalyser_VManuscript as takaM
+import TrackAnalyser_VPapierDensite as takaP
 
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
@@ -788,7 +789,7 @@ plotSettings = {# ON/OFF switchs plot by plot
                         'FH(t)':True,
                         'F(H)':True,
                         'F(H)_VWC':False, # NEW - Numi
-                        'Plots_Manuscript':True,
+                        'Plots_Manuscript':False,
                         'S(e)_stressRegion':False,
                         'K(S)_stressRegion':False,
                         'S(e)_stressGaussian':True,
@@ -809,7 +810,7 @@ plotSettings = {# ON/OFF switchs plot by plot
 phyTask = '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
 phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
 phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
-phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4
+phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4 #  & 24-12-18_M1
 phyTask += ' & 24-12-11' # Long series
 # phyTask += ' & 21-07-08_M1-2 & 21-07-08_M2 & 21-07-08_M4' # Bead size
 # phyTask += ' & 21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12' # Bead size
@@ -819,7 +820,8 @@ phyTask += ' & 23-03-09' # Pattern sizes JV
 # phyTask += ' & 23-07-06_M1 & 23-07-06_M2 & 23-07-06_M3 & 23-07-06_M4 & 23-07-06_M5' # Repeats
 phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
 
-res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = phyTask, fileName = 'MecaData_Physics_V3', 
+
+res = taka3.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V4', 
                                     save = True, PLOT = False, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'

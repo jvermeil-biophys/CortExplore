@@ -77,11 +77,13 @@ figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
 # MecaData_Phy = taka3.getMergedTable('MecaData_Physics')
 # MecaData_Phy2 = taka3.getMergedTable('MecaData_Physics_V2')
 MecaData_Phy3 = takaP.getMergedTable('MecaData_Physics_V3')
+MecaData_Phy4 = takaP.getMergedTable('MecaData_Physics_V4')
 
 # MecaData_Phy2 = MecaData_Phy2.dropna(axis=0, subset='date')
 MecaData_Phy3 = MecaData_Phy3.dropna(axis=0, subset='date')
+MecaData_Phy4 = MecaData_Phy4.dropna(axis=0, subset='date')
 
-MecaData_Phy = MecaData_Phy3
+MecaData_Phy = MecaData_Phy4
 
 
 # %%% Check content
@@ -111,6 +113,185 @@ print([x for x in MecaData_Phy['normal field'].unique()])
 print('')
 
 # CountByCond, CountByCell =apm.makeCountDf(MecaData_Phy, 'date')
+
+# %%% Compare content
+
+MecaData_Phy3['full_comp_id'] = MecaData_Phy3['cellID'] + '_' + MecaData_Phy3['compNum'].astype(str)
+full_comp_id_L3 = MecaData_Phy3['full_comp_id'].values
+
+MecaData_Phy4['full_comp_id'] = MecaData_Phy4['cellID'] + '_' + MecaData_Phy4['compNum'].astype(str)
+full_comp_id_L4 = MecaData_Phy4['full_comp_id'].values
+
+print('in 3, not in 4')
+for s in full_comp_id_L3:
+    if s not in full_comp_id_L4:
+        print(s)
+
+print('in 4, not in 3')
+for s in full_comp_id_L4:
+    if s not in full_comp_id_L3:
+        print(s)
+
+# %%% Compare 2
+
+df = MecaData_Phy3
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26', '24-12-18']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f3 = apm.filterDf(df, Filters)
+full_comp_id_L3 = df_f3['full_comp_id'].values
+
+
+
+df = MecaData_Phy4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26', '24-12-18']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f4 = apm.filterDf(df, Filters)
+full_comp_id_L4 = df_f4['full_comp_id'].values
+
+L3 = []
+L4 = []
+
+print('in 3, not in 4')
+for s in full_comp_id_L3:
+    if s not in full_comp_id_L4:
+        print(s)
+        print(MecaData_Phy4.loc[MecaData_Phy4['full_comp_id']==s, 'valid' + YCol[1:]].values[0])
+        print(MecaData_Phy4.loc[MecaData_Phy4['full_comp_id']==s, 'issue' + YCol[1:]].values[0])
+        L3.append(s)
+
+print('in 4, not in 3')
+for s in full_comp_id_L4:
+    if s not in full_comp_id_L3:
+        print(s)
+        L4.append(s)
+        
+print(len(L3), len(L4))
+
+# %%% Correct some weird stuff
+
+df = MecaData_Phy3
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26', '24-12-18']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f3 = apm.filterDf(df, Filters)
+full_comp_id_L3 = df_f3['full_comp_id'].values
+
+
+
+df = MecaData_Phy4
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26', '24-12-18']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f4 = apm.filterDf(df, Filters)
+full_comp_id_L4 = df_f4['full_comp_id'].values
+
+L3 = []
+L4 = []
+
+print('in 3, not in 4')
+for s in full_comp_id_L3:
+    if s not in full_comp_id_L4:
+        MecaData_Phy4.loc[MecaData_Phy4['full_comp_id']==s, 'valid' + YCol[1:]] = True
+        MecaData_Phy4.loc[MecaData_Phy4['full_comp_id']==s, 'issue' + YCol[1:]] = 'corrected'
+        L3.append(s)
+
+print('in 4, not in 3')
+for s in full_comp_id_L4:
+    if s not in full_comp_id_L3:
+        print(s)
+        L4.append(s)
+        
+print(len(L3), len(L4))
+
+# path = 'C:/Users/josep/Documents/MagneticPincherData/Data_Analysis/MecaData_Physics_V4.csv'
+# MecaData_Phy4.to_csv(path, sep=';', index=False)
+
 
 # %% -------
 
@@ -1124,13 +1305,15 @@ plotSettings = {# ON/OFF switchs plot by plot
 
 task = '24-04-11_M3_P1_C1'
 
+# task = '24-12-11_M1_P1_C2 & 24-12-11_M1_P1_C3 & 24-12-11_M1_P1_C4' # Test
+
 res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'test', 
-                                    save = False, PLOT = True, source = 'Python', 
+                                    save = True, PLOT = True, source = 'Python', 
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting'
 
 
-# %%% Fif 1F & 1H - Distribution H et E
+# %%% Fig 1F & 1H - Distribution H et E
 
 # Source : Plotter_AtccPhysics - Figure NC1.1 - V4 - Thickness & Stiffness LOG SMALL
 
@@ -1261,12 +1444,11 @@ if SAVE:
 # %%% Fig 2A
 
 # Save
-SAVE = False
+SAVE = True
 figSubDir = 'F2'
-name = 'F2A_E500-vs-h500'
+name = 'F2A_E500-vs-h500_TALL' # 
 
 #### Dataset
-
 df = MecaData_Phy
 cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
 drugs = ['dmso'] #['none', 'dmso']
@@ -1303,9 +1485,13 @@ df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [con
 df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 
 #### Plot
-fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 8.5/cm_in))
-win, hin = 0.32, 0.35
-xin, yin = 0.95-win, 0.91-hin 
+# fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 8.5/cm_in))
+# win, hin = 0.32, 0.35
+# xin, yin = 0.95-win, 0.91-hin 
+# ax_in = ax.inset_axes([xin, yin, win, hin])
+fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 12/cm_in))
+win, hin = 0.34, 0.35
+xin, yin = 0.94-win, 0.95-hin 
 ax_in = ax.inset_axes([xin, yin, win, hin])
 
 ax = ax
@@ -1323,7 +1509,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval # results.pvalue_pearson
 [k_ciw, b_ciw] = results.params_ciw
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
@@ -1339,7 +1525,8 @@ ax.set_title('All compressions', color = c_dark, weight = 'bold')
 ax.set_ylabel('$E_{500}$ (kPa)')
 ax.set_xlabel('$H_{500}$ (nm)')
 ax.grid(visible=True, which='major', axis='both')
-ax.set_xlim([50, 1100])
+# ax.set_xlim([50, 1100])
+ax.set_xlim([50, 2000])
 ax.set_ylim([0.5, 200])
 # ax.tick_params(axis='both', direction='in', which='both')
 
@@ -1369,7 +1556,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval # results.pvalue_pearson
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -1383,7 +1570,8 @@ ax.set_title('Average per cell', color = c_dark, weight = 'bold')
 ax.grid()
 # ax.set_ylabel('$E_{500}$ (kPa)')
 # ax.set_xlabel('$H_0$ (nm)')
-ax.set_xlim([80, 1100])
+# ax.set_xlim([50, 1100])
+ax.set_xlim([50, 2000])
 ax.set_ylim([0.5, 200])
 ax.tick_params(axis='both', direction='in', which='both')
 # ax.set_xticklabels(fontsize=9)
@@ -1406,17 +1594,14 @@ plt.show()
 CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 # Save
 if SAVE:
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
     
     
-    
-    
-    
-    
+
     
 # %% Main Figure 4
 
@@ -2936,7 +3121,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'S1'
 name = 'S1_LogNormalDist'
 
@@ -4223,6 +4408,230 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+
+# %%% DH - Before-After
+
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'DH_Before-After' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.hist(df_f['Dh_BeforeAfter'].values, bins=40, color='dimgray', zorder=3)
+
+median = np.median(df_f['Dh_BeforeAfter'].values)
+ax.axvline(median, color='darkorange', ls='--', lw=1,
+           label=f'Median = {median:.1f} nm', zorder=3)
+ax.legend(handlelength = 1.25)
+ax.grid(zorder=1)
+ax.set_xlabel(r'$\Delta H_{5mT}$ (nm)')
+ax.set_ylabel('# compressions')
+ax.set_title(r'$\Delta H_{5mT}$ - Before/after compression')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+
+# %%% DH - Precompression
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'DH_Precompression' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.hist(df_f['Dh_Precomp'].values, bins=40, color='dimgray', zorder=3)
+
+median = np.median(df_f['Dh_Precomp'].values)
+ax.axvline(median, color='darkorange', ls='--', lw=1,
+           label=f'Median = {median:.1f} nm', zorder=3)
+ax.legend(handlelength = 1.25)
+ax.grid(zorder=1)
+ax.set_xlabel(r'$\Delta H$ (nm)')
+ax.set_ylabel('# compressions')
+ax.set_title(r'$\Delta H$ - Initial relaxation')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%% DH - Precompression
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'E500_vs_Eprecomp' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.grid()
+ax.plot(df_f['E_f_<_500'].values/1e3, df_f['E_Precomp'].values/1e3, ls='', 
+        marker='o', ms=4, color='dimgray', mec='none', alpha = 0.3)
+parms, res = ufun.fitLineHuber(df_f['E_f_<_500'].values/1e3, df_f['E_Precomp'].values/1e3, 
+                               with_intercept=False)
+ax.axline((0, 0), slope=1., color=apm.cL_Set2[0], ls='-', label='y = x')
+ax.axline((0, 0), slope=parms[0], color=apm.cL_Set2[1], ls='-', 
+          label=f'Fit y = k.x\nk = {parms[0]:.2f}')
+ax.set_xlim([0, 10])
+ax.set_ylim([0, 10])
+ax.set_xlabel('$E_{500}$ (kPa)')
+ax.set_ylabel('$E_{init\_relax}$ (kPa)')
+ax.legend(handlelength=1.25)
+
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
 
 
 

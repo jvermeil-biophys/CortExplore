@@ -2288,6 +2288,10 @@ class CellCompression:
                            'initialThickness':np.nan,
                            'minThickness':np.nan,
                            'maxIndent':np.nan,
+                           'Dh_BeforeAfter':np.nan,
+                           'Dh_Precomp':np.nan,
+                           'Df_Precomp':np.nan,
+                           'E_Precomp':np.nan,
                            'previousThickness':np.nan,
                            'surroundingThickness':np.nan,
                            'surroundingDx':np.nan,
@@ -2408,12 +2412,42 @@ class CellCompression:
                 # Thickness-related ( = D3-DIAMETER)
                 previousMask = self.getMaskForCompression(i, task = 'previous')
                 surroundingMask = self.getMaskForCompression(i, task = 'surrounding')
-                previousThickness = np.median(self.tsDf.D3.values[previousMask] - self.DIAMETER)
-                surroundingThickness = np.median(self.tsDf.D3.values[surroundingMask] - self.DIAMETER)
+                followingMask = self.getMaskForCompression(i, task = 'following')
+                precompression = self.getMaskForCompression(i, task = 'precompression')
+                H_before = self.tsDf.D3.values[previousMask] - self.DIAMETER
+                H_after = self.tsDf.D3.values[followingMask] - self.DIAMETER
+                H_surrounding = self.tsDf.D3.values[surroundingMask] - self.DIAMETER
+                H_precomp = self.tsDf.D3.values[precompression] - self.DIAMETER
+                F_precomp = self.tsDf.F.values[precompression]
+                
+                previousThickness = np.median(H_before)
+                surroundingThickness = np.median(H_surrounding)
                 surroundingDx = np.median(self.tsDf.dx.values[surroundingMask])
                 surroundingDy = np.median(self.tsDf.dy.values[surroundingMask])
                 surroundingDz = np.median(self.tsDf.dz.values[surroundingMask])
                 
+                # New stuff
+                Dh_BeforeAfter = np.median(H_after[:3]) - np.median(H_before[-3:])
+                Dh_Precomp = np.percentile(H_precomp, 97) - np.percentile(H_precomp, 3)
+                Df_Precomp = np.percentile(F_precomp, 97) - np.percentile(F_precomp, 3)
+                H0_500 = IC.dictFitFH_Chadwick['f_<_500']['H0']
+                delta1, delta2 = H0_500 - np.percentile(H_precomp, 3), H0_500 - np.percentile(H_precomp, 97)
+                E_Precomp = 1e6 * (3*H0_500*Df_Precomp)/(np.pi*0.5*self.DIAMETER*(Dh_Precomp)*(delta1+delta2)) 
+                # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
+                # print('\n')
+                # print(f"H0 = {IC.dictFitFH_Chadwick['f_<_500']['H0']:.1f}")
+                # print('H_min | H_p03 | H_p97 | H_max')
+                # print(f'{np.min(H_precomp):.1f} | {np.percentile(H_precomp, 3):.1f} | {np.percentile(H_precomp, 97):.1f} | {np.max(H_precomp):.1f}')
+                # print('F_min | F_p03 | F_p97 | F_max')
+                # print(f'{np.min(F_precomp):.1f} | {np.percentile(F_precomp, 3):.1f} | {np.percentile(F_precomp, 97):.1f} | {np.max(F_precomp):.1f}')
+                # print('E_500 | E_Precomp')
+                # print(f"{IC.dictFitFH_Chadwick['f_<_500']['E']:.0f} | {E_Precomp:.0f}")
+                
+                # Attribution
+                results['Dh_BeforeAfter'][i] = Dh_BeforeAfter
+                results['Dh_Precomp'][i] = Dh_Precomp
+                results['Df_Precomp'][i] = Df_Precomp
+                results['E_Precomp'][i] = E_Precomp
                 results['previousThickness'][i] = previousThickness
                 results['surroundingThickness'][i] = surroundingThickness
                 results['surroundingDx'][i] = surroundingDx

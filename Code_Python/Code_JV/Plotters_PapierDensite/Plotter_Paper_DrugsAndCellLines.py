@@ -2818,12 +2818,12 @@ if SAVE:
 
 # %% Main Fig 2
 
-# %%% F2A
+# %%% F2B
 
 # Save
 SAVE = True
 figSubDir = 'F2'
-name = 'F2B_E500_vs_h0_drugs'
+name = 'F2B_E500_vs_h0_drugs_TALL'
 
 df = MecaData_Drug
 df_ctrl = MecaData_Phy
@@ -2908,7 +2908,8 @@ def prepTableForDrugPlot(df_f, XCol, YCol, condCol):
 sD = apm.styleDict_V2
 rD = apm.renameDict
 
-fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 8.5/cm_in))
+# fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 8.5/cm_in))
+fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 12/cm_in))
 ax.set_xscale('log')
 ax.set_yscale('log')
 
@@ -2963,7 +2964,8 @@ for i, cond in enumerate(conds):
 ax.grid()
 ax.set_title(' ')
 
-ax.set_xlim([50, 1100])
+# ax.set_xlim([50, 1100])
+ax.set_xlim([50, 2000])
 ax.set_ylim([0.5, 200])
 ax.set_xlabel('$H_0$ (nm)')
 # ax.set_xlim([0, 600])

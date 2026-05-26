@@ -1484,6 +1484,80 @@ class CellCompression:
         return(fig, axes)
     
     
+    def Pplot_Timeseries_V3(self, plotSettings):
+        
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+
+        fig, ax = plt.subplots(1, 1, figsize = (8/gs.cm_in, 5/gs.cm_in))
+        ax.set_xlabel('h (nm)')
+        ax.set_ylabel('F (pN)')
+        ax.grid(axis='y')
+        
+        col_sur = 'navy'
+        col_precomp = 'royalblue'
+        ax.plot([], [], ls='', marker='.', ms=2,
+                color=col_sur, zorder=2, label = 'Constant field 5mT')
+        ax.plot([], [], ls='', marker='.', ms=2,
+                color=col_precomp, zorder=2, label = 'Initial relaxation')
+
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
+            ax = ax
+            IC = self.listIndent[i]
+            IC.Pplot_FH500_V3(fig, ax, i, Np, plotSettings)
+            
+            M_sur = self.getMaskForCompression(i, task = 'surrounding')
+            H_sur = self.tsDf.D3.values[M_sur] - self.DIAMETER
+            F_sur = self.tsDf.F.values[M_sur]
+            ax.plot(H_sur, F_sur, ls='', marker='.', ms=2,
+                    color=col_sur, zorder=2)
+            
+            
+            M_precomp = self.getMaskForCompression(i, task = 'precompression')
+            H_precomp = self.tsDf.D3.values[M_precomp] - self.DIAMETER
+            F_precomp = self.tsDf.F.values[M_precomp]
+            ax.plot(H_precomp, F_precomp, ls='', marker='.', ms=2,
+                    color=col_precomp, zorder=2)
+
+        
+        ax.legend(fontsize=4, handlelength=1)
+        fig.tight_layout()
+        
+        axes = [ax]
+        return(fig, axes)
+    
+    
+    
+    def Pplot_FH500_V2(self, plotSettings):
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        nColsSubplot = 1
+        nRowsSubplot = 5
+        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
+                                 figsize = (8/gs.cm_in, 25/gs.cm_in))
+        # figTitle = 'Thickness-Force of indentations\n'
+        # if plotH0:
+        #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
+        # if plotFit:
+        #     figTitle += 'with fit (Chadwick)'
+        # fig.suptitle(figTitle)
+        Np = min(5, len(self.listIndent))
+        
+        for i in range(Np):
+            ax = axes[i]
+            IC = self.listIndent[i]
+            IC.Pplot_FH500_V2(fig, ax, plotSettings)
+        
+        fig.tight_layout()
+        return(fig, axes)
+    
+    
+    
+    
     def Pplot_FH500(self, plotSettings):
         apm.setGraphicOptions(mode = 'print', 
                               palette = 'Set2', 
@@ -1932,6 +2006,29 @@ class CellCompression:
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
             # except:
             #     pass
+        
+        
+            # try:
+            name = self.cellID + '_F1D_F(h)_E500_V2'
+            fig, ax = self.Pplot_FH500_V2(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
+        
+            # try:
+            name = self.cellID + '_SF1D_hF(t)_V3'
+            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
+        
+            
             
         
         # 1.
@@ -2187,6 +2284,10 @@ class CellCompression:
                            'initialThickness':np.nan,
                            'minThickness':np.nan,
                            'maxIndent':np.nan,
+                           'Dh_BeforeAfter':np.nan,
+                           'Dh_Precomp':np.nan,
+                           'Df_Precomp':np.nan,
+                           'E_Precomp':np.nan,
                            'previousThickness':np.nan,
                            'surroundingThickness':np.nan,
                            'surroundingDx':np.nan,
@@ -2307,12 +2408,42 @@ class CellCompression:
                 # Thickness-related ( = D3-DIAMETER)
                 previousMask = self.getMaskForCompression(i, task = 'previous')
                 surroundingMask = self.getMaskForCompression(i, task = 'surrounding')
-                previousThickness = np.median(self.tsDf.D3.values[previousMask] - self.DIAMETER)
-                surroundingThickness = np.median(self.tsDf.D3.values[surroundingMask] - self.DIAMETER)
+                followingMask = self.getMaskForCompression(i, task = 'following')
+                precompression = self.getMaskForCompression(i, task = 'precompression')
+                H_before = self.tsDf.D3.values[previousMask] - self.DIAMETER
+                H_after = self.tsDf.D3.values[followingMask] - self.DIAMETER
+                H_surrounding = self.tsDf.D3.values[surroundingMask] - self.DIAMETER
+                H_precomp = self.tsDf.D3.values[precompression] - self.DIAMETER
+                F_precomp = self.tsDf.F.values[precompression]
+                
+                previousThickness = np.median(H_before)
+                surroundingThickness = np.median(H_surrounding)
                 surroundingDx = np.median(self.tsDf.dx.values[surroundingMask])
                 surroundingDy = np.median(self.tsDf.dy.values[surroundingMask])
                 surroundingDz = np.median(self.tsDf.dz.values[surroundingMask])
                 
+                # New stuff
+                Dh_BeforeAfter = np.median(H_after[:3]) - np.median(H_before[-3:])
+                Dh_Precomp = np.percentile(H_precomp, 97) - np.percentile(H_precomp, 3)
+                Df_Precomp = np.percentile(F_precomp, 97) - np.percentile(F_precomp, 3)
+                H0_500 = IC.dictFitFH_Chadwick['f_<_500']['H0']
+                delta1, delta2 = H0_500 - np.percentile(H_precomp, 3), H0_500 - np.percentile(H_precomp, 97)
+                E_Precomp = 1e6 * (3*H0_500*Df_Precomp)/(np.pi*0.5*self.DIAMETER*(Dh_Precomp)*(delta1+delta2)) 
+                # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
+                # print('\n')
+                # print(f"H0 = {IC.dictFitFH_Chadwick['f_<_500']['H0']:.1f}")
+                # print('H_min | H_p03 | H_p97 | H_max')
+                # print(f'{np.min(H_precomp):.1f} | {np.percentile(H_precomp, 3):.1f} | {np.percentile(H_precomp, 97):.1f} | {np.max(H_precomp):.1f}')
+                # print('F_min | F_p03 | F_p97 | F_max')
+                # print(f'{np.min(F_precomp):.1f} | {np.percentile(F_precomp, 3):.1f} | {np.percentile(F_precomp, 97):.1f} | {np.max(F_precomp):.1f}')
+                # print('E_500 | E_Precomp')
+                # print(f"{IC.dictFitFH_Chadwick['f_<_500']['E']:.0f} | {E_Precomp:.0f}")
+                
+                # Attribution
+                results['Dh_BeforeAfter'][i] = Dh_BeforeAfter
+                results['Dh_Precomp'][i] = Dh_Precomp
+                results['Df_Precomp'][i] = Df_Precomp
+                results['E_Precomp'][i] = E_Precomp
                 results['previousThickness'][i] = previousThickness
                 results['surroundingThickness'][i] = surroundingThickness
                 results['surroundingDx'][i] = surroundingDx
@@ -3386,6 +3517,149 @@ class IndentCompression:
             self.df_3parts = df
             
             
+    def Pplot_FH500_V3(self, fig, ax, i, N, plotSettings):
+        cm_in = 2.52
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        
+        clist = sns.color_palette("husl", N)
+        col_comp = clist[i]
+        col_relax = apm.lightenColor(clist[i], 1.2)
+        
+        #### Plot 1
+        ax = ax
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=2, 
+                    color=col_comp, zorder=4, label = f'Comp no. {i+1:.0f}')
+            ax.plot(self.hRelax[:], self.fRelax[:], ls='', marker='.', ms=2, 
+                    color=col_relax, zorder=3)
+            # ax.plot([], [], ls='-', color='w', label = ' ', zorder=2)
+
+        #### Style
+        for ax in [ax]:
+            ax.xaxis.label.set_size(8)
+            ax.yaxis.label.set_size(8)
+            for item in ax.get_xticklabels() + ax.get_yticklabels():
+                item.set_fontsize(6)
+
+
+    def Pplot_FH500_V2(self, fig, ax, plotSettings):
+        cm_in = 2.52
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        color_base = 'lightblue'
+        color_relax = 'palegreen'
+        color_Chad = 'deepskyblue'
+        color_Chad400 = 'darkorange'
+        # color_H0   = 'mediumseagreen'
+        
+        #### Plot 1
+        ax = ax
+        if self.isValidForAnalysis:
+            ax.plot(self.hCompr, self.fCompr, ls='', marker='.', ms=4, 
+                    color=color_base, label = 'Compression', zorder=3)
+            # ax.plot(self.hRelax[:], self.fRelax[:], ls='', marker='.', ms=4, 
+            #         color=color_relax, label = 'Relaxation', zorder=2)
+            # ax.plot([], [], ls='-', color='w', label = ' ', zorder=2)
+            titleText = self.cellID + '_c' + str(self.i_indent + 1)
+            legendText = ''
+            ax.set_xlabel('h (nm)')
+            ax.set_ylabel('F (pN)')
+            ax.grid(axis='y')
+    
+            method = 'Full'
+            dictFit = self.dictFitFH_Chadwick[method]
+            fitError = dictFit['error']
+            
+            
+                
+            if not fitError:
+                H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                fFit = dictFit['x']
+                hPredict = dictFit['yPredict']
+                
+                legendText = r'$\bf{Fit\ full\ curve}$'
+                legendText += '\n$H_0$ = '     + f'{H0:.0f} nm'
+                legendText += '\n$E$ = ' + f'{E/1000:.2f} kPa'
+                legendText += '\n$R^2$ = '     + f'{R2:.3f}'
+                # ax.plot(hPredict, fFit, ls='-', color = color_Chad, linewidth = 0.75, 
+                #         label = legendText, zorder = 5)
+                ax.plot(hPredict, fFit, ls='-.', color = color_Chad, 
+                        linewidth = 0.75, zorder = 5)
+                
+            else:
+                titleText += '\nFIT ERROR'
+                
+                
+            method = 'f_<_500'
+            # dictFit = self.dictFitFH_Chadwick[method]
+            dictFit = self.dictFitFH_Chadwick[method]
+            fitError = dictFit['error']
+                
+            if not fitError:
+                H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                fFit = dictFit['x']
+                hPredict = dictFit['yPredict']
+                
+                F_max = np.max(fFit)
+                F_plot = np.linspace(0, F_max, 100)
+                H_plot = inversedChadwickModel(F_plot, E, H0/1000, self.DIAMETER/1000)*1000
+                
+                legendText = r'$\bf{Fit\ F < 500 pN}$'
+                legendText += '\n$H_{500}$ = '     + f'{H0:.0f} nm'
+                legendText += '\n$E_{500}$ = ' + f'{E/1000:.2f} kPa'
+                legendText += '\n$R^2$ = '     + f'{R2:.3f}'
+                # ax.plot(H_plot, F_plot, ls='-', color = color_Chad400, 
+                #         linewidth = 1.25, label = legendText, zorder = 6)
+                ax.plot(H_plot, F_plot, ls='-', color = apm.lightenColor(color_Chad400, 1.0),
+                        linewidth = 1.25, zorder = 6)
+    
+                legendText += '$H_{500}$ = ' + f'{H0:.0f} nm' #+ '\n' + str_m_z
+                ax.plot([H0], [0], ls = '', marker = '+', 
+                        color = apm.lightenColor(color_Chad400, 0.8), 
+                        markersize = 5, zorder = 8, mew=1.5)
+            
+            else:
+                titleText += '\nFIT ERROR'
+
+
+            #### Text instead of legend
+            x_lim = ax.get_xlim()
+            X0, dX = x_lim[0], x_lim[1] - x_lim[0]
+            y_lim = ax.get_ylim()
+            Y0, dY = y_lim[0], y_lim[1] - y_lim[0]
+            fs = 7.5
+            
+            rect = plt.Rectangle((X0+0.58*dX, Y0+0.64*dY), 0.38*dX, 0.34*dY,
+                     facecolor="w", alpha=0.9, zorder=7)
+            ax.add_patch(rect)
+            
+            ax.text(X0+0.60*dX, Y0+0.9*dY, 'Compression', fontsize = fs,
+                    color = color_base, zorder=8) #, backgroundcolor = 'w')
+            ax.text(X0+0.60*dX, Y0+0.78*dY, 'Fit full curve', fontsize = fs, 
+                    fontstyle = 'italic', color = color_Chad, zorder=8) #, backgroundcolor = 'w')
+            ax.text(X0+0.60*dX, Y0+0.66*dY, 'Fit F < 500 pN', fontsize = fs, 
+                    fontweight = 'bold', color = color_Chad400, zorder=8) #, backgroundcolor = 'w')
+        
+
+        #### Style
+        for ax in [ax]:
+            ax.xaxis.label.set_size(8)
+            ax.yaxis.label.set_size(8)
+            for item in ax.get_xticklabels() + ax.get_yticklabels():
+                item.set_fontsize(6)
+
+
+
+
+
+
+
+
 
 
     def Pplot_FH500(self, fig, ax, plotSettings):
