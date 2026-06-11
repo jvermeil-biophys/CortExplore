@@ -78,10 +78,12 @@ figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
 # MecaData_Phy2 = taka3.getMergedTable('MecaData_Physics_V2')
 MecaData_Phy3 = takaP.getMergedTable('MecaData_Physics_V3')
 MecaData_Phy4 = takaP.getMergedTable('MecaData_Physics_V4bis')
+MecaData_Phy5 = takaP.getMergedTable('MecaData_Physics_V5_Dimi')
 
 # MecaData_Phy2 = MecaData_Phy2.dropna(axis=0, subset='date')
 MecaData_Phy3 = MecaData_Phy3.dropna(axis=0, subset='date')
 MecaData_Phy4 = MecaData_Phy4.dropna(axis=0, subset='date')
+MecaData_Phy5 = MecaData_Phy5.dropna(axis=0, subset='date')
 
 MecaData_Phy = MecaData_Phy4
 
@@ -114,6 +116,15 @@ print('')
 
 # CountByCond, CountByCell =apm.makeCountDf(MecaData_Phy, 'date')
 
+# Find an appropriate day to test Dimitriadis
+# for M in MecaData_Phy['manipID'].unique():
+#     df_m = MecaData_Phy[MecaData_Phy['manipID'] == M]
+#     Q1 = np.percentile(df_m['surroundingThickness'], 25)
+#     med = np.median(df_m['surroundingThickness'])
+#     Q3 = np.percentile(df_m['surroundingThickness'], 75)
+#     if med > 250:
+#         print(M, f'{Q1:.0f}', f'{med:.0f}', f'{Q3:.0f}', len(df_m['cellID'].unique()))
+
 # %%% Compare content
 
 MecaData_Phy3['full_comp_id'] = MecaData_Phy3['cellID'] + '_' + MecaData_Phy3['compNum'].astype(str)
@@ -129,6 +140,24 @@ for s in full_comp_id_L3:
 
 print('in 4, not in 3')
 for s in full_comp_id_L4:
+    if s not in full_comp_id_L3:
+        print(s)
+        
+        
+        
+MecaData_Phy3['full_comp_id'] = MecaData_Phy3['cellID'] + '_' + MecaData_Phy3['compNum'].astype(str)
+full_comp_id_L3 = MecaData_Phy3['full_comp_id'].values
+
+MecaData_Phy5['full_comp_id'] = MecaData_Phy5['cellID'] + '_' + MecaData_Phy5['compNum'].astype(str)
+full_comp_id_L5 = MecaData_Phy5['full_comp_id'].values
+
+print('in 3, not in 5')
+for s in full_comp_id_L3:
+    if s not in full_comp_id_L5:
+        print(s)
+
+print('in 5, not in 3')
+for s in full_comp_id_L5:
     if s not in full_comp_id_L3:
         print(s)
 
@@ -192,8 +221,40 @@ Filters = [(df['validatedThickness'] == True),
 df_f4 = apm.filterDf(df, Filters)
 full_comp_id_L4 = df_f4['full_comp_id'].values
 
+
+
+df = MecaData_Phy5
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26', '24-12-18']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f5 = apm.filterDf(df, Filters)
+full_comp_id_L5 = df_f5['full_comp_id'].values
+
+
+
 L3 = []
 L4 = []
+L5 = []
 
 print('in 3, not in 4')
 for s in full_comp_id_L3:
@@ -210,6 +271,23 @@ for s in full_comp_id_L4:
         L4.append(s)
         
 print(len(L3), len(L4))
+
+
+print('in 3, not in 5')
+for s in full_comp_id_L3:
+    if s not in full_comp_id_L5:
+        print(s)
+        print(MecaData_Phy5.loc[MecaData_Phy5['full_comp_id']==s, 'valid' + YCol[1:]].values[0])
+        print(MecaData_Phy5.loc[MecaData_Phy5['full_comp_id']==s, 'issue' + YCol[1:]].values[0])
+        L3.append(s)
+
+print('in 5, not in 3')
+for s in full_comp_id_L5:
+    if s not in full_comp_id_L3:
+        print(s)
+        L5.append(s)
+        
+print(len(L3), len(L5))
 
 # %%% Correct some weird stuff
 
@@ -544,7 +622,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 [k_ciw, b_ciw] = results.params_ciw
@@ -585,7 +663,7 @@ Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -690,7 +768,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 [k_ciw, b_ciw] = results.params_ciw
@@ -731,7 +809,7 @@ Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -988,7 +1066,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 [k_ciw, b_ciw] = results.params_ciw
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
@@ -1032,7 +1110,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -1140,7 +1218,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 [k_ciw, b_ciw] = results.params_ciw
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
@@ -1185,7 +1263,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pvalue_pearson
+pval = results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -1509,7 +1587,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pval # results.pvalue_pearson
+pval = results.pval # results.pval
 [k_ciw, b_ciw] = results.params_ciw
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
@@ -1556,7 +1634,7 @@ we=1/(np.std(Yfit)) # **2
 
 [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 A, k = np.exp(b), a
-pval = results.pval # results.pvalue_pearson
+pval = results.pval # results.pval
 Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
 Yplot = A * Xplot**k
 text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -3381,7 +3459,7 @@ def fitChadwick_hf(h, f, D, err_chi2):
 
     try:
         # some initial parameter values - must be within bounds
-        initH0 = max(h) # H0 ~ h_max
+        initH0 = max(h) # H0 ~ h_max 
         initE = (3*max(h)*max(f))/(np.pi*(R)*(max(h)-min(h))**2) # E ~ 3*H0*F_max / pi*R*(H0-h_min)²
         
         initialParameters = [initE, initH0]
@@ -3406,6 +3484,7 @@ def fitChadwick_hf(h, f, D, err_chi2):
         E, H0 = params
         hPredict = inversedChadwickModel(f, E, H0)
         x, y, yPredict = f, h, hPredict
+        yResid = yPredict - y
 
         seE, seH0 = ses
 
@@ -3423,11 +3502,10 @@ def fitChadwick_hf(h, f, D, err_chi2):
     else:
         R2 = 0
         Chi2 = 0
+        yResid = np.ones(len(h), dtype=float) * np.nan
         
-    res = (error, R2, Chi2)
-        
+    res = (error, R2, Chi2, yResid)
     return(res)
-
 
 
 def getCurvature(h, f, D):
@@ -3474,6 +3552,7 @@ def getCurvature(h, f, D):
         E, H0, k = params
         hPredict = inversedChadwickModel(f, E, H0, k)
         x, y, yPredict = f, h, hPredict
+        
 
         seE, seH0, sek = ses
 
@@ -3496,16 +3575,14 @@ def getCurvature(h, f, D):
         
     return(res)
 
-
-
 list_Fmax = np.arange(150, 1100, 50)
 # list_D = Id_comps[:][2]
 all_Chi2 = []
 all_R2   = []
+all_M    = []
 err_chi2 = 8
 # err_chi2_test1 = 5
 # err_chi2_test2 = 20
-
 
 # list_E  = []
 # list_H0 = []
@@ -3522,23 +3599,29 @@ err_chi2 = 8
 #         list_H0.append(H0)
 #         list_k.append(k)
 
-
 for Fmax in list_Fmax:
     list_Chi2, list_R2 = [], []
+    list_M = []
     for k in range(len(Comps)): # len(Comps)
         D = Id_comps[k][2]
         h, f = Comps[k]
         index = (f < Fmax)
         h_fit, f_fit = h[index], f[index]
         res = fitChadwick_hf(h_fit, f_fit, D, err_chi2)
-        error, r2, chi2 = res
+        error, r2, chi2, resid = res
         
         if (not error) and (chi2 > 0) and (r2 < 1):
             list_Chi2.append(chi2)
             list_R2.append(r2)
-    
+            N = len(resid)
+            n = N//3
+            M1, M2, M3 = np.median(resid[:n]), np.median(resid[n:2*n]), np.median(resid[2*n:])
+            list_M.append((M1, M2, M3))
+            
     all_Chi2.append(list_Chi2)
     all_R2.append(list_R2)
+    all_M.append(list_M)
+    
     
 # %%%% Save
 
@@ -3552,6 +3635,7 @@ dstPath = os.path.join(figDir, 'S1')
 ufun.list2json(list_Fmax, dstPath, 'list_Fmax')
 ufun.list2json(all_R2, dstPath, 'all_R2')
 ufun.list2json(all_Chi2, dstPath, 'all_Chi2')
+ufun.list2json(all_M, dstPath, 'all_M')
 
 # %%%% Open
 
@@ -3559,6 +3643,7 @@ srcPath = os.path.join(figDir, 'S1')
 list_Fmax = ufun.json2list(srcPath, 'list_Fmax')
 all_R2 = ufun.json2list(srcPath, 'all_R2')
 all_Chi2 = ufun.json2list(srcPath, 'all_Chi2')
+all_M = ufun.json2list(srcPath, 'all_M')
     
 # %%%% 3. Compute statistics
     
@@ -3573,6 +3658,8 @@ std_Chi2 = [np.std(list_Chi2) for list_Chi2 in all_Chi2]
 median_Chi2 = [np.median(list_Chi2) for list_Chi2 in all_Chi2]
 D1_Chi2 = [np.percentile(list_Chi2, 25) for list_Chi2 in all_Chi2]
 D9_Chi2 = [np.percentile(list_Chi2, 75) for list_Chi2 in all_Chi2]
+
+avg_Med = np.array([np.median(np.array(list_M), axis=0) for list_M in all_M])
 
 
 # %%%% 4. Plot the results
@@ -3617,6 +3704,46 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+
+# %%%% 5. Plot other results
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'S1_Choice_500pN_V2'
+
+c1 = apm.cL_Set2[0]
+c2 = apm.cL_Set2[1]
+c3 = apm.cL_Set2[2]
+
+fig, ax = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in))#, layout='compressed')
+ax.plot(list_Fmax, avg_Med[:, 0], color=c1, lw=2, label='Resid 1')
+ax.plot(list_Fmax, avg_Med[:, 1], color=c2, lw=2, label='Resid 2')
+ax.plot(list_Fmax, avg_Med[:, 2], color=c3, lw=2, label='Resid 3')
+
+ax.set_xlabel('Upper Bound of F')
+ax.set_title(' ')
+ax.set_ylabel(r'$\bf{Resid}$', color=apm.lightenColor(c1, 0.75), weight='bold')
+
+ax.axhline(0, color='gray', lw=1, ls='-')
+ax.axvline(500, color='gray', lw=1, ls='-.')
+ax.set_xlim([0, 1100])
+# ax.set_ylim([0, 1.05])
+ax.legend()
+
+plt.show()
+
+
+# Save
+# if SAVE:
+#     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+#                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+#     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+#                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
@@ -4482,7 +4609,80 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
     
-    
+# %%% DH/H - Before-After/Before
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'DH_Before-After_ratio' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+df_f['ratioDh_Hi'] = df_f['Dh_BeforeAfter'].values/df_f['previousThickness'].values
+
+# Order
+# co_order = []
+
+# Group By
+# df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+# df_fg = df_fg[[XCol]]
+# df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+#                                       valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+# df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.hist(df_f['ratioDh_Hi'].values, 
+        bins=360, color='dimgray', zorder=3)
+
+median = np.median(df_f['ratioDh_Hi'].values)
+ax.axvline(median, color='darkorange', ls='--', lw=1,
+           label=f'Median = {median:.3f}', zorder=3)
+ax.legend(handlelength = 1.25)
+ax.grid(zorder=1)
+ax.set_xlim(-1, 1)
+ax.set_xlabel(r'$\Delta H/H_{init}$')
+ax.set_ylabel('# compressions')
+ax.set_title('Thickness at 5mT (after-before)/before compression')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 # %%% DH - Precompression
 
@@ -4540,6 +4740,80 @@ ax.grid(zorder=1)
 ax.set_xlabel(r'$\Delta H$ (nm)')
 ax.set_ylabel('# compressions')
 ax.set_title(r'$\Delta H$ - Initial relaxation')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+# %%% DH/H - Precompression
+
+# Save
+SAVE = True
+figSubDir = 'S1'
+name = 'DH_Precompression_ratio' # 
+
+#### Dataset
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))
+# sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
+ax.hist(df_f['Dh_Precomp'].values/df_f['previousThickness'].values, 
+        bins=360, color='dimgray', zorder=3)
+
+median = np.median(df_f['Dh_Precomp'].values/df_f['previousThickness'].values)
+ax.axvline(median, color='darkorange', ls='--', lw=1,
+           label=f'Median = {median:.2f}', zorder=3)
+ax.legend(handlelength = 1.25)
+ax.grid(zorder=1)
+ax.set_xlim([-0.0, 1.2])
+ax.set_xlabel(r'$\Delta H_{relax}/H_{init}$')
+ax.set_ylabel('# compressions')
+ax.set_title('Initial relaxation / Initial thickness')
 
 # Show
 plt.tight_layout()
@@ -4704,6 +4978,83 @@ if SAVE:
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+# %%%% Testing dimitriadis fit for S1 or S2
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_500'],
+                'doDimitriadisFit' : True,
+                'DimitriadisFitMethods' : ['Valid'],
+                'doVWCFit' : False,
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : False,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 33,
+                'overlapFit' : 21,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 2050, 100)]
+plot_stressHalfWidth = 75
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'Plots_Papier':False,
+                        'FH(t)':False,
+                        'F(H)':False,
+                        'F(H)_Dimitriadis':True,
+                        'F(H)_VWC':False, # NEW - Numi
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':False,
+                        'K(S)_stressGaussian':False,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        'Plot_Ratio':False
+                        }
+
+# =============================================================================
+# # task = '24-03-13_M1_P1_C15'
+# # task = '23-03-17_M4_P1_C15 & 23-03-17_M4_P1_C14 & 23-03-17_M4_P1_C8 & 24-07-04_M4_P1_C16' # 23-03-16_M1_P1_C2 & 
+# # task = '24-07-04_M4_P1_C15'
+# # task = '24-07-04_M6'
+# # task = '23-03-17_M4'
+# # task = '24-07-04_M6_P1_C11'
+# # task = '23-03-09_M4_P1_C2 & 23-03-09_M4_P1_C5 & 23-03-09_M4_P1_C12'
+# # task += ' & 23-03-09_M4_P1_C4 & 23-03-09_M4_P1_C8 & 23-03-09_M4_P1_C9'
+# # task += ' & 23-03-09_M4_P1_C15 & 23-03-09_M4_P1_C14'
+# # task = '23-03-17_M4_P1_C3 & 23-03-17_M4_P1_C9 & 23-03-17_M4_P1_C11'
+# # task = '23-03-16_M1_P1_C4'
+# =============================================================================
+
+# task = '23-12-03_M1' # -> for Pplot_Timeseries_V3()
+task = '24-07-04_M6'
+
+
+res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'testDimi', 
+                                    save = True, PLOT = True, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting'
+
+
 
 # %% Supp Figure 2 & 2bis
 
@@ -4793,7 +5144,7 @@ for j, XCol in enumerate(XCols):
         [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
         
         A, k = np.exp(b), a
-        pval = results.pvalue_pearson
+        pval = results.pval
         # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         # Yplot = A * Xplot**k
         [k_ciw, b_ciw] = results.params_ciw
@@ -4851,7 +5202,7 @@ for j, XCol in enumerate(XCols):
         
         # [a, b], results = ufun.fitLineTLS(Xfit, Yfit)
         # A, k = np.exp(b), a
-        # pval = results.pvalue_pearson
+        # pval = results.pval
         # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
         # Yplot = A * Xplot**k
         # text_pval = apm.pval2text(pval, n_digits = 3, space = True)
@@ -4887,3 +5238,185 @@ if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+
+
+# %%% Fig S2A - 1 x 4 with Dimitriadis
+
+# Save
+SAVE = True
+figSubDir = 'S2'
+name = 'S2A_E_vs_h_Dimi'
+
+#### Dataset
+
+df = MecaData_Phy5
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+
+XCols = ['ctFieldThickness', 'surroundingThickness', 'bestH0', 'H0_f_<_500', 'H0_Dimi_Valid']
+YCols = ['E_Dimi_Valid']
+
+dict_Xlabels = {'ctFieldThickness' : r'$H_{5mT}$', 
+                'surroundingThickness' : r'$H_{surrounding}$', 
+                'bestH0' : r'$H_{15\%}$', 
+                'H0_f_<_500' : r'$H_{500}$',
+                'H0_Dimi_Valid' : r'$H_{Dimi}$',
+                }
+
+dict_Ylabels = {'E_Dimi_Valid' : r'$E_{Dimi}$', 
+                }
+
+nX = len(XCols)
+nY = len(YCols)
+
+fig, axes = plt.subplots(nY, nX, figsize = (17/cm_in, 4/cm_in), sharey='row', sharex='col')
+
+for j, XCol in enumerate(XCols):
+    for i, YCol in enumerate(YCols):
+        # Filter
+        Filters = [(df['validatedThickness'] == True), 
+                   (df['substrate'] == substrate),
+                   (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+                   (df['drug'].apply(lambda x : x in drugs)),
+                   (df['date'].apply(lambda x : x not in excluded_dates)),
+                   (df[XCol] < 1000),
+                   (df['normal field'] == 5),
+                   (df[YCol] <= 8e5),
+                   (df['error' + YCol[1:]] == False), 
+                   (df['R2' + YCol[1:]] > 0.4), 
+                   (df['Chi2' + YCol[1:]] < 50), 
+                   ]
+        
+        df_f = apm.filterDf(df, Filters)
+        CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+        
+        # Order
+        co_order = []
+        
+        # Group By
+        df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+        df_fg = df_fg[[XCol]]
+        df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                              valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+        df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+        
+        #### Plot
+        # fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
+        ax = axes[j]
+        
+        # win, hin = 0.35, 0.35*(11/12)
+        # xin, yin = 0.95-win, 0.93-hin 
+        # ax_in = ax.inset_axes([xin, yin, win, hin])
+        
+        ax = ax
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        
+        sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                        marker = 'o', s = 17, color = apm.cL_Set2[0], alpha = 0.5)
+        Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+        
+        wd=1/(np.std(Xfit)) # **2
+        we=1/(np.std(Yfit)) # **2
+
+        [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+        
+        A, k = np.exp(b), a
+        pval = results.pval
+        # Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+        # Yplot = A * Xplot**k
+        [k_ciw, b_ciw] = results.params_ciw
+        text_pval = apm.pval2text(pval, n_digits = 4, space = True)
+        # ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 2.0,
+        #         label = text_pval)
+        colorFit = apm.lightenColor(apm.cL_Set2[0], 0.7)
+        apm.drawPowerLine(ax, (1, A), k, ls = '--', c = colorFit, lw = 2.0)
+                # label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                #         f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+        LegendMark = mlines.Line2D([], [], color = colorFit, ls='-', 
+                                   label = text_pval)
+        # LegendMark = mlines.Line2D([], [], color = colorFit, ls='-', 
+        #                            label = f'p-val = {pval:.2e}')
+        ax.legend(handles=[LegendMark], handlelength = 0.8).set_visible(False)
+        
+        # ax.legend()#.set_visible(False)
+        # ax.legend(fontsize = 9, loc = 'lower left')
+        # ax.set_title('Average per cell')
+        if j==0:
+            ax.set_ylabel(dict_Ylabels[YCol], fontsize=matplotlib.rcParams['axes.titlesize']+2)
+            ax.tick_params(axis='y', labelsize=matplotlib.rcParams['ytick.labelsize']+2)
+        else:
+            ax.set_ylabel('')
+        if i==(nY-1):
+            ax.set_xlabel(dict_Xlabels[XCol], fontsize=matplotlib.rcParams['axes.titlesize']+2)
+            ax.tick_params(axis='x', labelsize=matplotlib.rcParams['xtick.labelsize']+2)
+        else:
+            ax.set_xlabel('')
+        ax.grid(visible=True, which='major', axis='both')
+        ax.set_xlim([50, 1100])
+        ax.set_ylim([0.05, 500])
+        # ax.tick_params(axis='both', direction='in', which='both')
+        
+        
+        hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+        EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+        print(f'For {XCol} vs {YCol}')
+        print(f'By compression, N = {len(df_f):.0f}')
+        print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+        print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+        print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+        print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+        
+# Show
+plt.tight_layout()
+plt.show()
+        
+        
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+# %%% Fig S2A - Investigate Dimitriadis depth range
+
+# Save
+SAVE = False
+figSubDir = 'S2'
+name = ''
+
+#### Dataset
+
+df = MecaData_Phy5
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+
+XCols = ['ctFieldThickness', 'surroundingThickness', 'bestH0', 'H0_f_<_500', 'H0_Dimi_Valid']
+YCols = ['E_Dimi_Valid']
+
+dict_Xlabels = {'ctFieldThickness' : r'$H_{5mT}$', 
+                'surroundingThickness' : r'$H_{surrounding}$', 
+                'bestH0' : r'$H_{15\%}$', 
+                'H0_f_<_500' : r'$H_{500}$',
+                'H0_Dimi_Valid' : r'$H_{Dimi}$',
+                }
+
+dict_Ylabels = {'E_Dimi_Valid' : r'$E_{Dimi}$', 
+                }
+
+
+#### TBD !!!!
+

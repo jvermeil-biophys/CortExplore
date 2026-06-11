@@ -164,7 +164,7 @@ def inversedChadwickModel(f, E, H0, DIAMETER):
     return(h)
 
 
-def dimitriadisModel(h, E, H0, DIAMETER, v = 0, order = 2):
+def dimitriadisModel(h, E, H0, DIAMETER, v = 0, order = 3):
     """
     Implement the Chadwick formula with force as a function of thickness.
 
@@ -437,7 +437,7 @@ def fitDimitriadis_hf(h, f, D, order = 2):
         for i in range(order+1):
             poly = poly + ks[i] * X**i
             
-        f = ((4 * E * R**0.5 * delta**1.5)/(3 * (1 - v**2))) * poly
+        f = ((4 * E * (R**0.5) * (delta**1.5))/(3 * (1 - (v**2)))) * poly
         return(f)
 
     try:
@@ -1476,7 +1476,8 @@ class CellCompression:
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
         
-        fig = plt.figure(figsize=(11/gs.cm_in, 6/gs.cm_in))
+        fig = plt.figure(figsize=(11/gs.cm_in, 6/gs.cm_in), layout="constrained")
+        # fig.tight_layout()
         spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
         ax1 = fig.add_subplot(spec[:4])
         ax2 = fig.add_subplot(spec[4:])
@@ -1485,8 +1486,13 @@ class CellCompression:
         LI = self.listIndent[:Ni]
         tsDf = self.tsDf[self.tsDf['idxLoop'] <= Ni]
         
-        time_ticks = np.array([5.5, 10.167, 11.667, 13, 19] + [19*k for k in range(2, Ni+1)])
-        time_ticklabels = np.array([5.5, 10, 11.5, 13, 19] + [19*k for k in range(2, Ni+1)])
+        # time_ticks = np.array([5.5, 10.167, 11.667, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # time_ticklabels = np.array([5.5, 10, 11.5, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # x_Vsep = np.array([19.0*k for k in range(1, Ni+1)])
+        
+        time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5])
+        time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57])
+        x_Vsep = np.array([18.8, 38.2, 57.5])
         
         #### Distance Plot
         ax = ax1
@@ -1495,7 +1501,9 @@ class CellCompression:
         ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
         ax.scatter(tsDf['T'].values, tsDf['D3'].values-self.DIAMETER, 
                    color = color, edgecolors = None, linewidths = 0,
-                   zorder = 5, s = 2, alpha = 0.9)        
+                   zorder = 5, s = 2, alpha = 0.9)
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-.', lw=0.5, color='k')
 
         (ax_ym, ax_yM) = ax.get_ylim()
         ax.set_ylim([min(-0,ax_ym), ax_yM])
@@ -1514,15 +1522,20 @@ class CellCompression:
         (ax_ym, ax_yM) = ax.get_ylim()
         # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
         ax.set_ylim([0, 1.1])
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-.', lw=0.5, color='k')
         
         #### Shades
         for i in range(1, Ni+1):
             df = tsDf[tsDf['idxLoop'] == (i)]
             # print(df.idxAnalysis)
-            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
+            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)+1]
+            # t1bis = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
             t2 = df['T'].values[ufun.findFirst(i, df.idxAnalysis)]
             t3 = df['T'].values[ufun.findLast(i, df.idxAnalysis)]
             t4 = df['T'].values[ufun.findLast(-i, df.idxAnalysis)]
+            # for xv in [t1, t1bis]:
+            #     ax.axvline(xv, ls='-', lw=0.5, color='k')
             for ax in [ax1, ax2]:
                 ax.axvspan(t1, t2, color='grey', alpha=0.15, zorder = 0, ec=None)
                 ax.axvspan(t2, t3, color='grey', alpha=0.3, zorder = 0, ec=None)
@@ -1533,7 +1546,7 @@ class CellCompression:
         LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
                                    label='Force release')
         LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
-                                   label='Compression and relaxation')
+                                   label='Compression\n & relaxation')
         LegendHandles = [LM0, LM1, LM2]
         
         # ax1.axvspan(-100, -100, color='grey', alpha=0.15, zorder = 0, ec=None,
@@ -1548,16 +1561,20 @@ class CellCompression:
         ax1.set_xticks([])
         ax1.set_xticklabels([])
         ax1.legend(handles=LegendHandles, loc='upper right', 
-                   handlelength = 1.5, handleheight = 1, 
-                   framealpha=1, fontsize=5, labelspacing=0.25)
+                   handlelength = 1.25, handleheight = 1, handletextpad=0.4,
+                   framealpha=1, fontsize=4.5, labelspacing=0.2)
 
         ax2.set_xlim([0, ax_xM])
         ax2.set_xlabel('Time (s)', labelpad=1)
         ax2.set_xticks(time_ticks)
-        ax2.set_xticklabels(time_ticklabels, rotation = 30)
+        ax2.set_xticklabels(time_ticklabels)
+        ax2.xaxis.set_tick_params(rotation = 55, labelsize=5, pad=0.05)
         ax2.legend().set_visible(False)
         
-        fig.tight_layout()
+        fig.get_layout_engine().set(h_pad = 0.015, 
+                                    hspace=0, wspace=0)
+        
+        # fig.tight_layout()
         axes = [ax1, ax2]
         return(fig, axes)
     
@@ -2180,15 +2197,15 @@ class CellCompression:
             # except:
             #     pass
             
-            # try:
-            name = self.cellID + '_F1C_hF(t)_V2'
-            fig, ax = self.Pplot_Timeseries_V2(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # except:
-            #     pass
+            # # try:
+            # name = self.cellID + '_F1C_hF(t)_V2'
+            # fig, ax = self.Pplot_Timeseries_V2(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # # except:
+            # #     pass
         
             # try:
             name = self.cellID + '_F1C_hF(t)_V2bis'
@@ -2200,15 +2217,15 @@ class CellCompression:
             # except:
             #     pass
             
-            # try:
-            name = self.cellID + '_SF1D_hF(t)_V3'
-            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # except:
-            #     pass
+            # # try:
+            # name = self.cellID + '_SF1D_hF(t)_V3'
+            # fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # # except:
+            # #     pass
             
             
             # ------
@@ -2223,25 +2240,25 @@ class CellCompression:
             # except:
             #     pass
         
-            # try:
-            name = self.cellID + '_F1D_F(h)_E500_V2'
-            fig, ax = self.Pplot_FH500_V2(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # except:
-            #     pass
+            # # try:
+            # name = self.cellID + '_F1D_F(h)_E500_V2'
+            # fig, ax = self.Pplot_FH500_V2(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # # except:
+            # #     pass
         
-            # try:
-            name = self.cellID + '_F1D_F(h)_E500_V3'
-            fig, ax = self.Pplot_FH500_V3(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # except:
-            #     pass
+            # # try:
+            # name = self.cellID + '_F1D_F(h)_E500_V3'
+            # fig, ax = self.Pplot_FH500_V3(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # # except:
+            # #     pass
         
         
         
@@ -2528,6 +2545,7 @@ class CellCompression:
                            'bestH0':np.nan,
                            'error_bestH0':True,
                            'method_bestH0':'',
+                           'dimi_Hmin':np.nan
                            }
         
         if fitSettings['doVWCFit']:
@@ -2692,6 +2710,9 @@ class CellCompression:
                 results['bestH0'][i] = IC.bestH0
                 results['method_bestH0'][i] = IC.method_bestH0
                 results['error_bestH0'][i] = IC.error_bestH0
+                
+                # Dimitriadis related
+                results['dimi_Hmin'][i] = IC.dimi_Hmin
                 
                 # Strain-stress-related
                 results['minStress'][i] = np.min(IC.stressCompr)
@@ -2930,6 +2951,10 @@ class IndentCompression:
         self.zone_bestH0 = ''
         self.error_bestH0 = True
         
+        # find_dimi_range()
+        self.DimitriadisRatio = np.zeros_like(self.hCompr)*np.nan
+        self.dimi_Hmin = np.nan
+        
         # computeStressStrain()
         self.deltaCompr = np.zeros_like(self.hCompr)*np.nan
         self.stressCompr = np.zeros_like(self.hCompr)*np.nan
@@ -2960,7 +2985,6 @@ class IndentCompression:
         # NEW ! with strain
         self.dictFitsSS_strainGaussian = {} # fitSS_strainGaussian()
         self.df_strainGaussian = pd.DataFrame({}) # dictFits_To_DataFrame()
-        
         
         #### TEST
         self.dictFitsSS_3parts = {} 
@@ -3316,6 +3340,11 @@ class IndentCompression:
         return(df)
     
     
+    
+        
+    
+    
+    
     def computeStressStrain(self, method = 'Chadwick', H0 = 'best'):
         """
         
@@ -3388,6 +3417,35 @@ class IndentCompression:
             
             self.contactRadius = np.sqrt(S)
             self.ChadwickRatio = self.contactRadius / (H0/1000)
+            
+            
+        
+    def find_dimi_range(self):
+        H0 = self.bestH0
+        error = self.error_bestH0
+        
+        valid = False
+        dimi_Hmin = H0
+        mask = np.zeros_like(self.hCompr).astype(bool)
+        
+        if not error:
+            hCompr = self.hCompr / 1000 # µm
+            deltaCompr = (H0 - self.hCompr) / 1000 # µm
+            R = self.DIAMETER / 2000 # µm
+            S = R*deltaCompr/2
+            S[S < 0] = 0
+            contactRadius = np.sqrt(S)
+            DimitriadisRatio = contactRadius / (H0/1000)
+            self.DimitriadisRatio = DimitriadisRatio
+            mask = (DimitriadisRatio < 0.75)
+            
+            if np.sum(mask) >= 5:
+                valid = True
+                dimi_Hmin = np.min(self.hCompr[mask])
+                self.dimi_Hmin = dimi_Hmin
+                
+        return(valid, mask, dimi_Hmin)
+        
             
             
     def convergeToH0(self, method, zone, max_it = 10, stop_crit = 0.01):
@@ -4209,7 +4267,7 @@ class IndentCompression:
                     pass
                 
                 try:
-                    method = 'f_<_300'
+                    method = 'Valid'
                     # dictFit = self.dictFitFH_Dimitriadis[method]
                     dictFit = self.dictFitFH_Dimitriadis[method]
                     fitError = dictFit['error']
@@ -4228,24 +4286,24 @@ class IndentCompression:
                     pass
                 
                 #### Chadwick
-                try:
-                    method = 'Full'
-                    # dictFit = self.dictFitFH_Chadwick[method]
-                    dictFit = self.dictFitFH_Chadwick[method]
-                    fitError = dictFit['error']
+                # try:
+                #     method = 'Full'
+                #     # dictFit = self.dictFitFH_Chadwick[method]
+                #     dictFit = self.dictFitFH_Chadwick[method]
+                #     fitError = dictFit['error']
                         
-                    if not fitError:
-                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                        fFit = dictFit['x']
-                        hPredict = dictFit['yPredict']
+                #     if not fitError:
+                #         H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
+                #         fFit = dictFit['x']
+                #         hPredict = dictFit['yPredict']
                         
-                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                        ax.plot(hPredict, fFit, ls='--', color = 'darkred', linewidth = 0.8, 
-                                label = legendText, zorder = 2)
-                    # else:
-                    #     titleText += '\nFIT ERROR'
-                except:
-                    pass
+                #         legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
+                #         ax.plot(hPredict, fFit, ls='--', color = 'darkred', linewidth = 0.8, 
+                #                 label = legendText, zorder = 2)
+                #     # else:
+                #     #     titleText += '\nFIT ERROR'
+                # except:
+                #     pass
                     
                 try:
                     method = 'f_<_500'
@@ -4360,7 +4418,7 @@ class IndentCompression:
             ax.set_ylabel('f (pN)')
     
             if plotFit:
-                method = 'Full'
+                method = 'Valid'
                 # dictFit = self.dictFitFH_Dimitriadis[method]
                 dictFit = self.dictFitFH_Dimitriadis[method]
                 fitError = dictFit['error']
@@ -4376,40 +4434,6 @@ class IndentCompression:
                 # else:
                 #     titleText += '\nFIT ERROR'
                     
-                method = 'f_<_200'
-                # dictFit = self.dictFitFH_Dimitriadis[method]
-                dictFit = self.dictFitFH_Dimitriadis[method]
-                fitError = dictFit['error']
-                    
-                if not fitError:
-                    H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                    fPredict = dictFit['yPredict']
-                    hFit = dictFit['x']
-                    
-                    legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                    ax.plot(hFit, fPredict, ls='--', color = 'green', linewidth = 0.8, 
-                            label = legendText, zorder = 2)
-                # else:
-                #     titleText += '\nFIT ERROR'
-                
-                try:
-                    method = 'f_<_400'
-                    # dictFit = self.dictFitFH_Dimitriadis[method]
-                    dictFit = self.dictFitFH_Dimitriadis[method]
-                    fitError = dictFit['error']
-                        
-                    if not fitError:
-                        H0, E, R2, Chi2 = dictFit['H0'], dictFit['E'], dictFit['R2'], dictFit['Chi2']
-                        fPredict = dictFit['yPredict']
-                        hFit = dictFit['x']
-                        
-                        legendText = 'H0 = {:.1f}nm\nE = {:.2e}Pa\nR2 = {:.3f}\nChi2 = {:.1f}'.format(H0, E, R2, Chi2)
-                        ax.plot(hFit, fPredict, ls='--', color = 'darkorange', linewidth = 0.8, 
-                                label = legendText, zorder = 2)
-                    # else:
-                    #     titleText += '\nFIT ERROR'
-                except:
-                    pass
                     
             if plotH0:
                 bestH0 = self.bestH0
@@ -5517,7 +5541,12 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
         if doThisCompAnalysis:
             
             #### 3.5 Inside i-th compression, delimit the compression and relaxation phases            
-            IC.refineStartStop()            
+            IC.refineStartStop()
+            
+            #### 3.6 Find the best H0
+            IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
+            IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
+
             
             #### 3.7 Fit with Chadwick model of the force-thickness curve
             if fitSettings['doChadwickFit']:
@@ -5534,7 +5563,6 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
             
             #### 3.8 Fit with Van Wyk model of the force-thickness curve
             if fitSettings['doVWCFit']:
-                
                 for m in fitSettings['VWCFitMethods']:
                     if m == 'Full':
                         IC.fitFH_VWC(fitValidationSettings, method = m)
@@ -5558,14 +5586,14 @@ def analyseTimeSeries_meca(f, tsDf, expDf, taskName = '', PLOT = False, SHOW = F
                             IC.fitFH_Dimitriadis(fitValidationSettings, method = m, mask = mask)
                             # except:
                             #     pass
+                        if m == 'Valid':
+                            valid, mask, dimi_Hmin = IC.find_dimi_range()
+                            if valid == False:
+                                mask = (mask*0).astype(bool)
+                            IC.fitFH_Dimitriadis(fitValidationSettings, method = m, mask = mask)
             
-            #### 3.10 Find the best H0
-            IC.computeH0(method = fitSettings['methods_H0'], zone = fitSettings['zones_H0'])
-            
-            IC.setBestH0(method = method_bestH0, zone = zone_bestH0)
 
             #### 3.11 Compute stress and strain based on the best H0
-            
             IC.computeStressStrain(method = 'Chadwick')
             
             #### 3.11.1 Compute the contact radius and the 'Chadwick Ratio' = a/h

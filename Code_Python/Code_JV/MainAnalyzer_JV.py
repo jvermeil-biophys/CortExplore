@@ -826,6 +826,81 @@ res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileNa
                                     fitSettings = fitSettings,
                                     plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
 
+
+# %%%% Physics - for Dimitriadis
+
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
+
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full', 'f_<_400', 'f_<_500', 'f_<_600'],
+                'doDimitriadisFit' : True,
+                'DimitriadisFitMethods' : ['Valid'],
+                'doStressRegionFits' : False,
+                'doStressGaussianFits' : False,
+                'centers_StressFits' : plot_stressCenters,
+                'halfWidths_StressFits' : stressHalfWidths,
+                'doNPointsFits' : False,
+                'nbPtsFit' : 11,
+                'overlapFit' : 5,
+                # NEW - Numi
+                'doLogFits' : False,
+                # NEW - Jojo
+                'doStrainGaussianFits' : False,
+                }
+
+plot_stressCenters = [ii for ii in range(100, 2050, 100)]
+plot_stressHalfWidth = 75
+
+plotSettings = {# ON/OFF switchs plot by plot
+                        'FH(t)':True,
+                        'F(H)':True,
+                        'F(H)_VWC':False, # NEW - Numi
+                        'Plots_Manuscript':False,
+                        'S(e)_stressRegion':False,
+                        'K(S)_stressRegion':False,
+                        'S(e)_stressGaussian':True,
+                        'K(S)_stressGaussian':True,
+                        'plotStressCenters':plot_stressCenters,
+                        'plotStressHW':plot_stressHalfWidth,
+                        'S(e)_nPoints':False,
+                        'K(S)_nPoints':False,
+                        'S(e)_strainGaussian':False, # NEW - Jojo
+                        'K(S)_strainGaussian':False, # NEW - Jojo
+                        'S(e)_Log':False, # NEW - Numi
+                        'K(S)_Log':False, # NEW - Numi
+                        'Plot_Ratio':False
+                        }
+
+
+phyTask = '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
+phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
+phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
+phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4 #  & 24-12-18_M1
+phyTask += ' & 24-12-11' # Long series
+# phyTask += ' & 21-07-08_M1-2 & 21-07-08_M2 & 21-07-08_M4' # Bead size
+# phyTask += ' & 21-10-18 & 21-10-25 & 21-12-08 & 21-12-16 & 22-01-12' # Bead size
+# phyTask += ' & 22-06-10 & 22-06-16 & 22-07-06 & 22-07-06 & 22-07-12 & 22-07-12' # Pattern sizes DB 1/2
+# phyTask += ' & 22-07-22 & 22-07-29 & 22-08-24 & 22-08-24 & 22-08-24 & 22-08-24' # Pattern sizes DB 2/2
+phyTask += ' & 23-03-09' # Pattern sizes JV
+# phyTask += ' & 23-07-06_M1 & 23-07-06_M2 & 23-07-06_M3 & 23-07-06_M4 & 23-07-06_M5' # Repeats
+phyTask += ' & 23-07-06_M6 & 23-07-06_M7 & 23-07-06_M8' # Various fields
+
+
+res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = phyTask, fileName = 'MecaData_Physics_V5_Dimi', 
+                                    save = True, PLOT = False, source = 'Python', 
+                                    fitSettings = fitSettings,
+                                    plotSettings = plotSettings) # task = 'updateExisting' / 'fromScratch'
+
+
+
+
 # %%%% Bead Sizes
 
 
