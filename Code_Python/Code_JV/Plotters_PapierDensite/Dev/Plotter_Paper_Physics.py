@@ -125,10 +125,7 @@ print('')
 #     if med > 250:
 #         print(M, f'{Q1:.0f}', f'{med:.0f}', f'{Q3:.0f}', len(df_m['cellID'].unique()))
 
-
-# %%% Utility scripts
-
-# %%%% Compare content
+# %%% Compare content
 
 MecaData_Phy3['full_comp_id'] = MecaData_Phy3['cellID'] + '_' + MecaData_Phy3['compNum'].astype(str)
 full_comp_id_L3 = MecaData_Phy3['full_comp_id'].values
@@ -164,7 +161,7 @@ for s in full_comp_id_L5:
     if s not in full_comp_id_L3:
         print(s)
 
-# %%%% Compare content 2
+# %%% Compare content 2
 
 df = MecaData_Phy3
 cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
@@ -292,8 +289,7 @@ for s in full_comp_id_L5:
         
 print(len(L3), len(L5))
 
-
-# %%%% Correct some weird stuff
+# %%% Correct some weird stuff
 
 df = MecaData_Phy3
 cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
@@ -375,6 +371,944 @@ path = 'C:/Users/josep/Documents/MagneticPincherData/Data_Analysis/MecaData_Phys
 MecaData_Phy4.to_csv(path, sep=';', index=False)
 
 
+# %% -------
+
+# %% Small diverse tasks
+
+# %%% Get some data for Julien
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+parameter = 'bestH0'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df['normal field'] == 5),
+           ]
+            
+            # (df['validatedThickness'] == True), 
+           # (df[XCol] < 1000)
+           # (df[YCol] <= 1e5)
+           # (df['valid' + YCol[1:]] == True)
+
+df_f = apm.filterDf(df, Filters)
+
+dstDir = os.path.join(cp.DirData, 'Data for Julien')
+dstPath = os.path.join(dstDir, 'Main_EvH_Curve_Data.csv')
+
+# df_f.to_csv(dstPath, index=False)
+
+#### Part 2
+
+list_Cid = df_f['cellID'].unique()
+
+dstDir = os.path.join(cp.DirData, 'Data for Julien', 'Timeseries')
+srcDir = cp.DirDataTimeseries
+# dstDir = os.path.join(cp.DirData, 'Data for Julien', 'Timeseries_stress-strain')
+# srcDir = cp.DirDataTimeseriesStressStrain
+
+list_tsF = os.listdir(srcDir)
+list_files_to_copy = []
+for f in list_tsF:
+    Cid = '_'.join(f.split('_')[:4])
+    if Cid in list_Cid:
+        list_files_to_copy.append(f)
+    
+for f in list_files_to_copy:
+    # path = os.path.join(srcDir, f)
+    # ufun.copyFile(srcDir, dstDir, f)
+    continue
+    
+
+    
+# %%% Sort data in t2 or t4
+
+#### Get dataset
+
+df = MecaData_Phy
+# cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+# drugs = ['dmso'] #['none', 'dmso']
+# substrate = '20um fibronectin discs'
+# parameter = 'bestH0'
+# df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+# excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# # figname = 'bestH0' + drugSuffix
+# XCol = 'bestH0'
+# YCol = 'E_f_<_500'
+
+# # Filter
+# Filters = [
+#            (df['substrate'] == substrate),
+#            (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+#            (df['drug'].apply(lambda x : x in drugs)),
+#            (df['date'].apply(lambda x : x not in excluded_dates)),
+#            (df['normal field'] == 5),
+#            ]
+            
+#             # (df['validatedThickness'] == True), 
+#            # (df[XCol] < 1000)
+#            # (df[YCol] <= 1e5)
+#            # (df['valid' + YCol[1:]] == True)
+
+# df_f = apm.filterDf(df, Filters)
+df_f = df
+
+
+def drawPowerLine(ax, point, slope, **kwargs):
+    k = slope
+    x1, y1 = point
+    A = y1/(x1**k)
+    limX = ax.get_xlim()
+    limY = ax.get_ylim()
+    plotX = np.array([0.9*limX[0], 1.1*limX[1]])
+    plotY = A*(plotX**k)
+    ax.plot(plotX, plotY, **kwargs)
+    ax.set_xlim(limX)
+    ax.set_ylim(limY)
+    
+
+#### Look at tsDf
+
+# Option 1. Take the CellIds from one table
+# list_Cid = df_f['cellID'].unique()
+# dict_Cid2File = {}
+
+# srcDir = cp.DirDataTimeseries
+
+# list_tsF = os.listdir(srcDir)
+# for f in list_tsF:
+#     Cid = '_'.join(f.split('_')[:4])
+#     if Cid in list_Cid:
+#         dict_Cid2File[Cid] = f
+
+# dict_Bt_Exponent = {
+#     'CellID'  : list(dict_Cid2File.keys()),
+#     'TsFile'  : list(dict_Cid2File.values()),
+#     'Exponent': np.ones(len(dict_Cid2File)),
+#     }
+# list_files_to_check = dict_Bt_Exponent['TsFile']
+
+# Option 2. Take the filenames from the folder
+list_tsF = os.listdir(srcDir)
+dict_Cid2File = {}
+for f in list_tsF:
+    Cid = '_'.join(f.split('_')[:4])
+    if not Cid in dict_Cid2File.keys():
+        dict_Cid2File[Cid] = f
+
+dict_Bt_Exponent = {
+    'CellID'  : list(dict_Cid2File.keys()),
+    'TsFile'  : list(dict_Cid2File.values()),
+    'Exponent': np.ones(len(dict_Cid2File)),
+    }
+list_files_to_check = dict_Bt_Exponent['TsFile']
+    
+for i in range(len(list_files_to_check)):
+    try:
+        f = list_files_to_check[i]
+        path = os.path.join(srcDir, f)
+        tsDf = pd.read_csv(path, sep=';')
+        T = tsDf[tsDf['idxAnalysis']==1]['T'].values
+        B = tsDf[tsDf['idxAnalysis']==1]['B'].values
+        i_Bmax = np.argmax(B)
+        Bmax = B[i_Bmax]
+        T = T[:i_Bmax]
+        B = B[:i_Bmax]
+        Tn = (T - np.min(T))/(np.max(T) - np.min(T))
+        Bn = (B - np.min(B))/(np.max(B) - np.min(B))
+        fitTn = np.log(Tn[10:])
+        fitBn = np.log(Bn[10:])
+        parms, results = ufun.fitLine(fitTn, fitBn)
+        k = parms[1]
+        k_round = int(np.round(k, decimals=0))
+        dict_Bt_Exponent['Exponent'][i] = k_round
+        # T1, B1 = Tn[30], Bn[30]
+        # fig, ax = plt.subplots(1, 1)
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+        # ax.plot(Tn[10:], Bn[10:])
+        # drawPowerLine(ax, (T1, B1), 2)
+        # drawPowerLine(ax, (T1, B1), 4)
+    except:
+        dict_Bt_Exponent['Exponent'][i] = -1 
+
+df_Bt_Exponent = pd.DataFrame(dict_Bt_Exponent)
+
+# T4
+# 22-02-09_M2
+# 22-02-09_M3
+# 22-03-28
+# 22-03-30
+# 22-05-03
+# 22-05-05
+# 22-08-26
+# 22-10-05
+# 22-10-06
+
+# %% Plots EvH
+
+# %%% 1. E500_H0 
+# %%%% 1.1 small
+
+# Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'E500_vs_h0_small'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+# Plot
+fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
+win, hin = 0.35, 0.35*(11/12)
+xin, yin = 0.95-win, 0.93-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin])
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000, 
+                marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
+Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+[k_ciw, b_ciw] = results.params_ciw
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+ax.legend().set_visible(False)
+# ax.legend(fontsize = 9, loc = 'lower left')
+# ax.set_title('Average per cell')
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$H_0$ (nm)')
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1100])
+ax.set_ylim([0.5, 500])
+# ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+#### Inset
+ax = ax_in
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+color = apm.cL_Set2[0]
+
+sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                marker = 'o', s = 20, color = apm.cL_Set2[0], alpha = 0.6)
+Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
+
+# ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title('Average per cell', fontsize=10)
+ax.grid()
+# ax.set_ylabel('$E_{500}$ (kPa)')
+# ax.set_xlabel('$H_0$ (nm)')
+ax.set_xlim([80, 1100])
+ax.set_ylim([0.5, 50])
+ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
+# ax.set_xticklabels(fontsize=9)
+# ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+# %%%% 1.2 big
+
+# Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'E500_vs_h0_big'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+# Plot
+fig, ax = plt.subplots(1, 1, figsize=(17/cm_in, 12/cm_in))
+win, hin = 0.35, 0.35*(12/17)+0.05
+xin, yin = 0.95-win, 0.93-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin])
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000, 
+                marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
+Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+[k_ciw, b_ciw] = results.params_ciw
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+# ax.legend().set_visible(False)
+ax.legend(fontsize = 9, loc = 'lower left')
+# ax.set_title('Average per cell')
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$H_0$ (nm)')
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1100])
+ax.set_ylim([0.5, 500])
+# ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+#### Inset
+ax = ax_in
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+color = apm.cL_Set2[0]
+
+sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                marker = 'o', s = 20, color = apm.cL_Set2[0], alpha = 0.6)
+Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
+
+# ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title('Average per cell', fontsize=10)
+ax.grid()
+# ax.set_ylabel('$E_{500}$ (kPa)')
+# ax.set_xlabel('$H_0$ (nm)')
+ax.set_xlim([80, 1100])
+ax.set_ylim([0.5, 50])
+ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
+# ax.set_xticklabels(fontsize=9)
+# ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+# %%% 2. E500_H500
+
+# %%%% 2.0 check 
+
+
+# Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'h500_vs_h0'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'bestH0'
+YCol = 'H0_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[2:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol, YCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+
+# Plot
+fig, axes = plt.subplots(2, 2, figsize=(17/cm_in, 12/cm_in), sharex=True, sharey='row')
+
+ax = axes[0, 0]
+ax.plot(df_f[XCol], df_f[YCol], c='gray', ls='', marker='.', markersize=5, alpha=0.3, zorder=6)
+ax.axline((0, 0), slope = 1, ls='--', color='darkorange')
+
+ax = axes[0, 1]
+ax.plot(df_fg[XCol], df_fg[YCol], c=apm.cL_Set21[0], ls='', marker='.', markersize=5, alpha=0.4, zorder=6)
+ax.axline((0, 0), slope = 1, ls='--', color='darkorange')
+
+ax = axes[1, 0]
+ax.plot(df_f[XCol], df_f[YCol]/df_f[XCol], c='gray', ls='', marker='.', markersize=5, alpha=0.3, zorder=6)
+ax.axhline(1, ls='--', color='darkorange')
+
+ax = axes[1, 1]
+ax.plot(df_fg[XCol], df_fg[YCol]/df_fg[XCol], c=apm.cL_Set21[0], ls='', marker='.', markersize=5, alpha=0.4, zorder=6)
+ax.axhline(1, ls='--', color='darkorange')
+
+for ax in axes.flatten():
+    ax.grid()
+
+
+plt.show()
+
+# %%%% Log normality
+
+#### Save
+SAVE = False
+figSubDir = 'E-h'
+name = 'h500 & E500 log-normality'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+
+#### Plots
+
+# df_qq = df_f
+df_qq = df_plot
+fig, axes = plt.subplots(1, 2, figsize=(17/cm_in, 12/cm_in), sharex=True, sharey='row')
+
+for k, Col in enumerate([XCol, YCol+'_wAvg']): # +'_wAvg'
+    
+    data_lin = df_qq[Col].values
+    data_log = np.log(df_qq[Col].values)
+    
+    ax = axes[k]
+    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    
+    data=data_lin
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Normal distribution: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[5], markeredgecolor = 'None', markersize=4)
+    
+    data=data_log
+    shap_stat, shap_pval = shapiro(data)
+    sm.qqplot(data, fit=True, line=None, ax=ax, markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=6)
+    ax.plot([], [], label=f'Log-normal distribution: {shap_pval:.2f}', ls='', marker='o', 
+            markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=4)
+    
+    ax.set_aspect('equal')
+    ax.set_xlim([-3.5,3.5])
+    ax.set_ylim([-3.5,3.5])
+    ax.legend(fontsize=7, title_fontsize=7, title = 'Shapiro–Wilk p-value', loc='lower right')
+    ax.grid()
+    
+axes[0].set_title('Q-Q plots for $H_0$')
+axes[1].set_title('Q-Q plots for $E_{500}$')
+fig.tight_layout()
+plt.show()
+
+
+# %%%% 2.1 small
+
+# Save
+SAVE = True
+figSubDir = 'E-h'
+name = 'E500_vs_h500_small'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(12/cm_in, 11/cm_in))
+win, hin = 0.35, 0.35*(11/12)
+xin, yin = 0.95-win, 0.93-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin])
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000, 
+                marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
+Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+# ax.legend().set_visible(False)
+ax.legend(fontsize = 9, loc = 'lower left')
+# ax.set_title('Average per cell')
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$H_{500}$ (nm)')
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1100])
+ax.set_ylim([0.5, 500])
+# ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+#### Inset
+ax = ax_in
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+color = apm.cL_Set2[0]
+
+sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                marker = 'o', s = 20, color = apm.cL_Set2[0], alpha = 0.6)
+Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
+
+# ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title('Average per cell', fontsize=10)
+ax.grid()
+# ax.set_ylabel('$E_{500}$ (kPa)')
+# ax.set_xlabel('$H_0$ (nm)')
+ax.set_xlim([80, 1100])
+ax.set_ylim([0.5, 50])
+ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
+# ax.set_xticklabels(fontsize=9)
+# ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+    
+
+# %%%% 2.2 big
+
+# Save
+SAVE = True
+figSubDir = 'E-h'
+name = 'E500_vs_h500_big'
+
+#### Dataset
+
+df = MecaData_Phy
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['drug'])
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# figname = 'bestH0' + drugSuffix
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+
+# Order
+co_order = []
+
+# Group By
+df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+df_fg = df_fg[[XCol]]
+df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+                                      valCol = YCol, weightCol = 'ciw'+YCol, weight_method = 'ciw^2')
+df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+#### Plot
+fig, ax = plt.subplots(1, 1, figsize=(17/cm_in, 12/cm_in))
+win, hin = 0.35, 0.35*(12/17)+0.05
+xin, yin = 0.95-win, 0.93-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin])
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+sns.scatterplot(ax = ax, x=df_f[XCol].values, y=df_f[YCol].values/1000, 
+                marker = 'o', s = 20, color = 'gray', alpha = 0.5, label='All compressions')
+Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+[k_ciw, b_ciw] = results.params_ciw
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = 'dimgray', lw = 1.5,
+        label = r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + \
+                f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + '\n' + text_pval)
+
+# ax.legend().set_visible(False)
+ax.legend(fontsize = 9, loc = 'lower left')
+# ax.set_title('Average per cell')
+ax.set_ylabel('$E_{500}$ (kPa)')
+ax.set_xlabel('$H_{500}$ (nm)')
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1100])
+ax.set_ylim([0.5, 500])
+# ax.tick_params(axis='both', direction='in', which='both')
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
+print(f'By compression, N = {len(df_f):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+    
+    
+#### Inset
+ax = ax_in
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+color = apm.cL_Set2[0]
+
+sns.scatterplot(ax = ax, x=df_plot[XCol].values, y=df_plot[YCol+'_wAvg'].values/1000, 
+                marker = 'o', s = 20, color = apm.cL_Set2[0], alpha = 0.6)
+Xfit, Yfit = np.log(df_plot[XCol].values), np.log(df_plot[YCol+'_wAvg'].values/1000)
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+[a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+A, k = np.exp(b), a
+pval = results.pval
+Xplot = np.exp(np.linspace(min(Xfit), max(Xfit), 50))
+Yplot = A * Xplot**k
+text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+ax.plot(Xplot, Yplot, ls = '--', c = apm.lightenColor(color, 0.7), lw = 1.5,)
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\nk  = {k:.2f}  ' + r'$\pm$' + f' {(k_ciw/2):.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + '\n' + text_pval)
+
+# ax.legend(fontsize = 9, loc = 'lower left')
+ax.set_title('Average per cell', fontsize=10)
+ax.grid()
+# ax.set_ylabel('$E_{500}$ (kPa)')
+# ax.set_xlabel('$H_0$ (nm)')
+ax.set_xlim([80, 1100])
+ax.set_ylim([0.5, 50])
+ax.tick_params(axis='both', direction='in', which='both', labelsize=9)
+# ax.set_xticklabels(fontsize=9)
+# ax.set_yticklabels(fontsize=9)
+
+hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
+EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
+print(f'By cells, N = {len(df_plot):.0f}')
+print(f'For {XCol} vs {YCol}')
+print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+
+# Show
+plt.tight_layout()
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+    
+    
+    
+
     
     
 
@@ -382,7 +1316,7 @@ MecaData_Phy4.to_csv(path, sep=';', index=False)
 
 # %% Main Figure 1
 
-# %%% Fig 1D & 1G - h(t) and F(t)
+# %%% Fig 1D - h(t) and F(t)
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
@@ -464,7 +1398,7 @@ res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName 
 # Save
 SAVE = True
 figSubDir = 'F1'
-name = 'F1_E' # 
+name = 'DH_BeforeAfterRatio' # 
 
 #### Dataset
 df = MecaData_Phy
@@ -539,12 +1473,12 @@ if SAVE:
 
 
 
-# %%% Fig 1EF - DH/H Before-After/Before + Peak delay
+# %%% Fig 1E - DH/H Before-After/Before + Peak delay
 
 # Save
 SAVE = True
 figSubDir = 'F1'
-name = 'F1_EF' # 
+name = 'DH_BeforeAfterRatio_AND_PeakDelay' # 
 
 #### Dataset
 df = MecaData_Phy
@@ -644,7 +1578,7 @@ if SAVE:
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
-# %%% Fig 1H - Distribution H et E
+# %%% Fig 1G - Distribution H et E
 
 # Source : Plotter_AtccPhysics - Figure NC1.1 - V4 - Thickness & Stiffness LOG SMALL
 
@@ -655,7 +1589,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F1'
-name = 'F1_H'
+name = 'F1_Distrib_H&E500'
 
 #### Dataset
 
@@ -781,7 +1715,7 @@ if SAVE:
 # Save
 SAVE = True
 figSubDir = 'F2'
-name = 'F2_A' #
+name = 'F2A_E500-vs-h500_TALL' #
 
 print('\n------\n') 
 
@@ -869,20 +1803,18 @@ ax.set_ylim([0.5, 200])
 
 hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
 EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
-A_Low = np.exp(b-(b_ciw/2))
-A_High = np.exp(b+(b_ciw/2))
 
-print('F2_A - Control case')
+
+print(f'Control case')
 print(f"n = {CountByCond.loc['dmso', 'compCount']:.0f}, " + \
       f"N = {CountByCond.loc['dmso', 'cellCount']:.0f}, " + \
       f"M = {CountByCond.loc['dmso', 'manipsCount']:.0f}")
 print(f'For {XCol} vs {YCol}\n')
-print('---')
-print('By compression')
+print(f'---')
+print(f'By compression')
 print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
 print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
 print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
-print(f'Power-law constant & Ci : {A:.2e} [{A_Low:.2e}-{A_High:.2e}]')
 print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
     
     
@@ -929,17 +1861,13 @@ ax.tick_params(axis='both', direction='in', which='both')
 
 hM, hL, hH = ufun.getLogNDistributionDescriptors(df_plot[XCol].values)
 EM, EL, EH = ufun.getLogNDistributionDescriptors(df_plot[YCol+'_wAvg'].values/1000)
-A_Low = np.exp(b-(b_ciw/2))
-A_High = np.exp(b+(b_ciw/2))
-
-print('---')
-print('By cells')
+print(f'---')
+print(f'By cells')
 print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
 print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
 print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
-print(f'Power-law constant & Ci : {A:.2e} [{A_Low:.2e}-{A_High:.2e}]')
+print(f'Power-law constant : {A:.2e}')
 print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
-print('---------------')
 
 # Show
 plt.tight_layout()
@@ -947,7 +1875,6 @@ plt.show()
 
 # Count
 CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
-
 # Save
 if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
@@ -960,6 +1887,65 @@ if SAVE:
 
     
 # %% Main Figure 4
+
+# %%% ~~~ Investigate the median num of comps for dates
+
+df = MecaData_Phy
+dates = df['date'].unique()
+medians = []
+for date in dates:
+    df_date = df[df['date']==date]
+    groups = df_date.groupby('cellID').agg({'compNum':'max'})
+    med = int(np.median(groups.compNum.values))
+    medians.append(med)
+    
+df_res = pd.DataFrame({'date':dates, 'medianCompNum':medians})
+   
+# 	  date	     medianCompNum
+# 0	  23-02-16	 10
+# 3	  23-03-16	 8
+# 6	  23-04-26	 8
+# 16  24-12-11	 20
+
+# %%% ~~~ Test 
+# !!! 
+
+N = 100
+X = np.arange(N)
+Xm = X + np.random.normal(loc=0, scale=5, size=N)
+Ym = 1.5*X - 30 + np.random.normal(loc=0, scale=3, size=N)
+
+perc, dof, = 0.99, N-2
+
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+ax.plot(Xm, Ym, 'bo')
+
+print(1)
+parms, results = ufun.fitLine(Xm, Ym)
+print(parms)
+print(0.5*(results.conf_int()[:,1]-results.conf_int()[:,0]))
+
+
+q = st.t.ppf(perc, dof)
+params_sd = [results.cov_HC3[k, k]**0.5 for k in range(len(results.params))]
+params_ciw = np.array([q * sd for sd in params_sd]).astype(float)
+print(params_ciw)
+plt.show()
+
+
+print(2)
+parms, results = ufun.fitLineTLS(Xm, Ym, wd=(1/5)**2, we=(1/1.5)**2)
+print(parms)
+print(results.params_ciw)
+
+
+print(3)
+
+sol = ufun.fitLineTLS_V2(Xm, Ym, wx=(1/5)**2, wy=(1/3)**2)
+parms = sol.beta
+parms_sd = sol.sd_beta
+print(parms)
+print(parms_sd*2)
 
 
 # %%% Functions to analyze and plot
@@ -986,7 +1972,7 @@ dict_axisLabels = {'bestH0': '$H_{0}$ (nm)',
                     'E_eff': '$E_{eff}$ (kPa)',
                     }
 
-def compute_Eh_Exponent(df, XCol = 'H0_f_<_500', YCol = 'E_f_<_500',
+def compute_Eh_Exponent(df, XCol = 'bestH0', YCol = 'E_f_<_400',
                         crit_NcompsMin = 10,
                         crit_pvalFit = 0.1,
                         crit_thickCV = 0.5,
@@ -995,6 +1981,7 @@ def compute_Eh_Exponent(df, XCol = 'H0_f_<_500', YCol = 'E_f_<_500',
 
     df, condCol = apm.makeCompositeCol(df, cols=['date'])
     CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+    print(CountByCell)
     df_f = df
     # df_f = apm.computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
     
@@ -1051,12 +2038,12 @@ def compute_Eh_Exponent(df, XCol = 'H0_f_<_500', YCol = 'E_f_<_500',
             R2 = results.rsquared
             pval = results.pvalues[1]
             
-            # print(cid)
-            # print(alpha, A)
-            # print([a, b])
-            # print(params_sd[::-1])
-            # print(params_ciw[::-1])
-            # print('---')
+            print(cid)
+            print(alpha, A)
+            print([a, b])
+            print(params_sd[::-1])
+            print(params_ciw[::-1])
+            print('---')
         
         elif modeFit == 'ODR':
             wd=1/(np.std(Xfit)) # **2
@@ -1069,12 +2056,12 @@ def compute_Eh_Exponent(df, XCol = 'H0_f_<_500', YCol = 'E_f_<_500',
             pval = results.pval
             R2 = results.R2
             
-            # print(cid)
-            # print(alpha, A)
-            # print(params)
-            # print(results.params_sd)
-            # print(results.params_ciw)
-            # print('---')
+            print(cid)
+            print(alpha, A)
+            print(params)
+            print(results.params_sd)
+            print(results.params_ciw)
+            print('---')
         
         H_logmean = np.mean(Xfit)
         E_logmean = np.mean(Yfit)
@@ -1497,7 +2484,7 @@ def plotEh_fitVals(df, XCol = 'bestH0', YCol = 'E_f_<_400',
     plt.show()
 
 
-# %%% Fig 4A
+# %%% Fig 4A BEST - Alt2 : Many expts, Inset lower left
 
 #### 1. Settings
 
@@ -1506,34 +2493,23 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F4'
-name = 'F4_A'
+name = '4A_Alt2'
 
-df = MecaData_Phy3
+df = MecaData_Phy
 dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
-# dates = ['23-02-16', '23-04-26', '24-12-11']
 XCol = 'H0_f_<_500'
 YCol = 'E_f_<_500'
 suffix = '_f_<_500'
 
-# crit_NcompsMin = 7
-# crit_pvalFit = 0.4
-# crit_thickCV = 0.025
 crit_NcompsMin = 7
 crit_pvalFit = 0.4
-crit_thickCV = 0.0275
+crit_thickCV = 0.025
 activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
 dstDir = ''
 figNameRoot = ''
 modeFit = 'ODR'
-
-ColoredCells = ['24-12-11_M1_P1_C12', 
-                '24-12-11_M1_P1_C17', 
-                '24-12-11_M1_P1_C18', 
-                '24-12-11_M1_P1_C3', 
-                '24-12-11_M2_P1_C10-1', 
-                '24-12-11_M2_P1_C6']
 
 #### 2. Filter
 
@@ -1547,13 +2523,19 @@ Filters = [(df['validatedThickness'] == True),
            (df['date'].apply(lambda x : x in dates)),
            (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
            (df['drug'].apply(lambda x : x in drugs)),
-           (df[XCol] < 1100),
+           (df[XCol] < 1000),
            (df['normal field'] == 5),
            (df[YCol] <= 2e4),
            (df['valid' + suffix] == True), 
            ]
 
 df_f = apm.filterDf(df, Filters)
+
+# dates = ['24-12-11']
+# df_f1 = apm.filterDf(df_f, [(df_f['date'].apply(lambda x : x in dates))])
+# dates = ['23-02-16', '23-03-16', '23-04-26']
+# df_f2 = apm.filterDf(df_f, [(df_f['date'].apply(lambda x : x in dates))])
+# df_f = pd.concat([df_f1, df_f2]).reset_index()
 
 CID_longSeries = CountByCell[CountByCell['compCount'] >= 5].reset_index()['cellID'].values
 Ncells = len(CID_longSeries)
@@ -1581,11 +2563,8 @@ df_res = df_res.set_index(['cellID'])
 df_res['valid_global'+codeXY] = df_res['valid_global'+codeXY] & (df_res['alpha'+codeXY] < -1)
 CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
 Ncells_valid = len(CID_validCells)
-df_res = df_res[df_res['valid_global'+codeXY] == True]
 df_f = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
-
-# Count
-CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+df_res = df_res[df_res['valid_global'+codeXY] == True]
 
 #### 3. Main Plot
 # Initialize
@@ -1604,9 +2583,9 @@ ax.set_yscale('log')
 
 ## Subplot 2.1
 ax = ax
-i0 = ufun.findFirst('24-12-11', df_res['date'].values)
-index_color = np.array([i for i in range(Ncells_valid) if (CID_validCells[i] in ColoredCells)])
-index_grey = np.array([i for i in range(Ncells_valid) if i not in index_color])
+i0 = ufun.findFirst('24-12-11', df_res['date'].values)-1
+index_color = np.array([3, 5, 6, 7, 10, 14]) + i0 
+index_grey = [i for i in range(Ncells_valid) if i not in index_color]
 
 ## Color palette
 # ColPal = sns.color_palette("husl", Ncells_valid)
@@ -1626,21 +2605,20 @@ for i in range(Ncells_valid):
     c = ColPal[i]
     df_cell = df_f[df_f['cellID'] == cid]
     Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values/1000)
-    A, alpha_fit, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
+    A, alpha, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
     R2, pval = df_res.loc[cid, 'R2'+codeXY], df_res.loc[cid, 'pval'+codeXY] #results.rsquared, results.pvalues[1]
     valid = df_res.loc[cid, 'valid_global'+codeXY]
     Xplot = np.exp(np.linspace(min(Xfit)-0.1, max(Xfit)+0.1, 50))
-    Yplot = A * Xplot**alpha_fit
+    Yplot = A * Xplot**alpha
     if i in index_color:
-        # print(cid)
-        s, alpha_plot, zorder = 40, 0.9, 8
+        s, alpha, zorder = 40, 0.9, 8
         ax.plot(Xplot, Yplot, ls = '-', c = apm.lightenColor(c, 0.75), 
-                lw = 2.0, alpha = alpha_plot*0.9, zorder = zorder-1)
+                lw = 2.0, alpha = alpha*0.9, zorder = zorder-1)
     else:
-        s, alpha_plot, zorder = 20, 0.55, 5
+        s, alpha, zorder = 20, 0.55, 5
         
     sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values/1000, 
-                    marker = 'o', s = s, alpha = alpha_plot, color = c, zorder = zorder)
+                    marker = 'o', s = s, alpha = alpha, color = c, zorder = zorder)
     
             # label =  f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
 
@@ -1653,7 +2631,7 @@ we=1/(np.std(Yfit)) # **2
 params, results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
 a, b = params
 alpha, A = a, np.exp(b)
-alpha_ciw, b_ciw = results.params_ciw
+alpha_ciw, _ = results.params_ciw
 pval = results.pval
 R2 = results.R2
 
@@ -1661,29 +2639,11 @@ Xplot = np.exp(np.linspace(min(Xfit)/10, max(Xfit)*10, 50))
 Yplot = A * Xplot**alpha
 ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 2, zorder=3,
          label =  f'All cells exponent\n$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
-
-#### Text
-hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
-EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
-A_Low = np.exp(b-(b_ciw/2))
-A_High = np.exp(b+(b_ciw/2))
-
-print('---\n')
-print('F4_A Long Series - By compression')
-print(f"n = {CountByCond.loc['3T3', 'compCount']:.0f}, " + \
-      f"N = {CountByCond.loc['3T3', 'cellCount']:.0f}, " + \
-      f"M = {CountByCond.loc['3T3', 'manipsCount']:.0f}")
-print(f'For {XCol} vs {YCol}\n')
-print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
-print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
-print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
-print(f'Power-law constant & Ci : {A:.2e} [{A_Low:.2e}-{A_High:.2e}]')
-print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
-print('---------------')
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\n$\\alpha$  = {alpha:.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
     
-
 # Format
-# ax.legend(loc = 'lower left', handlelength=3.5)#.set_visible(False)
+ax.legend(loc = 'lower left', handlelength=3.5)#.set_visible(False)
 ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
 ax.set_xlabel('$H_0$ (nm)', labelpad=0.5)
 ax.grid(visible=True, which='major', axis='both')
@@ -1711,11 +2671,10 @@ Q1, med, Q3 = np.percentile(expos, 25), np.percentile(expos, 50), np.percentile(
 #             capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
 #             )
 ax.axhline(med, color = 'darkred', lw=2.0, alpha = 0.8)
-print(med)
 sns.swarmplot(data = df_res, ax = ax, y='alpha'+codeXY,
               size = 5.0, edgecolor='w', linewidth=0.25, hue = 'cellID', 
               palette = ColPal, legend=False, zorder=4)
-ax.set_ylim([-3.0, -1])
+ax.set_ylim([-3, -1])
 ax.yaxis.set_tick_params(length=3, pad=0.75)
 ax.xaxis.set_tick_params(length=0, pad=0.75)
 ### Format
@@ -1727,16 +2686,691 @@ fig.get_layout_engine().set(w_pad=2e-2, h_pad=2e-2,
 
 plt.show()
 
-
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 # Save
 if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    # ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
-    #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
 
+
+
+# %%% 4A - One day of expts, Inset upper right
+
+#### 1. Settings
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F4'
+name = '4A'
+
+df = MecaData_Phy
+dates = ['24-12-11']
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+suffix = '_f_<_500'
+
+crit_NcompsMin = 10
+crit_pvalFit = 0.4
+crit_thickCV = 0.025
+activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
+dstDir = ''
+figNameRoot = ''
+modeFit = 'ODR'
+
+#### 2. Filter
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e4),
+           (df['valid' + suffix] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+df = df_f
+
+#### 3.
+
+df, condCol = apm.makeCompositeCol(df, cols=['date'])
+CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+df_f = df
+df_f = apm.computeNLMetrics_V2(df_f, th_NLI = np.log10(2), ref_strain = 0.2)
+
+CID_longSeries = CountByCell[CountByCell['compCount'] >= 3].reset_index()['cellID'].values
+Ncells = len(CID_longSeries)
+global_crit = ''
+
+for s in activeCrits:
+    global_crit += s
+    global_crit += '__'
+global_crit = global_crit[:-2]
+
+codeX, codeY = dict_code[XCol], dict_code[YCol]
+codeXY = '_' + codeX + '_' + codeY
+
+df_res, df_plot = compute_Eh_Exponent(df, XCol = XCol, YCol = YCol,
+                        crit_NcompsMin = crit_NcompsMin,
+                        crit_pvalFit = crit_pvalFit,
+                        crit_thickCV = crit_thickCV,
+                        activeCrits = activeCrits,
+                        modeFit = modeFit)
+df_res = df_res.set_index(['cellID'])
+    
+#### Plot
+# Initialize
+fig, ax = plt.subplots(1, 1, figsize=(11/cm_in, 10/cm_in))
+win, hin = 0.25, 0.375
+xin, yin = 0.975-win, 0.975-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin], zorder = 11)
+coords = ax.transAxes.inverted().transform(ax_in.get_tightbbox())
+coords[0][0] -= 0.065
+coords[0][1] += 0.02
+coords[1][1] += 0.015
+# coords[1][0] -= 0.01
+border = 0.00
+w, h = coords[1] - coords[0] + 2*border
+ax.add_patch(plt.Rectangle(coords[0]-border, w, h, fc="white", 
+                           transform=ax.transAxes, zorder=2))
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+## Consider only validated cells
+CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
+df_f2 = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
+df_res2 = df_res[df_res['valid_global'+codeXY] == True]
+Ncells_valid = len(CID_validCells)
+
+
+
+## Subplot 2.1
+ax = ax
+index_color = np.array([1, 3, 4, 5, 7, 11])
+index_grey = [i for i in range(Ncells_valid) if i not in index_color]
+
+## Color palette
+# ColPal = sns.color_palette("husl", Ncells_valid)
+BrightPal = sns.color_palette("husl", len(index_color))
+ColPal = []
+k = 0
+for i in range(Ncells_valid):
+    if i in index_color:
+        ColPal.append(BrightPal[ufun.findFirst(i, index_color)])
+    else:
+        ColPal.append('gray')
+
+# for i in index_grey: # range(Ncells_valid)
+#     # Data
+#     cid = CID_validCells[i]     
+#     c = ColPal[i]
+#     df_cell = df_f[df_f['cellID'] == cid]
+#     Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values/1000)
+#     A, alpha, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
+#     R2, pval = df_res.loc[cid, 'R2'+codeXY], df_res.loc[cid, 'pval'+codeXY] #results.rsquared, results.pvalues[1]
+#     valid = df_res.loc[cid, 'valid_global'+codeXY]
+#     Xplot = np.exp(np.linspace(min(Xfit)-0.1, max(Xfit)+0.1, 50))
+#     Yplot = A * Xplot**alpha
+
+#     sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values/1000, 
+#                     marker = 'o', s = 25, alpha = 0.45, color = 'gray')
+#     # ax.plot(Xplot, Yplot, ls = '-', c = 'gray', lw = 1.5, alpha = 0.4,)
+#             # label =  f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+
+### For each cell, plot all compressions in that cell color
+for i in range(Ncells_valid):
+    # Data
+    cid = CID_validCells[i]     
+    c = ColPal[i]
+    df_cell = df_f[df_f['cellID'] == cid]
+    Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values/1000)
+    A, alpha, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
+    R2, pval = df_res.loc[cid, 'R2'+codeXY], df_res.loc[cid, 'pval'+codeXY] #results.rsquared, results.pvalues[1]
+    valid = df_res.loc[cid, 'valid_global'+codeXY]
+    Xplot = np.exp(np.linspace(min(Xfit)-0.1, max(Xfit)+0.1, 50))
+    Yplot = A * Xplot**alpha
+    if i in index_color:
+        s, alpha, zorder = 50, 0.9, 8
+        ax.plot(Xplot, Yplot, ls = '-', c = apm.lightenColor(c, 0.75), 
+                lw = 2.0, alpha = alpha*0.8, zorder = zorder-1)
+    else:
+        s, alpha, zorder = 25, 0.55, 5
+        
+    sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values/1000, 
+                    marker = 'o', s = s, alpha = alpha, color = c, zorder = zorder)
+    
+            # label =  f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+
+### Plot the fit on all compressions
+Xfit, Yfit = np.log(df_f2[XCol].values), np.log(df_f2[YCol].values/1000)
+
+# [b, a], results = ufun.fitLine(Xfit, Yfit)
+# A, alpha = np.exp(b), a
+# perc, dof, = 0.975, len(Yfit)-2
+# q = st.t.ppf(perc, dof)
+# alpha_ciw = results.HC3_se[1] * q
+# R2 = results.rsquared
+# pval = results.pvalues[1]
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+params, results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+a, b = params
+alpha, A = a, np.exp(b)
+alpha_ciw, _ = results.params_ciw
+pval = results.pval
+R2 = results.R2
+
+Xplot = np.exp(np.linspace(min(Xfit)/10, max(Xfit)*10, 50))
+Yplot = A * Xplot**alpha
+ax.plot(Xplot, Yplot, ls = '-.', c = 'dimgray', lw = 1.5,
+         label =  f'All cells exponent\n$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\n$\\alpha$  = {alpha:.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+        
+### Format
+ax.legend(loc = 'lower left', handlelength=3)#.set_visible(False)
+ax.set_ylabel(dict_axisLabels[YCol])
+ax.set_xlabel(dict_axisLabels[XCol])
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([50, 1300])
+ax.set_ylim([0.6, 60])
+
+
+## Subplot 2.2
+### Plot the exponents distribution (power law slopes)
+ax = ax_in
+sns.boxplot(data = df_res2, ax = ax, y='alpha'+codeXY, 
+            width=0.8, color='.9', showfliers = False,
+            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            )
+sns.swarmplot(data = df_res2, ax = ax, y='alpha'+codeXY,
+              size = 8, edgecolor='w', linewidth=0.5, hue = 'cellID', palette = ColPal, legend=False)
+ax.set_ylim([-3, -1])
+### Format
+ax.grid(axis='y')
+ax.set_ylabel('Each cell exponent $\\alpha $', fontsize=6)
+
+
+    
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f2, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+# %%% 4A - Alt : Many expts, Inset upper right
+
+#### 1. Settings
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = False
+figSubDir = 'F4'
+name = '4A_Alt'
+
+df = MecaData_Phy
+dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+suffix = '_f_<_500'
+
+crit_NcompsMin = 7
+crit_pvalFit = 0.4
+crit_thickCV = 0.025
+activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
+dstDir = ''
+figNameRoot = ''
+modeFit = 'ODR'
+
+#### 2. Filter
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e4),
+           (df['valid' + suffix] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+
+# dates = ['24-12-11']
+# df_f1 = apm.filterDf(df_f, [(df_f['date'].apply(lambda x : x in dates))])
+# dates = ['23-02-16', '23-03-16', '23-04-26']
+# df_f2 = apm.filterDf(df_f, [(df_f['date'].apply(lambda x : x in dates))])
+# df_f = pd.concat([df_f1, df_f2]).reset_index()
+
+CID_longSeries = CountByCell[CountByCell['compCount'] >= 5].reset_index()['cellID'].values
+Ncells = len(CID_longSeries)
+global_crit = ''
+
+for s in activeCrits:
+    global_crit += s
+    global_crit += '__'
+global_crit = global_crit[:-2]
+
+codeX, codeY = dict_code[XCol], dict_code[YCol]
+codeXY = '_' + codeX + '_' + codeY
+
+df_res, df_plot = compute_Eh_Exponent(df_f, XCol = XCol, YCol = YCol,
+                        crit_NcompsMin = crit_NcompsMin,
+                        crit_pvalFit = crit_pvalFit,
+                        crit_thickCV = crit_thickCV,
+                        activeCrits = activeCrits,
+                        modeFit = modeFit)
+df_res['date'] = df_res['cellID'].apply(lambda x : x.split('_')[0])
+df_res.sort_values(by='cellID', ascending=True, inplace=True)
+df_res = df_res.set_index(['cellID'])
+
+## Consider only validated cells
+df_res['valid_global'+codeXY] = df_res['valid_global'+codeXY] & (df_res['alpha'+codeXY] < -1)
+CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
+Ncells_valid = len(CID_validCells)
+df_f = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
+df_res = df_res[df_res['valid_global'+codeXY] == True]
+
+#### 3. Main Plot
+# Initialize
+fig, ax = plt.subplots(1, 1, figsize=(8.5/cm_in, 8.5/cm_in))
+win, hin = 0.3, 0.38
+xin, yin = 0.975-win, 0.925-hin 
+ax_in = ax.inset_axes([xin, yin, win, hin], zorder = 11)
+coords = ax.transAxes.inverted().transform(ax_in.get_tightbbox())
+coords[0][0] -= 0.0225
+coords[0][1] += 0.035
+coords[1][1] += 0.05
+# coords[1][0] -= 0.01
+border = 0.00
+w, h = coords[1] - coords[0] + 2*border
+ax.add_patch(plt.Rectangle(coords[0]-border, w, h, fc="white", 
+                           transform=ax.transAxes, zorder=2))
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+## Consider only validated cells
+CID_validCells = df_res[df_res['valid_global'+codeXY] == True].index.values
+df_f2 = df_f[df_f['cellID'].apply(lambda x : x in CID_validCells)]
+df_res2 = df_res[df_res['valid_global'+codeXY] == True]
+Ncells_valid = len(CID_validCells)
+
+## Subplot 2.1
+ax = ax
+i0 = ufun.findFirst('24-12-11', df_res['date'].values)
+index_color = np.array([3, 5, 6, 7, 10, 14]) + i0-1
+index_grey = [i for i in range(Ncells_valid) if i not in index_color]
+
+## Color palette
+# ColPal = sns.color_palette("husl", Ncells_valid)
+BrightPal = sns.color_palette("husl", len(index_color))
+ColPal = []
+k = 0
+for i in range(Ncells_valid):
+    if i in index_color:
+        ColPal.append(BrightPal[ufun.findFirst(i, index_color)])
+    else:
+        ColPal.append('gray')
+
+# for i in index_grey: # range(Ncells_valid)
+#     # Data
+#     cid = CID_validCells[i]     
+#     c = ColPal[i]
+#     df_cell = df_f[df_f['cellID'] == cid]
+#     Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values/1000)
+#     A, alpha, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
+#     R2, pval = df_res.loc[cid, 'R2'+codeXY], df_res.loc[cid, 'pval'+codeXY] #results.rsquared, results.pvalues[1]
+#     valid = df_res.loc[cid, 'valid_global'+codeXY]
+#     Xplot = np.exp(np.linspace(min(Xfit)-0.1, max(Xfit)+0.1, 50))
+#     Yplot = A * Xplot**alpha
+
+#     sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values/1000, 
+#                     marker = 'o', s = 25, alpha = 0.45, color = 'gray')
+#     # ax.plot(Xplot, Yplot, ls = '-', c = 'gray', lw = 1.5, alpha = 0.4,)
+#             # label =  f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+
+### For each cell, plot all compressions in that cell color
+for i in range(Ncells_valid):
+    # Data
+    cid = CID_validCells[i]     
+    c = ColPal[i]
+    df_cell = df_f[df_f['cellID'] == cid]
+    Xfit, Yfit = np.log(df_cell[XCol].values), np.log(df_cell[YCol].values/1000)
+    A, alpha, alpha_ciw = df_res.loc[cid, 'A'+codeXY], df_res.loc[cid, 'alpha'+codeXY], df_res.loc[cid, 'alpha_ciw'+codeXY] #np.exp(b), a
+    R2, pval = df_res.loc[cid, 'R2'+codeXY], df_res.loc[cid, 'pval'+codeXY] #results.rsquared, results.pvalues[1]
+    valid = df_res.loc[cid, 'valid_global'+codeXY]
+    Xplot = np.exp(np.linspace(min(Xfit)-0.1, max(Xfit)+0.1, 50))
+    Yplot = A * Xplot**alpha
+    if i in index_color:
+        s, alpha, zorder = 40, 0.9, 8
+        ax.plot(Xplot, Yplot, ls = '-', c = apm.lightenColor(c, 0.75), 
+                lw = 2.0, alpha = alpha*0.8, zorder = zorder-1)
+    else:
+        s, alpha, zorder = 20, 0.55, 5
+        
+    sns.scatterplot(ax = ax, x=df_cell[XCol].values, y=df_cell[YCol].values/1000, 
+                    marker = 'o', s = s, alpha = alpha, color = c, zorder = zorder)
+    
+            # label =  f'$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+
+### Plot the fit on all compressions
+Xfit, Yfit = np.log(df_f2[XCol].values), np.log(df_f2[YCol].values/1000)
+
+# [b, a], results = ufun.fitLine(Xfit, Yfit)
+# A, alpha = np.exp(b), a
+# perc, dof, = 0.975, len(Yfit)-2
+# q = st.t.ppf(perc, dof)
+# alpha_ciw = results.HC3_se[1] * q
+# R2 = results.rsquared
+# pval = results.pvalues[1]
+
+wd=1/(np.std(Xfit)) # **2
+we=1/(np.std(Yfit)) # **2
+
+params, results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+a, b = params
+alpha, A = a, np.exp(b)
+alpha_ciw, _ = results.params_ciw
+pval = results.pval
+R2 = results.R2
+
+Xplot = np.exp(np.linspace(min(Xfit)/10, max(Xfit)*10, 50))
+Yplot = A * Xplot**alpha
+ax.plot(Xplot, Yplot, ls = '-.', c = 'dimgray', lw = 1.5, zorder=6,
+         label =  f'All cells exponent\n$\\alpha$  = {alpha:.2f} $\\pm $ {alpha_ciw:.2f}')
+        # label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + f'\nA = {A:.1e}' + f'\n$\\alpha$  = {alpha:.2f}' + \
+        #         f'\n$R^2$  = {R2:.2f}' + f'\np-val = {pval:.3f}')
+        
+### Format
+ax.legend(loc = 'lower left', handlelength=3)#.set_visible(False)
+ax.set_ylabel(dict_axisLabels[YCol])
+ax.set_xlabel(dict_axisLabels[XCol])
+ax.grid(visible=True, which='major', axis='both')
+ax.set_xlim([60, 1300])
+ax.set_ylim([0.6, 60])
+
+
+#### 4. Subplot Inset
+### Plot the exponents distribution (power law slopes)
+ax = ax_in
+sns.boxplot(data = df_res, ax = ax, y='alpha'+codeXY, 
+            width=0.8, color='.9', showfliers = False,
+            boxprops={"facecolor": (.7, .7, .7, .9), "edgecolor": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            medianprops={"color": 'darkred', "linewidth": 2, 'alpha' : 0.8, 'zorder' : 2},
+            whiskerprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 2, 'alpha' : 0.7, 'zorder' : 2},
+            )
+sns.swarmplot(data = df_res, ax = ax, y='alpha'+codeXY,
+              size = 5.5, edgecolor='w', linewidth=0.25, hue = 'cellID', palette = ColPal, legend=False)
+ax.set_ylim([-3, -1])
+ax.tick_params(length=3)
+### Format
+ax.grid(axis='y')
+ax.set_ylabel('')
+ax.set_title('Each cell exponent $\\alpha $', fontsize=6, va='center')
+
+
+    
+plt.show()
+
+# Count
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    
+
+  
+
+# %%% ------
+
+# %%% Use the functions for 24-12-11 - E(h) long series
+
+figSubDir = '24-12-11_longSeries'
+
+df = MecaData_Phy
+dates = ['24-12-11']
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+suffix = '_f_<_500'
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df[XCol] < 1000),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e4),
+           (df['valid' + suffix] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+
+# res_df, df_plot = compute_Eh_Exponent(df, XCol = XCol, YCol = YCol,
+#                         crit_NcompsMin = 10,
+#                         crit_pvalFit = 0.2,
+#                         crit_thickCV = 0.04,
+#                         activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'], 
+#                         modeFit = 'ODR')
+
+plotEh_perCell(df, XCol = XCol, YCol = YCol,
+                    crit_NcompsMin = 10,
+                    crit_pvalFit = 0.2,
+                    crit_thickCV = 0.04,
+                    activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'],
+                    dstDir = 'E-h_perDate', figNameRoot = '24-12-11_E500vH500', 
+                    modeFit = 'ODR')
+
+# plotEh_fitVals(df, XCol = 'bestH0', YCol = 'E_f_<_400',
+#                     crit_NcompsMin = 10,
+#                     crit_pvalFit = 0.4,
+#                     crit_thickCV = 0.025,
+#                     activeCrits = ['NcompsMin', 'thickCV'])
+
+
+
+# %%%  Use the functions for 23-02-16 - E(h)
+
+figSubDir = '23-02-16'
+
+df = MecaData_Phy
+dates = ['23-02-16']
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_500'] <= 2e4),
+           (df['valid_f_<_500'] == True), 
+           ]
+
+df = apm.filterDf(df, Filters)
+
+res_df, df_plot = compute_Eh_Exponent(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                        crit_NcompsMin = 7,
+                        crit_pvalFit = 0.4,
+                        crit_thickCV = 0.025,
+                        activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'])
+
+plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                    crit_NcompsMin = 7,
+                    crit_pvalFit = 0.4,
+                    crit_thickCV = 0.02,
+                    activeCrits = ['NcompsMin', 'thickCV'],
+                    dstDir = 'E-h_perDate', figNameRoot = '23-02-16_E500vH0')
+
+
+# %%%  Use the functions for 23-03-16 - E(h)
+
+figSubDir = '23-03-16'
+
+df = MecaData_Phy
+dates = ['23-03-16']
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_500'] <= 2e4),
+           (df['valid_f_<_500'] == True), 
+           ]
+
+df = apm.filterDf(df, Filters)
+
+res_df, df_plot = compute_Eh_Exponent(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                        crit_NcompsMin = 7,
+                        crit_pvalFit = 0.4,
+                        crit_thickCV = 0.025,
+                        activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'])
+
+plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                    crit_NcompsMin = 7,
+                    crit_pvalFit = 0.4,
+                    crit_thickCV = 0.02,
+                    activeCrits = ['NcompsMin', 'thickCV'],
+                    dstDir = 'E-h_perDate', figNameRoot = '23-03-16_E500vH0')
+
+
+# %%%  Use the functions for 23-04-26 - E(h)
+
+figSubDir = '23-04-26'
+
+df = MecaData_Phy
+dates = ['23-04-26']
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_500'] <= 2e4),
+           (df['valid_f_<_500'] == True), 
+           ]
+
+df = apm.filterDf(df, Filters)
+
+res_df, df_plot = compute_Eh_Exponent(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                        crit_NcompsMin = 6,
+                        crit_pvalFit = 0.4,
+                        crit_thickCV = 0.025,
+                        activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'])
+
+plotEh_perCell(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                    crit_NcompsMin = 6,
+                    crit_pvalFit = 0.4,
+                    crit_thickCV = 0.02,
+                    activeCrits = ['NcompsMin', 'thickCV'],
+                    dstDir = 'E-h_perDate', figNameRoot = '23-04-26_E500vH0')
+
+
+# %%% Work on a common data frame
+
+df = MecaData_Phy
+dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
+
+XCol = 'bestH0'
+YCol = 'E_f_<_500'
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['bestH0'] < 1000),
+           (df['normal field'] == 5),
+           (df['E_f_<_500'] <= 2e4),
+           (df['valid_f_<_500'] == True), 
+           ]
+
+df = apm.filterDf(df, Filters)
+
+concat_res = plotEh_compareDates(df, XCol = 'bestH0', YCol = 'E_f_<_500',
+                    crit_NcompsMin = 6,
+                    crit_pvalFit = 0.4,
+                    crit_thickCV = 0.025,
+                    activeCrits = ['NcompsMin', 'pvalFit', 'thickCV'],
+                    PLOT = True, dstDir = '', figNameRoot = '')
+    
 
 
 # %% --------

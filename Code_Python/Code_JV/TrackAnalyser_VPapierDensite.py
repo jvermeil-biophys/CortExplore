@@ -1503,7 +1503,7 @@ class CellCompression:
                    color = color, edgecolors = None, linewidths = 0,
                    zorder = 5, s = 2, alpha = 0.9)
         for xv in x_Vsep:
-            ax.axvline(xv, ls='-.', lw=0.5, color='k')
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
 
         (ax_ym, ax_yM) = ax.get_ylim()
         ax.set_ylim([min(-0,ax_ym), ax_yM])
@@ -1523,7 +1523,7 @@ class CellCompression:
         # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
         ax.set_ylim([0, 1.1])
         for xv in x_Vsep:
-            ax.axvline(xv, ls='-.', lw=0.5, color='k')
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
         
         #### Shades
         for i in range(1, Ni+1):
@@ -1557,18 +1557,27 @@ class CellCompression:
         #### shared formatting 
         (ax_xm, ax_xM) = ax.get_xlim()
         
+        ax1.plot([43, 45], [300, 300], color='deepskyblue')
+        ax1.text(x=42, y=240, s=r'$H_{init}$', color='deepskyblue')
+        # ax1.add_patch(plt.Rectangle((42, 225), 3.5, 65, fc="white",
+        #                            zorder=2, alpha=0.75))
+        ax1.plot([52, 54], [250, 250], color='red')
+        ax1.text(x=53, y=190, s=r'$H_{final}$', color='red')
+        ax1.add_patch(plt.Rectangle((53, 175), 4.0, 65, fc="white",
+                                   zorder=2, alpha=0.75))
+        
         ax1.set_xlim([0, ax_xM])
         ax1.set_xticks([])
         ax1.set_xticklabels([])
         ax1.legend(handles=LegendHandles, loc='upper right', 
                    handlelength = 1.25, handleheight = 1, handletextpad=0.4,
-                   framealpha=1, fontsize=4.5, labelspacing=0.2)
+                   framealpha=1, fontsize=5.5, labelspacing=0.2)
 
         ax2.set_xlim([0, ax_xM])
         ax2.set_xlabel('Time (s)', labelpad=1)
         ax2.set_xticks(time_ticks)
         ax2.set_xticklabels(time_ticklabels)
-        ax2.xaxis.set_tick_params(rotation = 55, labelsize=5, pad=0.05)
+        ax2.xaxis.set_tick_params(rotation=50, labelsize=6, pad=0.05)
         ax2.legend().set_visible(False)
         
         fig.get_layout_engine().set(h_pad = 0.015, 
@@ -1743,21 +1752,18 @@ class CellCompression:
         apm.setGraphicOptions(mode = 'print', 
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
+        numIndent = [1]
         nColsSubplot = 1
-        nRowsSubplot = 5
-        fig, axes = plt.subplots(nRowsSubplot, nColsSubplot,
-                                 figsize = (8/gs.cm_in, 25/gs.cm_in))
-        # figTitle = 'Thickness-Force of indentations\n'
-        # if plotH0:
-        #     figTitle += 'with H0 detection (' + self.method_bestH0 + ') ; ' 
-        # if plotFit:
-        #     figTitle += 'with fit (Chadwick)'
-        # fig.suptitle(figTitle)
+        nRowsSubplot = len(numIndent)
+        fig, ax = plt.subplots(nRowsSubplot, nColsSubplot,
+                               figsize = (8/gs.cm_in, 5/gs.cm_in))
+        axes=[ax]
+
         Np = min(5, len(self.listIndent))
-        
-        for i in range(Np):
+
+        for i, n in enumerate(numIndent):
             ax = axes[i]
-            IC = self.listIndent[i]
+            IC = self.listIndent[n]
             IC.Pplot_FH500_V2(fig, ax, plotSettings)
         
         fig.tight_layout()
@@ -2182,7 +2188,7 @@ class CellCompression:
             
         # 0.
         if plotSettings['Plots_Papier']:
-            figDir_Papier = 'C:/Users/josep/Desktop/Seafile/PapierDensité/DraftsFigs'
+            figDir_Papier = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
             figSubDir_Papier = 'F1'
             
             # ------
@@ -2208,9 +2214,9 @@ class CellCompression:
             # #     pass
         
             # try:
-            name = self.cellID + '_F1C_hF(t)_V2bis'
+            name = 'F1_D_' + self.cellID
             fig, ax = self.Pplot_Timeseries_V2bis(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
+            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
             ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
@@ -2240,15 +2246,15 @@ class CellCompression:
             # except:
             #     pass
         
-            # # try:
-            # name = self.cellID + '_F1D_F(h)_E500_V2'
-            # fig, ax = self.Pplot_FH500_V2(plotSettings)
-            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # # except:
-            # #     pass
+            # try:
+            name = 'F1_G_' + self.cellID
+            fig, ax = self.Pplot_FH500_V2(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            # except:
+            #     pass
         
             # # try:
             # name = self.cellID + '_F1D_F(h)_E500_V3'
@@ -3830,7 +3836,7 @@ class IndentCompression:
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
         
-        color_base = 'lightblue'
+        color_base = 'gray'
         color_relax = 'palegreen'
         color_Chad = 'deepskyblue'
         color_Chad400 = 'darkorange'
