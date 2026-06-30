@@ -1925,6 +1925,42 @@ if SAVE:
 
 # %%% Choice of F < 500
 
+# %%%% Other df
+
+path = "C:\\Users\\josep\\Documents\\MagneticPincherData\\Main_EvH_Curve_Data.csv"
+Julien_df = pd.read_csv(path)
+
+print('Dates')
+print([x for x in Julien_df['date'].unique()])
+print('')
+
+print('Manips')
+print([x for x in Julien_df['manipID'].unique()])
+print('')
+
+print('Cell types')
+print([x for x in Julien_df['cell type'].unique()])
+print('')
+
+print('Cell subtypes')
+print([x for x in Julien_df['cell subtype'].unique()])
+print('')
+
+print('Drugs')
+print([x for x in Julien_df['drug'].unique()])
+print('')
+
+print('Substrates')
+print([x for x in Julien_df['substrate'].unique()])
+print('')
+
+print('Resting Fields')
+print([x for x in Julien_df['normal field'].unique()])
+print('')
+
+# CountByCond, CountByCell =apm.makeCountDf(Julien_df, 'date')
+
+
 # %%%% 1. Get a data set of F-h to fit
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
@@ -1955,12 +1991,18 @@ fitSettings = {# H0
 # # task = '23-03-16_M1_P1_C4'
 # =============================================================================
 
-phyTask = '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
-phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
-phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
-phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4
-phyTask += ' & 23-03-09_M4' # Pattern sizes JV
-phyTask += ' & 24-12-11'
+# V1
+# phyTask = '23-02-16_M1 & 23-02-23_M1 & 23-02-23_M3 & 23-03-08_M3 & 23-03-16_M1 & 23-03-17_M4' # Dmso & none 1/4
+# phyTask += ' & 23-04-20_M1 & 23-04-20_M4 & 23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3' # Dmso & none 2/4
+# phyTask += ' & 23-07-17_M4 & 23-07-17_M6 & 23-07-20_M2 & 23-09-06_M3 & 23-09-11_M1 & 23-09-19_M1 & 23-11-26_M2 & 23-12-03_M1' # Dmso & none 3/4
+# phyTask += ' & 24-07-04_M2 & 24-07-04_M6' # Dmso & none 4/4
+# phyTask += ' & 23-03-09_M4' # Pattern sizes JV
+# phyTask += ' & 24-12-11'
+
+# V2
+phyTask = '23-02-16_M1 & 23-03-16_M1 & 23-03-17_M4 & 23-04-20_M1 & 23-04-20_M4 & '
+phyTask += '23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3 & '
+phyTask += '23-07-20_M2 & 23-09-06_M3 & 23-09-19_M1 & 23-12-03_M1 & 24-07-04_M2'
 
 Id_comps, Comps = takaP.getCompressions(task = phyTask,
                                         fitSettings = fitSettings)
@@ -2126,11 +2168,13 @@ def getCurvature(h, f, D):
         
     return(res)
 
-list_Fmax = np.arange(150, 1100, 50)
+list_Fmax = np.arange(100, 1100, 50)
 # list_D = Id_comps[:][2]
 all_Chi2 = []
 all_R2   = []
 all_M    = []
+all_Mf   = []
+all_Msq  = []
 err_chi2 = 8
 # err_chi2_test1 = 5
 # err_chi2_test2 = 20
@@ -2153,14 +2197,16 @@ err_chi2 = 8
 for Fmax in list_Fmax:
     list_Chi2, list_R2 = [], []
     list_M = []
+    list_Mf = []
+    list_Msq = []
     for k in range(len(Comps)): # len(Comps)
         D = Id_comps[k][2]
         h, f = Comps[k]
         index = (f < Fmax)
         h_fit, f_fit = h[index], f[index]
-        res = fitChadwick_hf(h_fit, f_fit, D, err_chi2)
-        error, r2, chi2, resid = res
-        
+        results = fitChadwick_hf(h_fit, f_fit, D, err_chi2)
+        error, r2, chi2, resid = results
+
         if (not error) and (chi2 > 0) and (r2 < 1):
             list_Chi2.append(chi2)
             list_R2.append(r2)
@@ -2169,9 +2215,25 @@ for Fmax in list_Fmax:
             M1, M2, M3 = np.median(resid[:n]), np.median(resid[n:2*n]), np.median(resid[2*n:])
             list_M.append((M1, M2, M3))
             
+            F_3 = np.max(f_fit)/3
+            r1 = resid[f_fit<F_3], 
+            r2 = resid[(f_fit>=F_3) & (f_fit<2*F_3)]
+            r3 = resid[(f_fit>=2*F_3)]
+            Mf1 = np.median(r1)
+            Mf2 = np.median(r2)
+            Mf3 = np.median(r3)
+            list_Mf.append((Mf1, Mf2, Mf3))
+            
+            Msq1 = Mf1 / len(r1)**0.5
+            Msq2 = Mf2 / len(r2)**0.5
+            Msq3 = Mf3 / len(r3)**0.5
+            list_Msq.append((Msq1, Msq2, Msq3))
+            
     all_Chi2.append(list_Chi2)
     all_R2.append(list_R2)
     all_M.append(list_M)
+    all_Mf.append(list_Mf)
+    all_Msq.append(list_Msq)
     
     
 # %%%% Save
@@ -2181,20 +2243,25 @@ for x in all_R2:
     x = np.array(x).astype(float).tolist()
 for x in all_Chi2:
     x = np.array(x).astype(float).tolist()
+    
+dstPath = os.path.join("C:\\Users\\josep\\Desktop\\Seafile\\PapierDensité\\DraftsFigs", 'S1')
+ufun.list2json(list_Fmax, dstPath, 'list_Fmax_V2')
+ufun.list2json(all_R2, dstPath, 'all_R2_V2')
+ufun.list2json(all_Chi2, dstPath, 'all_Chi2_V2')
+ufun.list2json(all_M, dstPath, 'all_M_V2')
+ufun.list2json(all_Mf, dstPath, 'all_Mf_V2')
+ufun.list2json(all_Msq, dstPath, 'all_Msq_V2')
 
-dstPath = os.path.join(figDir, 'S1')
-ufun.list2json(list_Fmax, dstPath, 'list_Fmax')
-ufun.list2json(all_R2, dstPath, 'all_R2')
-ufun.list2json(all_Chi2, dstPath, 'all_Chi2')
-ufun.list2json(all_M, dstPath, 'all_M')
 
 # %%%% Open
 
 srcPath = os.path.join(figDir, 'S1')
-list_Fmax = ufun.json2list(srcPath, 'list_Fmax')
-all_R2 = ufun.json2list(srcPath, 'all_R2')
-all_Chi2 = ufun.json2list(srcPath, 'all_Chi2')
-all_M = ufun.json2list(srcPath, 'all_M')
+list_Fmax = ufun.json2list(srcPath, 'list_Fmax_V2')
+all_R2 = ufun.json2list(srcPath, 'all_R2_V2')
+all_Chi2 = ufun.json2list(srcPath, 'all_Chi2_V2')
+all_M = ufun.json2list(srcPath, 'all_M_V2')
+all_Mf = ufun.json2list(srcPath, 'all_Mf_V2')
+
     
 # %%%% 3. Compute statistics
     
@@ -2210,7 +2277,9 @@ median_Chi2 = [np.median(list_Chi2) for list_Chi2 in all_Chi2]
 D1_Chi2 = [np.percentile(list_Chi2, 25) for list_Chi2 in all_Chi2]
 D9_Chi2 = [np.percentile(list_Chi2, 75) for list_Chi2 in all_Chi2]
 
-avg_Med = np.array([np.median(np.array(list_M), axis=0) for list_M in all_M])
+avg_Med = np.array([np.nanmean(np.array(list_M), axis=0) for list_M in all_M])
+avg_MedF = np.array([np.nanmean(np.array(list_Mf), axis=0) for list_Mf in all_Mf])
+avg_MedSq = np.array([np.nanmean(np.array(list_Msq), axis=0) for list_Msq in all_Msq])
 
 
 # %%%% 4. Plot the results
@@ -2220,7 +2289,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'S1'
 name = 'S1_Choice_500pN'
 
@@ -2263,7 +2332,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'S1'
 name = 'S1_Choice_500pN_V2'
 
@@ -2271,10 +2340,11 @@ c1 = apm.cL_Set2[0]
 c2 = apm.cL_Set2[1]
 c3 = apm.cL_Set2[2]
 
-fig, ax = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in))#, layout='compressed')
-ax.plot(list_Fmax, avg_Med[:, 0], color=c1, lw=2, label=r'F < 1/3.$F_{max}$')
-ax.plot(list_Fmax, avg_Med[:, 1], color=c2, lw=2, label=r'1/3.$F_{max}$ < F < 2/3.$F_{max}$')
-ax.plot(list_Fmax, avg_Med[:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max}$')
+fig, axes = plt.subplots(1, 2, figsize=(12/cm_in, 6/cm_in))#, layout='compressed')
+ax = axes[0]
+ax.plot(list_Fmax, avg_MedF[:, 0], color=c1, lw=2, label=r'F < 1/3.$F_{max}$')
+ax.plot(list_Fmax, avg_MedF[:, 1], color=c2, lw=2, label=r'1/3.$F_{max}$ < F < 2/3.$F_{max}$')
+ax.plot(list_Fmax, avg_MedF[:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max}$')
 
 ax.set_xlabel('Selected $F_{max}$')
 ax.set_title(' ')
@@ -2285,6 +2355,22 @@ ax.axvline(500, color='gray', lw=1, ls='-.')
 ax.set_xlim([0, 1100])
 # ax.set_ylim([0, 1.05])
 ax.legend(fontsize=5)
+
+ax= axes[1]
+ax.plot(list_Fmax[1:], avg_MedSq[1:, 0], color=c1, lw=2, label=r'F < 1/3.$F_{max}$')
+ax.plot(list_Fmax[1:], avg_MedSq[1:, 1], color=c2, lw=2, label=r'1/3.$F_{max}$ < F < 2/3.$F_{max}$')
+ax.plot(list_Fmax[1:], avg_MedSq[1:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max}$')
+
+ax.set_xlabel('Selected $F_{max}$')
+ax.set_title(' ')
+ax.set_ylabel(r'Mean(Resid) / N^0.5')
+
+ax.axhline(0, color='gray', lw=1, ls='-')
+ax.axvline(500, color='gray', lw=1, ls='-.')
+ax.set_xlim([0, 1100])
+# ax.set_ylim([0, 1.05])
+ax.legend(fontsize=5)
+
 
 plt.show()
 
