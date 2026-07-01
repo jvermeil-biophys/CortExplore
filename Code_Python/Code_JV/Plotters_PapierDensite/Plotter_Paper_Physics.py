@@ -655,7 +655,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F1'
-name = 'F1_H'
+name = 'F1_H_1-1'
 
 #### Dataset
 
@@ -696,7 +696,7 @@ df_fgw2[YCol + '_wAvg'] /= 1000
 df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
 
 #### Init fig
-fig, axes = plt.subplots(1, 2, figsize=(9/cm_in, 5/cm_in), sharey=True, layout='compressed')
+fig, axes = plt.subplots(1, 2, figsize=(11/cm_in, 5/cm_in), sharey=True, layout='compressed')
 color = apm.cL_Set2[0]
 color = 'dimgray'
 color_med = 'darkred'
@@ -1508,7 +1508,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F4'
-name = 'F4_A'
+name = 'F4_A_1-1'
 
 df = MecaData_Phy3
 dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
@@ -1589,14 +1589,14 @@ CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 
 #### 3. Main Plot
 # Initialize
-fig, ax = plt.subplots(1, 1, figsize=(8/cm_in, 10/cm_in), layout='compressed')
+fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 10/cm_in), layout='compressed')
 win, hin = 0.275, 0.325
 xin, yin = 0.69, 0.605
 ax_in = ax.inset_axes([xin, yin, win, hin], zorder = 11)
 
-ax.add_patch(plt.Rectangle((530, 17), 2500, 180, fc="white", 
+ax.add_patch(plt.Rectangle((530, 13), 2500, 180, fc="white", 
                            zorder=2, alpha=0.75))
-ax.text(x = 670, y = 180, s = 'Each cell exponent $\\alpha $', 
+ax.text(x = 670, y = 97.5, s = 'Each cell exponent $\\alpha $', 
         fontsize=6, va='top', ha='left')
 
 ax.set_xscale('log')
@@ -1690,7 +1690,7 @@ ax.grid(visible=True, which='major', axis='both')
 # ax.set_xlim([40, 3000])
 # ax.set_ylim([0.2, 50])
 ax.set_xlim([40, 3000])
-ax.set_ylim([0.5, 200])
+ax.set_ylim([0.7, 110])
 
 
 #### 4. Subplot Inset
@@ -1751,6 +1751,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = False
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
 name = 'S1_LogNormalDist'
 
@@ -1799,7 +1800,7 @@ X = df_fg[df_fg['drug'] == 'dmso'][HCol].values
 Y = df_fgw2[df_fgw2['drug'] == 'dmso'][ECol + '_wAvg'].values
 titles = ['$H_{500}$ Q-Q plot', '$E_{500}$ Q-Q plot']
 
-fig, axes = plt.subplots(2, 1, figsize=(5.5/cm_in, 11/cm_in))
+fig, axes = plt.subplots(2, 1, figsize=(6/cm_in, 12/cm_in))
 
 for k, data in enumerate([X, Y]): # +'_wAvg'
     
@@ -1807,7 +1808,7 @@ for k, data in enumerate([X, Y]): # +'_wAvg'
     data_log = np.log(data)
     
     ax = axes[k]
-    ax.axline((0, 0), slope=1, color="k", linestyle='--', linewidth=1, zorder=6)
+    ax.axline((0, 0), slope=1, color="k", linestyle='-.', linewidth=1, zorder=6)
     
     data=data_lin
     shap_stat, shap_pval = shapiro(data)
@@ -2255,13 +2256,13 @@ ufun.list2json(all_Msq, dstPath, 'all_Msq_V2')
 
 # %%%% Open
 
-srcPath = os.path.join(figDir, 'S1')
+srcPath = os.path.join("C:\\Users\\josep\\Desktop\\Seafile\\PapierDensité\\DraftsFigs", 'S1')
 list_Fmax = ufun.json2list(srcPath, 'list_Fmax_V2')
 all_R2 = ufun.json2list(srcPath, 'all_R2_V2')
 all_Chi2 = ufun.json2list(srcPath, 'all_Chi2_V2')
 all_M = ufun.json2list(srcPath, 'all_M_V2')
 all_Mf = ufun.json2list(srcPath, 'all_Mf_V2')
-
+all_Msq = ufun.json2list(srcPath, 'all_Msq_V2')
     
 # %%%% 3. Compute statistics
     
@@ -2290,6 +2291,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = False
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
 name = 'S1_Choice_500pN'
 
@@ -2325,14 +2327,15 @@ if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
-# %%%% 5. Plot other results
+# %%%% 5. Plot better results
 
 apm.setGraphicOptions(mode = 'print', 
                       palette = 'Set2', 
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = False
+SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
 name = 'S1_Choice_500pN_V2'
 
@@ -2354,6 +2357,8 @@ ax.axhline(0, color='gray', lw=1, ls='-')
 ax.axvline(500, color='gray', lw=1, ls='-.')
 ax.set_xlim([0, 1100])
 # ax.set_ylim([0, 1.05])
+ax.set_xticks([k for k in range(100, 1100, 200)])
+ax.xaxis.set_tick_params(rotation=0)
 ax.legend(fontsize=5)
 
 ax= axes[1]
@@ -2363,14 +2368,18 @@ ax.plot(list_Fmax[1:], avg_MedSq[1:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max
 
 ax.set_xlabel('Selected $F_{max}$')
 ax.set_title(' ')
-ax.set_ylabel(r'Mean(Resid) / N^0.5')
+ax.set_ylabel(r'$\langle Resids \rangle \ /\ \sqrt{N}$')
 
 ax.axhline(0, color='gray', lw=1, ls='-')
 ax.axvline(500, color='gray', lw=1, ls='-.')
 ax.set_xlim([0, 1100])
 # ax.set_ylim([0, 1.05])
+ax.set_xticks([k for k in range(100, 1100, 200)])
+ax.xaxis.set_tick_params(rotation=0)
 ax.legend(fontsize=5)
 
+# ax.yaxis.set_tick_params(length=3, pad=0.75)
+# ax.xaxis.set_tick_params(length=0, pad=0.75)
 
 plt.show()
 
@@ -2528,10 +2537,11 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
 name = 'S1_Identity_H500'
 # palette = [apm.cL_Set1[0], apm.cL_Set1[1], apm.cL_Set1[2]]
-palette = apm.cL_Set1
+palette = apm.cL_Set2
 
 #### Define
 df = MecaData_Phy
@@ -2575,6 +2585,13 @@ CountByCond, CountByCell =apm.makeCountDf(df_f, condCol)
 Manipe = df_f['manipID'].values[0]
 Ncells = CountByCond['cellCount'].values[0]
 Ncomps = CountByCond['compCount'].values[0]
+for co in df_f[condCol].unique():
+    df_fm  = df_f[df_f[condCol] == co]
+    CbCond, CbCells = apm.makeCountDf(df_fm, condCol)
+    M = df_fm['manipID'].values[0]
+    M_cells = CbCond['cellCount'].values[0]
+    M_comps = CbCond['compCount'].values[0]
+    print(M, M_cells, M_comps)
 
 #### Apply log
 dfLOG_f = apm.filterDf(df, Filters)
@@ -2620,7 +2637,7 @@ for co in df_f[condCol].unique():
 
 
 #### Start plot
-fig = plt.figure(figsize=(11.25/cm_in, 5.75/cm_in))
+fig = plt.figure(figsize=(11/cm_in, 6/cm_in))
 spec = fig.add_gridspec(1, 2)
 
 
@@ -2707,9 +2724,10 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
 name = 'S1_Identity_E500'
-palette = apm.cL_Set1
+palette = apm.cL_Set2
 
 #### Define
 df = MecaData_Phy

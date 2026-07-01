@@ -199,7 +199,7 @@ def prepTableForDrugPlot(df_f, XCol, YCol, condCol):
 # Save
 SAVE = True
 figSubDir = 'F2'
-name = 'F2_B'
+name = 'F2_B_1-1'
 
 print('\n------\nF2_B - Drugs, by cells')
 
@@ -274,6 +274,21 @@ for i, cond in enumerate(conds):
     
     df_c = df_gC[df_gC[condCol] == cond]
     X, Y = df_c[XCol].values, df_c[YCol + '_wAvg'].values/1000
+    
+    Xfit, Yfit = np.log(X), np.log(Y)
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+
+    [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+    A, k = np.exp(b), a
+    pval = results.pval
+    [k_ciw, b_ciw] = results.params_ciw
+    
+    Xplot = np.exp(np.linspace(1, 1e2, 50))
+    Yplot = A * Xplot**k
+    text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+    ax.plot(Xplot, Yplot, ls = '-', c = color, lw = 2, zorder=2)
+    
     
     ax.plot(X, Y,
             marker = marker, color = apm.lightenColor(color, factor=1.0), ls='',
@@ -394,7 +409,7 @@ if SAVE:
 # Save
 SAVE = True
 figSubDir = 'F2'
-name = 'F2_C'
+name = 'F2_C_1-1'
 
 print('\n------\nF2_C - Drugs by compressions')
 
@@ -508,7 +523,7 @@ for i, cond in enumerate(conds):
             dLabels[cond] = f'{rD[cond]}' + \
                             '\n' + 'NS fit' + \
                             '\n' + text_pval
-        ax.plot(Xplot, Yplot, ls = '-', c = color, lw = 2,)
+        # ax.plot(Xplot, Yplot, ls = '-', c = color, lw = 2,)
         
         if j==0:
             hM, hL, hH = ufun.getLogNDistributionDescriptors(df_c[XCol].values)
@@ -677,7 +692,7 @@ if SAVE:
 # Save
 SAVE = True
 figSubDir = 'F4'
-name = 'F4_B'
+name = 'F4_B_1-1'
 
 print('\n------\nF4_B - Cell types, by compressions')
 
@@ -766,7 +781,7 @@ colorsD = {
 
 rD = {
       '3T3 & Atcc-2023'      :  '3T3 ATCC', 
-      'HeLa & fucci'         :  'HeLa FUCCI',  
+      'HeLa & fucci'         :  'HeLa',  
       'DC & mouse-primary'   :  'Primary DC',  
       'Dicty & DictyBase-WT' :  'Dictys Ax3',  
       'MDCK & WT'            :  'MDCK',
@@ -775,7 +790,7 @@ rD = {
 
 
 #### Plot
-fig, axes = plt.subplots(2, 2, figsize=(8/cm_in, 12/cm_in), 
+fig, axes = plt.subplots(2, 2, figsize=(8/cm_in, 10/cm_in), 
                          sharex=True, sharey=True, layout='compressed')
 axes = axes.flatten('C')
 dLabels = {}
@@ -880,11 +895,11 @@ for i in range(len(axes)):
     if i//2 == 0:
         ax.set_xlabel('')
     
-    ax.text(300, 220, f'{rD[co_order[i]]}', va='center', ha='left',  weight = 'bold',
+    ax.text(300, 205, f'{rD[co_order[i]]}', va='center', ha='left',  weight = 'bold',
             color=colorsD[co_order[i]], fontsize=7.0, zorder=3)
-    ax.text(300, 150, f'{rD[ctrl_cond]}', va='center', ha='left', weight = 'bold',
+    ax.text(300, 130, f'{rD[ctrl_cond]}', va='center', ha='left', weight = 'bold',
             color=colorsD[ctrl_cond], fontsize=7.0, zorder=3)
-    ax.add_patch(plt.Rectangle((270, 110), 1600, 180, 
+    ax.add_patch(plt.Rectangle((270, 105), 1600, 180, 
                                fc="white", zorder=2, alpha=0.85))
     
     hM, hL, hH = ufun.getLogNDistributionDescriptors(df_fc[XCol].values)

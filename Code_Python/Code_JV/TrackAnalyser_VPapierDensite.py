@@ -1756,7 +1756,7 @@ class CellCompression:
         nColsSubplot = 1
         nRowsSubplot = len(numIndent)
         fig, ax = plt.subplots(nRowsSubplot, nColsSubplot,
-                               figsize = (8/gs.cm_in, 5/gs.cm_in))
+                               figsize = (6/gs.cm_in, 5/gs.cm_in))
         axes=[ax]
 
         Np = min(5, len(self.listIndent))
@@ -2247,7 +2247,7 @@ class CellCompression:
             #     pass
         
             # try:
-            name = 'F1_G_' + self.cellID
+            name = 'F1_G_1-1' + self.cellID
             fig, ax = self.Pplot_FH500_V2(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
                             figDir = figDir_Papier, figSubDir = figSubDir_Papier)
@@ -3919,15 +3919,26 @@ class IndentCompression:
             Y0, dY = y_lim[0], y_lim[1] - y_lim[0]
             fs = 7.5
             
-            rect = plt.Rectangle((X0+0.58*dX, Y0+0.64*dY), 0.38*dX, 0.34*dY,
+            # rect = plt.Rectangle((X0+0.58*dX, Y0+0.64*dY), 0.38*dX, 0.34*dY,
+            #          facecolor="w", alpha=0.9, zorder=7)
+            # ax.add_patch(rect)
+            
+            # ax.text(X0+0.60*dX, Y0+0.9*dY, 'Compression', fontsize = fs,
+            #         color = color_base, zorder=8) #, backgroundcolor = 'w')
+            # ax.text(X0+0.60*dX, Y0+0.78*dY, 'Fit full curve', fontsize = fs, 
+            #         fontstyle = 'italic', color = color_Chad, zorder=8) #, backgroundcolor = 'w')
+            # ax.text(X0+0.60*dX, Y0+0.66*dY, 'Fit F < 500 pN', fontsize = fs, 
+            #         fontweight = 'bold', color = color_Chad400, zorder=8) #, backgroundcolor = 'w')
+            
+            rect = plt.Rectangle((X0+0.43*dX, Y0+0.64*dY), 0.55*dX, 0.34*dY,
                      facecolor="w", alpha=0.9, zorder=7)
             ax.add_patch(rect)
             
-            ax.text(X0+0.60*dX, Y0+0.9*dY, 'Compression', fontsize = fs,
+            ax.text(X0+0.45*dX, Y0+0.9*dY, 'Compression', fontsize = fs,
                     color = color_base, zorder=8) #, backgroundcolor = 'w')
-            ax.text(X0+0.60*dX, Y0+0.78*dY, 'Fit full curve', fontsize = fs, 
+            ax.text(X0+0.45*dX, Y0+0.78*dY, 'Fit full curve', fontsize = fs, 
                     fontstyle = 'italic', color = color_Chad, zorder=8) #, backgroundcolor = 'w')
-            ax.text(X0+0.60*dX, Y0+0.66*dY, 'Fit F < 500 pN', fontsize = fs, 
+            ax.text(X0+0.45*dX, Y0+0.66*dY, 'Fit F < 500 pN', fontsize = fs, 
                     fontweight = 'bold', color = color_Chad400, zorder=8) #, backgroundcolor = 'w')
         
 

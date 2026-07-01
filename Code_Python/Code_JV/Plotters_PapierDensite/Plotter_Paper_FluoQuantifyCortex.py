@@ -3458,7 +3458,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F3'
-name = 'ExpoDist_3'
+name = 'F3E_1-1'
 
 XCol = 'h3'
 YCol = 'Q_gf'
@@ -3582,7 +3582,7 @@ print(np.mean(Score))
 ### Format
 ax.grid(axis='y')
 ax.set_xlim([-0.5, 3.5])
-ax.set_xticklabels(['Exp1', 'Exp2', 'Exp3', 'Exp4'], rotation = 30)
+ax.set_xticklabels(['Rep1', 'Rep2', 'Rep3', 'Rep4'], rotation = 30)
 ax.set_ylim([-2, 2.25])
 ax.set_ylabel(r'Exponent of the $Q-H_{5mT}$ fit', labelpad=0.5, fontsize=7)
 ax.set_xlabel(' ', labelpad=0.5)
@@ -3606,7 +3606,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'F3'
-name = 'QDH_allComps'
+name = 'F3_FG_1-1'
 
 #### Data
 
@@ -3665,10 +3665,10 @@ sns.scatterplot(ax=ax, x=X, y=Y,
                 edgecolor='k', alpha=0.75,
                 zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
 
-p11, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[0], mec='k', mew=0.25, alpha=0.75)
-p12, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[1], mec='k', mew=0.25, alpha=0.75)
-p13, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[3], mec='k', mew=0.25, alpha=0.75)
-p14, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[4], mec='k', mew=0.25, alpha=0.75)
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.25, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.25, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.25, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.25, alpha=0.75)
 
 
 # LegendMark = mlines.Line2D([], [], color='k', ls='--', marker='', 
@@ -3697,17 +3697,21 @@ Xplot = np.exp(np.linspace(4, 8, 50))
 Yplot = A * Xplot**k
 
 P2, = ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 1.5, zorder=8)
-label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
+label_fit = r'$\bf{Fit\ y\ =\ A.x^k}$' + \
     f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
     '\n' + text_pval
 
 ax.set_xlim([100, 1200])
 ax.set_ylim([4, 60])
 # ax.legend(loc = 'upper left')
-ax.legend([(p11, p12, p13, p14), P2], ['Experiments', label_fit], 
-          handler_map={tuple: HandlerTuple(ndivide=None)},
-          loc = 'upper left', handlelength = 2,
+ax.legend([(p11, p12, p13, p14)], ['Four replicates'], 
+          handler_map={tuple: HandlerTuple(ndivide=None)}, fontsize=8,
+          loc = 'lower left', handlelength = 2.5, frameon=False,
           )
+# ax.legend([(p11, p12, p13, p14), P2], ['Experiments', label_fit], 
+#           handler_map={tuple: HandlerTuple(ndivide=None)},
+#           loc = 'upper left', handlelength = 2,
+#           )
 
 ax.set_ylabel('Actin Quantity (a.u.)', fontsize=9, labelpad=0.5)
 ax.set_xlabel('$H_{5mT}$ (nm)', fontsize=9, labelpad=0.5)
@@ -3747,10 +3751,10 @@ sns.scatterplot(ax=ax, x=X, y=Y,
                 edgecolor='k', alpha=0.75,
                 zorder=2, legend=False) #, cmap = cM_f3) # , style='cellNum'
 
-p11, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[0], mec='k', mew=0.25, alpha=0.75)
-p12, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[1], mec='k', mew=0.25, alpha=0.75)
-p13, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[3], mec='k', mew=0.25, alpha=0.75)
-p14, = ax.plot([], [], marker='o', ms=3, ls='', color=cL_f3[4], mec='k', mew=0.25, alpha=0.75)
+p11, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[0], mec='k', mew=0.25, alpha=0.75)
+p12, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[1], mec='k', mew=0.25, alpha=0.75)
+p13, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[3], mec='k', mew=0.25, alpha=0.75)
+p14, = ax.plot([], [], marker='o', ms=4, ls='', color=cL_f3[4], mec='k', mew=0.25, alpha=0.75)
 
 
 Xfit, Yfit = np.log(X), np.log(Y)
@@ -3778,11 +3782,15 @@ print(pearson_coef, pearson_pval)
 
 ax.set_xlim([100, 1200])
 ax.set_ylim([7, 110])
-ax.legend([(p11, p12, p13, p14), P2], ['Experiments', label_fit], 
-          handler_map={tuple: HandlerTuple(ndivide=None)},
-          loc = 'lower left', handlelength = 2,
+# ax.legend([(p11, p12, p13, p14), P2], ['Experiments', label_fit], 
+#           handler_map={tuple: HandlerTuple(ndivide=None)},
+#           loc = 'lower left', handlelength = 2,
+#           )
+ax.legend([(p11, p12, p13, p14)], ['Four replicates'], 
+          handler_map={tuple: HandlerTuple(ndivide=None)}, fontsize=8,
+          loc = 'lower left', handlelength = 2.5, frameon=False,
           )
-    
+   
 ax.set_ylabel('Actin Density (a.u.)', fontsize=9, labelpad=0.5)
 ax.set_xlabel('$H_{5mT}$ (nm)', fontsize=9, labelpad=0.5)
 ax.grid(which = 'both', alpha = 0.4)
