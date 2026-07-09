@@ -574,7 +574,7 @@ def addStat_lib(ax, box_pairs, test = 'Mann-Whitney', verbose = False, **plottin
     if test in listTests:
         annotator = Annotator(ax, box_pairs, **plotting_parameters)
         annotator.configure(test=test, verbose=verbose, fontsize = 11,
-                            line_height = 0.01, line_offset = 1, line_offset_to_group = 1)
+                            line_height = 0.01, line_offset = 0.5, line_offset_to_group = 0.5)
         annotator.apply_and_annotate() 
         # , loc = 'outside', line_offset = -1, line_offset_to_group = -1
     else:

@@ -1483,16 +1483,20 @@ class CellCompression:
         ax2 = fig.add_subplot(spec[4:])
         
         Ni = 3
-        LI = self.listIndent[:Ni]
-        tsDf = self.tsDf[self.tsDf['idxLoop'] <= Ni]
+        i0 = 0
+        idx = np.array([i0 + i for i in range(Ni)])
+        # LI = self.listIndent[idx]
+        tsDf = self.tsDf[self.tsDf['idxLoop'].apply(lambda x : x in (idx+1))]
         
         # time_ticks = np.array([5.5, 10.167, 11.667, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
         # time_ticklabels = np.array([5.5, 10, 11.5, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
         # x_Vsep = np.array([19.0*k for k in range(1, Ni+1)])
         
-        time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5])
-        time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57])
-        x_Vsep = np.array([18.8, 38.2, 57.5])
+        T0 = int(tsDf['T'].values[0])
+        
+        time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5]) + T0
+        time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57]) + T0
+        x_Vsep = np.array([18.8, 38.2, 57.5]) + T0
         
         #### Distance Plot
         ax = ax1
@@ -1526,7 +1530,7 @@ class CellCompression:
             ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
         
         #### Shades
-        for i in range(1, Ni+1):
+        for i in (idx+1):
             df = tsDf[tsDf['idxLoop'] == (i)]
             # print(df.idxAnalysis)
             t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)+1]
@@ -1557,14 +1561,14 @@ class CellCompression:
         #### shared formatting 
         (ax_xm, ax_xM) = ax.get_xlim()
         
-        ax1.plot([43, 45], [300, 300], color='deepskyblue')
-        ax1.text(x=42, y=240, s=r'$H_{init}$', color='deepskyblue')
-        # ax1.add_patch(plt.Rectangle((42, 225), 3.5, 65, fc="white",
+        # ax1.plot([43, 45], [300, 300], color='deepskyblue')
+        # ax1.text(x=42, y=240, s=r'$H_{init}$', color='deepskyblue')
+        # # ax1.add_patch(plt.Rectangle((42, 225), 3.5, 65, fc="white",
+        # #                            zorder=2, alpha=0.75))
+        # ax1.plot([52, 54], [250, 250], color='red')
+        # ax1.text(x=53, y=190, s=r'$H_{final}$', color='red')
+        # ax1.add_patch(plt.Rectangle((53, 175), 4.0, 65, fc="white",
         #                            zorder=2, alpha=0.75))
-        ax1.plot([52, 54], [250, 250], color='red')
-        ax1.text(x=53, y=190, s=r'$H_{final}$', color='red')
-        ax1.add_patch(plt.Rectangle((53, 175), 4.0, 65, fc="white",
-                                   zorder=2, alpha=0.75))
         
         ax1.set_xlim([0, ax_xM])
         ax1.set_xticks([])
@@ -1588,6 +1592,278 @@ class CellCompression:
         return(fig, axes)
     
     
+    def Pplot_Timeseries_V2ter(self, plotSettings):
+        
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        fig = plt.figure(figsize=(9/gs.cm_in, 5/gs.cm_in), layout="constrained")
+        # fig.tight_layout()
+        spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
+        ax1 = fig.add_subplot(spec[:4])
+        ax2 = fig.add_subplot(spec[4:])
+        
+        Ni = 3
+        i0 = 3
+        idx = np.array([i0 + i for i in range(Ni)])
+        # LI = self.listIndent[idx]
+        tsDf = self.tsDf[self.tsDf['idxLoop'].apply(lambda x : x in (idx+1))]
+        
+        # time_ticks = np.array([5.5, 10.167, 11.667, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # time_ticklabels = np.array([5.5, 10, 11.5, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # x_Vsep = np.array([19.0*k for k in range(1, Ni+1)])
+        
+        T0 = int(tsDf['T'].values[0])
+        
+        # time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5]) 
+        # time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57]) 
+        # x_Vsep = np.array([18.8, 38.2, 57.5]) 
+        
+        time_ticks = np.array([6.5, 9.5, 11.0, 12.5, 18.8, 38.2, 57.5]) + (T0-2)
+        time_ticklabels = np.array([6.5, 9.5, 11.0, 12.5, 18.8, 38.2, 57.5]) + (T0-2)
+        x_Vsep = np.array([18.8, 38.2, 57.5]) + (T0-2)
+        
+        #### Distance Plot
+        ax = ax1
+        color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+        ax1.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+        ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
+        ax.scatter(tsDf['T'].values, tsDf['D3'].values-self.DIAMETER, 
+                   color = color, edgecolors = None, linewidths = 0,
+                   zorder = 5, s = 2, alpha = 0.9)
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
+
+        (ax_ym, ax_yM) = ax.get_ylim()
+        ax.set_ylim([min(-0,ax_ym), ax_yM])
+        ax.set_ylim([0, 600])
+        ax.tick_params(axis='y', labelcolor = color)
+        ax.grid(axis='y', zorder=0)
+        
+        # Force plot
+        ax = ax2
+        color = 'firebrick'
+        ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+        ax.plot(tsDf['T'].values, tsDf['F'].values/1e3, color=color, lw=1.5)
+        ax.tick_params(axis='y', labelcolor=color)
+        ax.set_yticks([0, 0.5, 1.0, 1.5])
+        ax.grid(axis='y', zorder=0)
+        (ax_ym, ax_yM) = ax.get_ylim()
+        # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
+        ax.set_ylim([0, 1.3])
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
+        
+        #### Shades
+        for i in (idx+1):
+            df = tsDf[tsDf['idxLoop'] == (i)]
+            # print(df.idxAnalysis)
+            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)+1]
+            # t1bis = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
+            t2 = df['T'].values[ufun.findFirst(i, df.idxAnalysis)]
+            t3 = df['T'].values[ufun.findLast(i, df.idxAnalysis)]
+            t4 = df['T'].values[ufun.findLast(-i, df.idxAnalysis)]
+            # for xv in [t1, t1bis]:
+            #     ax.axvline(xv, ls='-', lw=0.5, color='k')
+            for ax in [ax1, ax2]:
+                ax.axvspan(t1, t2, color='grey', alpha=0.15, zorder = 0, ec=None)
+                ax.axvspan(t2, t3, color='grey', alpha=0.3, zorder = 0, ec=None)
+        
+        LM0 = mpatches.Rectangle((0, 0), 0, 0, facecolor='w', 
+                                 edgecolor='k', linewidth=0.2,
+                                 label='Constant field')
+        LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
+                                   label='Force release')
+        LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
+                                   label='Compression\n & relaxation')
+        LegendHandles = [LM0, LM1, LM2]
+        
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.15, zorder = 0, ec=None,
+        #            label = 'Release of the force')
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.3, zorder = 0, ec=None,
+        #            label = 'Compression and relaxation')
+        
+        #### shared formatting 
+        (ax_xm, ax_xM) = ax.get_xlim()
+        
+        # ax1.plot([43+T0, 45+T0], [300, 300], color='deepskyblue')
+        # ax1.text(x=42+T0, y=240, s=r'$H_{init}$', color='deepskyblue')
+        # ax1.add_patch(plt.Rectangle((42+T0, 225), 3.5, 65, fc="gray",
+        #                            zorder=2, alpha=0.75))
+        # ax1.plot([52+T0, 54+T0], [250, 250], color='red')
+        # ax1.text(x=53+T0, y=190, s=r'$H_{final}$', color='red')
+        # ax1.add_patch(plt.Rectangle((53+T0, 175), 4.0, 65, fc="gray",
+        #                            zorder=2, alpha=0.75))
+        
+        ax1.plot([43+T0-2.5, 45+T0-2.5], [220, 220], color='deepskyblue')
+        ax1.text(x=42+T0-2.5, y=140, s=r'$H_{init}$', color='deepskyblue')
+        ax1.add_patch(plt.Rectangle((42+T0-2.5, 125), 4.0, 70, fc="white",
+                                   zorder=2, alpha=0.75))
+        ax1.plot([52+T0-2.7, 54+T0-2.7], [235, 235], color='red')
+        ax1.text(x=53+T0-2.7, y=170, s=r'$H_{final}$', color='red')
+        ax1.add_patch(plt.Rectangle((53+T0-2.7, 155), 5.0, 70, fc="white",
+                                   zorder=2, alpha=0.75))
+        
+        ax1.set_xlim([T0, ax_xM])
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
+        ax1.legend(handles=LegendHandles, loc='upper left', 
+                   handlelength = 1.25, handleheight = 1, handletextpad=0.4,
+                   framealpha=1, fontsize=5.5, labelspacing=0.2)
+
+        ax2.set_xlim([T0, ax_xM])
+        ax2.set_xlabel('Time (s)', labelpad=1)
+        ax2.set_xticks(time_ticks)
+        ax2.set_xticklabels(time_ticklabels)
+        ax2.xaxis.set_tick_params(rotation=50, labelsize=5, pad=0.05)
+        ax2.legend().set_visible(False)
+        
+        fig.get_layout_engine().set(h_pad = 0.015, 
+                                    hspace=0, wspace=0)
+        
+        # fig.tight_layout()
+        axes = [ax1, ax2]
+        return(fig, axes)
+    
+    def Pplot_Timeseries_V2ter2(self, plotSettings):
+        
+        apm.setGraphicOptions(mode = 'print', 
+                              palette = 'Set2', 
+                              colorList = apm.cL_Set21)
+        
+        fig = plt.figure(figsize=(4/gs.cm_in, 5/gs.cm_in), layout="constrained")
+        # fig.tight_layout()
+        spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
+        ax1 = fig.add_subplot(spec[:4])
+        ax2 = fig.add_subplot(spec[4:])
+        
+        Ni = 1
+        i0 = 3
+        idx = np.array([i0 + i for i in range(Ni)])
+        # LI = self.listIndent[idx]
+        tsDf = self.tsDf[self.tsDf['idxLoop'].apply(lambda x : x in (idx+1))]
+        
+        # time_ticks = np.array([5.5, 10.167, 11.667, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # time_ticklabels = np.array([5.5, 10, 11.5, 13, 19.0] + [19.0*k for k in range(2, Ni+1)])
+        # x_Vsep = np.array([19.0*k for k in range(1, Ni+1)])
+        
+        T0 = int(tsDf['T'].values[0])
+        
+        # time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5]) 
+        # time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57]) 
+        # x_Vsep = np.array([18.8, 38.2, 57.5]) 
+        
+        time_ticks = np.array([6.5, 9.5, 11.0, 12.5, 18.8]) + (T0-2)
+        time_ticklabels = np.array([6.5, 9.5, 11.0, 12.5, 18.8]) + (T0-2)
+        x_Vsep = np.array([18.8]) + (T0-2)
+        
+        #### Distance Plot
+        ax = ax1
+        color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+        ax1.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+        ax.tick_params(axis='y', labelcolor=color)#, labelsize=8)
+        ax.scatter(tsDf['T'].values, tsDf['D3'].values-self.DIAMETER, 
+                   color = color, edgecolors = None, linewidths = 0,
+                   zorder = 5, s = 2, alpha = 0.9)
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
+
+        (ax_ym, ax_yM) = ax.get_ylim()
+        ax.set_ylim([min(-0,ax_ym), ax_yM])
+        ax.set_ylim([0, 400])
+        ax.tick_params(axis='y', labelcolor = color)
+        ax.grid(axis='y', zorder=0)
+        
+        # Force plot
+        ax = ax2
+        color = 'firebrick'
+        ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+        ax.plot(tsDf['T'].values, tsDf['F'].values/1e3, color=color, lw=1.5)
+        ax.tick_params(axis='y', labelcolor=color)
+        ax.set_yticks([0, 0.5, 1.0, 1.5])
+        ax.grid(axis='y', zorder=0)
+        (ax_ym, ax_yM) = ax.get_ylim()
+        # ax.set_ylim([0, 1.05*max(self.tsDf['F'].values/1e3)])
+        ax.set_ylim([0, 1.3])
+        for xv in x_Vsep:
+            ax.axvline(xv, ls='-', lw=1, color='k', alpha=0.25)
+        
+        #### Shades
+        for i in (idx+1):
+            df = tsDf[tsDf['idxLoop'] == (i)]
+            # print(df.idxAnalysis)
+            t1 = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)+1]
+            # t1bis = df['T'].values[ufun.findFirst(-i, df.idxAnalysis)]
+            t2 = df['T'].values[ufun.findFirst(i, df.idxAnalysis)]
+            t3 = df['T'].values[ufun.findLast(i, df.idxAnalysis)]
+            t4 = df['T'].values[ufun.findLast(-i, df.idxAnalysis)]
+            # for xv in [t1, t1bis]:
+            #     ax.axvline(xv, ls='-', lw=0.5, color='k')
+            for ax in [ax1, ax2]:
+                ax.axvspan(t1, t2, color='grey', alpha=0.15, zorder = 0, ec=None)
+                ax.axvspan(t2, t3, color='grey', alpha=0.3, zorder = 0, ec=None)
+        
+        LM0 = mpatches.Rectangle((0, 0), 0, 0, facecolor='w', 
+                                 edgecolor='k', linewidth=0.2,
+                                 label='Constant field')
+        LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
+                                   label='Force release')
+        LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
+                                   label='Compression\n & relaxation')
+        LegendHandles = [LM0, LM1, LM2]
+        
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.15, zorder = 0, ec=None,
+        #            label = 'Release of the force')
+        # ax1.axvspan(-100, -100, color='grey', alpha=0.3, zorder = 0, ec=None,
+        #            label = 'Compression and relaxation')
+        
+        #### shared formatting 
+        (ax_xm, ax_xM) = ax.get_xlim()
+        
+        # ax1.plot([43+T0, 45+T0], [300, 300], color='deepskyblue')
+        # ax1.text(x=42+T0, y=240, s=r'$H_{init}$', color='deepskyblue')
+        # ax1.add_patch(plt.Rectangle((42+T0, 225), 3.5, 65, fc="gray",
+        #                            zorder=2, alpha=0.75))
+        # ax1.plot([52+T0, 54+T0], [250, 250], color='red')
+        # ax1.text(x=53+T0, y=190, s=r'$H_{final}$', color='red')
+        # ax1.add_patch(plt.Rectangle((53+T0, 175), 4.0, 65, fc="gray",
+        #                            zorder=2, alpha=0.75))
+        
+        # ax1.plot([43-2.5, 45-2.5], [220, 220], color='deepskyblue')
+        # ax1.text(x=42-2.5, y=140, s=r'$H_{init}$', color='deepskyblue')
+        # ax1.add_patch(plt.Rectangle((42-2.5, 125), 4.0, 70, fc="white",
+        #                            zorder=2, alpha=0.75))
+        # ax1.plot([52-2.7, 54-2.7], [235, 235], color='red')
+        # ax1.text(x=53-2.7, y=170, s=r'$H_{final}$', color='red')
+        # ax1.add_patch(plt.Rectangle((53-2.7, 155), 5.0, 70, fc="white",
+        #                            zorder=2, alpha=0.75))
+        
+        ax1.set_xlim([T0, ax_xM])
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
+        # ax1.legend(handles=LegendHandles, loc='upper left', 
+        #            handlelength = 1.25, handleheight = 1, handletextpad=0.4,
+        #            framealpha=1, fontsize=5.5, labelspacing=0.2)
+
+        ax2.set_xlim([T0, ax_xM])
+        ax2.set_xlabel('Time (s)', labelpad=1)
+        ax2.set_xticks(time_ticks)
+        ax2.set_xticklabels(time_ticklabels)
+        ax2.xaxis.set_tick_params(rotation=50, labelsize=5, pad=0.05)
+        ax2.legend().set_visible(False)
+        
+        fig.get_layout_engine().set(h_pad = 0.015, 
+                                    hspace=0, wspace=0)
+        
+        # fig.tight_layout()
+        axes = [ax1, ax2]
+        return(fig, axes)
+    
+    
+    
+    
+    
     def Pplot_Timeseries_V3(self, plotSettings):
         
         apm.setGraphicOptions(mode = 'print', 
@@ -1598,7 +1874,7 @@ class CellCompression:
         NI = len(LI)
         Np = 3
         
-        fig = plt.figure(figsize=(7/gs.cm_in, 5/gs.cm_in), layout="constrained")
+        fig = plt.figure(figsize=(9/gs.cm_in, 5/gs.cm_in), layout="constrained")
         spec = fig.add_gridspec(6, min(Np, NI), hspace=0.15, 
                                 top = 0.975, bottom=0.125, 
                                 left = 0.065, right = 0.99)
@@ -1612,8 +1888,8 @@ class CellCompression:
             axes2.append(ax2)
             
             #### Bounds
-            # ii = i + 3
-            ii = i + 0
+            ii = i + 3
+            # ii = i + 0
             df = self.tsDf[self.tsDf['idxLoop'] == ii]
             i1 = ufun.findFirst(ii, df.idxAnalysis)
             i2 = ufun.findLast(ii, df.idxAnalysis)
@@ -2188,8 +2464,9 @@ class CellCompression:
             
         # 0.
         if plotSettings['Plots_Papier']:
-            figDir_Papier = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
-            figSubDir_Papier = 'F1'
+            figDir_main = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
+            figDir_supp = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+            # figSubDir_Papier = 'F1'
             
             # ------
             #### hF(t) plots
@@ -2217,19 +2494,39 @@ class CellCompression:
             name = 'F1_D_' + self.cellID
             fig, ax = self.Pplot_Timeseries_V2bis(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+                            figDir = figDir_main, figSubDir = 'F1')
             ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+                            figDir = figDir_main, figSubDir = 'F1')
+            # except:
+            #     pass
+        
+            # try:
+            name = 'S9_A_' + self.cellID
+            fig, ax = self.Pplot_Timeseries_V2ter(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+                            figDir = figDir_supp, figSubDir = 'S1')
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_supp, figSubDir = 'S1')
+            # except:
+            #     pass
+        
+            # try:
+            name = 'S9_A_1-1_' + self.cellID
+            fig, ax = self.Pplot_Timeseries_V2ter2(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+                            figDir = figDir_supp, figSubDir = 'S1')
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_supp, figSubDir = 'S1')
             # except:
             #     pass
             
             # # try:
-            # name = self.cellID + '_SF1D_hF(t)_V3'
-            # fig, ax = self.Pplot_Timeseries_V3(plotSettings)
-            # ufun.archiveFig(fig, name = name, dpi = 150, ext = '.pdf', 
-            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
-            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-            #                 figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+            name = 'S9_C_' + self.cellID
+            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+                            figDir = figDir_supp, figSubDir = 'S1')
+            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+                            figDir = figDir_supp, figSubDir = 'S1')
             # # except:
             # #     pass
             
@@ -2250,9 +2547,9 @@ class CellCompression:
             name = 'F1_G_1-1' + self.cellID
             fig, ax = self.Pplot_FH500_V2(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+                            figDir = figDir_main, figSubDir = 'F1')
             ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_Papier, figSubDir = figSubDir_Papier)
+                            figDir = figDir_main, figSubDir = 'F1')
             # except:
             #     pass
         

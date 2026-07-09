@@ -1738,6 +1738,40 @@ def fitLineTLS(X, Y, wd=1, we=1):
     return(out)
 
 
+def fitConstantTLS(X, Y, wd=1, we=1):
+    """
+    
+    """
+    def linearFun(B, X):
+        return(X + B[0])
+    linear = odr.Model(linearFun)
+    data = odr.Data(X, Y, wd=wd, we=we)
+    fit = odr.ODR(data, linear, beta0=[0])
+    output = fit.run()
+    # output.pprint()
+    
+    a = output.beta
+    a = float(a)
+    # params_sd = [output.sd_beta[k] for k in range(len(output.beta))]
+    params_sd = [output.cov_beta[k]**0.5 for k in range(len(output.beta))]
+    perc, dof, = 0.975, len(Y)-2
+    q = st.t.ppf(perc, dof)
+    params_ciw = [sd * q for sd in params_sd]
+    
+    # Pearson p-value
+    results_pearson = st.pearsonr(X, Y, alternative='two-sided', method=None, axis=0)
+    R2, pval = results_pearson.statistic**2, results_pearson.pvalue
+    
+    # R2 = get_R2(Y, a*X+b)
+    # R2 doesn't make sense in ODR
+    
+    results = fitResults([a], params_sd, params_ciw, pval, R2)
+    out = ([a], results)
+    
+    return(out)
+
+
+
 def fitLineTLS_V2(X, Y, wx=1, wy=1):
     """
     
