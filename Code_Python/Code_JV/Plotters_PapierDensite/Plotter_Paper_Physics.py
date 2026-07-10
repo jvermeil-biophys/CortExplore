@@ -3723,13 +3723,13 @@ if SAVE:
 
 
 
-# %%% Fig S1EF - DH/H Before-After/Before + Peak delay
+# %%% Fig S1 - DH/H Before-After/Before + Peak delay + DH/H - Precompression
 
 # Save
 SAVE = True
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S1'
-name = 'S1_Dh-h' # 
+name = 'S9_1-1' # 
 
 #### Dataset
 df = MecaData_Phy
@@ -3761,9 +3761,11 @@ df_f['ratioDh_Hi'] = df_f['Dh_BeforeAfter'].values/df_f['previousThickness'].val
 
 color_med = 'darkred'
 
+
+
 #### Plot
-fig, axes = plt.subplots(2, 1, figsize=(6/cm_in, 10/cm_in), layout='constrained')
-ax = axes[0]
+fig1, ax1 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+ax = ax1
 # sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
 ax.hist(df_f['ratioDh_Hi'].values, 
         bins=300, color='gray', zorder=3)
@@ -3792,10 +3794,14 @@ ax.axvline(0, color='k', ls='-', lw=0.75, zorder=5)
 ax.axhline(0, color='k', ls='-', lw=1, zorder=5)
 ax.set_xlim(-1, 1)
 ax.set_xlabel(r'$\Delta H/H_{init}$ (ratio)', labelpad=0.6)
-ax.set_ylabel('N compressions', fontsize=6, labelpad=0.6)
+ax.set_ylabel('N compressions', fontsize=8, labelpad=0.6)
 # ax.set_title('Thickness at 5mT\n(H_after - H_before) / H_before')
 
-ax = axes[1]
+
+
+
+fig2, ax2 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+ax = ax2
 ax.hist(df_f['peakDelay'].values, bins=30, color='gray', zorder=3)
 
 median = np.median(df_f['peakDelay'].values)
@@ -3807,10 +3813,32 @@ ax.grid()
 ax.axvline(0, color='k', ls='-', lw=0.75, zorder=5)
 ax.axhline(0, color='k', ls='-', lw=1, zorder=5)
 ax.set_xlabel(r'Force-thickness peak delay $\delta T$ (s)', labelpad=0.6)
-ax.set_ylabel('N compressions', fontsize=6, labelpad=0.6)
+ax.set_ylabel('N compressions', fontsize=8, labelpad=0.6)
 ax.set_xlim(-1, 1)
 # ax.set_title(r'Time delay between max force and min thickness')
+# fig.supylabel('N compressions')
 
+
+
+
+fig3, ax3 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+ax = ax3
+
+ax.hist(df_f['Dh_Precomp'].values/df_f['previousThickness'].values, 
+        bins=360, color='dimgray', zorder=3)
+
+median = np.median(df_f['Dh_Precomp'].values/df_f['previousThickness'].values)
+# ax.axvline(median, color='darkred', ls='-', lw=1,
+#            label=f'Median = {median:.2f}', zorder=3)
+# ax.legend(handlelength = 1.25)
+ax.grid(zorder=1)
+ax.set_xlim([-0.0, 1.2])
+
+ax.axvline(0, color='k', ls='-', lw=0.75, zorder=5)
+ax.axhline(0, color='k', ls='-', lw=1, zorder=5)
+ax.set_xlabel(r'$\Delta H_{relax}/H_{init}$', labelpad=0.6)
+ax.set_ylabel('N compressions', fontsize=8, labelpad=0.6)
+# ax.set_title(r'Time delay between max force and min thickness')
 # fig.supylabel('N compressions')
 
 
@@ -3822,9 +3850,17 @@ plt.show()
 CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 # Save
 if SAVE:
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+    ufun.archiveFig(fig1, name = name+'_A', ext = '.pdf', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+    ufun.archiveFig(fig1, name = name+'_A', ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig2, name = name+'_B', ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig2, name = name+'_B', ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig3, name = name+'_C', ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig3, name = name+'_C', ext = '.png', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
