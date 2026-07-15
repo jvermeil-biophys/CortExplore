@@ -65,6 +65,7 @@ import CortexPaths as cp
 sys.path.append(cp.DirRepoPython)
 
 import GraphicStyles as gs
+import ArticlePlotMaker as apm
 import GlobalConstants as gc
 
 # 2. Pandas settings
@@ -1388,63 +1389,110 @@ def plotForce(d = 200e-9):
     # ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
     #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     
-def plotMandForce(d = 0):
+def plotMandForce(list_d = [0]):
+    apm.setGraphicOptions(mode = 'print')
     D = 4500e-9
-    gs.set_manuscript_options_jv()
     
-    fig, axes = plt.subplots(2, 2, figsize = (12.5/gs.cm_in, 8.5/gs.cm_in),
-                             sharex = 'col', sharey = 'row') 
+    # fig, axes = plt.subplots(1, 2, figsize = (17/gs.cm_in, 7/gs.cm_in),
+    #                          sharex = 'col') 
+    fig, axes = plt.subplots(1, 3, figsize = (17/gs.cm_in, 5/gs.cm_in),
+                             layout='compressed') 
     
-    #### 1.
+    #### 0.
     B = np.linspace(0, 100, 1000)
     M = computeMag_M450(B, k_batch = 1)
-    F = computeForce_M450(B, D, d)
+    F_colors = matplotlib.colormaps['plasma'](np.linspace(0.4, 0.95, len(list_d)))
     
-    ax = axes[0,0]
+    # ax = axes[0,0]
+    ax = axes[0]
     ax.plot(B, M/1e3, c='indigo')
-    # ax.set_xlabel('B (mT)')
+    ax.set_xlabel('B (mT)')
     ax.set_ylabel('M (kA/m)')
     ax.grid(axis='both')
-    ax.set_ylim([-2,32])
-    
-    ax = axes[1,0]
-    # ax.plot(B, F/1e3, c='darkred')
-    ax.plot(B, F, c='darkred')
+    ax.set_xlim([0,100])
+    ax.set_ylim([0,25])
+    ax.set_title('One bead magnetization')#, weight = 'bold')
+
+    ax = axes[1]
+    for k in range(len(list_d)):
+        d = list_d[k]/1e9
+        c = F_colors[k]
+        F = computeForce_M450(B, D, d)
+        ax.plot(B, F, c=c, label=f'{d*1e9:.0f} nm')
+    ax.grid(axis='both')
     ax.set_xlabel('B (mT)')
     ax.set_ylabel('F (nN)')
+    ax.set_xlim([0, 100])
+    ax.set_ylim([0, 1800])
+    ax.set_title('Force from a pair of beads')#, weight = 'bold')
+    
+    ax = axes[2]
+    for k in range(len(list_d)):
+        d = list_d[k]/1e9
+        c = F_colors[k]
+        F = computeForce_M450(B, D, d)
+        ax.plot(B, F, c=c, label=f'{d*1e9:.0f} nm')
     ax.grid(axis='both')
-    ax.set_ylim([-0.2,3.2])
-    
-    #### 1.
-    B = np.linspace(0, 500, 1000)
-    M = computeMag_M450(B, k_batch = 1)
-    F = computeForce_M450(B, D, d)
-    
-    ax = axes[0,1]
-    ax.plot(B, M/1e3, c='indigo')
-    # ax.set_xlabel('B (mT)')
-    # ax.set_ylabel('M (pN)')
-    ax.grid(axis='both')    
-    
-    ax = axes[1,1]
-    # ax.plot(B, F/1e3, c='darkred')
-    ax.plot(B, F, c='darkred')
     ax.set_xlabel('B (mT)')
-    # ax.set_ylabel('F (pN)')
-    ax.grid(axis='both')
+    ax.set_ylabel('F (nN)')
+    ax.set_xticks([0, 2.5, 5, 7.5, 10])
+    ax.set_xlim([0, 10])
+    ax.set_ylim([0, 250])
+    ax.legend(title = 'Distance', handlelength=1, 
+              title_fontproperties = {'size':7, 'weight':'bold'},
+              fontsize=7, bbox_to_anchor=(1, 0.9), loc='upper left')
+    ax.set_title('Zoom on low magnetic fields')#, weight = 'bold')
     
-    # fig.suptitle('F = f(B) for beads with R={:.1f}µm and d={:.0f}nm'.format(D*1e6, d*1e9))
-    plt.tight_layout()
+    
+    # ax = axes[1,0]
+    # ax1 = axes[1]
+    # win, hin = 0.25, 0.275
+    # xin, yin = 0.1, 0.95-hin 
+    # ax_in = ax1.inset_axes([xin, yin, win, hin])      
+        
+    # # ax.set_ylim([-0.2,3.2])
+    # ax = ax1
+    # for k in range(len(list_d)):
+    #     d = list_d[k]/1e9
+    #     c = F_colors[k]
+    #     F = computeForce_M450(B, D, d)
+    #     ax.plot(B, F, c=c, label=f'{d*1e9:.0f} nm')
+    # ax.grid(axis='both')
+    # ax.set_xlabel('B (mT)')
+    # ax.set_ylabel('F (nN)')
+    # ax.legend(title = 'Distance', handlelength=1, 
+    #           title_fontproperties = {'size':7, 'weight':'bold'},
+    #           fontsize=7, bbox_to_anchor=(1, 0.9), loc='upper left')
+    # ax.set_xlim([0, 100])
+    # ax.set_ylim([0, 1800])
+    # ax.add_patch(plt.Rectangle((1, 1075), 38, 675, fc="white", 
+    #                            zorder=2, alpha=0.75))
+    
+    # ax = ax_in
+    # for k in range(len(list_d)):
+    #     d = list_d[k]/1e9
+    #     c = F_colors[k]
+    #     F = computeForce_M450(B, D, d)
+    #     ax.plot(B, F, c=c, label=f'{d*1e9:.0f} nm', lw=1)
+    # ax.grid(axis='both')
+    # ax.xaxis.set_tick_params(pad=0.75, length=2.5)
+    # ax.yaxis.set_tick_params(pad=0.75, length=2.5)
+    # ax.set_xlim([0, 10])
+    # ax.set_ylim([0, 250])
+    
+    # plt.tight_layout()
     plt.show()
     
     #### Save
-    # figDir = "D:/MagneticPincherData/Figures/PhysicsDataset"
-    # figSubDir = 'Mat&Meth'
+    # figDir = "C://Users//Joseph//Desktop//PapierDensité//FiguresSupp//"
+    # figSubDir = 'S_MM'
     # name = 'Force_vs_MagField'
-    # archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+    # archiveFig(fig, name = name, ext = '.png', dpi = 500,
+    #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
     #                 figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
-# plotMandForce(d = 0)
+# plotMandForce(list_d = [0, 100, 200, 400, 800])
 
 def plotForce_Insert(d = 0):
     D = 4500e-9
