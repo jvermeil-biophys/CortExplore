@@ -1903,22 +1903,119 @@ if SAVE:
 
 # %%% S4_AB
 
-#### 1. Settings
-
-apm.setGraphicOptions(mode = 'print', 
-                      palette = 'Set2', 
-                      colorList = apm.cL_Set21)
-
 # Save
 SAVE = True
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S4'
 name = 'S4_AB_1-0'
 
+def compute_infExpo(df, df_expo, h_ref = 300, agg_type = 'median',
+                    XCol = 'H0_f_<_500', YCol = 'E_f_<_500'):
+    
+    codeX, codeY = dict_code[XCol], dict_code[YCol]
+    codeXY = '_' + codeX + '_' + codeY
+    
+    df_expo['valid_global'+codeXY] = df_expo['valid_global'+codeXY] & (df_expo['alpha'+codeXY] < -1)
+    df_expo_valid = df_expo[df_expo['valid_global'+codeXY] == True]
+    valid_cells = df_expo_valid['cellID'].values
+    Ncells = len(valid_cells)
+    
+    df, condCol = apm.makeCompositeCol(df, cols=['date'])
+    CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+    df_f = df[df['cellID'].apply(lambda x : x in valid_cells)]
+    
+    Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+    params, results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+    a, b = params
+    global_expo = a
+    
+    list_expos = df_expo_valid['alpha'+codeXY].values
+    mean_expo = np.mean(list_expos)
+    median_expo = np.median(list_expos)
+    
+    expos = {'mean' : mean_expo,
+             'median' : median_expo,
+             'global' : global_expo,
+             }
+    
+    return(expos[agg_type])
+
+
+df = MecaData_Phy3
+dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
+# dates = ['24-12-11']
+# dates = ['23-02-16', '23-04-26', '24-12-11']
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+suffix = '_f_<_500'
+
+# crit_NcompsMin = 7
+# crit_pvalFit = 0.4
+# crit_thickCV = 0.025
+crit_NcompsMin = 7
+crit_pvalFit = 0.4
+crit_thickCV = 0.0275
+activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
+dstDir = ''
+figNameRoot = ''
+modeFit = 'ODR'
+
+#### 2. Filter
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['cell type'])
+
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df[XCol] < 1100),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e4),
+           (df['valid' + suffix] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+
+codeX, codeY = dict_code[XCol], dict_code[YCol]
+codeXY = '_' + codeX + '_' + codeY
+
+df_res, df_plot = compute_Eh_Exponent(df_f, XCol = XCol, YCol = YCol,
+                                        crit_NcompsMin = crit_NcompsMin,
+                                        crit_pvalFit = crit_pvalFit,
+                                        crit_thickCV = crit_thickCV,
+                                        activeCrits = activeCrits,
+                                        modeFit = modeFit)
+
+df_res['date'] = df_res['cellID'].apply(lambda x : x.split('_')[0])
+df_res.sort_values(by='cellID', ascending=True, inplace=True)
+
+
+inferred_expo = compute_infExpo(df_f, df_res, h_ref = 300, 
+                                agg_type = 'median',
+                                XCol = 'H0_f_<_500', YCol = 'E_f_<_500')
+
+print(inferred_expo)
+print(' ')
+
+#### 1. Settings
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+
+
 nCols = 6
 nRows = Ncells_valid//nCols + 1
 fig, axes = plt.subplots(nRows, nCols, figsize=(2.5*nCols/cm_in, 3*nRows/cm_in),
                          sharex=True, sharey=True, layout='compressed')
+
 
 for i in range(Ncells_valid):
     iR = i//nCols
@@ -1958,7 +2055,7 @@ for i in range(Ncells_valid):
 
 # ax.grid()
 
-fig2, axes2 = plt.subplots(1, 2, figsize=(10/cm_in, 8/cm_in),
+fig2, axes2 = plt.subplots(1, 2, figsize=(10/cm_in, 7.5/cm_in),
                          layout='compressed')
 ax=axes2[0]
 ax.set_title('Computing $E_{eq}$ at 300 nm\nExample on 4 cells')
@@ -1991,6 +2088,8 @@ ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray', zorder=2)
 ax.legend(title='$E_{eq}$ at \n300 nm', loc='upper right', fontsize=6, handlelength = 1)
 ax.set_xlim([50, 2000])
 ax.set_ylim([0.5, 100])
+ax.set_xticks([100, 300, 1000])
+ax.set_xticklabels(['$10^2$', '$3\cdot 10^2$', '$10^3$'])
 ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
 ax.set_xlabel('$H_0$ (nm)', labelpad=0.5)
 ax.grid()
@@ -2001,8 +2100,8 @@ ax.set_xlim([-0.5, +0.5])
 log_Eeq     = np.log(Eeq_list)
 logmean_Eeq = np.mean(log_Eeq)
 logstd_Eeq  = np.std(log_Eeq)
-print(logmean_Eeq, np.exp(logmean_Eeq), )
-print(np.exp(logmean_Eeq - logstd_Eeq), np.exp(logmean_Eeq + logstd_Eeq))
+print(logmean_Eeq, )
+print(np.exp(logmean_Eeq), np.exp(logmean_Eeq - logstd_Eeq), np.exp(logmean_Eeq + logstd_Eeq))
 print(logstd_Eeq, np.exp(logstd_Eeq), np.exp(logstd_Eeq)**0.5)
 data = pd.DataFrame({'Eeq':Eeq_list,})
 sns.swarmplot(ax=ax, data=data, y='Eeq', color=(0, 0, 0, 0.5), size=6)
@@ -4947,13 +5046,6 @@ activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
 dstDir = ''
 figNameRoot = ''
 modeFit = 'ODR'
-
-ColoredCells = ['24-12-11_M1_P1_C12', 
-                '24-12-11_M1_P1_C17', 
-                '24-12-11_M1_P1_C18', 
-                '24-12-11_M1_P1_C3', 
-                '24-12-11_M2_P1_C10-1', 
-                '24-12-11_M2_P1_C6']
 
 #### 2. Filter
 

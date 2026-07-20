@@ -3262,16 +3262,21 @@ for i, cid in enumerate(cid_list):
 ax.set_xlim([100, 1000])
 ax.set_ylim([1, 22])
 # xticklocator = matplotlib.ticker.LogLocator(base=10, subs='all')
-# ax.xaxis.set_major_locator(xticklocator)
+xticklocator = matplotlib.ticker.FixedLocator([100, 1000])
+ax.xaxis.set_major_locator(xticklocator)
+ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+# ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
 # ax.set_xticklabels(xtl, rotation=30)
-ax.tick_params(axis='both', which = 'both', length=2, direction='in', labelrotation=45)
+# ax.set_xticks([100, 1000])
+# ax.set_xticklabels(['$10^2$', '$10^3$'])
+ax.tick_params(axis='both', which = 'both', length=2, direction='in', labelrotation=0)
 ax.tick_params(axis='both', which = 'major', length=4, direction='inout')
 ax.xaxis.set_tick_params(pad=0.5)
 ax.yaxis.set_tick_params(pad=0.5)
-ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
+ax.set_ylabel('Actin quantity Q (a.u.)', labelpad=0.5)
 ax.set_xlabel('$H_{5mT}$ (nm)', labelpad=0.5)
 ax.grid(which = 'both', alpha = 0.4)
-ax.legend(loc = 'lower center', fontsize = 5, 
+ax.legend(loc = 'lower center', fontsize = 5, edgecolor = 'none',
           title = 'Exponent $\\alpha$', title_fontsize = 5, 
           handlelength = 0.8, labelspacing = 0.2)
     
@@ -3706,7 +3711,7 @@ ax.set_ylim([4, 60])
 # ax.legend(loc = 'upper left')
 ax.legend([(p11, p12, p13, p14)], ['Four replicates'], 
           handler_map={tuple: HandlerTuple(ndivide=None)}, fontsize=8,
-          loc = 'lower left', handlelength = 2.5, frameon=False,
+          loc = 'lower left', handlelength = 2.5, edgecolor = 'none', #, frameon=False,
           )
 # ax.legend([(p11, p12, p13, p14), P2], ['Experiments', label_fit], 
 #           handler_map={tuple: HandlerTuple(ndivide=None)},
@@ -3716,6 +3721,8 @@ ax.legend([(p11, p12, p13, p14)], ['Four replicates'],
 ax.set_ylabel('Actin Quantity (a.u.)', fontsize=9, labelpad=0.5)
 ax.set_xlabel('$H_{5mT}$ (nm)', fontsize=9, labelpad=0.5)
 ax.grid(which = 'both', alpha = 0.4)
+
+
 
 # def makeCountDf_Fluo(df):
 #     cols_count_df = ['h3', 'cellID', 'manipID', 'date']
@@ -3788,7 +3795,7 @@ ax.set_ylim([7, 110])
 #           )
 ax.legend([(p11, p12, p13, p14)], ['Four replicates'], 
           handler_map={tuple: HandlerTuple(ndivide=None)}, fontsize=8,
-          loc = 'lower left', handlelength = 2.5, frameon=False,
+          loc = 'lower left', handlelength = 2.5, edgecolor = 'none', #frameon=False,
           )
    
 ax.set_ylabel('Actin Density (a.u.)', fontsize=9, labelpad=0.5)
@@ -4548,6 +4555,7 @@ plt.show()
 
 #### Save
 SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S3'
 name = 'hAndQ_log-normality'
 
@@ -4570,8 +4578,8 @@ Y = df_f[metric].values
 titles = ['$H_{5mT}$ Q-Q plot', '$Q_{actin}$ Q-Q plot']
 
 ri = cm_in
-fig, axes = plt.subplots(2, 1, figsize=(5.5/ri, 10.5/ri), 
-                         layout='compressed', sharex=True, sharey='row')
+fig, axes = plt.subplots(1, 2, figsize=(12/ri, 6/ri), 
+                         layout='compressed', sharex=True, )
 
 
 for k, data in enumerate([X, Y]): # +'_wAvg'
@@ -4596,11 +4604,12 @@ for k, data in enumerate([X, Y]): # +'_wAvg'
     ax.plot([], [], label=f'LogN: {shap_pval:.2e}', ls='', marker='o', 
             markerfacecolor = apm.cL_Set21[0], markeredgecolor = 'None', markersize=5)
     
-    ax.legend(title_fontsize=6, title = 'Shapiro–Wilk\np-values', loc='lower right')
+    ax.legend(title_fontsize=6, title = 'Shapiro–Wilk\np-values', 
+              loc='lower right', edgecolor='none')
     
     ax.grid()
-    if k != len([X, Y])-1:
-        ax.set_xlabel('')
+    # if k != 0:
+    #     ax.set_ylabel('')
     ax.set_aspect('equal')
     ax.set_xlim([-3.5,3.5])
     ax.set_ylim([-3.5,3.5])
@@ -4615,9 +4624,9 @@ plt.show()
 
 #### Save
 if SAVE:
-    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 100,
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
-    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
@@ -4632,6 +4641,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S3'
 name = 'QDH_medCell'
 
@@ -4677,7 +4687,7 @@ df_fg = df_fg.dropna()
 
 rp = cm_in
 # fig, axes = plt.subplots(2, 1, figsize = (6/rp, 12/rp))#, layout="constrained")
-fig, axes = plt.subplots(2, 1, figsize = (10/ri, 10.5/ri), sharex=True,)#, layout="constrained")
+fig, axes = plt.subplots(1, 2, figsize = (17/ri, 8/ri), sharex=True,)#, layout="constrained")
 
 #### Plot 1 - QvH loglog
 
@@ -4716,9 +4726,9 @@ text_pval = apm.pval2text(pval, n_digits = 3, space = False)
 Xplot = np.exp(np.linspace(4, 8, 50))
 Yplot = A * Xplot**k
 
-P2, = ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25, zorder=8)
-label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
-    f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
+P2, = ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 1.5, zorder=8)
+label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^\beta}$' + '\n' + \
+    r'$\beta$' + f' = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
     '\n' + text_pval
     
     
@@ -4753,14 +4763,19 @@ text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.set_xlim([100, 1200])
 ax.set_ylim([4, 60])
 # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), borderpad=0.25, labelspacing = 0.35)
+# ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
+#           handler_map={tuple: HandlerTuple(ndivide=None)},
+#           loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
+#           borderpad=0.25, labelspacing = 0.8
+#           )
 ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
           handler_map={tuple: HandlerTuple(ndivide=None)},
-          loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
-          borderpad=0.25, labelspacing = 0.8
+          loc='upper left', handlelength = 3.5,
+          borderpad=0.25, labelspacing = 0.8, edgecolor = 'none',
           )
 
 ax.set_ylabel('Actin Quantity (a.u.)', labelpad=0.5)
-# ax.set_xlabel('$H_{5mT}$ (nm)')
+ax.set_xlabel('$H_{5mT}$ (nm)')
 ax.grid(which = 'both', alpha = 0.4)
 
 # def makeCountDf_Fluo(df):
@@ -4831,9 +4846,9 @@ text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 Xplot = np.exp(np.linspace(4, 8, 50))
 Yplot = A * Xplot**k
 
-P2, = ax.plot(Xplot, Yplot, ls = '-.', c = 'k', lw = 1.25, zorder=8)
-label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^k}$' + \
-    f'\nk = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
+P2, = ax.plot(Xplot, Yplot, ls = '-', c = 'dimgray', lw = 1.5, zorder=8)
+label_fit = label =  r'$\bf{Fit\ y\ =\ A.x^\beta}$' + '\n' + \
+    r'$\beta$' + f' = {k:.2f}' + r'$\pm$' + f'{(k_ciw/2):.2f}' + \
     '\n' + text_pval
     
     
@@ -4854,10 +4869,15 @@ text_pval = apm.pval2text(pval, n_digits = 3, space = True)
 ax.set_xlim([100, 1200])
 ax.set_ylim([7, 110])
 # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), borderpad=0.25, labelspacing = 0.35)
+# ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
+#           handler_map={tuple: HandlerTuple(ndivide=None)},
+#           loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
+#           borderpad=0.25, labelspacing = 0.8
+#           )
 ax.legend([(p11, p12, p13, p14), P2], ['Median value\nper cell\nColors are\nreplicates', label_fit], 
           handler_map={tuple: HandlerTuple(ndivide=None)},
-          loc='center left', bbox_to_anchor=(1, 0.5), handlelength = 3.5,
-          borderpad=0.25, labelspacing = 0.8
+          loc='lower left', handlelength = 3.5,
+          borderpad=0.25, labelspacing = 0.8, edgecolor = 'none',
           )
     
 ax.set_ylabel('Actin Density (a.u.)', labelpad=0.5)
