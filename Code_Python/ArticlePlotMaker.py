@@ -455,6 +455,20 @@ def pval2text(p, n_digits = 2, space=True):
             text += f'<{10**(-n_digits):.{n_digits}f}'
     return(text)
 
+def pval2textSci(p, low_thresh = 4, n_digits = 2, space=True):
+    text='p-val'
+    if space:
+        if p >= 10**(-low_thresh):
+            text += f' = {p:.{n_digits}e}'
+        else:
+            text += f' < {10**(-low_thresh):.{n_digits}e}'
+    else:
+        if p >= 10**(-low_thresh):
+            text += f'={p:.{n_digits}e}'
+        else:
+            text += f'<{10**(-low_thresh):.{n_digits}e}'
+    return(text)
+
 # %% 3. Graphic subfunctions
 
 def lightenColor(color, factor=1.0):

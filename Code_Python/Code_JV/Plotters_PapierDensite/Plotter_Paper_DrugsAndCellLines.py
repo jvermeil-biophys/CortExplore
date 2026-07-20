@@ -1460,7 +1460,7 @@ if SAVE:
 
 
 
-# %%% Fig S2C - Dose dep graphs
+# %%% Fig S2C - Dose dep graph LatA
  
 # Save
 SAVE = True
@@ -1476,10 +1476,10 @@ name = 'Dose_LatA'
 # 10x - 0.9468779097526224 0.02352824625082879
 # gs.set_default_options_jv()
 
-listCond = ['Ctrl', '0.1X', '0.5X', '1X', '2X', '10X']
-listConc = [0, 0.05, 0.25, 0.5, 1.0, 5.0] # µM
-listMean = [1.6175, 1.3117, 1.1553, 1.1334, 1.0881, 0.9469]
-listSte = [0.0983, 0.05152, 0.04339, 0.04278, 0.05720, 0.02352]
+listCond = ['Ctrl', '0.1X', '0.5X', '1X', '2X'] #, '10X']
+listConc = [0, 0.05, 0.25, 0.5, 1.0] #, 5.0] # µM
+listMean = [1.6175, 1.3117, 1.1553, 1.1334, 1.0881] #, 0.9469]
+listSte = [0.0983, 0.05152, 0.04339, 0.04278, 0.05720] #, 0.02352]
     
 df = pd.DataFrame({'co name':listCond, 
                    'concentration':listConc, 
@@ -1505,10 +1505,13 @@ ax.errorbar(df['concentration'], df['mean'], yerr=df['ste'],
 # ax.set_xscale('log')
 # ax.plot(ax.get_xlim(), [1,1], 'k--', lw=0.8)
 ax.grid(axis='y')
-ax.set_xlim([-0.3, 5.2])
-ax.set_ylim([0.5, 1.75])
+# ax.set_xlim([-0.3, 5.2])
+ax.set_ylim([1.0, 1.8])
+ax.set_xticks([0, 0.05, 0.25, 0.5, 1.0])
+ax.set_xticklabels([0, 0.05, 0.25, 0.5, 1.0], ha='center')
+ax.set_yticks([1.0, 1.2, 1.4, 1.6, 1.8])
 ax.set_xlabel('Concentration of LatA (µM)')
-ax.set_ylabel('Ratio Fluo\nCortex/Cytoplasm')
+ax.set_ylabel('Ratio Fluo Actin\nCortex/Cytoplasm')
 
 plt.show()
 
@@ -1519,12 +1522,62 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     
 
+# %%% Fig S2D - Dose dep graph Y27
+ 
+# Save
+SAVE = True
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figSubDir = 'S2'
+name = 'Dose_Y27'
+
+# Quantif 1 - 
+
+srcDir = os.path.join(figDir, figSubDir)
+df_raw = pd.read_csv(os.path.join(srcDir, 'DataY27.txt'), sep='\t')
+
+listCond = ['Ctrl', '0.1X', '0.5X', '1X', '2X', '10X']
+listConc = [0, 5, 25, 50, 100, 500] # µM
+listMean = df_raw['Rf'].values
+listSte = 0.5*(df_raw['Rf'].values-df_raw['Binf'].values) - 0.5*(df_raw['Rf'].values-df_raw['Bsup'].values)
     
+df = pd.DataFrame({'co name':listCond, 
+                   'concentration':listConc, 
+                   'mean':listMean, 
+                   'ste':listSte})
 
+color = apm.styleDict_V2['Y27']['color']
+lc = apm.lightenColor(color, 1.25)
+mc = apm.lightenColor(color, 0.75)
 
+fig, ax = plt.subplots(1,1, figsize = (7/cm_in, 5/cm_in))
+ax.axhline(1, lw=1.15, color='k')
+ax.errorbar(df['concentration'][:-1], df['mean'][:-1], yerr=df['ste'][:-1],
+            lw = 1.5, color = lc,
+            marker = 'o', markerfacecolor = mc, mec = 'None',
+            ecolor = mc, elinewidth = 1.5, capsize = 5)
 
+# ax.text(df['concentration'].values, df['mean'].values, df['co name'].values)
+# for k in range(df.shape[0]):
+#     ax.text(df['concentration'].values[k]-0.06, df['mean'].values[k]-0.04, 
+#             df['co name'].values[k], fontsize = 10, ha='right')
 
+# ax.set_xscale('log')
+# ax.plot(ax.get_xlim(), [1,1], 'k--', lw=0.8)
+ax.grid(axis='y')
+# ax.set_xlim([-0.3, 5.2])
+ax.set_ylim([1, 3])
+ax.set_xticks([0, 5, 25, 50, 100])
+ax.set_yticks([1.0, 1.5, 2.0, 2.5, 3.0])
+ax.set_xlabel('Concentration of Y27 (µM)')
+ax.set_ylabel('Ratio Fluo MYH\nCortex/Cytoplasm')
 
+plt.show()
+
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 
 
