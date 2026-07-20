@@ -2552,7 +2552,8 @@ ufun.list2json(all_Msq, dstPath, 'all_Msq_V2')
 
 # %%%% Open
 
-srcPath = os.path.join("C:\\Users\\josep\\Desktop\\Seafile\\PapierDensité\\DraftsFigs", 'S1')
+srcPath = os.path.join("C:\\Users\\Joseph\\Desktop\\PapierDensité\\DraftsFigs", 'S1')
+# srcPath = os.path.join("C:\\Users\\josep\\Desktop\\Seafile\\PapierDensité\\DraftsFigs", 'S1')
 list_Fmax = ufun.json2list(srcPath, 'list_Fmax_V2')
 all_R2 = ufun.json2list(srcPath, 'all_R2_V2')
 all_Chi2 = ufun.json2list(srcPath, 'all_Chi2_V2')
@@ -2631,23 +2632,26 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = 'C:/Users/Joseph/Desktop/PapierDensité/FiguresSupp'
+
 figSubDir = 'S1'
-name = 'S1_Choice_500pN_V2'
+name = 'S1_Choice_500pN_V2_part2'
 
 c1 = apm.cL_Set2[0]
 c2 = apm.cL_Set2[1]
 c3 = apm.cL_Set2[2]
 
-fig, axes = plt.subplots(1, 2, figsize=(12/cm_in, 6/cm_in))#, layout='compressed')
-ax = axes[0]
-ax.plot(list_Fmax, avg_MedF[:, 0], color=c1, lw=2, label=r'F < 1/3.$F_{max}$')
-ax.plot(list_Fmax, avg_MedF[:, 1], color=c2, lw=2, label=r'1/3.$F_{max}$ < F < 2/3.$F_{max}$')
-ax.plot(list_Fmax, avg_MedF[:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max}$')
+fig, axes = plt.subplots(1, 1, figsize=(8/cm_in, 6/cm_in))#, layout='compressed')
+# ax = axes[0]
+ax = axes
+ax.plot(list_Fmax, avg_MedF[:, 0], color=c1, lw=2, label=r'$F$/$F_{max}$<1/3')
+ax.plot(list_Fmax, avg_MedF[:, 1], color=c2, lw=2, label=r'$F$/$F_{max}$$\in$[1/3, 2/3]')
+ax.plot(list_Fmax, avg_MedF[:, 2], color=c3, lw=2, label=r'$F$/$F_{max}$>2/3')
 
-ax.set_xlabel('Selected $F_{max}$')
+ax.set_xlabel('Selected $F_{max}$ (pN)')
 ax.set_title(' ')
-ax.set_ylabel(r'Residuals')
+ax.set_ylabel(r'$< \Sigma\ resids >$ (nm)')
 
 ax.axhline(0, color='gray', lw=1, ls='-')
 ax.axvline(500, color='gray', lw=1, ls='-.')
@@ -2655,24 +2659,27 @@ ax.set_xlim([0, 1100])
 # ax.set_ylim([0, 1.05])
 ax.set_xticks([k for k in range(100, 1100, 200)])
 ax.xaxis.set_tick_params(rotation=0)
-ax.legend(fontsize=5)
+ax.legend(handlelength=1, fontsize=6, edgecolor='None')
 
-ax= axes[1]
-ax.plot(list_Fmax[1:], avg_MedSq[1:, 0], color=c1, lw=2, label=r'F < 1/3.$F_{max}$')
-ax.plot(list_Fmax[1:], avg_MedSq[1:, 1], color=c2, lw=2, label=r'1/3.$F_{max}$ < F < 2/3.$F_{max}$')
-ax.plot(list_Fmax[1:], avg_MedSq[1:, 2], color=c3, lw=2, label=r'F > 2/3.$F_{max}$')
+# ax= axes[1]
+# ax = axes
+# ax.plot(list_Fmax[1:], avg_MedSq[1:, 0], color=c1, lw=2, label=r'$F$/$F_{max}$<1/3')
+# ax.plot(list_Fmax[1:], avg_MedSq[1:, 1], color=c2, lw=2, label=r'$F$/$F_{max}$$\in$[1/3, 2/3]')
+# ax.plot(list_Fmax[1:], avg_MedSq[1:, 2], color=c3, lw=2, label=r'$F$/$F_{max}$>2/3')
 
-ax.set_xlabel('Selected $F_{max}$')
-ax.set_title(' ')
-ax.set_ylabel(r'$\langle Resids \rangle \ /\ \sqrt{N}$')
+# ax.set_xlabel('Selected $F_{max} (pN)$')
+# ax.set_title(' ')
+# ax.set_ylabel(r'$\left< \Sigma_{i}^{N}{resids} \right> \ /\ \sqrt{N}$')
 
-ax.axhline(0, color='gray', lw=1, ls='-')
-ax.axvline(500, color='gray', lw=1, ls='-.')
-ax.set_xlim([0, 1100])
-# ax.set_ylim([0, 1.05])
-ax.set_xticks([k for k in range(100, 1100, 200)])
-ax.xaxis.set_tick_params(rotation=0)
-ax.legend(fontsize=5)
+# ax.axhline(0, color='gray', lw=1, ls='-')
+# ax.axvline(500, color='gray', lw=1, ls='-.')
+# ax.set_xlim([0, 1100])
+# # ax.set_ylim([0, 1.05])
+# ax.set_xticks([k for k in range(100, 1100, 200)])
+# ax.xaxis.set_tick_params(rotation=0)
+# ax.legend(handlelength=1, fontsize=6, edgecolor='None')
+
+ax.set_title('Average residuals')
 
 # ax.yaxis.set_tick_params(length=3, pad=0.75)
 # ax.xaxis.set_tick_params(length=0, pad=0.75)
@@ -2687,8 +2694,85 @@ if SAVE:
     ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
+# %%%% Plot better result part 2
 
+# %%%%% 1
+plot_stressCenters = [ii for ii in range(100, 4000, 50)]
+stressHalfWidths = [50, 75, 100]
 
+fitSettings = {# H0
+                'methods_H0':['Chadwick'],
+                'zones_H0':['pts_15',
+                            '%f_5', '%f_10', '%f_15'],
+                'method_bestH0':'Chadwick', # Chadwick
+                'zone_bestH0':'%f_15',
+                'doChadwickFit' : True,
+                'ChadwickFitMethods' : ['Full'],
+                }
+
+# # V2
+# phyTask = '23-02-16_M1 & 23-03-16_M1 & 23-03-17_M4 & 23-04-20_M1 & 23-04-20_M4 & '
+# phyTask += '23-04-20_M5 & 23-04-26_M2 & 23-04-28_M1 & 23-07-17_M3 & '
+# phyTask += '23-07-20_M2 & 23-09-06_M3 & 23-09-19_M1 & 23-12-03_M1 & 24-07-04_M2'
+
+phyTask = '24-07-04_M1_P1_C9'
+
+Id_comps, Comps = takaP.getCompressions(task = phyTask,
+                                        fitSettings = fitSettings)
+i = 0
+Id_comp = Id_comps[i]
+Comp = Comps[i]
+
+# %%%%% 2
+
+SAVE = True
+# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = 'C:/Users/Joseph/Desktop/PapierDensité/FiguresSupp'
+
+figSubDir = 'S1'
+name = 'S1_Choice_500pN_V2_part1'
+
+list_F = [150, 300, 500, 750, 1000]
+
+fig, ax = plt.subplots(1, 1, figsize=(9/cm_in, 6/cm_in))
+# cmap = matplotlib.colormaps['YlOrBr'](np.linspace(0.3, 0.99, len(list_F)))
+cmap = sns.color_palette("husl", len(list_F)+4)
+err_chi2 = 8
+
+for k, Fmax in enumerate(list_F):
+    D = Id_comp[2]
+    h, f = Comp
+    index = (f < Fmax)
+    h_fit, f_fit = h[index], f[index]
+    results = fitChadwick_hf(h_fit, f_fit, D, err_chi2)
+    error, r2, chi2, resid = results
+
+    if (not error) and (chi2 > 0) and (r2 < 1):
+        N = len(resid)
+        n = N//3
+        
+        f_norm = f_fit/np.max(f_fit)
+        color = apm.lightenColor(cmap[1 + k + 2*(Fmax>500) - 2*(Fmax<500)], 0.9)
+        ax.plot(f_norm, resid, color=color, ls='-', lw=1.5, label=f'{Fmax:.0f}', zorder=10-k + 10*(Fmax==500))
+
+ax.set_xlabel('Normalized force [$F$ / $F_{max}$]')
+ax.set_ylabel('Residuals [$h_{f}$ - $h_{m}$] (nm)')
+ax.set_xticks([0, 1/3, 2/3, 1])
+ax.set_xticklabels(['0', '1/3', '2/3', '1'])
+ax.axvline(1/3, color='gray', lw=1)
+ax.axvline(2/3, color='gray', lw=1)
+ax.axhline(0, color='k', lw=1, zorder=1)
+ax.legend(title=r'$F_{max}$ (pN)', bbox_to_anchor=(1, 0.9), loc='upper left')
+ax.set_title('Example for one compression')
+
+plt.show()
+
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
 
 # %%% Cell Identity
 
