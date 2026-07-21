@@ -65,11 +65,9 @@ apm.setGraphicOptions(mode = 'print',
                       palette = 'Set2', 
                       colorList = apm.cL_Set21)
 
-# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
-# figSupDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
-
-figMainDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresMain'
-figSupDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresSupp'
+figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
+figMainDir = os.path.join(cp.DirPaper, 'FiguresMain')
+figSupDir = os.path.join(cp.DirPaper, 'FiguresSupp')
 
 # %% > Data import & export
 
@@ -2125,5 +2123,204 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
     CountByCond_ctrl.to_csv(os.path.join(figDir, figSubDir, name+'_ctrl_count.txt'), sep='\t')
+
+
+# %%% S4 Eeq
+
+# Save
+SAVE = True
+figDir = figSupDir
+figSubDir = 'S4'
+name = 'S4_Eeq_cellTypes_1-0'
+
+df = MecaData_CellTypes
+df_ctrl = MecaData_Phy
+
+df, condCol = apm.makeCompositeCol(df, cols=['cell type', 'cell subtype'])
+df_ctrl, condCol = apm.makeCompositeCol(df_ctrl, cols=['cell type', 'cell subtype'])
+
+h_ref = 300
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+ctrl_cond = '3T3 & Atcc-2023' 
+
+# Define
+excluded_subtypes = ['tko']
+drugs = ['dmso', 'none']
+excluded_dates = ['23-03-08', '23-02-23', '23-11-26']
+# substrates = ['BSA coated glass', '20um fibronectin discs']
+
+# CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+dfDC = df[df['cell type'] == 'DC']
+
+# Filter
+Filters = [(df['validatedThickness'] == True), 
+           # (df['substrate'] == substrate),
+           (df['cell subtype'].apply(lambda x : x not in excluded_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df['date'].apply(lambda x : x not in excluded_dates)),
+           (df[XCol] < 1000),
+           # (df['normal field'] == 5),
+           (df[YCol] <= 1e5),
+           (df['valid' + YCol[1:]] == True), 
+           ]
+
+Filters_ctrl = [(df_ctrl['validatedThickness'] == True), 
+               (df_ctrl['substrate'] == '20um fibronectin discs'),
+               (df_ctrl['drug'].apply(lambda x : x in ['dmso'])),
+               (df_ctrl['cell subtype'].apply(lambda x : x in ['Atcc-2023', 'Atcc-2023-LaGFP'])),
+               (df_ctrl['date'].apply(lambda x : x not in excluded_dates)),
+               (df_ctrl[XCol] < 1000),
+               (df_ctrl['normal field'] == 5),
+               (df_ctrl[YCol] <= 1e5),
+               (df_ctrl['valid' + YCol[1:]] == True), 
+               ]
+
+df_f = apm.filterDf(df, Filters)
+df_ctrl_f = apm.filterDf(df_ctrl, Filters_ctrl)
+
+df_f.loc[df_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
+df_ctrl_f.loc[df_ctrl_f['cell subtype']=='Atcc-2023-LaGFP', 'cell subtype'] = 'Atcc-2023'
+
+df_f, condCol = apm.makeCompositeCol(df_f, cols=['cell type', 'cell subtype'])
+df_ctrl_f, condCol = apm.makeCompositeCol(df_ctrl_f, cols=['cell type', 'cell subtype'])
+
+# Filter 2
+Case_A1 = (df_f['cell type'].apply(lambda x : x in ['HoxB8-Macro']))
+Case_A2 = (df_f['substrate'] == 'bare glass')
+Case_B1 = (df_f['cell type'].apply(lambda x : x in ['DC', 'Dicty']))
+Case_B2 = (df_f['substrate'] == 'BSA coated glass')
+Case_C1 = (df_f['cell type'].apply(lambda x : x in ['3T3', 'MDCK', 'HeLa']))
+Case_C2 = (df_f['substrate'] == '20um fibronectin discs')
+Case_D1 = (df_f['cell type'].apply(lambda x : x in ['3T3', 'MDCK', 'DC']))
+Case_D2 = (df_f['normal field'] == 5)
+Filters = [((Case_A1 & Case_A2) | (Case_B1 & Case_B2) | (Case_C1 & Case_C2)),
+           (Case_D1 | Case_D2),
+           ]
+df_f = apm.filterDf(df_f, Filters)
+
+
+CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
+CountByCond_ctrl, CountByCell_ctrl = apm.makeCountDf(df_ctrl_f, condCol)
+
+
+# Order
+co_order = [
+            '3T3 & Atcc-2023', 
+            'HeLa & fucci', 
+            'MDCK & WT',
+            'DC & mouse-primary', 
+            'Dicty & DictyBase-WT', 
+            ]
+
+colorsD = {
+          '3T3 & Atcc-2023'     : 'dimgray', 
+          'HeLa & fucci'         : apm.cL_Set2[3], 
+          'MDCK & WT'            : apm.cL_Set2[5],
+          'DC & mouse-primary'   : apm.cL_Set2[2],  
+          'Dicty & DictyBase-WT' : apm.cL_Set2[4],            
+          }
+
+rD = {
+      '3T3 & Atcc-2023'      :  '3T3 ATCC', 
+      'HeLa & fucci'         :  'HeLa',  
+      'DC & mouse-primary'   :  'Primary DC',  
+      'Dicty & DictyBase-WT' :  'Dictys Ax3',  
+      'MDCK & WT'            :  'MDCK',
+      }
+
+
+# Group By
+# df_fg = apm.dataGroup(df_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+# df_fg = df_fg[[XCol]]
+# df_fgw2 = apm.dataGroup_weightedAverage(df_f, groupCol = 'cellID', idCols = [condCol], 
+#                                       valCol = YCol, weightCol = 'ciw' + YCol, weight_method = 'ciw^2')
+# df_plot = pd.merge(left=df_fg, right=df_fgw2, on='cellID', how='inner')
+
+
+# df_ctrl_fg = apm.dataGroup(df_ctrl_f, groupCol = 'cellID', idCols = [condCol], numCols = [XCol], aggFun = 'mean') #.drop(columns=['cellID']).reset_index()
+# df_ctrl_fg = df_ctrl_fg[[XCol]]
+# df_ctrl_fgw2 = apm.dataGroup_weightedAverage(df_ctrl_f, groupCol = 'cellID', idCols = [condCol], 
+#                                       valCol = YCol, weightCol = 'ciw' + YCol, weight_method = 'ciw^2')
+# df_ctrl_plot = pd.merge(left=df_ctrl_fg, right=df_ctrl_fgw2, on='cellID', how='inner')
+
+# YCol += '_wAvg'
+
+
+df_p = pd.concat([df_ctrl_f, df_f])
+conds = co_order
+dict_powerLaws = {}
+
+#### Plot
+
+fig, axes = plt.subplots(1, 1, figsize = (7/cm_in, 7.5/cm_in), 
+                         sharex=True, sharey=True, layout='constrained')
+ax = axes
+
+#### Controls
+
+for i, co in enumerate(conds):   
+    df_c = df_p[df_p[condCol] == co]
+    X, Y = df_c[XCol].values, df_c[YCol].values/1000
+    
+    Xfit, Yfit = np.log(X), np.log(Y)
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+
+    [a, b], results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+    A, k = np.exp(b), a
+    pval = results.pval
+    [k_ciw, b_ciw] = results.params_ciw
+    
+    Xplot = np.exp(np.linspace(1, 1e2, 50))
+    Yplot = A * Xplot**k
+    text_pval = apm.pval2text(pval, n_digits = 3, space = True)
+    
+    dict_powerLaws[co] = [A, k]
+
+ax.set_title('Computing $E_{eq}$ at 300 nm\nfor diverse cell types')
+
+for i, co in enumerate(conds):
+    color = colorsD[co]
+
+    [A, k] = dict_powerLaws[co]
+    E_eq = A * (h_ref**k)
+    
+    ax = ax
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    # ax.plot(X, Y, ls='', 
+    #         marker='o', ms=4, color=color,
+    #         mec='w', mew=0.1, alpha=1, zorder=3)
+    Xplot = np.array([40,2100])
+    Yplot = A * (Xplot**k)
+    ax.plot(Xplot, Yplot, ls='-', lw=1.0, color=apm.lightenColor(color, 0.8), zorder=4)
+    ax.plot([h_ref], [E_eq], marker='x', color=apm.lightenColor(color, 0.8),
+            label=f'{rD[co]}\n{E_eq:.2f} kPa', zorder=5)
+    
+    ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray')
+    
+ax.legend(title='$E_{eq}$ at \n300 nm', bbox_to_anchor = (1, 0.95),
+          loc='upper left', fontsize=6, handlelength = 1)
+ax.set_xlim([50, 2000])
+ax.set_ylim([0.5, 100])
+ax.grid()
+
+plt.show()
+print('\n---------------')
+
+
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+    CountByCond_ctrl.to_csv(os.path.join(figDir, figSubDir, name+'_ctrl_count.txt'), sep='\t')
+
+
+
+
+
 
 

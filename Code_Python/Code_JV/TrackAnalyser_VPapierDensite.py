@@ -1732,14 +1732,14 @@ class CellCompression:
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
         
-        fig = plt.figure(figsize=(4/gs.cm_in, 5/gs.cm_in), layout="constrained")
+        fig = plt.figure(figsize=(5/gs.cm_in, 6/gs.cm_in), layout="constrained")
         # fig.tight_layout()
         spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
         ax1 = fig.add_subplot(spec[:4])
         ax2 = fig.add_subplot(spec[4:])
         
         Ni = 1
-        i0 = 3
+        i0 = 2
         idx = np.array([i0 + i for i in range(Ni)])
         # LI = self.listIndent[idx]
         tsDf = self.tsDf[self.tsDf['idxLoop'].apply(lambda x : x in (idx+1))]
@@ -1754,9 +1754,9 @@ class CellCompression:
         # time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57]) 
         # x_Vsep = np.array([18.8, 38.2, 57.5]) 
         
-        time_ticks = np.array([6.5, 9.5, 11.0, 12.5, 18.8]) + (T0-2)
-        time_ticklabels = np.array([6.5, 9.5, 11.0, 12.5, 18.8]) + (T0-2)
-        x_Vsep = np.array([18.8]) + (T0-2)
+        time_ticks = np.array([6.5, 9.5, 11.0, 12.5, 18.8]) + (T0-2.79)
+        time_ticklabels = np.array([6.0, 9.5, 11.0, 12.5, 18.5]) + (T0)
+        x_Vsep = np.array([18.8]) + (T0-2.79)
         
         #### Distance Plot
         ax = ax1
@@ -1771,7 +1771,7 @@ class CellCompression:
 
         (ax_ym, ax_yM) = ax.get_ylim()
         ax.set_ylim([min(-0,ax_ym), ax_yM])
-        ax.set_ylim([0, 400])
+        ax.set_ylim([100, 260])
         ax.tick_params(axis='y', labelcolor = color)
         ax.grid(axis='y', zorder=0)
         
@@ -1779,7 +1779,12 @@ class CellCompression:
         ax = ax2
         color = 'firebrick'
         ax.set_ylabel('Force (nN)', color=color, labelpad=1)
-        ax.plot(tsDf['T'].values, tsDf['F'].values/1e3, color=color, lw=1.5)
+        tVal = tsDf['T'].values.tolist()
+        tVal.append(x_Vsep[0])
+        fVal = tsDf['F'].values.tolist()
+        fVal.append(float(tsDf['F'].values[-1]))
+        # print(tVal, fVal)
+        ax.plot(tVal, np.array(fVal)/1e3, color=color, lw=1.5)
         ax.tick_params(axis='y', labelcolor=color)
         ax.set_yticks([0, 0.5, 1.0, 1.5])
         ax.grid(axis='y', zorder=0)
@@ -1870,106 +1875,107 @@ class CellCompression:
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
         
-        LI = self.listIndent
-        NI = len(LI)
-        Np = 3
+        # LI = self.listIndent
+        # NI = len(LI)
+        # Np = 2
+        i0 = 6
         
-        fig = plt.figure(figsize=(9/gs.cm_in, 5/gs.cm_in), layout="constrained")
-        spec = fig.add_gridspec(6, min(Np, NI), hspace=0.15, 
+        fig = plt.figure(figsize=(4/gs.cm_in, 6/gs.cm_in), layout="constrained")
+        spec = fig.add_gridspec(6, 1, hspace=0.15, 
                                 top = 0.975, bottom=0.125, 
                                 left = 0.065, right = 0.99)
         axes1, axes2 = [], []
         b1, b2 = [1000, 0], [1.5, 0]
         
-        for i in range(1, min(Np+1, NI+1)):
-            ax1 = fig.add_subplot(spec[:4, i-1])
-            ax2 = fig.add_subplot(spec[4:, i-1])
-            axes1.append(ax1)
-            axes2.append(ax2)
+        # for i in range(1, min(Np+1, NI+1)):
+        ax1 = fig.add_subplot(spec[:4])
+        ax2 = fig.add_subplot(spec[4:])
+        axes1.append(ax1)
+        axes2.append(ax2)
+        
+        #### Bounds
+        ii = i0 # i + 5
+        # ii = i + 0
+        df = self.tsDf[self.tsDf['idxLoop'] == ii]
+        i1 = ufun.findFirst(ii, df.idxAnalysis)
+        i2 = ufun.findLast(ii, df.idxAnalysis)
+        Ti = df['T'].values[i1:i2]
+        Hi = df['D3'].values[i1:i2]-self.DIAMETER
+        Fi = df['F'].values[i1:i2]/1e3
+        
+        i_Hmin = np.argmin(Hi)
+        t_Hmin = Ti[i_Hmin]
+        i_Fmax = np.argmax(Fi)
+        t_Fmax = Ti[i_Fmax]
+        Dt = t_Fmax - t_Hmin
+        
+        #### Distance Plot
+        ax = ax1
+        color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
+        # ax.scatter(Ti, Hi, color = color, edgecolors = None, 
+        #            linewidths = 0, zorder = 5, s = 2, alpha = 0.9)
+        ax.plot(Ti, Hi, color=color, lw=0.75) 
+        ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
+        ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
+        
+        ax.grid(axis='y', zorder=0)
+        ax.set_title(f'$\\delta T$ = {Dt:.2f} s', fontsize=6, pad=3)
+        
+        b = ax.get_ylim()
+        if b[0]<b1[0]:
+            b1[0]=b[0]
+        if b[1]>b1[1]:
+            b1[1]=b[1]
+        
+        if i == 1:
+            ax.set_ylabel('Thickness (nm)', color=color, labelpad=1)
+            ax.tick_params(axis='y', labelcolor = color)
+        else:
+            ax.set_yticklabels([])
+            ax.set_ylabel('')
             
-            #### Bounds
-            ii = i + 3
-            # ii = i + 0
-            df = self.tsDf[self.tsDf['idxLoop'] == ii]
-            i1 = ufun.findFirst(ii, df.idxAnalysis)
-            i2 = ufun.findLast(ii, df.idxAnalysis)
-            Ti = df['T'].values[i1:i2]
-            Hi = df['D3'].values[i1:i2]-self.DIAMETER
-            Fi = df['F'].values[i1:i2]/1e3
-            
-            i_Hmin = np.argmin(Hi)
-            t_Hmin = Ti[i_Hmin]
-            i_Fmax = np.argmax(Fi)
-            t_Fmax = Ti[i_Fmax]
-            Dt = t_Fmax - t_Hmin
-            
-            #### Distance Plot
-            ax = ax1
-            color = 'steelblue' # gs.colorList40[30] # 'skyblue'# 'blue'
-            # ax.scatter(Ti, Hi, color = color, edgecolors = None, 
-            #            linewidths = 0, zorder = 5, s = 2, alpha = 0.9)
-            ax.plot(Ti, Hi, color=color, lw=0.75) 
-            ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
-            ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
-            
-            ax.grid(axis='y', zorder=0)
-            ax.set_title(f'$\\delta T$ = {Dt:.2f} s', fontsize=6, pad=3)
-            
-            b = ax.get_ylim()
-            if b[0]<b1[0]:
-                b1[0]=b[0]
-            if b[1]>b1[1]:
-                b1[1]=b[1]
-            
-            if i == 1:
-                ax.set_ylabel('Thickness (nm)', color=color, labelpad=1)
-                ax.tick_params(axis='y', labelcolor = color)
-            else:
-                ax.set_yticklabels([])
-                ax.set_ylabel('')
+        
+        
+        #### Force plot
+        ax = ax2
+        color = 'firebrick'
+        
+        ax.plot(Ti, Fi, color=color, lw=0.75)
+        ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
+        ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
+        
+        ax.grid(axis='y', zorder=0)
+        
+        b = ax.get_ylim()
+        if b[0]<b2[0]:
+            b2[0]=b[0]
+        if b[1]>b2[1]:
+            b2[1]=b[1]
+        
+        if i == 1:
+            ax.set_ylabel('Force (nN)', color=color, labelpad=1)
+            ax.tick_params(axis='y', labelcolor=color)
+            ax.set_yticks([0, 0.5, 1.0, 1.5])
+        else:
+            ax.set_yticklabels([])
+            ax.set_ylabel('')
                 
-            
-            
-            #### Force plot
-            ax = ax2
-            color = 'firebrick'
-            
-            ax.plot(Ti, Fi, color=color, lw=0.75)
-            ax.axvline(t_Hmin, ls='--', dashes=[5, 1], lw=0.5, color = 'steelblue', alpha=0.7)
-            ax.axvline(t_Fmax, ls='--', dashes=[5, 1], lw=0.5, color = 'firebrick', alpha=0.7)
-            
-            ax.grid(axis='y', zorder=0)
-            
-            b = ax.get_ylim()
-            if b[0]<b2[0]:
-                b2[0]=b[0]
-            if b[1]>b2[1]:
-                b2[1]=b[1]
-            
-            if i == 1:
-                ax.set_ylabel('Force (nN)', color=color, labelpad=1)
-                ax.tick_params(axis='y', labelcolor=color)
-                ax.set_yticks([0, 0.5, 1.0, 1.5])
-            else:
-                ax.set_yticklabels([])
-                ax.set_ylabel('')
-                    
-            #### shared formatting 
-            # (ax_xm, ax_xM) = ax.get_xlim()
-            # ax1.set_xlim([0, ax_xM])
-            ax1.set_xticks([])
-            ax1.set_xticklabels([])
-    
-            # ax2.set_xlim([0, ax_xM])
-            ax2.set_xlabel('Time (s)', labelpad=1)
-            ax2.legend().set_visible(False)
+        #### shared formatting 
+        # (ax_xm, ax_xM) = ax.get_xlim()
+        # ax1.set_xlim([0, ax_xM])
+        ax1.set_xticks([])
+        ax1.set_xticklabels([])
+
+        # ax2.set_xlim([0, ax_xM])
+        ax2.set_xlabel('Time (s)', labelpad=1)
+        ax2.legend().set_visible(False)
             
         # Set common boundaries
-        for i in range(1, min(Np+1, NI+1)):
-            ax1 = axes1[i-1]
-            ax2 = axes2[i-1]
-            ax1.set_ylim(b1)
-            ax2.set_ylim(b2)
+        # for i in range(1, min(Np+1, NI+1)):
+            # ax1 = axes1[i-1]
+            # ax2 = axes2[i-1]
+            # ax1.set_ylim(b1)
+            # ax2.set_ylim(b2)
         
         # fig.tight_layout()
         axes = np.array([axes1, axes2])
@@ -2521,7 +2527,7 @@ class CellCompression:
             #     pass
             
             # # try:
-            name = 'S9_C_' + self.cellID
+            name = 'S9_C_1-2_' + self.cellID
             fig, ax = self.Pplot_Timeseries_V3(plotSettings)
             ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
                             figDir = figDir_supp, figSubDir = 'S1')

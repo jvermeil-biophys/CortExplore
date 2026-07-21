@@ -70,8 +70,8 @@ apm.setGraphicOptions(mode = 'print',
 
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
 
-figMainDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresMain'
-figSupDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresSupp'
+figMainDir = os.path.join(cp.DirPaper, 'FiguresMain')
+figSupDir = os.path.join(cp.DirPaper, 'FiguresSupp')
 
 
 # %% > Data import & export
@@ -385,7 +385,7 @@ MecaData_Phy4.to_csv(path, sep=';', index=False)
 
 # %% Main Figure 1
 
-# %%% Fig 1D & G & Supp 9A & C - h(t) and F(t)
+# %%% Fig 1D & G & Supp 6A & 7A - h(t) and F(t)
 
 plot_stressCenters = [ii for ii in range(100, 4000, 50)]
 stressHalfWidths = [50, 75, 100]
@@ -782,7 +782,7 @@ if SAVE:
 # %%% Fig 2A
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F2'
 name = 'F2_A' #
 
@@ -2058,7 +2058,7 @@ for i in range(Ncells_valid):
 
 # ax.grid()
 
-fig2, axes2 = plt.subplots(1, 2, figsize=(10/cm_in, 7.5/cm_in),
+fig2, axes2 = plt.subplots(1, 2, figsize=(11/cm_in, 7.5/cm_in),
                          layout='compressed')
 ax=axes2[0]
 ax.set_title('Computing $E_{eq}$ at 300 nm\nExample on 4 cells')
@@ -2107,9 +2107,9 @@ print(logmean_Eeq, )
 print(np.exp(logmean_Eeq), np.exp(logmean_Eeq - logstd_Eeq), np.exp(logmean_Eeq + logstd_Eeq))
 print(logstd_Eeq, np.exp(logstd_Eeq), np.exp(logstd_Eeq)**0.5)
 data = pd.DataFrame({'Eeq':Eeq_list,})
-sns.swarmplot(ax=ax, data=data, y='Eeq', color=(0, 0, 0, 0.5), size=6)
+sns.swarmplot(ax=ax, data=data, y='Eeq', color=(0, 0, 0, 0.25), size=6)
 f = 1
-colorcross = 'darkred'
+colorcross = 'k'
 ax.errorbar([0], np.exp(logmean_Eeq), 
             ls='', marker='_', markerfacecolor='k',
             mec = colorcross, mew = 1.5*f, ms = 12*f,
@@ -2133,6 +2133,253 @@ if SAVE:
     ufun.archiveFig(fig2, name = name, ext = '.png', dpi = 500,
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+
+
+
+# %%% S4_CD
+
+# Save
+SAVE = True
+figDir = figSupDir
+figSubDir = 'S4'
+name = 'S4_CD_1-0'
+
+def compute_infExpo(df, df_expo, h_ref = 300, agg_type = 'median',
+                    XCol = 'H0_f_<_500', YCol = 'E_f_<_500'):
+    
+    codeX, codeY = dict_code[XCol], dict_code[YCol]
+    codeXY = '_' + codeX + '_' + codeY
+    
+    df_expo['valid_global'+codeXY] = df_expo['valid_global'+codeXY] & (df_expo['alpha'+codeXY] < -1)
+    df_expo_valid = df_expo[df_expo['valid_global'+codeXY] == True]
+    valid_cells = df_expo_valid['cellID'].values
+    
+    df, condCol = apm.makeCompositeCol(df, cols=['date'])
+    CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+    df_f = df[df['cellID'].apply(lambda x : x in valid_cells)]
+    
+    Xfit, Yfit = np.log(df_f[XCol].values), np.log(df_f[YCol].values/1000)
+    wd=1/(np.std(Xfit)) # **2
+    we=1/(np.std(Yfit)) # **2
+    params, results = ufun.fitLineTLS(Xfit, Yfit, wd=wd, we=we)
+    a, b = params
+    global_expo = a
+    
+    list_expos = df_expo_valid['alpha'+codeXY].values
+    mean_expo = np.mean(list_expos)
+    median_expo = np.median(list_expos)
+    
+    expos = {'mean' : mean_expo,
+             'median' : median_expo,
+             'global' : global_expo,
+             }
+    
+    return(expos[agg_type])
+
+
+def compute_Eeq_cell_and_points(df, df_expo, expo, h_ref = 300, 
+                                XCol = 'H0_f_<_500', YCol = 'E_f_<_500'):
+    
+    codeX, codeY = dict_code[XCol], dict_code[YCol]
+    codeXY = '_' + codeX + '_' + codeY
+    
+    df_expo['valid_global'+codeXY] = df_expo['valid_global'+codeXY] & (df_expo['alpha'+codeXY] < -1)
+    df_expo_valid = df_expo[df_expo['valid_global'+codeXY] == True]
+    valid_cells = df_expo_valid['cellID'].values
+
+    df, condCol = apm.makeCompositeCol(df, cols=['date'])
+    CountByCond, CountByCell = apm.makeCountDf(df, condCol)
+    df_f = df[df['cellID'].apply(lambda x : x in valid_cells)]
+    
+    dict_res = {}
+    
+    for cid in valid_cells:
+        df_c = df_f[df_f['cellID'] == cid]
+        X, Y = df_c[XCol].values, df_c[YCol].values/1000
+        Xfit, Yfit = np.log(X), np.log(Y) / inferred_expo
+        wd=1/(np.std(Xfit)) # **2
+        we=1/(np.std(Yfit)) # **2
+        [a], results = ufun.fitConstantTLS(Xfit, Yfit, wd=wd, we=we)
+        A = np.exp(a * expo)
+        Eeq = A * (h_ref**expo)
+        points_Eeq = np.array([y*((h_ref/x)**expo) for x, y in zip(X, Y)])
+        points_Eeq_norm = points_Eeq/Eeq
+        dict_res[cid] = {'A': A,
+                         'Eeq': Eeq,
+                         'points_Eeq': points_Eeq,
+                         'points_Eeq_norm': points_Eeq_norm,
+                         }
+    
+    return(valid_cells, dict_res)
+        
+        
+        
+    
+
+
+df = MecaData_Phy3
+dates = ['23-02-16', '23-03-16', '23-04-26', '24-12-11']
+XCol = 'H0_f_<_500'
+YCol = 'E_f_<_500'
+suffix = '_f_<_500'
+
+# crit_NcompsMin = 7
+# crit_pvalFit = 0.4
+# crit_thickCV = 0.0275
+crit_NcompsMin = 12
+crit_pvalFit = 0.4
+crit_thickCV = 0.0275
+activeCrits = ['NcompsMin', 'pvalFit', 'thickCV']
+dstDir = ''
+figNameRoot = ''
+modeFit = 'ODR'
+
+#### 2. Filter
+
+cell_subtypes = ['Atcc-2023', 'Atcc-2023-LaGFP']
+drugs = ['none', 'dmso'] #['none', 'dmso']
+substrate = '20um fibronectin discs'
+df, condCol = apm.makeCompositeCol(df, cols=['cell type'])
+
+Filters = [(df['validatedThickness'] == True), 
+           (df['substrate'] == substrate),
+           (df['date'].apply(lambda x : x in dates)),
+           (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+           (df['drug'].apply(lambda x : x in drugs)),
+           (df[XCol] < 1100),
+           (df['normal field'] == 5),
+           (df[YCol] <= 2e4),
+           (df['valid' + suffix] == True), 
+           ]
+
+df_f = apm.filterDf(df, Filters)
+
+codeX, codeY = dict_code[XCol], dict_code[YCol]
+codeXY = '_' + codeX + '_' + codeY
+
+df_res, df_plot = compute_Eh_Exponent(df_f, XCol = XCol, YCol = YCol,
+                                        crit_NcompsMin = crit_NcompsMin,
+                                        crit_pvalFit = crit_pvalFit,
+                                        crit_thickCV = crit_thickCV,
+                                        activeCrits = activeCrits,
+                                        modeFit = modeFit)
+
+df_res['date'] = df_res['cellID'].apply(lambda x : x.split('_')[0])
+df_res.sort_values(by='cellID', ascending=True, inplace=True)
+
+
+inferred_expo = compute_infExpo(df_f, df_res, h_ref = 300, 
+                                agg_type = 'median',
+                                XCol = 'H0_f_<_500', YCol = 'E_f_<_500')
+
+print(inferred_expo)
+print(' ')
+
+valid_cells, dict_Eeq = compute_Eeq_cell_and_points(df_f, df_res, 
+                                                    inferred_expo, 
+                                                    h_ref = 300, 
+                                                    XCol = 'H0_f_<_500', 
+                                                    YCol = 'E_f_<_500')
+
+#### 1. Settings
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# ax.grid()
+
+fig2, axes2 = plt.subplots(1, 2, figsize=(11/cm_in, 7.5/cm_in),
+                         layout='compressed')
+ax=axes2[0]
+ax.set_title('Computing $E_{eq}$ at 300 nm\nExample within one cell')
+
+i = 12
+cid = valid_cells[i]
+color = apm.cL_Set2[0]
+df_cell = df_f[df_f['cellID'] == cid]
+A               = dict_Eeq[cid]['A']
+Eeq             = dict_Eeq[cid]['Eeq']
+points_Eeq      = dict_Eeq[cid]['points_Eeq']
+points_Eeq_norm = dict_Eeq[cid]['points_Eeq_norm']
+
+X = df_cell[XCol].values
+Y = df_cell[YCol].values/1000
+
+ax = ax
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.plot(X, Y, ls='', 
+        marker='o', ms=4, color=color,
+        mec='w', mew=0.1, alpha=1, zorder=3)
+Xplot = np.array([40,2100])
+Yplot = A * (Xplot**inferred_expo)
+ax.plot(Xplot, Yplot, ls='-', lw=1.5, color='k', zorder=4)
+ax.plot([h_ref], [Eeq], 'kP', markersize=6,
+        label='$E_{eq}$=' + f'{E_eq:.2f}kPa', zorder=6)
+ 
+ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray', zorder=2)
+for x, y, eeq in zip(X, Y, points_Eeq):
+    Xplot = np.array([x, h_ref])
+    Yplot = np.array([y, eeq])
+    ax.plot(Xplot, Yplot, ls='-', lw=0.75, color='gray', zorder=4)   
+
+# ax.legend(title='$E_{eq}$ at \n300 nm', loc='upper right', fontsize=6, handlelength = 1)
+ax.set_xlim([100, 1000])
+ax.set_ylim([1, 30])
+ax.set_xticks([100, 300, 1000])
+ax.set_xticklabels(['$10^2$', '$3\cdot 10^2$', '$10^3$'])
+
+ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator([100, 300, 1000]))
+ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+ax.xaxis.set_major_formatter(matplotlib.ticker.FixedFormatter(['$10^2$', '$3\cdot 10^2$', '$10^3$']))
+
+ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
+ax.set_xlabel('$H_0$ (nm)', labelpad=0.5)
+ax.grid()
+
+
+ax = axes2[1]
+ax.set_xlim([-0.5, +0.5])
+lists_points_Eeq_norm = [dict_Eeq[cid]['points_Eeq_norm'] for cid in dict_Eeq.keys()]
+all_points_Eeq_norm = np.concat(lists_points_Eeq_norm)
+
+log_Eeq     = np.log(all_points_Eeq_norm)
+logmean_Eeq = np.mean(log_Eeq)
+logstd_Eeq  = np.std(log_Eeq)
+
+print(logmean_Eeq, )
+print(np.exp(logmean_Eeq), np.exp(logmean_Eeq - logstd_Eeq), np.exp(logmean_Eeq + logstd_Eeq))
+print(logstd_Eeq, np.exp(logstd_Eeq), np.exp(logstd_Eeq)**0.5)
+data = pd.DataFrame({'Eeq_norm':all_points_Eeq_norm,})
+sns.swarmplot(ax=ax, data=data, y='Eeq_norm', color=(0, 0, 0, 0.3), size=3)
+f = 1
+colorcross = 'k'
+ax.errorbar([0], np.exp(logmean_Eeq), 
+            ls='', marker='_', markerfacecolor='k',
+            mec = colorcross, mew = 1.5*f, ms = 15*f,
+            xerr=None, 
+            yerr=[[np.exp(logmean_Eeq) - np.exp(logmean_Eeq - logstd_Eeq)], 
+                  [np.exp(logmean_Eeq + logstd_Eeq) - np.exp(logmean_Eeq)]],
+            ecolor = colorcross, elinewidth=1.5*f, capsize=3*f, zorder=10)
+ax.set_ylim([0, 2])
+
+ax.grid(axis='y')
+# ax.set_yscale('log')
+ax.set_ylabel('$E_{eq}$ (kPa)', labelpad=0.5)
+ax.set_title('Complete distibution\nof $E_{eq}$ at 300 nm')
+# ax.grid()
+
+plt.show()
+
+if SAVE:
+    ufun.archiveFig(fig2, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig2, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
 
 
 # %% --------
@@ -4071,7 +4318,7 @@ color_med = 'darkred'
 
 
 #### Plot
-fig1, ax1 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+fig1, ax1 = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in), layout='constrained')
 ax = ax1
 # sns.swarmplot(ax=ax, data = df_f, x='cell type', y='Dh_BeforeAfter', size=1)
 ax.hist(df_f['ratioDh_Hi'].values, 
@@ -4107,7 +4354,7 @@ ax.set_ylabel('N compressions', fontsize=8, labelpad=0.6)
 
 
 
-fig2, ax2 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+fig2, ax2 = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in), layout='constrained')
 ax = ax2
 ax.hist(df_f['peakDelay'].values, bins=30, color='gray', zorder=3)
 
@@ -4128,7 +4375,7 @@ ax.set_xlim(-1, 1)
 
 
 
-fig3, ax3 = plt.subplots(1, 1, figsize=(6/cm_in, 5/cm_in), layout='constrained')
+fig3, ax3 = plt.subplots(1, 1, figsize=(6/cm_in, 6/cm_in), layout='constrained')
 ax = ax3
 
 ax.hist(df_f['Dh_Precomp'].values/df_f['previousThickness'].values, 
@@ -4530,11 +4777,12 @@ for j, XCol in enumerate(XCols):
         hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
         EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
         print(f'For {XCol} vs {YCol}')
-        print(f'By compression, N = {len(df_f):.0f}')
-        print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
-        print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
-        print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
-        print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+        print(f"n = {CountByCond['compCount'].values[0]:.0f}, N = {CountByCond['cellCount'].values[0]:.0f}, M = {CountByCond['manipsCount'].values[0]:.0f}")
+        # print(f'By compression, N = {len(df_f):.0f}')
+        # print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+        # print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+        # print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+        # print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
         
 # Show
 plt.tight_layout()
@@ -4673,11 +4921,13 @@ for j, XCol in enumerate(XCols):
         hM, hL, hH = ufun.getLogNDistributionDescriptors(df_f[XCol].values)
         EM, EL, EH = ufun.getLogNDistributionDescriptors(df_f[YCol].values/1000)
         print(f'For {XCol} vs {YCol}')
-        print(f'By compression, N = {len(df_f):.0f}')
-        print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
-        print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
-        print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
-        print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
+        print(f"n = {CountByCond['compCount'].values[0]:.0f}, N = {CountByCond['cellCount'].values[0]:.0f}, M = {CountByCond['manipsCount'].values[0]:.0f}")
+        
+        # print(f'By compression, N = {len(df_f):.0f}')
+        # print(f'Typical values for H : {hM:.0f} [{hL:.0f}-{hH:.0f}]')
+        # print(f'Typical values for E : {EM:.2f} [{EL:.2f}-{EH:.2f}]')
+        # print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
+        # print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
         
 # Show
 plt.tight_layout()

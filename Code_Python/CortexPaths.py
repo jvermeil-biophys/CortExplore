@@ -47,7 +47,7 @@ elif COMPUTERNAME == 'PROCYON-PC':
     DirRepo = "C://Users//josep//Desktop//CortExplore"
     DirData = "C://Users//josep//Documents//MagneticPincherData"
     DirTempPlots = "C://Users//josep//Desktop//TempPlots"
-    DirPaper = 'C://Users//josep//Desktop//PapierDensité'
+    DirPaper = 'C://Users//josep//Desktop//Seafile//PapierDensité'
     # DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     CloudSaving = ''
     
