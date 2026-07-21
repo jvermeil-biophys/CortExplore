@@ -3609,7 +3609,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F3'
 name = 'F3_FG_1-1'
 
@@ -4554,7 +4554,7 @@ plt.show()
 
 
 #### Save
-SAVE = True
+SAVE = False
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
 figSubDir = 'S3'
 name = 'hAndQ_log-normality'

@@ -47,6 +47,7 @@ elif COMPUTERNAME == 'PROCYON-PC':
     DirRepo = "C://Users//josep//Desktop//CortExplore"
     DirData = "C://Users//josep//Documents//MagneticPincherData"
     DirTempPlots = "C://Users//josep//Desktop//TempPlots"
+    DirPaper = 'C://Users//josep//Desktop//PapierDensité'
     # DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     CloudSaving = ''
     
@@ -71,9 +72,10 @@ elif COMPUTERNAME == 'LARISA':
 elif COMPUTERNAME == 'MINC05':
     suffix = '_JV'
     DirRepo = "C:/Users/Utilisateur/Desktop/Python Code/CortExplore"
-    DirData = "E:/MagneticPincherData"
+    DirData = "F:/MagneticPincherData"
     DirCloud = "C://Users//Joseph//ownCloud//MagneticPincherData" + suffix
     DirTempPlots = 'C:/Users/Utilisateur/Desktop/TempPlots'
+    DirPaper = 'C:/Users/Utilisateur/Desktop/PapierDensité'
     CloudSaving = 'OwnCloud'
     
     

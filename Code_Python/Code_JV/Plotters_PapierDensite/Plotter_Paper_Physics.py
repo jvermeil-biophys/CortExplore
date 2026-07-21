@@ -70,6 +70,9 @@ apm.setGraphicOptions(mode = 'print',
 
 figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
 
+figMainDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresMain'
+figSupDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresSupp'
+
 
 # %% > Data import & export
 
@@ -1905,7 +1908,7 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S4'
 name = 'S4_AB_1-0'
 
@@ -2134,7 +2137,7 @@ if SAVE:
 
 # %% --------
 
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 
 # %% Supp Figure 1 & 1bis
 
@@ -2146,7 +2149,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_LogNormalDist'
 
@@ -2687,7 +2690,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = False
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_Choice_500pN'
 
@@ -2731,7 +2734,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+# figDir = figSupDir
 figDir = 'C:/Users/Joseph/Desktop/PapierDensité/FiguresSupp'
 
 figSubDir = 'S1'
@@ -2825,7 +2828,7 @@ Comp = Comps[i]
 # %%%%% 2
 
 SAVE = True
-# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+# figDir = figSupDir
 figDir = 'C:/Users/Joseph/Desktop/PapierDensité/FiguresSupp'
 
 figSubDir = 'S1'
@@ -3016,7 +3019,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_Identity_H500'
 # palette = [apm.cL_Set1[0], apm.cL_Set1[1], apm.cL_Set1[2]]
@@ -3209,7 +3212,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_Identity_E500'
 palette = apm.cL_Set2
@@ -3382,7 +3385,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_Plasticity_E500-H500'
 
@@ -3578,7 +3581,7 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S1_InIn_OutOut'
 
@@ -3955,7 +3958,7 @@ apm.setGraphicOptions(mode = 'print',
 # Save
 SAVE = True
 figSubDir = 'S1'
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 name = 'DH_Precompression_ratio' # 
 
 #### Dataset
@@ -4031,7 +4034,7 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S1'
 name = 'S9_1-1' # 
 
@@ -4403,7 +4406,7 @@ res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName 
 # Save
 SAVE = True
 figSubDir = 'S2'
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 name = 'S2A_E_vs_h_ManyMetrics'
 
 #### Dataset
@@ -5024,7 +5027,7 @@ apm.setGraphicOptions(mode = 'print',
 
 # Save
 SAVE = False
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S4'
 name = 'S4_A_1-0'
 
@@ -5084,4 +5087,58 @@ df_res.sort_values(by='cellID', ascending=True, inplace=True)
 A_list, Eeq_list = compute_Eeq(df_f, df_res, h_ref = 300, inferred_exponent = 'median',
                                XCol = 'H0_f_<_500', YCol = 'E_f_<_500',
                                PLOT = True)
+
+
+# %% --------
+
+# %% Supp Figure MM
+
+# %%% Chain of beads size distib
+
+# Save
+SAVE = True
+figDir = figSupDir
+figSubDir = 'S_MM'
+name = 'Peak_delay' # 
+
+srcDir = cp.DirPaper + '//FiguresSupp//S_MM//23.09.05_CalibrationM450-2025_Try01'
+fileName = 'Fibro_Dists.txt'
+
+df = pd.read_csv(os.path.join(srcDir, fileName), sep='\t')
+
+# ch = 'steelblue'
+# cl = 'darkorange'
+ch = apm.colorList10[0]
+cl = apm.colorList10[1]
+
+fig, ax = plt.subplots(1, 1, figsize=(0.5*17/cm_in, 5/cm_in))
+
+ax.hist(df['D3'].values, 
+        bins=15, color=ch, zorder=2)
+
+print(len(A))
+A = df['D3'].values
+M, s = np.mean(A), np.std(A)
+med, q1, q3 = np.median(A), np.percentile(A, 25), np.percentile(A, 75)
+
+ax.axvline(M-s, color=cl, linestyle=':')
+ax.axvline(M, color=cl, linestyle='--', label=f'mean = {M:.3f} µm')
+ax.axvline(M+s, color=cl, linestyle=':', label=r'$\pm$' + f' {s:.3f} µm [Std]')
+
+ax.legend(handlelength=1.0, handletextpad = 0.4)
+ax.set_xlim([4.4, 4.6])
+ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(0.02))
+
+ax.set_xlabel('3D center-to-center distance (µm)')
+ax.set_ylabel('N beads pairs')
+
+
+plt.show()
+
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 

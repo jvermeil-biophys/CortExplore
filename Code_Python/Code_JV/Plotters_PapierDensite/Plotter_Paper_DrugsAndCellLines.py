@@ -65,7 +65,11 @@ apm.setGraphicOptions(mode = 'print',
                       palette = 'Set2', 
                       colorList = apm.cL_Set21)
 
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
+# figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresMain'
+# figSupDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+
+figMainDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresMain'
+figSupDir = 'C:/Users/Utilisateur/Desktop/PapierDensité/FiguresSupp'
 
 # %% > Data import & export
 
@@ -198,6 +202,7 @@ def prepTableForDrugPlot(df_f, XCol, YCol, condCol):
 
 # Save
 SAVE = True
+figDir = figMainDir
 figSubDir = 'F2'
 name = 'F2_B_1-1'
 
@@ -408,6 +413,7 @@ if SAVE:
  
 # Save
 SAVE = False
+figDir = figMainDir
 figSubDir = 'F2'
 name = 'F2_C_1-1'
 
@@ -691,6 +697,7 @@ if SAVE:
 
 # Save
 SAVE = True
+figDir = figMainDir
 figSubDir = 'F4'
 name = 'F4_B_1-1'
 
@@ -972,7 +979,7 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S2'
 name = 'S2_A_1-0'
 
@@ -1277,11 +1284,11 @@ if SAVE:
     CountByCond_ctrl.to_csv(os.path.join(figDir, figSubDir, name+'_ctrl_count.txt'), sep='\t')
 
 
-# %%% S2B - Swarmplots H0 & E
+# %%% S2B - Violin/Swarmplots H0 & E
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S2'
 name = 'S2_B_1-0'
 
@@ -1309,7 +1316,7 @@ Filters = [(df['validatedThickness'] == True),
            (df[condCol].apply(lambda x : x in concentrations)),
            (df['cell subtype'].apply(lambda x : x in subtypes)),
            (df['date'].apply(lambda x : x not in excluded_dates)),
-           (df[XCol] > 50),
+           (df[XCol] > 70),
            (df[XCol] < 1000),
            (df['normal field'] == 5),
            (df[YCol] <= 1e5),
@@ -1321,7 +1328,7 @@ Filters_ctrl = [(df_ctrl['validatedThickness'] == True),
                (df_ctrl[condCol].apply(lambda x : x in ['dmso & 0.0'])),
                (df_ctrl['cell subtype'].apply(lambda x : x in subtypes)),
                (df_ctrl['date'].apply(lambda x : x not in excluded_dates)),
-               (df_ctrl[XCol] > 50),
+               (df_ctrl[XCol] > 70),
                (df_ctrl[XCol] < 1000),
                (df_ctrl['normal field'] == 5),
                (df_ctrl[YCol] <= 1e5),
@@ -1388,6 +1395,8 @@ df_gC, df_gD = prepTableForDrugPlot(df_f, XCol, YCol, condCol)
 df_gC[YCol + '_wAvg'] /= 1000
 df_f[YCol] /= 1000
 
+palette = [sD[cond]['color'] for cond in concentrations]
+# palette[0] = 'gray'
 
 
 for j, col in zip([0, 1], [XCol, YCol]): #+ '_wAvg'
@@ -1401,14 +1410,15 @@ for j, col in zip([0, 1], [XCol, YCol]): #+ '_wAvg'
                            'order':concentrations,
                            'hue_order':concentrations,
                            'hue':condCol,
-                           'palette':[sD[cond]['color'] for cond in concentrations],
+                           'palette':palette,
                            }
-    sns.violinplot(ax=ax, **plotting_parameters, zorder=2) # inner="quart", 
+    sns.violinplot(ax=ax, **plotting_parameters, inner="quart", 
+                   linewidth=1, zorder=2) # 
     # sns.swarmplot(ax=ax, **plotting_parameters)
     
     annotator = Annotator(ax, box_pairs, **plotting_parameters)
-    annotator.configure(test='Mann-Whitney', verbose=False, text_format="simple",
-                        hide_non_significant = False, fontsize = 6,
+    annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+                        hide_non_significant = False, fontsize = 8,
                         loc = 'inside', line_height = 0.01, 
                         text_offset=3, line_offset = 3, line_offset_to_group = 10)
                         
@@ -1431,19 +1441,22 @@ for j, col in zip([0, 1], [XCol, YCol]): #+ '_wAvg'
         #     print(f'Power-law exponent & Ci : {k:.2f} +- {(k_ciw/2):.2f}')
         #     print(f'Power-law constant & Ci : {A:.2e} [{A_Low:.2e}-{A_High:.2e}]')
         #     print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
-    
-axes_f[0].set_ylabel('$H_0$ (nm)')
-axes_f[1].set_ylabel('$E$ (kPa)')
+
+axes_f[0].set_ylabel('$H_0$ (nm)', labelpad=0.4)
+axes_f[1].set_ylabel('$E$ (kPa)', labelpad=0.4)
+axes_f[0].set_ylim([50, 5000])
+axes_f[1].set_ylim([0.2, 5000])
     
 for k in range(len(axes_f)):
     ax = axes_f[k]
     ax.grid(zorder=-1, axis='y')
     ax.set_yscale('log')
     ax.set_xlabel('')
+    ax.yaxis.set_tick_params(pad=0.25)
     # ax.set_xticklabels([apm.renameDict[c] for c in concentrations])
     ax.set_xticks([0, 1, 2, 3, 4])
     ax.set_xticklabels(['DMSO', 'LatA\n0.5 µM', 'Y27\n50 µM', 
-                        'CK666\n50 µM', 'LIMKi3\n20 µM'])
+                        'CK666\n50 µM', 'LIMKi3\n20 µM'], fontsize=7)
 
 
 plt.show()
@@ -1526,7 +1539,7 @@ if SAVE:
  
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S2'
 name = 'Dose_Y27'
 
@@ -1590,9 +1603,9 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S4'
-name = 'S4bis_A_1-0'
+name = 'S4bis_A_1-1'
 
 df = MecaData_CellTypes
 df_ctrl = MecaData_Phy
@@ -1678,16 +1691,15 @@ co_order = [
 
 colorsD = {
           '3T3 & Atcc-2023'     : 'dimgray', 
-          'HeLa & fucci'         : apm.cL_Set2[1],  
-          'DC & mouse-primary'   : apm.cL_Set2[2],  
-          'Dicty & DictyBase-WT' : apm.cL_Set2[3],  
-          # 'HoxB8-Macro & ctrl'   : apm.cL_Set2[4],  
+          'HeLa & fucci'         : apm.cL_Set2[3], 
           'MDCK & WT'            : apm.cL_Set2[5],
+          'DC & mouse-primary'   : apm.cL_Set2[2],  
+          'Dicty & DictyBase-WT' : apm.cL_Set2[4],            
           }
 
 rD = {
       '3T3 & Atcc-2023'      :  '3T3 ATCC', 
-      'HeLa & fucci'         :  'HeLa FUCCI',  
+      'HeLa & fucci'         :  'HeLa',  
       'DC & mouse-primary'   :  'Primary DC',  
       'Dicty & DictyBase-WT' :  'Dictys Ax3',  
       # 'HoxB8-Macro & ctrl'   :  'HoxB8 Macro',  
@@ -1733,6 +1745,7 @@ for i, cond in enumerate(conds):
         ax.set_yscale('log')
         
         color = colorsD[cond]
+        marker = 'o'
         
         df_c = df_p[df_p[condCol] == cond]
         X, Y = df_c[XCol].values, df_c[YCol + '_wAvg'].values/1000
@@ -1758,10 +1771,10 @@ for i, cond in enumerate(conds):
         text_pval = apm.pval2text(pval, n_digits = 3, space = True)
         # dLabels[cond] = {'A':A, 'k':k, 'k_ciw':k_ciw, 'pval':pval, 'text_pval':text_pval}
         if pval < 0.1:
-            dLabels[cond] = f'{rD[cond]}' + \
-                    f'\nk  = {k:.2f}  ' + \
-                    r'$\pm$' + f' {(k_ciw/2):.2f}' + \
-                    '\n' + text_pval
+            dLabels[cond] = f'{rD[cond]}\n' + \
+                    r'$\alpha$' + f' = {k:.2f} ' + \
+                    r'$\pm$' + f' {(k_ciw/2):.2f}\n' + \
+                    text_pval
         else:
             dLabels[cond] = f'{rD[cond]}' + \
                             '\n' + 'NS fit' + \
@@ -1785,9 +1798,9 @@ for i, cond in enumerate(conds):
             print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
             
 
-#### Drugs
+#### Cell types
 
-conds = ['HeLa & fucci', 'DC & mouse-primary', 'Dicty & DictyBase-WT', 'MDCK & WT']
+conds = co_order
 df_p = df_plot
 
 for i, cond in enumerate(conds):
@@ -1834,10 +1847,10 @@ for i, cond in enumerate(conds):
     # text_pval = apm.pval2text(pval, n_digits = 3, space = True)
     # dLabels[cond] = {'A':A, 'k':k, 'k_ciw':k_ciw, 'pval':pval, 'text_pval':text_pval}
     if pval < 0.1:
-        dLabels[cond] = f'{rD[cond]}' + \
-                f'\nk  = {k:.2f}  ' + \
-                r'$\pm$' + f'{(k_ciw/2):.2f}' + \
-                '\n' + text_pval
+        dLabels[cond] = f'{rD[cond]}\n' + \
+                r'$\alpha$' + f' = {k:.2f} ' + \
+                r'$\pm$' + f' {(k_ciw/2):.2f}\n' + \
+                text_pval
         ax.plot(Xplot, Yplot, ls = '-', c = apm.lightenColor(color, 0.8), 
                 lw = 2, zorder=6)
         ax.plot([], [], ls = '-', c = apm.lightenColor(color, 0.8), 
@@ -1871,7 +1884,7 @@ for i, cond in enumerate(conds):
 for k in range(len(axes_f)):
     ax = axes_f[k]
     ax.grid()
-    ax.legend(loc = 'lower left', handlelength=1)
+    ax.legend(loc = 'lower left', handlelength=1, edgecolor='none')
     # ax.set_xlim([0, 600])
     ax.set_xlim([50, 2000])
     # ax.set_ylim([0, 30])
@@ -1900,9 +1913,9 @@ if SAVE:
 
 # Save
 SAVE = True
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+figDir = figSupDir
 figSubDir = 'S4'
-name = 'S4bis_B_1-0'
+name = 'S4bis_B_1-1'
 
 df = MecaData_CellTypes
 df_ctrl = MecaData_Phy
@@ -1986,21 +1999,19 @@ co_order = [
             ]
 
 colorsD = {
-          '3T3 & Atcc-2023'     : 'dimgray', 
-          'HeLa & fucci'         : apm.cL_Set2[1],  
+          '3T3 & Atcc-2023'     : plt.cm.Greys(0.5), 
+          'HeLa & fucci'         : apm.cL_Set2[3], 
           'MDCK & WT'            : apm.cL_Set2[5],
           'DC & mouse-primary'   : apm.cL_Set2[2],  
-          'Dicty & DictyBase-WT' : apm.cL_Set2[3],  
-          # 'HoxB8-Macro & ctrl'   : apm.cL_Set2[4],  
-          
+          'Dicty & DictyBase-WT' : apm.cL_Set2[4],            
           }
 
 rD = {
       '3T3 & Atcc-2023'      :  '3T3 ATCC', 
-      'HeLa & fucci'         :  'HeLa FUCCI',  
+      'HeLa & fucci'         :  'HeLa',  
       'MDCK & WT'            :  'MDCK',
-      'DC & mouse-primary'   :  'Primary DC',  
-      'Dicty & DictyBase-WT' :  'Dictys Ax3',  
+      'DC & mouse-primary'   :  'Primary DC ',  
+      'Dicty & DictyBase-WT' :  ' Dictys Ax3',  
       # 'HoxB8-Macro & ctrl'   :  'HoxB8 Macro',  
       
       }
@@ -2057,12 +2068,13 @@ for j, col in zip([0, 1], [XCol, YCol]): #
                            'hue':condCol,
                            'palette':[colorsD[cond] for cond in celltypes],
                            }
-    sns.violinplot(ax=ax, **plotting_parameters, zorder=2) # inner="quart", 
+    sns.violinplot(ax=ax, **plotting_parameters, inner="quart", 
+                   linewidth=1, zorder=2) # 
     # sns.swarmplot(ax=ax, **plotting_parameters)
     
     annotator = Annotator(ax, box_pairs, **plotting_parameters)
-    annotator.configure(test='Mann-Whitney', verbose=False, text_format="simple",
-                        hide_non_significant = False, fontsize = 6,
+    annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+                        hide_non_significant = False, fontsize = 8,
                         loc = 'inside', line_height = 0.01, 
                         text_offset=3, line_offset = 3, line_offset_to_group = 10)
                         
@@ -2086,17 +2098,20 @@ for j, col in zip([0, 1], [XCol, YCol]): #
         #     print(f'Power-law constant & Ci : {A:.2e} [{A_Low:.2e}-{A_High:.2e}]')
         #     print(f'Actual p-value : {pval:.2e} | ' + text_pval + '\n')
     
-axes_f[0].set_ylabel('$H_0$ (nm)')
-axes_f[1].set_ylabel('$E$ (kPa)')
+axes_f[0].set_ylabel('$H_0$ (nm)', labelpad=0.4)
+axes_f[1].set_ylabel('$E$ (kPa)', labelpad=0.4)
+axes_f[0].set_ylim([50, 5000])
+axes_f[1].set_ylim([0.2, 2000])
     
 for k in range(len(axes_f)):
     ax = axes_f[k]
     ax.grid(zorder=-1, axis='y')
     ax.set_yscale('log')
     ax.set_xlabel('')
+    ax.yaxis.set_tick_params(pad=0.25)
     # ax.set_xticklabels([apm.renameDict[c] for c in concentrations])
     ax.set_xticks([0, 1, 2, 3, 4])
-    ax.set_xticklabels([rD[c] for c in celltypes])
+    ax.set_xticklabels([rD[c] for c in celltypes], fontsize=7)
 
 
 plt.show()
