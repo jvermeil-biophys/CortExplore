@@ -3815,6 +3815,10 @@ if SAVE:
 
 plt.show()
 
+# %%%% Get numbers for the text
+
+
+
 # %%% ------
 
 # %%% F3 ALT - Quantity and density

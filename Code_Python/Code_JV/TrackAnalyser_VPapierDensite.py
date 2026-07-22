@@ -1476,7 +1476,7 @@ class CellCompression:
                               palette = 'Set2', 
                               colorList = apm.cL_Set21)
         
-        fig = plt.figure(figsize=(11/gs.cm_in, 6/gs.cm_in), layout="constrained")
+        fig = plt.figure(figsize=(13/gs.cm_in, 7.5/gs.cm_in), layout="constrained")
         # fig.tight_layout()
         spec = fig.add_gridspec(6, 1, hspace=0.15, top = 0.975, bottom=0.125, left = 0.065, right = 0.99)
         ax1 = fig.add_subplot(spec[:4])
@@ -1495,7 +1495,18 @@ class CellCompression:
         T0 = int(tsDf['T'].values[0])
         
         time_ticks = np.array([6.3, 10.167, 11.667, 13, 18.8, 38.2, 57.5]) + T0
-        time_ticklabels = np.array([6.0, 10, 11.5, 13, 19, 38, 57]) + T0
+        time_ticklabels = np.array([6, 10, 11.5, 13, 19, 38, 57]) + T0
+        time_ticklabels_str = []
+        for i in time_ticklabels:
+            if i==10:
+                time_ticklabels_str.append(f'{i:.0f}    ')
+            elif i==13:
+                time_ticklabels_str.append(f'    {i:.0f}')
+            elif int(i)==i:
+                time_ticklabels_str.append(f'{i:.0f}')
+            else:
+                time_ticklabels_str.append(f'{i:.1f}')
+                
         x_Vsep = np.array([18.8, 38.2, 57.5]) + T0
         
         #### Distance Plot
@@ -1548,7 +1559,7 @@ class CellCompression:
                                  edgecolor='k', linewidth=0.2,
                                  label='Constant field')
         LM1 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.15, linewidth=0,
-                                   label='Force release')
+                                   label='Initial relaxation')
         LM2 = mpatches.Rectangle((0, 0), 0, 0, color='grey', alpha=0.3, linewidth=0,
                                    label='Compression\n & relaxation')
         LegendHandles = [LM0, LM1, LM2]
@@ -1575,13 +1586,14 @@ class CellCompression:
         ax1.set_xticklabels([])
         ax1.legend(handles=LegendHandles, loc='upper right', 
                    handlelength = 1.25, handleheight = 1, handletextpad=0.4,
-                   framealpha=1, fontsize=5.5, labelspacing=0.2)
+                   framealpha=1, fontsize=5.5, labelspacing=0.6)
 
         ax2.set_xlim([0, ax_xM])
         ax2.set_xlabel('Time (s)', labelpad=1)
         ax2.set_xticks(time_ticks)
-        ax2.set_xticklabels(time_ticklabels)
-        ax2.xaxis.set_tick_params(rotation=50, labelsize=6, pad=0.05)
+        # ax2.set_xticklabels(time_ticklabels)
+        ax2.xaxis.set_major_formatter(matplotlib.ticker.FixedFormatter(time_ticklabels_str))
+        ax2.xaxis.set_tick_params(rotation=20, labelsize=6, pad=1)
         ax2.legend().set_visible(False)
         
         fig.get_layout_engine().set(h_pad = 0.015, 
@@ -2507,32 +2519,32 @@ class CellCompression:
             #     pass
         
             # try:
-            name = 'S9_A_' + self.cellID
-            fig, ax = self.Pplot_Timeseries_V2ter(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
-                            figDir = figDir_supp, figSubDir = 'S1')
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_supp, figSubDir = 'S1')
+            # name = 'S9_A_' + self.cellID
+            # fig, ax = self.Pplot_Timeseries_V2ter(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
             # except:
             #     pass
         
             # try:
-            name = 'S9_A_1-1_' + self.cellID
-            fig, ax = self.Pplot_Timeseries_V2ter2(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
-                            figDir = figDir_supp, figSubDir = 'S1')
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_supp, figSubDir = 'S1')
+            # name = 'S9_A_1-1_' + self.cellID
+            # fig, ax = self.Pplot_Timeseries_V2ter2(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
             # except:
             #     pass
             
             # # try:
-            name = 'S9_C_1-2_' + self.cellID
-            fig, ax = self.Pplot_Timeseries_V3(plotSettings)
-            ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
-                            figDir = figDir_supp, figSubDir = 'S1')
-            ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
-                            figDir = figDir_supp, figSubDir = 'S1')
+            # name = 'S9_C_1-2_' + self.cellID
+            # fig, ax = self.Pplot_Timeseries_V3(plotSettings)
+            # ufun.archiveFig(fig, name = name, dpi = 300, ext = '.pdf', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
+            # ufun.archiveFig(fig, name = name, dpi = 500, ext = '.png', 
+            #                 figDir = figDir_supp, figSubDir = 'S1')
             # # except:
             # #     pass
             

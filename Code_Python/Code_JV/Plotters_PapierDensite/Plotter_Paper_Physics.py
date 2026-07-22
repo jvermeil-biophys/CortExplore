@@ -450,8 +450,8 @@ plotSettings = {# ON/OFF switchs plot by plot
 # # task = '23-03-16_M1_P1_C4'
 # =============================================================================
 
-# task = '24-04-11_M3_P1_C1'
-task = '23-03-09_M4_P1_C5' # -> for Pplot_Timeseries_V3()
+task = '24-04-11_M3_P1_C1'
+# task = '23-03-09_M4_P1_C5' # -> for Pplot_Timeseries_V3()
 
 
 res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName = 'test', 
@@ -4690,14 +4690,25 @@ fig, axes = plt.subplots(nY, nX, figsize = (9.5/cm_in, 19.2/cm_in), sharey='row'
 for j, XCol in enumerate(XCols):
     for i, YCol in enumerate(YCols):
         # Filter
+        # Filters = [(df['validatedThickness'] == True), 
+        #            (df['substrate'] == substrate),
+        #            (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+        #            (df['drug'].apply(lambda x : x in drugs)),
+        #            (df['date'].apply(lambda x : x not in excluded_dates)),
+        #            (df[XCol] < 1000),
+        #            (df['normal field'] == 5),
+        #            (df[YCol] <= 8e5),
+        #            (df['valid' + YCol[1:]] == True), 
+        #            ]
+        
         Filters = [(df['validatedThickness'] == True), 
                    (df['substrate'] == substrate),
                    (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
                    (df['drug'].apply(lambda x : x in drugs)),
                    (df['date'].apply(lambda x : x not in excluded_dates)),
-                   (df[XCol] < 1000),
+                   (df[XCol] < 1100),
                    (df['normal field'] == 5),
-                   (df[YCol] <= 8e5),
+                   (df[YCol] <= 1e5),
                    (df['valid' + YCol[1:]] == True), 
                    ]
         
@@ -4839,14 +4850,27 @@ fig, axes = plt.subplots(nY, nX, figsize = ((0.75 + 8.75*4/3)/cm_in, 6.5/cm_in),
 for j, XCol in enumerate(XCols):
     for i, YCol in enumerate(YCols):
         # Filter
+        # Filters = [(df['validatedThickness'] == True), 
+        #            (df['substrate'] == substrate),
+        #            (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
+        #            (df['drug'].apply(lambda x : x in drugs)),
+        #            (df['date'].apply(lambda x : x not in excluded_dates)),
+        #            (df[XCol] < 1000),
+        #            (df['normal field'] == 5),
+        #            (df[YCol] <= 8e5),
+        #            (df['error' + YCol[1:]] == False), 
+        #            (df['R2' + YCol[1:]] > 0.4), 
+        #            (df['Chi2' + YCol[1:]] < 50), 
+        #            ]
+        
         Filters = [(df['validatedThickness'] == True), 
                    (df['substrate'] == substrate),
                    (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
                    (df['drug'].apply(lambda x : x in drugs)),
                    (df['date'].apply(lambda x : x not in excluded_dates)),
-                   (df[XCol] < 1000),
+                   (df[XCol] < 1100),
                    (df['normal field'] == 5),
-                   (df[YCol] <= 8e5),
+                   (df[YCol] <= 1e5),
                    (df['error' + YCol[1:]] == False), 
                    (df['R2' + YCol[1:]] > 0.4), 
                    (df['Chi2' + YCol[1:]] < 50), 
