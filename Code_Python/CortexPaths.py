@@ -55,7 +55,8 @@ elif COMPUTERNAME == 'DESKTOP-9J5NPMO':
     suffix = '_JV'
     DirRepo = "C://Users//Joseph//Desktop//CortExplore"
     DirData = "C://Users//Joseph//Desktop//MagneticPincherData"
-    DirTempPlots = "C://Users//josep//Desktop//TempPlots"
+    DirTempPlots = "C://Users//Joseph//Desktop//TempPlots"
+    DirPaper = 'C://Users//Joseph//Desktop//PapierDensité'
     # DirCloud = "C://Users//JosephVermeil//ownCloud//MagneticPincherData" + suffix
     CloudSaving = ''
     

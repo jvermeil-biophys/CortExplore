@@ -25,6 +25,8 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
 
+from statannotations.Annotator import Annotator
+
 from PIL import Image
 from PIL.TiffTags import TAGS
 
@@ -66,6 +68,9 @@ apm.setGraphicOptions(mode = 'print',
 def dateFormat(d):
     d2 = d[0:2]+'.'+d[3:5]+'.'+d[6:8]
     return(d2)
+
+figMainDir = os.path.join(cp.DirPaper, 'FiguresMain')
+figSupDir = os.path.join(cp.DirPaper, 'FiguresSupp')
 
 
 # %% Utility functions
@@ -3815,9 +3820,156 @@ if SAVE:
 
 plt.show()
 
-# %%%% Get numbers for the text
+# %%% S3 + Get numbers for the text
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figDir = figSupDir
+figSubDir = 'S3'
+name = 'thin_vs_Thick'
+
+#### Data
+
+hue = 'manipID'
+style = 'cell'
+metric_Q = 'Q_gf'
+metric_D = 'D_gf'
+
+# Filter global_df
+
+Filters = [(global_df['h3'] < 1.1),
+           (global_df['Q_gf'] < 40),
+           (global_df['date'] != '24-02-27'),
+           # (global_df['manipID'] == '24-06-14_M1'),
+           ]
+
+df_f = filterDf(global_df, Filters)
+df_f = df_f.dropna(subset=metric_Q)
+df_f['h3'] *= 1000
+
+dates = df_f['date'].unique()
+manipes = df_f['manipID'].unique()
+md = {manipes[i]:i for i in range(len(manipes))}
+df_f['manipNum'] = df_f['manipID'].apply(lambda x : md[x])
+
+Nc = len(df_f)
+
+bins = np.linspace(0, 1000, 10, endpoint=False)
+df_f['h3_bin'] = np.digitize(df_f['h3'].values, bins = bins)
+df_fg = df_f[[metric_Q, metric_D,'h3','h3_bin']].groupby('h3_bin').agg(['median', 'std'])
+df_fg['h3_upper'] = df_fg.index*50
+df_fg = df_fg.dropna()
+
+condition = df_f['h3'] < 400
+x, y = ['$H_{5mT}$ < 400nm']*len(df_f), ['$H_{5mT}$ $\geq$ 400nm']*len(df_f)
+df_f['h_range'] = np.array([xv if c else yv for c, xv, yv in zip(condition, x, y)])
+df_low = df_f[df_f['h3'] < 400][[metric_Q, metric_D]]
+df_high = df_f[df_f['h3'] >= 400][[metric_Q, metric_D]]
+med_Q_low, med_D_low = np.median(df_low[metric_Q]), np.median(df_low[metric_D])
+med_Q_high, med_D_high = np.median(df_high[metric_Q]), np.median(df_high[metric_D])
+print(med_Q_low, med_Q_high)
+print(med_D_low, med_D_high)
+
+#### Plot
+
+rp = cm_in
+fig, axes = plt.subplots(1, 2, figsize = (17/rp, 7/rp), layout="compressed")
+
+#### Plot 1 - QvH loglog
+
+ax = axes[0]
+
+ax.set_yscale('log')
+
+ax.set_prop_cycle(color=cL_f3)
+plot_parms = {
+              'data':df_f,
+              'x':'h_range',
+              'y':metric_Q,
+              'color':'gray',
+              'order':['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']
+              }
+sns.swarmplot(**plot_parms, ax=ax,
+                s=4.5, edgecolor='k', alpha=0.75,
+                zorder=4, legend=False)
+sns.boxplot(**plot_parms, ax=ax, 
+            showfliers= False,
+            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            # boxprops={"color": color, "linewidth": 0.5},
+            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            zorder=3, legend=False)
+
+annotator = Annotator(ax, [['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']], **plot_parms)
+annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+                    hide_non_significant = False, fontsize = 8,
+                    loc = 'inside', line_height = 0.01, 
+                    text_offset=3, line_offset = 3, line_offset_to_group = 10)
+annotator.apply_and_annotate()
+
+ax.set_xlim([-0.5, 1.5])
+ax.set_ylim([4, 100])
+ax.xaxis.set_tick_params(labelsize=8)
+ax.yaxis.set_tick_params(labelsize=8)
+ax.set_xlabel('')
+ax.set_ylabel('Actin Quantity (a.u.)', fontsize=9, labelpad=0.5)
 
 
+#### Plot 2 - RhovH loglog
+
+ax = axes[1]
+
+ax.set_yscale('log')
+
+plot_parms = {
+              'data':df_f,
+              'x':'h_range',
+              'y':metric_D,
+              'color':'gray',
+              'order':['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']
+              }
+sns.swarmplot(**plot_parms, ax=ax,
+                s=4.5, edgecolor='k', alpha=0.75,
+                zorder=4, legend=False) #, cmap = cM_f3) # , style='cellNum'
+sns.boxplot(**plot_parms, ax=ax, 
+            showfliers= False,
+            medianprops={"color": 'darkred', "linewidth": 1.5, 'alpha' : 0.8, 'zorder' : 2},
+            boxprops={"facecolor": 'None', "edgecolor": 'k',"linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            # boxprops={"color": color, "linewidth": 0.5},
+            whiskerprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            capprops={"color": 'k', "linewidth": 1, 'alpha' : 0.7, 'zorder' : 2},
+            zorder=3, legend=False)
+
+annotator = Annotator(ax, [['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']], **plot_parms)
+annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+                    hide_non_significant = False, fontsize = 8,
+                    loc = 'inside', line_height = 0.01, 
+                    text_offset=3, line_offset = 3, line_offset_to_group = 10)
+annotator.apply_and_annotate() 
+
+ax.set_xlim([-0.5, 1.5])
+ax.set_ylim([5, 200])
+ax.xaxis.set_tick_params(labelsize=8)
+ax.yaxis.set_tick_params(labelsize=8)
+ax.set_xlabel('')
+ax.set_ylabel('Actin Density (a.u.)', fontsize=9, labelpad=0.5)
+
+
+plt.show()
+
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    # CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
+
+plt.show()
 
 # %%% ------
 
@@ -4558,8 +4710,8 @@ plt.show()
 
 
 #### Save
-SAVE = False
-figDir = 'C:/Users/josep/Desktop/Seafile/PapierDensité/FiguresSupp'
+SAVE = True
+figDir = figSupDir
 figSubDir = 'S3'
 name = 'hAndQ_log-normality'
 

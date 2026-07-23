@@ -1021,7 +1021,7 @@ plotSettings = {# ON/OFF switchs plot by plot
 # cellTask += ' & 24-02-27 & 24-05-22 & 24-05-30' # MDCK cells from Hugo
 # cellTask += ' & 24-05-23 & 24-06-04 & 24-06-12' # HeLa Fucci from Eloise
 
-# cellTask = '18-10 & 18-12' # Update with more DC
+cellTask = '18-10 & 18-12' # Update with more DC
 
 res = taka3.computeGlobalTable_meca(mode = 'updateExisting', task = cellTask, fileName = 'MecaData_CellTypes_V2', 
                                     save = True, PLOT = False, source = 'Python', 

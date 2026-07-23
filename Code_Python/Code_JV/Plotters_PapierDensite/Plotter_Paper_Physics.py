@@ -49,7 +49,6 @@ import UtilityFunctions as ufun
 import TrackAnalyser_V3 as taka3
 import TrackAnalyser_VPapierDensite as takaP
 
-
 #### Potentially useful lines of code
 # get_ipython().run_line_magic('load_ext', 'autoreload')
 # get_ipython().run_line_magic('autoreload', '2')
@@ -180,7 +179,6 @@ XCol = 'H0_f_<_500'
 YCol = 'E_f_<_500'
 
 df['full_comp_id'] = df['cellID'] + '_' + df['compNum'].astype(str)
-
 
 
 # Filter
@@ -4359,6 +4357,7 @@ ax = ax2
 ax.hist(df_f['peakDelay'].values, bins=30, color='gray', zorder=3)
 
 median = np.median(df_f['peakDelay'].values)
+print(np.mean(df_f['peakDelay'].values), np.std(df_f['peakDelay'].values))
 # ax.axvline(median, color='darkred', ls='-', lw=1,
 #            label=f'Median = {median:.2f} s', zorder=3)
 # ax.text(x=0.2, y=225, s='Median\n' + f'{median*1e3:.0f} ms', size=7, c=color_med)
@@ -4382,6 +4381,7 @@ ax.hist(df_f['Dh_Precomp'].values/df_f['previousThickness'].values,
         bins=360, color='dimgray', zorder=3)
 
 median = np.median(df_f['Dh_Precomp'].values/df_f['previousThickness'].values)
+
 # ax.axvline(median, color='darkred', ls='-', lw=1,
 #            label=f'Median = {median:.2f}', zorder=3)
 # ax.legend(handlelength = 1.25)

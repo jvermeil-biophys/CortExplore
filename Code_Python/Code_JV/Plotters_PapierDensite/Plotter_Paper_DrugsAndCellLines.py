@@ -1288,7 +1288,7 @@ if SAVE:
 SAVE = True
 figDir = figSupDir
 figSubDir = 'S2'
-name = 'S2_B_1-0'
+name = 'S2_B_2-0'
 
 df = MecaData_Drug
 df_ctrl = MecaData_Phy
@@ -1346,6 +1346,8 @@ concentrations = ['dmso & 0.0', 'latrunculinA & 0.5', 'Y27 & 50.0',
 box_pairs = apm.makeBoxPairs(concentrations)
 box_pairs = box_pairs[:4]
 
+
+
 def prepTableForDrugPlot(df_f, XCol, YCol, condCol):
     logMean = lambda x : np.exp(np.mean(np.log(x)))
 
@@ -1397,11 +1399,11 @@ palette = [sD[cond]['color'] for cond in concentrations]
 # palette[0] = 'gray'
 
 
-for j, col in zip([0, 1], [XCol, YCol]): #+ '_wAvg'
+for j, col in zip([0, 1], [XCol, YCol + '_wAvg']): #+ '_wAvg'
     ax = axes_f[j]
     
     # color = sD[cond]['color']
-    plotting_parameters = {'data':df_f,
+    plotting_parameters = {'data':df_gC,
                            'x':condCol,
                            'y':col,
                            'log_scale':True,
@@ -1415,7 +1417,7 @@ for j, col in zip([0, 1], [XCol, YCol]): #+ '_wAvg'
     # sns.swarmplot(ax=ax, **plotting_parameters)
     
     annotator = Annotator(ax, box_pairs, **plotting_parameters)
-    annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+    annotator.configure(test='Mann-Whitney', verbose=True, #text_format="simple",
                         hide_non_significant = False, fontsize = 8,
                         loc = 'inside', line_height = 0.01, 
                         text_offset=3, line_offset = 3, line_offset_to_group = 10)
@@ -1913,7 +1915,7 @@ if SAVE:
 SAVE = True
 figDir = figSupDir
 figSubDir = 'S4'
-name = 'S4bis_B_1-1'
+name = 'S4bis_B_2-1'
 
 df = MecaData_CellTypes
 df_ctrl = MecaData_Phy
@@ -2036,8 +2038,8 @@ df_ctrl_plot = pd.merge(left=df_ctrl_fg, right=df_ctrl_fgw2, on='cellID', how='i
 CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
 CountByCond_ctrl, CountByCell_ctrl = apm.makeCountDf(df_ctrl_f, condCol)
 
-# df_plot = pd.concat([df_ctrl_plot, df_4ct_plot])
-df_plot = pd.concat([df_ctrl_f, df_f])
+df_plot = pd.concat([df_ctrl_plot, df_4ct_plot])
+# df_plot = pd.concat([df_ctrl_f, df_f])
 
 celltypes = list(rD.keys())
 box_pairs = apm.makeBoxPairs(celltypes)
@@ -2048,6 +2050,7 @@ fig, axes = plt.subplots(1, 2, figsize = (17/cm_in, 6/cm_in),
                          layout='constrained')
 axes_f = axes
 
+YCol += '_wAvg'
 df_plot[YCol] /= 1000
 
 # YCol += '_wAvg'
@@ -2071,7 +2074,7 @@ for j, col in zip([0, 1], [XCol, YCol]): #
     # sns.swarmplot(ax=ax, **plotting_parameters)
     
     annotator = Annotator(ax, box_pairs, **plotting_parameters)
-    annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+    annotator.configure(test='Mann-Whitney', verbose=True, #text_format="simple",
                         hide_non_significant = False, fontsize = 8,
                         loc = 'inside', line_height = 0.01, 
                         text_offset=3, line_offset = 3, line_offset_to_group = 10)
