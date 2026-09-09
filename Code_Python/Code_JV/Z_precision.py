@@ -562,7 +562,7 @@ q3DZ = np.percentile(np.abs(giantTable['dz']), 75)
 errXY = 2
 errX = errXY / 2**0.5
 errY = errXY / 2**0.5
-errZ = 50 # ->>> Compute exact value
+errZ = 75 # ->>> Compute exact value
 medDX = 4634
 medDY = 587
 medDZ = 501
@@ -584,8 +584,8 @@ medDZ = 501
 # - errXY
 # - errZ
 
-errD3 = (2**0.5) * (((medDX**2)*(errX**2) + (medDY**2)*(errY**2) + (medDZ**2)*((errZ**2)/2))/(medDX**2 + medDY**2 + medDZ**2))*0.5
-
+errD3 = (2**0.5) * (((medDX**2)*(errX**2) + (medDY**2)*(errY**2) + (medDZ**2)*((errZ**2)/2))/(medDX**2 + medDY**2 + medDZ**2))**0.5
+print(errD3)
 
 # %%% Add bead diameter in the calculation
 
@@ -601,6 +601,9 @@ errBeads = 25
 errH = (errD3**2 + errBeads**2)**0.5
 
 print(errH)
+
+
+
 
 # %%% Error on F
 

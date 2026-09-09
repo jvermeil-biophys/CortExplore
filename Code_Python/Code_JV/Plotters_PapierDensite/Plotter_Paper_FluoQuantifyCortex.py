@@ -3304,7 +3304,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F3'
 name = 'ExpoDist_2'
 
@@ -3466,7 +3466,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figSubDir = 'F3'
 name = 'F3E_1-1'
 
@@ -3575,6 +3575,157 @@ sns.swarmplot(data = df_res, ax = ax, x='manipID', y='expo',
               size = 4.0, color = apm.cL_Set2[0], hue = 'cellID', palette=Palette, 
               # color = apm.cL_Set2[0], hue = 'cellID', palette=Palette, 
               edgecolor = None, linewidth = 0.25, alpha = 0.8,
+              legend=False, zorder=9)
+
+ebarcolor = 'k' # 'darkslategray'
+a = 0.8
+ax.errorbar([0, 1, 2, 3], df_res_g['expo_mean'].values, 
+            ls='', marker='_', markerfacecolor=(1, 1, 1, 0.0),
+            mec = ebarcolor, mew = 1.5*a, ms = 12*a,
+            xerr=None, yerr=df_res_g['expo_ste'].values,
+            ecolor = ebarcolor, elinewidth=1.5*a, capsize=3*a, zorder=10)
+ax.xaxis.set_tick_params(pad=0.5, length=2.5)
+ax.yaxis.set_tick_params(pad=0.5, length=2.5)
+
+print(np.mean(Score))
+
+### Format
+ax.grid(axis='y')
+ax.set_xlim([-0.5, 3.5])
+ax.set_xticklabels(['Rep1', 'Rep2', 'Rep3', 'Rep4'], rotation = 30)
+ax.set_ylim([-2, 2.25])
+ax.set_ylabel(r'Exponent of the $Q-H_{5mT}$ fit', labelpad=0.5, fontsize=7)
+ax.set_xlabel(' ', labelpad=0.5)
+ax.legend(loc='lower center', handlelength=0.75).set_visible(False)
+
+plt.show()
+
+# Save
+if SAVE:
+    ufun.archiveFig(fig, name = name, ext = '.pdf', dpi = 300,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    ufun.archiveFig(fig, name = name, ext = '.png', dpi = 500,
+                    figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
+    
+    
+# %%% F3E_V3 - Plot exponents for all cells LIN/LOG
+
+
+apm.setGraphicOptions(mode = 'print', 
+                      palette = 'Set2', 
+                      colorList = apm.cL_Set21)
+
+# Save
+SAVE = True
+figSubDir = 'F3'
+name = 'F3E_1-2'
+
+XCol = 'h3'
+YCol = 'Q_gf'
+
+Filters = [(global_df[XCol] < 1.1),
+           (global_df[YCol] < 40),
+           ]
+condCol = 'date'
+
+df_f = filterDf(global_df, Filters)
+CID = df_f.reset_index()['cellID'].unique()
+Ncells = len(CID)
+
+res_dict = {'cellID':[],
+            'manipID':[],
+            'DH':[],
+            'CvH':[],
+            'expo':[],
+            'expo_ciw':[],
+            }
+
+#### Plot 1
+fig, ax = plt.subplots(1, 1, figsize=(3/cm_in, 4.5/cm_in), 
+                       layout='compressed')#, layout='compressed')
+
+Palette = sns.color_palette("husl", Ncells)
+Score = np.ones(Ncells)
+
+## Make the plot
+for i in range(Ncells):
+    ### Data
+    cid = CID[i]
+    manipID = '_'.join(cid.split('_')[:2])
+    df_cell = df_f[df_f['cellID'] == cid]
+    
+    DH = np.max(df_cell[XCol].values*1000) - np.min(df_cell[XCol].values*1000)
+    CvH = np.std(np.log(df_cell[XCol].values*1000)) / np.mean(np.log(df_cell[XCol].values*1000))
+    
+    res_dict['cellID'].append(cid)
+    res_dict['manipID'].append(manipID)
+    res_dict['DH'].append(DH)
+    res_dict['CvH'].append(CvH)
+    
+    Xfit, Yfit = (df_cell[XCol].values), (df_cell[YCol].values)
+    Xfit, Yfit = np.log(Xfit), np.log(Yfit)
+    
+    # RLS
+    # perc, dof, = 0.975, len(Yfit)-2
+    # q = st.t.ppf(perc, dof)
+    # [b, a], results = ufun.fitLine(Xfit, Yfit)
+    [b, a], results, w_results = ufun.fitLineHuber(Xfit, Yfit, 
+                                                   with_wlm_results = True)
+    A, alpha = np.exp(b), a
+    CI = results.conf_int(alpha=0.2)[1]
+    alpha_ciw = np.abs(CI[1] - CI[0])
+    pval = results.pvalues[1]
+    if pval < 0.05:
+        textCo = apm.GREEN
+    elif pval < 0.1:
+        textCo = apm.YELLOW
+    elif pval < 0.2:
+        textCo = apm.BRIGHTRED
+    else:
+        textCo = apm.RED
+       
+    delta = 0.5
+    se = results.bse[1]        
+    df = results.df_resid   
+    # t-statistic
+    t_stat = (alpha - delta) / se
+    # one-sided p-value for H1: slope < c
+    p_ost = st.t.cdf(t_stat, df=df)
+    test_ost = (p_ost < 0.25)    
+    test_ci = (np.abs(alpha) <= alpha_ciw/2)
+        
+    # test = test_ost
+    # if test:
+    #     Palette[i] = 'mediumseagreen'
+    # else:
+    #     Palette[i] = 'steelblue'
+    #     Score[i] = 0
+    Palette[i] = apm.cL_Set2[0]
+    
+    # Standard p-value
+    R2 = w_results.rsquared
+    
+    # Pearson p-value
+    results_pearson = st.pearsonr(Xfit, Yfit, alternative='two-sided', method=None, axis=0)
+    R2_p, pval_p = results_pearson.statistic**2, results_pearson.pvalue
+    
+    # print(R2_p, pval_p)
+    
+    res_dict['expo'].append(alpha)
+    res_dict['expo_ciw'].append(alpha_ciw)
+    
+df_res = pd.DataFrame(res_dict)
+
+df_res_g = df_res.groupby('manipID').agg({'expo' : ['mean', 'std', 'count']})
+df_res_g.columns = ufun.flattenPandasIndex(df_res_g.columns)
+df_res_g['expo_ste'] = df_res_g['expo_std']/(df_res_g['expo_count']**0.5)
+
+ax.axhline(np.median(df_res['expo'].values), color = 'darkred', lw=1.5, 
+           label=f"Median = {np.median(df_res['expo'].values):.2f}", alpha = 0.8)
+sns.swarmplot(data = df_res, ax = ax, x='manipID', y='expo',
+              size = 4.0, color = apm.cL_Set2[0], hue = 'cellID', palette=Palette, 
+              # color = apm.cL_Set2[0], hue = 'cellID', palette=Palette, 
+              edgecolor = 'None', linewidth = 0.25, alpha = 0.8,
               legend=False, zorder=9)
 
 ebarcolor = 'k' # 'darkslategray'
@@ -3827,7 +3978,7 @@ apm.setGraphicOptions(mode = 'print',
                       colorList = apm.cL_Set21)
 
 # Save
-SAVE = True
+SAVE = False
 figDir = figSupDir
 figSubDir = 'S3'
 name = 'thin_vs_Thick'
@@ -3906,7 +4057,7 @@ sns.boxplot(**plot_parms, ax=ax,
             zorder=3, legend=False)
 
 annotator = Annotator(ax, [['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']], **plot_parms)
-annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+annotator.configure(test='Mann-Whitney', verbose=True, #text_format="simple",
                     hide_non_significant = False, fontsize = 8,
                     loc = 'inside', line_height = 0.01, 
                     text_offset=3, line_offset = 3, line_offset_to_group = 10)
@@ -3946,7 +4097,7 @@ sns.boxplot(**plot_parms, ax=ax,
             zorder=3, legend=False)
 
 annotator = Annotator(ax, [['$H_{5mT}$ < 400nm', '$H_{5mT}$ $\geq$ 400nm']], **plot_parms)
-annotator.configure(test='Mann-Whitney', verbose=False, #text_format="simple",
+annotator.configure(test='Mann-Whitney', verbose=True, #text_format="simple",
                     hide_non_significant = False, fontsize = 8,
                     loc = 'inside', line_height = 0.01, 
                     text_offset=3, line_offset = 3, line_offset_to_group = 10)

@@ -1902,7 +1902,7 @@ if SAVE:
                     figDir = figDir, figSubDir = figSubDir, cloudSave = 'flexible')
     CountByCond.to_csv(os.path.join(figDir, figSubDir, name+'_count.txt'), sep='\t')
 
-# %%% S4_AB
+# %%% S4_AB E_equivalent
 
 # Save
 SAVE = True
@@ -1940,6 +1940,8 @@ def compute_infExpo(df, df_expo, h_ref = 300, agg_type = 'median',
              'median' : median_expo,
              'global' : global_expo,
              }
+    
+    print(expos[agg_type])
     
     return(expos[agg_type])
 
@@ -2012,51 +2014,51 @@ apm.setGraphicOptions(mode = 'print',
 
 
 
-nCols = 6
-nRows = Ncells_valid//nCols + 1
-fig, axes = plt.subplots(nRows, nCols, figsize=(2.5*nCols/cm_in, 3*nRows/cm_in),
-                         sharex=True, sharey=True, layout='compressed')
+# nCols = 6
+# nRows = Ncells_valid//nCols + 1
+# fig, axes = plt.subplots(nRows, nCols, figsize=(2.5*nCols/cm_in, 3*nRows/cm_in),
+#                          sharex=True, sharey=True, layout='compressed')
 
 
-for i in range(Ncells_valid):
-    iR = i//nCols
-    iC = i%nCols
+# for i in range(Ncells_valid):
+#     iR = i//nCols
+#     iC = i%nCols
     
-    cid = CID_validCells[i]
-    df_cell = df_f[df_f['cellID'] == cid]
-    # Ncomps = len(df_cell)
+#     cid = CID_validCells[i]
+#     df_cell = df_f[df_f['cellID'] == cid]
+#     # Ncomps = len(df_cell)
     
-    X = df_cell[XCol].values
-    Y = df_cell[YCol].values/1000
+#     X = df_cell[XCol].values
+#     Y = df_cell[YCol].values/1000
     
-    A = A_list[i]
-    E_eq = Eeq_list[i]
+#     A = A_list[i]
+#     E_eq = Eeq_list[i]
     
-    ax = axes[iR, iC]
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.plot(X, Y, ls='', 
-            marker='o', ms=4, mec='w', 
-            mew=0.1, alpha=0.5, zorder=6)
-    Xplot = np.array([40,2100])
-    Yplot = A * (Xplot**inferred_expo)
-    ax.plot(Xplot, Yplot, ls='-')
+#     ax = axes[iR, iC]
+#     ax.set_xscale('log')
+#     ax.set_yscale('log')
+#     ax.plot(X, Y, ls='', 
+#             marker='o', ms=4, mec='w', 
+#             mew=0.1, alpha=0.5, zorder=6)
+#     Xplot = np.array([40,2100])
+#     Yplot = A * (Xplot**inferred_expo)
+#     ax.plot(Xplot, Yplot, ls='-')
     
-    ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray')
-    ax.plot([h_ref], [E_eq], 'kx', 
-            label='$E_{eq}$=' + f'{E_eq:.2f}kPa')
+#     ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray')
+#     ax.plot([h_ref], [E_eq], 'kx', 
+#             label='$E_{eq}$=' + f'{E_eq:.2f}kPa')
     
-    ax.legend(loc='upper right', fontsize=6, handlelength = 1)
-    ax.set_xlim([50, 2000])
-    ax.set_ylim([0.5, 100])
-    ax.grid()
+#     ax.legend(loc='upper right', fontsize=6, handlelength = 1)
+#     ax.set_xlim([50, 2000])
+#     ax.set_ylim([0.5, 100])
+#     ax.grid()
     
     
 
 
 # ax.grid()
 
-fig2, axes2 = plt.subplots(1, 2, figsize=(11/cm_in, 7.5/cm_in),
+fig2, axes2 = plt.subplots(1, 2, figsize=(12/cm_in, 8/cm_in),
                          layout='compressed')
 ax=axes2[0]
 ax.set_title('Computing $E_{eq}$ at 300 nm\nExample on 4 cells')
@@ -2085,10 +2087,11 @@ for k, i in enumerate([2, 10, 6, 30]):
     ax.plot([h_ref], [E_eq], marker='x', color=apm.lightenColor(color, 0.8),
             label=f'{E_eq:.2f}kPa', zorder=5)
     
-ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray', zorder=2)
-ax.legend(title='$E_{eq}$ at \n300 nm', loc='upper right', fontsize=6, handlelength = 1)
+ax.axvline(h_ref, ls='-', lw=1.5, color='lightgray', zorder=2)
+ax.legend(title='$E_{eq}$ at \n300 nm', loc='upper right', edgecolor='none',
+          fontsize=7, handlelength = 1)
 ax.set_xlim([50, 2000])
-ax.set_ylim([0.5, 100])
+ax.set_ylim([0.5, 50])
 ax.set_xticks([100, 300, 1000])
 ax.set_xticklabels(['$10^2$', '$3\cdot 10^2$', '$10^3$'])
 ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
@@ -2120,7 +2123,7 @@ ax.set_ylim([0.5, 20])
 ax.grid(axis='y')
 ax.set_yscale('log')
 ax.set_ylabel('$E_{eq}$ (kPa)', labelpad=0.5)
-ax.set_title('Complete distibution\nof $E_{eq}$ at 300 nm')
+ax.set_title('Distribution of\n$E_{eq}$ at 300 nm')
 # ax.grid()
 
 plt.show()
@@ -2135,7 +2138,7 @@ if SAVE:
 
 
 
-# %%% S4_CD
+# %%% S4_CD E_equivalent
 
 # Save
 SAVE = True
@@ -2288,11 +2291,12 @@ apm.setGraphicOptions(mode = 'print',
 
 # ax.grid()
 
-fig2, axes2 = plt.subplots(1, 2, figsize=(11/cm_in, 7.5/cm_in),
+fig2, axes2 = plt.subplots(1, 2, figsize=(12/cm_in, 8/cm_in),
                          layout='compressed')
 ax=axes2[0]
-ax.set_title('Computing $E_{eq}$ at 300 nm\nExample within one cell')
+ax.set_title('$E_{eq}$ at 300 nm per compression,\nexample within one cell')
 
+# i = 12
 i = 12
 cid = valid_cells[i]
 color = apm.cL_Set2[0]
@@ -2310,22 +2314,29 @@ ax.set_xscale('log')
 ax.set_yscale('log')
 ax.plot(X, Y, ls='', 
         marker='o', ms=4, color=color,
-        mec='w', mew=0.1, alpha=1, zorder=3)
+        mec='w', mew=0.15, alpha=0.8, 
+        label = 'Compressions', zorder=7)
 Xplot = np.array([40,2100])
 Yplot = A * (Xplot**inferred_expo)
-ax.plot(Xplot, Yplot, ls='-', lw=1.5, color='k', zorder=4)
+ax.plot(Xplot, Yplot, ls='-', lw=1.5, color='k', 
+        label='$E-H_0$ coupling\nof this cell', zorder=4)
 ax.plot([h_ref], [Eeq], 'kP', markersize=6,
-        label='$E_{eq}$=' + f'{E_eq:.2f}kPa', zorder=6)
+        label='$E_{eq}$ for the cell', zorder=8)
  
-ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray', zorder=2)
+ax.axvline(h_ref, ls='-', lw=1.5, color='lightgray', zorder=2)
 for x, y, eeq in zip(X, Y, points_Eeq):
     Xplot = np.array([x, h_ref])
     Yplot = np.array([y, eeq])
-    ax.plot(Xplot, Yplot, ls='-', lw=0.75, color='gray', zorder=4)   
+    ax.plot(Xplot, Yplot, ls='-', lw=0.75, color='gray', zorder=4, alpha=0.7,)
+    ax.plot([Xplot[-1]], [Yplot[-1]], ls='-', marker='+', alpha=0.6,
+            lw=0.75, color=apm.lightenColor(color, 0.6), zorder=4)
+ax.plot([], [], ls='', marker='+', alpha=0.6,
+        lw=0.75, color=apm.lightenColor(color, 0.6),
+        label = '$E_{eq}$ for a single\ncompression', zorder=4)
 
 # ax.legend(title='$E_{eq}$ at \n300 nm', loc='upper right', fontsize=6, handlelength = 1)
 ax.set_xlim([100, 1000])
-ax.set_ylim([1, 30])
+ax.set_ylim([1, 35])
 ax.set_xticks([100, 300, 1000])
 ax.set_xticklabels(['$10^2$', '$3\cdot 10^2$', '$10^3$'])
 
@@ -2333,40 +2344,40 @@ ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator([100, 300, 1000]))
 ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
 ax.xaxis.set_major_formatter(matplotlib.ticker.FixedFormatter(['$10^2$', '$3\cdot 10^2$', '$10^3$']))
 
+ax.legend(handlelength=1.0, handletextpad=0.5, edgecolor='none')
 ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
 ax.set_xlabel('$H_0$ (nm)', labelpad=0.5)
-ax.grid()
+# ax.grid()
 
 
 ax = axes2[1]
-ax.set_xlim([-0.5, +0.5])
+ax.set_xlim([-0.4, +0.4])
 lists_points_Eeq_norm = [dict_Eeq[cid]['points_Eeq_norm'] for cid in dict_Eeq.keys()]
 all_points_Eeq_norm = np.concat(lists_points_Eeq_norm)
 
-log_Eeq     = np.log(all_points_Eeq_norm)
-logmean_Eeq = np.mean(log_Eeq)
-logstd_Eeq  = np.std(log_Eeq)
+mean = np.mean(all_points_Eeq_norm)
+std = np.std(all_points_Eeq_norm)
+print(mean, std)
+CV = std/mean
+print(CV)
 
-print(logmean_Eeq, )
-print(np.exp(logmean_Eeq), np.exp(logmean_Eeq - logstd_Eeq), np.exp(logmean_Eeq + logstd_Eeq))
-print(logstd_Eeq, np.exp(logstd_Eeq), np.exp(logstd_Eeq)**0.5)
 data = pd.DataFrame({'Eeq_norm':all_points_Eeq_norm,})
-sns.swarmplot(ax=ax, data=data, y='Eeq_norm', color=(0, 0, 0, 0.3), size=3)
+sns.swarmplot(ax=ax, data=data, y='Eeq_norm', color=(0, 0, 0, 0.3), size=4, zorder=5)
 f = 1
 colorcross = 'k'
-ax.errorbar([0], np.exp(logmean_Eeq), 
+ax.errorbar([0], mean, 
             ls='', marker='_', markerfacecolor='k',
             mec = colorcross, mew = 1.5*f, ms = 15*f,
             xerr=None, 
-            yerr=[[np.exp(logmean_Eeq) - np.exp(logmean_Eeq - logstd_Eeq)], 
-                  [np.exp(logmean_Eeq + logstd_Eeq) - np.exp(logmean_Eeq)]],
+            yerr=[[std], [std]],
             ecolor = colorcross, elinewidth=1.5*f, capsize=3*f, zorder=10)
-ax.set_ylim([0, 2])
+ax.set_ylim([0, 2.2])
 
+ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(0.5))
 ax.grid(axis='y')
 # ax.set_yscale('log')
-ax.set_ylabel('$E_{eq}$ (kPa)', labelpad=0.5)
-ax.set_title('Complete distibution\nof $E_{eq}$ at 300 nm')
+ax.set_ylabel('Normalized $E_{eq}$', labelpad=0.5)
+ax.set_title('$E_{eq}$ at 300 nm per compression,\nnormalized cell per cell')
 # ax.grid()
 
 plt.show()
@@ -4648,13 +4659,13 @@ res = takaP.computeGlobalTable_meca(mode = 'fromScratch', task = task, fileName 
 
 # %% Supp Figure 2 & 2bis
 
-# %%% Fig S2A - 4 x 4 with many metrics
+# %%% Fig S2A - 4 x 3 with many metrics
 
 # Save
 SAVE = True
 figSubDir = 'S2'
 figDir = figSupDir
-name = 'S2A_E_vs_h_ManyMetrics'
+name = 'S2A_E_vs_h_ManyMetrics_vClean'
 
 #### Dataset
 
@@ -4706,11 +4717,22 @@ for j, XCol in enumerate(XCols):
                    (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
                    (df['drug'].apply(lambda x : x in drugs)),
                    (df['date'].apply(lambda x : x not in excluded_dates)),
-                   (df[XCol] < 1100),
                    (df['normal field'] == 5),
-                   (df[YCol] <= 1e5),
-                   (df['valid' + YCol[1:]] == True), 
+                   (df['H0_f_<_500'] < 1100),
+                   (df['E_f_<_500'] <= 1e5),
+                   
+                   # (df['normal field'] == 5),
+                   # (df[XCol] < 1100),
+                   # (df[YCol] <= 1e5),
+                   # (df['valid' + YCol[1:]] == True), 
                    ]
+        
+        if YCol == 'E_Full':
+            Filters += [(df['valid_Full'] == True)]
+                         
+                         
+        else:
+            Filters += [(df['valid_f_<_500'] == True)]
         
         df_f = apm.filterDf(df, Filters)
         CountByCond, CountByCell = apm.makeCountDf(df_f, condCol)
@@ -4816,7 +4838,7 @@ if SAVE:
 # Save
 SAVE = True
 figSubDir = 'S2'
-name = 'S2A_E_vs_h_Dimi'
+name = 'S2A_E_vs_h_Dimi_V2'
 
 #### Dataset
 
@@ -4868,12 +4890,13 @@ for j, XCol in enumerate(XCols):
                    (df['cell subtype'].apply(lambda x : x in cell_subtypes)),
                    (df['drug'].apply(lambda x : x in drugs)),
                    (df['date'].apply(lambda x : x not in excluded_dates)),
-                   (df[XCol] < 1100),
+                   (df['H0_f_<_500'] < 1100),
                    (df['normal field'] == 5),
-                   (df[YCol] <= 1e5),
-                   (df['error' + YCol[1:]] == False), 
-                   (df['R2' + YCol[1:]] > 0.4), 
-                   (df['Chi2' + YCol[1:]] < 50), 
+                   (df['E_f_<_500'] <= 1e5),
+                   (df['error' + YCol[1:]] == False),
+                   (df['R2' + YCol[1:]] > 0.6), 
+                   (df['nbPts_Dimi_Valid'] >= 15), 
+                   # (df['Chi2' + YCol[1:]] < 1), 
                    ]
         
         df_f = apm.filterDf(df, Filters)

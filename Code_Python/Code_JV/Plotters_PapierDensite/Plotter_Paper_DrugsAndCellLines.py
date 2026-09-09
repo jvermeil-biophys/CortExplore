@@ -2256,7 +2256,7 @@ dict_powerLaws = {}
 
 #### Plot
 
-fig, axes = plt.subplots(1, 1, figsize = (7/cm_in, 7.5/cm_in), 
+fig, axes = plt.subplots(1, 1, figsize = (9/cm_in, 8/cm_in), 
                          sharex=True, sharey=True, layout='constrained')
 ax = axes
 
@@ -2281,13 +2281,16 @@ for i, co in enumerate(conds):
     
     dict_powerLaws[co] = [A, k]
 
-ax.set_title('Computing $E_{eq}$ at 300 nm\nfor diverse cell types')
+ax.set_title('$E_{eq}$ at 300 nm for the five cell types')
+
+list_Eeq = []
 
 for i, co in enumerate(conds):
     color = colorsD[co]
 
     [A, k] = dict_powerLaws[co]
     E_eq = A * (h_ref**k)
+    list_Eeq.append(E_eq)
     
     ax = ax
     ax.set_xscale('log')
@@ -2298,15 +2301,29 @@ for i, co in enumerate(conds):
     Xplot = np.array([40,2100])
     Yplot = A * (Xplot**k)
     ax.plot(Xplot, Yplot, ls='-', lw=1.0, color=apm.lightenColor(color, 0.8), zorder=4)
-    ax.plot([h_ref], [E_eq], marker='x', color=apm.lightenColor(color, 0.8),
-            label=f'{rD[co]}\n{E_eq:.2f} kPa', zorder=5)
+    ax.plot([h_ref], [E_eq], ls='', marker='x', color=apm.lightenColor(color, 0.8),
+            label=f'{rD[co]}\n'+r'$E_{eq}$'+f' = {E_eq:.2f} kPa', zorder=5)
     
-    ax.axvline(h_ref, ls='-', lw=1.5, color='dimgray')
+ax.axvline(h_ref, ls='-', lw=1.5, color='lightgray', zorder=2)
     
-ax.legend(title='$E_{eq}$ at \n300 nm', bbox_to_anchor = (1, 0.95),
-          loc='upper left', fontsize=6, handlelength = 1)
-ax.set_xlim([50, 2000])
-ax.set_ylim([0.5, 100])
+mean, std = np.mean(np.log(list_Eeq)), np.std(np.log(list_Eeq))
+CV = std/mean
+print(CV)
+
+ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator([100, 300, 1000]))
+ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+ax.xaxis.set_major_formatter(matplotlib.ticker.FixedFormatter(['$10^2$', '$3\cdot 10^2$', '$10^3$']))
+
+    
+ax.legend(title='$E_{eq}$ at 300 nm', bbox_to_anchor = (1, 0.95),
+          loc='upper left', fontsize=7, handlelength = 1.0, labelspacing=0.75,
+          handletextpad=1, )
+# ax.set_xlim([50, 2000])
+# ax.set_ylim([0.5, 100])
+ax.set_ylabel('$E$ (kPa)', labelpad=0.5)
+ax.set_xlabel('$H_0$ (nm)', labelpad=0.5)
+ax.set_xlim([100, 1000])
+ax.set_ylim([1, 35])
 ax.grid()
 
 plt.show()
